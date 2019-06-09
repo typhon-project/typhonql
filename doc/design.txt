@@ -18,3 +18,11 @@ Desugarings
 - path navigation to where clauses
 - opposites
 - implicit column/field ref to explicit entity.field
+
+
+Notes to typhonML
+
+- identifer
+- how to distinguish multiple instances of the same db?
+  (this is needed, because I need to partition even though both dbs are relational, but on different nodes.)
+- the db types should be concrete: i.e. mongodb, not document.
