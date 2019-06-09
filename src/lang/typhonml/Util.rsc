@@ -74,10 +74,14 @@ Rels sanityCheckOpposites(Rels rels) {
    there's also <e2, c2, r2, r1, c1, e1, !b> (if b was true, otherwise it can be either true/false).
   */
   for (t1:<str e1, Cardinality c1, str r1, str r2, Cardinality c2, str e2, bool b> <- rels, r2 != "") {
-    if (b) {
+    if (b) { // one of them is containment
       t2 = <e2, c2, r2, r1, c1, e1, !b>;
       if (t2 notin rels) {
         println("Relation <t1> is in rels, but not <t2>");
+      }
+      t2 = <e2, c2, r2, r1, c1, e1, b>;
+      if (t2 in rels) {
+        println("Relation <t1> is in rels, but also <t2> (containment can only be one way)");
       }
     }
     else {
