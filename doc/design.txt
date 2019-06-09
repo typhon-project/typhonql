@@ -1,0 +1,20 @@
+
+
+Define interface that abstracts a backend
+(This is for internal use, not for clients of the library)
+
+interface Queryable {
+  String getDB()
+  WorkingSet query(String query)
+}
+
+Client interface is as in D4.2
+
+Use GUIDs for Ids
+
+
+Desugarings
+
+- path navigation to where clauses
+- opposites
+- implicit column/field ref to explicit entity.field

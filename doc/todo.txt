@@ -1,0 +1,5 @@
+
+TODO
+
+- mavenize
+- add dep on in memory class compiler

@@ -1,8 +1,8 @@
-module lang::ladon::DML
+module lang::typhonql::DML
 
-extend lang::ladon::Expr;
-extend lang::ladon::Query;
-extend lang::ladon::Type; // for EId
+extend lang::typhonql::Expr;
+extend lang::typhonql::Query;
+extend lang::typhonql::Type; // for EId
 
 /*
 update from Person p select p where p.age >= 18 set it@Person {name : "x", spouse: it}

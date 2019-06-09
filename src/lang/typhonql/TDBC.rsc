@@ -1,8 +1,8 @@
-module lang::ladon::TDBC
+module lang::typhonql::TDBC
 
-extend lang::ladon::Query;
-extend lang::ladon::DDL;
-extend lang::ladon::DML;
+extend lang::typhonql::Query;
+extend lang::typhonql::DDL;
+extend lang::typhonql::DML;
 
 start syntax Request
   = Query

@@ -1,4 +1,4 @@
-module lang::ladon::DDL
+module lang::typhonql::DDL
 
 extend lang::std::Layout;
 extend lang::std::Id;
@@ -19,6 +19,12 @@ syntax Feature
   | Id name Ref ref Cardinality cardinality EId target Opposite? oppositeOpt
   ;
 
+syntax DBKind
+  = "relational"
+  | "document"
+  | "graph"
+  ;
+  
 syntax Opposite = "(" EId target "." Id feature ")";  
   
 syntax Cardinality
