@@ -100,6 +100,10 @@ Rels model2rels(Model m) {
   return result;
 }
 
+Rel findCanonical(str from, str fromRole, Rels rels) {
+
+}
+
 Rels symmetricReduction(Rels rels) {
   // filter out symmetric bidir relations
   // if containment, that one gets preference

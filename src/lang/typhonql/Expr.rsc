@@ -10,6 +10,7 @@ syntax Expr
   | Int: Int
   | Str: Str
   | Obj: Obj // for use in insert and allow nesting of objects
+  | Lst: "[" {Obj ","}* "]" // NB: only objects!
   | Null: "null"
   | Pos: "+" Expr arg
   | Neg: "-" Expr arg
@@ -42,6 +43,7 @@ syntax VId = Var: Id \ "true" \ "false" ;
 
 syntax Bool = True: "true" | False: "false";
 
+// TODO: what about lists?
 syntax Obj = Label? labelOpt EId entity "{" {KeyVal ","}* keyVals "}";
   
 syntax Label = "@" VId label;
