@@ -3,9 +3,14 @@ module lang::typhonql::relational::SQL
 
 data SQLStat
   = create(str table, list[Column] cols, list[TableConstraint] constraints)
-  | \insert(str table, list[str] cols, list[Value] values)
-  | select(list[SQLExpr] exprs, list[As] tables, list[Clauses] clauses)
+  | \insert(str table, list[str] colNames, list[Value] values)
+  | select(list[SQLExpr] exprs, list[As] tables, list[Clause] clauses)
+  | alterTable(str table, list[Alter] alters)
   ;
+  
+data Alter
+  = addConstraint(TableConstraint constraint);
+
   
 data SQLExpr
   = column(str table, str name) // NB: always qualified

@@ -8,6 +8,8 @@ import String;
 str q(str x) = "`<x>`";
 
 
+str pp(list[SQLStat] stats) = intercalate("\n\n", [ pp(s) | SQLStat s <- stats ]); 
+
 // SQLStat
 
 str pp(create(str t, list[Column] cs, list[TableConstraint] cos))
@@ -22,6 +24,15 @@ str pp(select(list[SQLExpr] es, list[As] as, list[Clauses] cs))
   = "select <intercalate(", ", [ pp(e) | SQLExpr e <- es ])> 
     'from <intercalate(", ", [ pp(a) | As a <- as ])>
     '<intercalate("\n", [ pp(c) | Clause c <- cs ])>;";  
+
+str pp(alterTable(str t, list[Alter] as))
+  = "alter table <q(t)> <intercalate(", ", [ pp(a) | Alter a <- as ])>;";
+
+
+// Alter
+
+str pp(addConstraint(TableConstraint c))
+  = "add constraint <pp(c)>";
 
 
 // As
@@ -87,7 +98,7 @@ str pp(null()) = "null";
 str pp(primaryKey(str c)) = "primary key (<q(c)>)";
 
 str pp(foreignKey(str c, str p, str k, OnDelete od)) 
-  = "foreign key (<q(c)>) references <q(p)>(<q(k)>)<od>";
+  = "foreign key (<q(c)>) references <q(p)>(<q(k)>)<pp(od)>";
 
 
 // OnDelete

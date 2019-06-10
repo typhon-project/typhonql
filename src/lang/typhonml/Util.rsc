@@ -11,14 +11,15 @@ import List;
 /*
  Consistency checks (for TyphonML)
   - Containment can not be many-to-many (IOW: target of containment with opposite should be [1]) 
-  - inverse specified on one side only, or they must be consistent in terms role names.
+  - inverse specified on one side only, or they must be consistent in terms of role names.
 */
 
 // abstraction over TyphonML, to be extended with back-end specific info in the generic map
 data Schema
   = schema(Rels rels, Attrs attrs, map[str, value] config = ());
 
-alias Rels = rel[str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool containment];
+alias Rel = tuple[str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool containment];
+alias Rels = set[Rel];
 alias Attrs = rel[str from, str name, str \type];
 
 data DB = mongodb() | sql() | hyperj();
@@ -71,7 +72,7 @@ Rels model2rels(Model m) {
       Entity target = lookup(m, #Entity, r.\type);
       str to = target.name;
       str toRole = "";
-      Cardinality toCard = \one(); // check: is this the default?
+      Cardinality toCard = zero_one(); // check: is this the default?
       
       if (r.opposite != null()) {
         Relation inv = lookup(m, #Relation, r.opposite);
@@ -95,6 +96,22 @@ Rels model2rels(Model m) {
     }
   }
   return result;
+}
+
+Rels symmetricReduction(Rels rels) {
+  // filter out symmetric bidir relations
+  // if containment, that one gets preference
+  // else, it doesn't matter.
+  // assumes sanityCheckOpposites;
+  removed = {};
+  for (t1:<str e1, Cardinality c1, str r1, str r2, Cardinality c2, str e2, _> <- rels) {
+    t2 = <e2, c2, r2, r1, c1, e1, false>;
+    if (t1 != t2, t1 notin removed) {
+      rels -= { t2 };
+      removed += {t2};
+    }
+  }
+  return rels;
 }
 
 Rels sanityCheckOpposites(Rels rels) {
