@@ -1,13 +1,19 @@
 module lang::typhonql::relational::Util
 
 import lang::typhonql::relational::SQL;
+import List;
 
 str tableName(str entity) = "<entity>_entity";
 
 
+// we sort here to canonicalize the junction table name
+// and be independent wether we navigate from either 
+// side of a bidirectional reference
 str junctionTableName(str from, str fromRole, str to, str toRole)
-  = "<from>_<fromRole>_<toRole>_<to>";
+  = ( "" | it + x | str x <- sort([from, fromRole, toRole, to]) );
 
+str junctionFkName(str from, str role)
+  = "<from>_<role>";
 
 str fkName(str toRole, str fromRole) = toRole == "" ? fkName(fromRole) : fkName(toRole);
 

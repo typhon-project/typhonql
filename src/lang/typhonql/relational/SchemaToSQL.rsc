@@ -53,8 +53,8 @@ list[SQLStat] schema2sql(Schema schema) {
   
   // should we make both fk's the combined primary key, if so, when?
   void addJunctionTable(str from, str fromRole, str to, str toRole) {
-    str left = fkName("<from>_<fromRole>");
-    str right = fkName("<to>_<toRole>");
+    str left = junctionFkName(from, fromRole);
+    str right = junctionFkName(to, toRole);
     SQLStat stat = create(junctionTableName(from, fromRole, to, toRole), [
       column(left, typhonIdType(), [notNull()]),
       column(right, typhonIdType(), [notNull()])      

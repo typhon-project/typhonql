@@ -65,18 +65,23 @@ list[SQLStat] insert2sql(IdMap idMap, list[Obj] objList, Schema schema) {
       // because the it's a single insert, and the order of columns are explicitly specified
       
       if (<key, str to, str uuid> <- idMap) { // should always be true
-        if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, to, true> <- schema.rels) {
+        if (<from, _, fromRole, str toRole, _, to, true> <- schema.rels) {
           // found the canonical containment rel
           // but then reverse!!    
           append outer: update(tableName(to), [\set(fkName(toRole, fromRole), lit(text(idMap[i].uuid)))],
             [where([eq(column(tableName(to), typhonId(to)), lit(text(uuid)))])]);
         }
-        else if (<to, Cardinality toCard, str toRole, fromRole, Cardinality fromCard, from, true> <- schema.rels) {
+        else if (<to, _, str toRole, fromRole, _, from, true> <- schema.rels) {
           append outer: update(tableName(from), [\set(fkName(fromRole, toRole), lit(text(uuid)))],
             [where([eq(column(tableName(from), typhonId(from)), lit(text(idMap[i].uuid)))])]);
         }
-        else { // a cross ref
-          ;
+        else if(<from, _, fromRole, str toRole, _, to, false> <- schema.rels)  { // a cross ref
+          append outer: \insert(junctionTableName(from, fromRole, to, toRole)
+                          , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
+                          , [text(idMap[i].uuid), text(uuid)]);
+        }
+        else {
+          throw "Reference <from>.<fromRole> not found in schema.";
         }
       }
     }

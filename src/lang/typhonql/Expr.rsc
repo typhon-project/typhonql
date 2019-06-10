@@ -10,7 +10,7 @@ syntax Expr
   | Int: Int
   | Str: Str
   | Obj: Obj // for use in insert and allow nesting of objects
-  | Lst: "[" {Obj ","}* "]" // NB: only objects!
+  | Lst: "[" {Obj ","}* "]" // NB: only objects! TODO: we might want Object refs as well.
   | Null: "null"
   | Pos: "+" Expr arg
   | Neg: "-" Expr arg

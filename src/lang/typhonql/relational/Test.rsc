@@ -24,42 +24,18 @@ void smokeTest() {
   
   
   println("\n### Insert without nesting but containment via opposite");
-  Statement ins2 = (Statement)`insert Product { name: "TV", review: Review {  } }`;
+  Statement ins2 = (Statement) `insert @tv Product { name: "TV"}, Review { product: tv }`;
   println("# TyphonQL: <ins2>");
 
   println(pp(dml2sql(ins2, myDb)));
   
+  println("\n### Insert with cross reference");
+  Statement ins3 = (Statement) `insert Order { totalAmount: 23, paidWith: cc }, @cc CreditCard { number: "assa" }`;
+
+  println("# TyphonQL: <ins3>");
+
+  println(pp(dml2sql(ins3, myDb)));
+
 }
 
-
-
-/*
-Turn this into a test case based on mydb.tml (it shows how nesting or inverse usage
-lead to the same SQL):
-
-rascal>ins = (Statement)`insert @tv Product { name: "TV", review: Review {  } }`;
-Statement: (Statement) `insert @tv Product { name: "TV", review: Review {  } }`
-rascal>println(pp(dml2sql(ins, s)))
-OBJ: @obj_0 Review {}
-OBJ: @tv Product { name: "TV", review: obj_0 }
-insert into `Review_entity` (_typhon_id) values ('f05eeb86-ae87-4cb5-910c-bd27373013de');
-
-insert into `Product_entity` (_typhon_id, name) values ('e2612f93-87e8-4d44-a2d5-0bebded8c6ca', 'TV');
-
-update `Review_entity` set `product_id` = 'e2612f93-87e8-4d44-a2d5-0bebded8c6ca'
-where (`Review_entity`.`_typhon_id`) = ('f05eeb86-ae87-4cb5-910c-bd27373013de')
-ok
-rascal>ins = (Statement)`insert @tv Product { name: "TV"}, Review { product: tv }`;
-Statement: (Statement) `insert @tv Product { name: "TV"}, Review { product: tv }`
-rascal>println(pp(dml2sql(ins, s)))
-OBJ: @obj_0 Review {product: tv}
-OBJ: @tv Product { name: "TV"}
-insert into `Review_entity` (_typhon_id) values ('b0ce86a7-c2a6-418c-be09-c4f546ce4994');
-
-insert into `Product_entity` (_typhon_id, name) values ('a1e20762-4eee-40d6-99d6-02f359700313', 'TV');
-
-update `Review_entity` set `product_id` = 'a1e20762-4eee-40d6-99d6-02f359700313'
-where (`Review_entity`.`_typhon_id`) = ('b0ce86a7-c2a6-418c-be09-c4f546ce4994')
-
-*/
 

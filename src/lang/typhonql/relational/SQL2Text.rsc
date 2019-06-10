@@ -23,7 +23,7 @@ str pp(\insert(str t, list[str] cs, list[Value] vs))
 
 str pp(update(str t, list[Set] ss, list[Clause] cs))
   = "update <q(t)> set <intercalate(", ", [ pp(s) | Set s <- ss ])>
-    '<intercalate("\n", [ pp(c) | Clause c <- cs ])>";
+    '<intercalate("\n", [ pp(c) | Clause c <- cs ])>;";
   
 str pp(select(list[SQLExpr] es, list[As] as, list[Clauses] cs))
   = "select <intercalate(", ", [ pp(e) | SQLExpr e <- es ])> 

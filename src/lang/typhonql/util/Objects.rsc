@@ -8,7 +8,9 @@ import IO;
 alias IdMap = lrel[str name, str entity, str uuid];
 
 
-@doc{Flatten possibly nested objs to a list of labeled object literals}
+@doc{Flatten possibly nested objs to a list of labeled object literals
+where nesting is represented using references. Lists of nested objects are
+flattened to repeated field entries.}
 list[Obj] flatten({Obj ","}* objs) {
   int i = 0;
   VId newLabel() {
