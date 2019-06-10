@@ -27,6 +27,8 @@ data DB = mongodb() | sql() | hyperj();
 alias Placement = rel[str entity, DB db];
 
 
+set[str] entities(Schema s) = s.rels<0> + s.attrs<0>;
+
 Placement model2placement(Model m) 
   = ( {} | it + place(db, m) | Database db <- m.databases );  
 

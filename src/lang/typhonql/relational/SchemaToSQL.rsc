@@ -1,11 +1,18 @@
-module lang::typhonql::relational::ToSQL
+module lang::typhonql::relational::SchemaToSQL
 
-import lang::typhonml::Util; // Schema
 import lang::typhonql::relational::SQL;
+import lang::typhonql::relational::Util;
+import lang::typhonml::Util; // Schema
 import lang::typhonml::TyphonML;
 import IO;
 import Set;
 import List;
+
+/*
+ * TODO
+ * - make up mind about how much constraints in SQL
+ * - figure out how to deal with containment/refs to outside entities
+ */
 
 
 list[SQLStat] schema2sql(Schema schema) {
@@ -82,6 +89,7 @@ list[SQLStat] schema2sql(Schema schema) {
        case <\one(), zero_one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, []);
        case <\one(), \one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [unique(), notNull()]);
        
+       // for now, we realize all cross refs using a junction table.
        case <_, _, false>: addJunctionTable(from, fromRole, to, toRole);
        
 //       case <one_many(), one_many(), false>: ;
@@ -112,77 +120,4 @@ list[SQLStat] schema2sql(Schema schema) {
 }
 
 
-set[str] entities(Schema s) = s.rels<0> + s.attrs<0>;
 
-str tableName(str entity) = "<entity>_entity";
-
-str typhonId(str entity) = "_typhon_id"; // entity to disambiguate if needed
-
-str junctionTableName(str from, str fromRole, str to, str toRole)
-  = "<from>_<fromRole>_<toRole>_<to>";
-
-
-str fkName(str field) = "<field>_id";
-
-Column typhonIdColumn(str entity) = column(typhonId(entity), typhonIdType(), [notNull(), unique()]);
-
-ColumnType typhonIdType() = char(36); // UUID
-
-ColumnType typhonType2SQL("Date") = date();
-ColumnType typhonType2SQL("String") = text();
-ColumnType typhonType2SQL("int") = integer();
-default ColumnType typhonType2SQL(str t) { throw "Unsupported Typhon type <t>"; }
-
-
-/*
-
-create table `<Entity>` (
-  `typhon_id` char(36) not null, 
-  
-  
-  primary key (`typhon_id`), 
-  
-);
-
-Foreign keys
-
-create table `...` (
-
-<owner>_id char(36),
-    FOREIGN KEY (<owner>_id)
-        REFERENCES owner(typhon_id)
-        ON DELETE CASCADE
-)
-
-*/
-
-/*
-
-rel[str, Cardinality, name, name, Cardinality, str]
-
-# Mapping
-
-## Types
-
-Date
-String
-int
-Blob
-
-## Relations
-
-:-> [1]     put foreign in target table, add cascade delete
-            or put foreign key in parent, add cascade delete, and foreign key in child and cascade delete (???)
-:-> [0..1]     (and assume parent is always 1; no containment from multiple things)
-:-> [0..*]
-
--> [1]      always use junction table, unless inverse of containment
--> [0..1]
--> [0..*]
-
-If they are outside the database, what then? (assume for now, never containment)
- - if it's one, put column with uuid non null (if optional, can be null)
-
-
-
-*/
