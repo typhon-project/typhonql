@@ -48,6 +48,11 @@ default Placement place(Database db, Model m) {
 Schema model2schema(Model m)
   = schema(model2rels(m), model2attrs(m));
 
+Schema myDbSchema() = model2schema(m)
+  when Model m := load(#Model, |project://typhonql/src/lang/typhonml/mydb3.model|);
+
+
+
 Attrs model2attrs(Model m) {
   Attrs result = {};
   for (DataType(Entity(str from, list[Attribute] attrs, _)) <- m.dataTypes) {

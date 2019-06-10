@@ -26,3 +26,62 @@ Notes to typhonML
 - how to distinguish multiple instances of the same db?
   (this is needed, because I need to partition even though both dbs are relational, but on different nodes.)
 - the db types should be concrete: i.e. mongodb, not document.
+
+
+Notes/discussion points
+
+Maybe not hardcode containment etc. in SQL, but do cascading etc. ourselves...
+
+
+/*
+
+create table `<Entity>` (
+  `typhon_id` char(36) not null, 
+  
+  
+  primary key (`typhon_id`), 
+  
+);
+
+Foreign keys
+
+create table `...` (
+
+<owner>_id char(36),
+    FOREIGN KEY (<owner>_id)
+        REFERENCES owner(typhon_id)
+        ON DELETE CASCADE
+)
+
+*/
+
+/*
+
+rel[str, Cardinality, name, name, Cardinality, str]
+
+# Mapping
+
+## Types
+
+Date
+String
+int
+Blob
+
+## Relations
+
+:-> [1]     put foreign in target table, add cascade delete
+            or put foreign key in parent, add cascade delete, and foreign key in child and cascade delete (???)
+:-> [0..1]     (and assume parent is always 1; no containment from multiple things)
+:-> [0..*]
+
+-> [1]      always use junction table, unless inverse of containment
+-> [0..1]
+-> [0..*]
+
+If they are outside the database, what then? (assume for now, never containment)
+ - if it's one, put column with uuid non null (if optional, can be null)
+
+
+
+*/
