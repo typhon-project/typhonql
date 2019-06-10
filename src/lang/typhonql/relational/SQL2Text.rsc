@@ -20,6 +20,11 @@ str pp(create(str t, list[Column] cs, list[TableConstraint] cos))
 str pp(\insert(str t, list[str] cs, list[Value] vs))
   = "insert into <q(t)> (<intercalate(", ", cs)>) values (<intercalate(", ", [ pp(v) | Value v <- vs ])>);";
   
+
+str pp(update(str t, list[Set] ss, list[Clause] cs))
+  = "update <q(t)> set <intercalate(", ", [ pp(s) | Set s <- ss ])>
+    '<intercalate("\n", [ pp(c) | Clause c <- cs ])>";
+  
 str pp(select(list[SQLExpr] es, list[As] as, list[Clauses] cs))
   = "select <intercalate(", ", [ pp(e) | SQLExpr e <- es ])> 
     'from <intercalate(", ", [ pp(a) | As a <- as ])>
@@ -38,6 +43,10 @@ str pp(addConstraint(TableConstraint c))
 // As
 
 str pp(as(str t, str x)) = "<q(t)> as <q(x)>";
+
+// Set
+
+str pp(\set(str c, SQLExpr e)) = "<q(c)> = <pp(e)>";
 
 
 // SQLExpr
@@ -60,13 +69,13 @@ str pp(and(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) and (<pp(rhs)>)";
 
 // Clause
 
-str pp(where(list[SQLExpr] es)) = "where <intercalate(", ", [ pp(e) | SQLExpr e <- e ])>"; 
+str pp(where(list[SQLExpr] es)) = "where <intercalate(", ", [ pp(e) | SQLExpr e <- es ])>"; 
 
-str pp(groupBy(list[SQLExpr] es)) = "group by <intercalate(", ", [ pp(e) | SQLExpr e <- e ])>"; 
+str pp(groupBy(list[SQLExpr] es)) = "group by <intercalate(", ", [ pp(e) | SQLExpr e <- es ])>"; 
 
-str pp(having(list[SQLExpr] es)) = "having <intercalate(", ", [ pp(e) | SQLExpr e <- e ])>"; 
+str pp(having(list[SQLExpr] es)) = "having <intercalate(", ", [ pp(e) | SQLExpr e <- es ])>"; 
 
-str pp(orderBy(list[SQLExpr] es, Dir d)) = "order by <intercalate(", ", [ pp(e) | SQLExpr e <- e ])> <pp(d)>"; 
+str pp(orderBy(list[SQLExpr] es, Dir d)) = "order by <intercalate(", ", [ pp(e) | SQLExpr e <- es ])> <pp(d)>"; 
 
 str pp(limit(SQLExpr e)) = "limit <pp(e)>"; 
 

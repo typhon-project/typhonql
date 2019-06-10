@@ -9,6 +9,8 @@ str junctionTableName(str from, str fromRole, str to, str toRole)
   = "<from>_<fromRole>_<toRole>_<to>";
 
 
+str fkName(str toRole, str fromRole) = toRole == "" ? fkName(fromRole) : fkName(toRole);
+
 str fkName(str field) = "<field>_id";
 
 Column typhonIdColumn(str entity) = column(typhonId(entity), typhonIdType(), [notNull(), unique()]);

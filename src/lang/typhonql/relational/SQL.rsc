@@ -4,7 +4,7 @@ module lang::typhonql::relational::SQL
 data SQLStat
   = create(str table, list[Column] cols, list[TableConstraint] constraints)
   | \insert(str table, list[str] colNames, list[Value] values)
-  | update(str table, list[Set] sets, list[Clauses] clauses)
+  | update(str table, list[Set] sets, list[Clause] clauses)
   | select(list[SQLExpr] exprs, list[As] tables, list[Clause] clauses)
   | alterTable(str table, list[Alter] alters)
   ;
