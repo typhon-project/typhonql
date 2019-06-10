@@ -36,6 +36,20 @@ void smokeTest() {
 
   println(pp(dml2sql(ins3, myDb)));
 
+  println("\n### Insert with cross reference via opposite");
+  Statement ins4 = (Statement) `insert Order { users: alice }, @alice User { name: "alice" }`;
+
+  println("# TyphonQL: <ins4>");
+
+  println(pp(dml2sql(ins4, myDb)));
+
+  println("\n### Insert with cross reference via nesting");
+  Statement ins5 = (Statement) `insert Order { users: [ User { name: "alice" } ]}`;
+
+  println("# TyphonQL: <ins5>");
+
+  println(pp(dml2sql(ins5, myDb)));
+
 }
 
 

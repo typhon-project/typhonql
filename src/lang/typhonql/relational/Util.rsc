@@ -7,10 +7,10 @@ str tableName(str entity) = "<entity>_entity";
 
 
 // we sort here to canonicalize the junction table name
-// and be independent wether we navigate from either 
+// and be independent of wether we navigate from either 
 // side of a bidirectional reference
 str junctionTableName(str from, str fromRole, str to, str toRole)
-  = ( "" | it + x | str x <- sort([from, fromRole, toRole, to]) );
+  = ( "" | it + x | str x <- sort([from, fromRole, toRole, to]) ) + "_reference";
 
 str junctionFkName(str from, str role)
   = "<from>_<role>";
