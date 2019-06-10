@@ -1,9 +1,46 @@
 module lang::typhonql::relational::SQL
 
+
 data SQLStat
   = create(str table, list[Column] cols, list[TableConstraint] constraints)
-  | \insert(str table, list[value] values)
+  | \insert(str table, list[str] cols, list[Value] values)
+  | select(list[SQLExpr] exprs, list[As] tables, list[Clauses] clauses)
   ;
+  
+data SQLExpr
+  = column(str table, str name) // NB: always qualified
+  | lit(Value val)
+  | not(SQLExpr arg) 
+  | neg(SQLExpr arg) 
+  | pos(SQLExpr arg) 
+  | eq(SQLExpr lhs, SQLExpr rhs) 
+  | neq(SQLExpr lhs, SQLExpr rhs) 
+  | leq(SQLExpr lhs, SQLExpr rhs) 
+  | geq(SQLExpr lhs, SQLExpr rhs) 
+  | lt(SQLExpr lhs, SQLExpr rhs) 
+  | gt(SQLExpr lhs, SQLExpr rhs) 
+  | like(SQLExpr lhs, SQLExpr rhs) 
+  | or(SQLExpr lhs, SQLExpr rhs) 
+  | and(SQLExpr lhs, SQLExpr rhs) 
+  ;
+
+
+data As
+  = as(str table, str name);
+
+data Clause
+  = where(list[SQLExpr] exprs)
+  | groupBy(list[SQLExpr] exprs) // for now just column(t,n) is supported
+  | having(list[SQLExpr] exprs)
+  | orderBy(list[SQLExpr] exprs, Dir dir)
+  | limit(SQLExpr expr)
+  ; 
+  
+data Dir
+ = asc()
+ | desc()
+ ;
+
   
 data Column
   = column(str name, ColumnType \type, list[ColumnConstraint] constraints);
@@ -35,3 +72,13 @@ data ColumnType
   | date()
   | dateTime()
   ; 
+  
+data Value
+  = text(str strVal)
+  | decimal(real realVal)
+  | integer(int intVal)
+  | null()
+  ;
+
+
+

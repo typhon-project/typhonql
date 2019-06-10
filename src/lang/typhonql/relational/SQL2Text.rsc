@@ -1,0 +1,117 @@
+module lang::typhonql::relational::SQL2Text
+
+import lang::typhonql::relational::SQL;
+import List;
+import String;
+
+// NB: we use ` to escape identifiers, however, this is not ANSI SQL, but works in MySQL
+str q(str x) = "`<x>`";
+
+
+// SQLStat
+
+str pp(create(str t, list[Column] cs, list[TableConstraint] cos))
+  = "create table <q(t)> (
+    '  <intercalate(",\n", [ pp(c) | Column c <- cs ] + [ pp(c) | TableConstraint c <- cos ])>
+    ');";
+
+str pp(\insert(str t, list[str] cs, list[Value] vs))
+  = "insert into <q(t)> (<intercalate(", ", cs)>) values (<intercalate(", ", [ pp(v) | Value v <- vs ])>);";
+  
+str pp(select(list[SQLExpr] es, list[As] as, list[Clauses] cs))
+  = "select <intercalate(", ", [ pp(e) | SQLExpr e <- es ])> 
+    'from <intercalate(", ", [ pp(a) | As a <- as ])>
+    '<intercalate("\n", [ pp(c) | Clause c <- cs ])>;";  
+
+
+// As
+
+str pp(as(str t, str x)) = "<q(t)> as <q(x)>";
+
+
+// SQLExpr
+
+str pp(column(str table, str name)) = "<q(table)>.<q(name)>";
+str pp(lit(Value val)) = pp(val);
+str pp(not(SQLExpr arg)) = "not (<pp(arg)>)";
+str pp(neg(SQLExpr arg)) = "-(<pp(arg)>)"; 
+str pp(pos(SQLExpr arg)) = "+(<pp(arg)>)";
+str pp(eq(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) = (<pp(rhs)>)"; 
+str pp(neq(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) \<\> (<pp(rhs)>)"; 
+str pp(leq(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) \<= (<pp(rhs)>)"; 
+str pp(geq(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) \>= (<pp(rhs)>)"; 
+str pp(lt(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) \< (<pp(rhs)>)"; 
+str pp(gt(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) \> (<pp(rhs)>)"; 
+str pp(like(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) like (<pp(rhs)>)"; 
+str pp(or(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) or (<pp(rhs)>)"; 
+str pp(and(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) and (<pp(rhs)>)";
+
+
+// Clause
+
+str pp(where(list[SQLExpr] es)) = "where <intercalate(", ", [ pp(e) | SQLExpr e <- e ])>"; 
+
+str pp(groupBy(list[SQLExpr] es)) = "group by <intercalate(", ", [ pp(e) | SQLExpr e <- e ])>"; 
+
+str pp(having(list[SQLExpr] es)) = "having <intercalate(", ", [ pp(e) | SQLExpr e <- e ])>"; 
+
+str pp(orderBy(list[SQLExpr] es, Dir d)) = "order by <intercalate(", ", [ pp(e) | SQLExpr e <- e ])> <pp(d)>"; 
+
+str pp(limit(SQLExpr e)) = "limit <pp(e)>"; 
+
+// Dir
+
+str pp(asc()) = "asc";
+
+str pp(desc()) = "desc";
+
+
+// Column
+    
+str pp(column(str c, ColumnType t, list[ColumnConstraint] cos))
+  = "<q(c)> <intercalate(" ", [pp(t)] + [ pp(co) | ColumnConstraint co <- cos ])>";
+  
+
+// Value
+
+str pp(text(str x)) = "\'<escape(x, ("\'": "\'\'"))>\'";
+
+str pp(decimal(real x)) = "<x>";
+
+str pp(integer(int x)) = "<x>";
+
+str pp(null()) = "null";
+
+// TableConstraint
+
+str pp(primaryKey(str c)) = "primary key (<q(c)>)";
+
+str pp(foreignKey(str c, str p, str k, OnDelete od)) 
+  = "foreign key (<q(c)>) references <q(p)>(<q(k)>)<od>";
+
+
+// OnDelete
+
+str pp(cascade()) = " on delete cascade";
+
+str pp(nothing()) = "";
+
+
+// ColumnConstraint
+
+str pp(notNull()) = "not null";
+
+str pp(unique()) = "unique";
+
+// ColumnType
+
+str pp(char(int size)) = "char(<size>)";
+str pp(varchar(int size)) = "varchar(<size>)";
+str pp(text()) = "text";
+str pp(integer()) = "int";
+str pp(float()) = "float";
+str pp(double()) = "double";
+str pp(blob()) = "blob";
+str pp(date()) = "date";
+str pp(dateTime()) = "datetime";
+
