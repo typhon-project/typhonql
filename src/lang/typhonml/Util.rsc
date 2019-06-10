@@ -5,6 +5,8 @@ import lang::typhonml::TyphonML;
 import lang::ecore::Refs;
 import lang::ecore::IO;
 import IO;
+import Set;
+import List;
 
 /*
  Consistency checks (for TyphonML)
@@ -12,9 +14,36 @@ import IO;
   - inverse specified on one side only, or they must be consistent in terms role names.
 */
 
+// abstraction over TyphonML, to be extended with back-end specific info in the generic map
+data Schema
+  = schema(Rels rels, Attrs attrs, map[str, value] config = ());
+
 alias Rels = rel[str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool containment];
 alias Attrs = rel[str from, str name, str \type];
 
+data DB = mongodb() | sql() | hyperj();
+
+alias Placement = rel[str entity, DB db];
+
+
+Placement model2placement(Model m) 
+  = ( {} | it + place(db, m) | Database db <- m.databases );  
+
+// NB: the place function is an extension point.
+
+Placement place(Database(RelationalDB(str name, list[Table] tables)), Model m) 
+  = {<lookup(m, #Entity, t.entity).name, sql()> | Table t <- tables };
+  
+Placement place(Database(DocumentDB(str name, list[Collection] colls)), Model m) 
+  = {<lookup(m, #Entity, c.entity).name, mongodb()> | Collection c <- colls };
+
+default Placement place(Database db, Model m) {
+  throw "Unsupported database: <db>";
+} 
+
+
+Schema model2schema(Model m)
+  = schema(model2rels(m), model2attrs(m));
 
 Attrs model2attrs(Model m) {
   Attrs result = {};
@@ -96,3 +125,34 @@ Rels sanityCheckOpposites(Rels rels) {
 
 Rels myDbToRels() = model2rels(load(#Model, |project://typhonql/src/lang/typhonml/mydb3.model|));
 
+void printOutPossibleRelations() {
+  combs =  {"A contains", "A references"} join 
+          {"one B", "zero or one B", "zero or many B"} join 
+          {/*"where B contains", */"where B references"} join
+          {"one A", "zero or one A", "zero or many A"} join
+          {"and B is local", "and B is outside"};
+          
+  // filter out illegal opposites:
+  // if A contains, B cannot contain (and vice versa)
+  combs -= { <from, card, to, toCard, local> |
+        <str from, str card, str to, str toCard, str local> <- combs,
+        from == "A contains", to == "where B contains" };
+
+
+  // if A contains, B's opposite must be one (and vice versa)
+  combs -= { <from, card, to, toCard, local> |
+        <str from, str card, str to, str toCard, str local> <- combs,
+        from == "A contains", toCard != "one A" }; 
+        
+  combs -= { <from, card, to, toCard, local> |
+        <str from, str card, str to, str toCard, str local> <- combs,
+        to == "where B contains", card != "one B" }; 
+
+  // (optional/for now) if A contains, B must be local     
+  combs -= { <from, card, to, toCard, local> |
+        <str from, str card, str to, str toCard, str local> <- combs,
+        from == "A contains", local == "and B is outside" }; 
+          
+  println("Size: <size(combs)>");
+  iprintln(sort(toList(combs)));     
+}
