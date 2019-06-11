@@ -18,7 +18,8 @@ str pp(create(str t, list[Column] cs, list[TableConstraint] cos))
     ');";
 
 str pp(\insert(str t, list[str] cs, list[Value] vs))
-  = "insert into <q(t)> (<intercalate(", ", cs)>) values (<intercalate(", ", [ pp(v) | Value v <- vs ])>);";
+  = "insert into <q(t)> (<intercalate(", ", cs)>) 
+    'values (<intercalate(", ", [ pp(v) | Value v <- vs ])>);";
   
 
 str pp(update(str t, list[Set] ss, list[Clause] cs))

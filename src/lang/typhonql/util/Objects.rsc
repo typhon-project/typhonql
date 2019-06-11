@@ -8,6 +8,8 @@ import IO;
 alias IdMap = lrel[str name, str entity, str uuid];
 
 
+// TODO: flattening *is* SQL specific...
+
 @doc{Flatten possibly nested objs to a list of labeled object literals
 where nesting is represented using references. Lists of nested objects are
 flattened to repeated field entries.}

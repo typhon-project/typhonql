@@ -2,15 +2,20 @@ module lang::typhonql::Query
 
 extend lang::typhonql::Expr;
 
-syntax Query = Query: "from" {Binding ","}+ bindings "select" {Expr ","}+ selected Where? where GroupBy? groupBy OrderBy? orderBy;
+syntax Query = "from" {Binding ","}+ bindings "select" {Result ","}+ selected Where? where GroupBy? groupBy OrderBy? orderBy;
 
-syntax Binding = Binding: EId entity VId var;
+syntax Result 
+  = Expr!obj!lst expr "as" Id attr
+  | VId var "." Id attr // duplicated from Expr
+  ;
+
+syntax Binding = EId entity VId var;
   
-syntax Where = Where: "where" {Expr ","}+ clauses;
+syntax Where = "where" {Expr ","}+ clauses;
 
-syntax GroupBy = GroupBy: "group" {VId ","}+ vars Having? having;
+syntax GroupBy = "group" {VId ","}+ vars Having? having;
 
-syntax Having = Having: "having" {Expr ","}+ clauses;
+syntax Having = "having" {Expr ","}+ clauses;
 
-syntax OrderBy = OrderBy: "order" {VId ","}+ vars;
+syntax OrderBy = "order" {VId ","}+ vars;
   

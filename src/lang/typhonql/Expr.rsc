@@ -4,44 +4,49 @@ extend lang::std::Layout;
 extend lang::std::Id;
 extend lang::typhonql::Type; // EId
 
+
+// TODO: path navigation a.b.c
+// --> a.b.c  
+
 syntax Expr
-  = Attr: VId var "." Id attr
-  | Var: VId 
-  | Int: Int
-  | Str: Str
-  | Obj: Obj // for use in insert and allow nesting of objects
-  | Lst: "[" {Obj ","}* "]" // NB: only objects! TODO: we might want Object refs as well.
-  | Null: "null"
-  | Pos: "+" Expr arg
-  | Neg: "-" Expr arg
-  | Call: VId name "(" {Expr ","}* args ")"
-  | Not: "!" Expr arg
+  = attr: VId var "." {Id "."}+  attrs
+  | var: VId 
+  | \int: Int
+  | \str: Str
+  | \bool: Bool
+  | obj: Obj // for use in insert and allow nesting of objects
+  | lst: "[" {Obj ","}* "]" // NB: only objects! TODO: we might want Object refs as well.
+  | null: "null"
+  | pos: "+" Expr arg
+  | neg: "-" Expr arg
+  | call: VId name "(" {Expr ","}* args ")"
+  | not: "!" Expr arg
   > left (
-      left Mul: Expr lhs "*" Expr rhs
-    | left Div: Expr lhs "/" Expr rhs
+      left mul: Expr lhs "*" Expr rhs
+    | left div: Expr lhs "/" Expr rhs
   )
   > left (
-      left Add: Expr lhs "+" Expr rhs
-    | left Sub: Expr lhs "-" Expr rhs
+      left add: Expr lhs "+" Expr rhs
+    | left sub: Expr lhs "-" Expr rhs
   )
   | non-assoc (
-      non-assoc Eq: Expr lhs "==" Expr rhs
-    | non-assoc NEq: Expr lhs "!=" Expr rhs
-    | non-assoc GEq: Expr lhs "\>=" Expr rhs
-    | non-assoc LEq: Expr lhs "\<=" Expr rhs
-    | non-assoc LT: Expr lhs "\<" Expr rhs
-    | non-assoc GT: Expr lhs "\>" Expr rhs
-    | non-assoc In: Expr lhs "in" Expr rhs
-    | non-assoc Like: Expr lhs "like" Expr rhs
+      non-assoc eq: Expr lhs "==" Expr rhs
+    | non-assoc neq: Expr lhs "!=" Expr rhs
+    | non-assoc geq: Expr lhs "\>=" Expr rhs
+    | non-assoc leq: Expr lhs "\<=" Expr rhs
+    | non-assoc lt: Expr lhs "\<" Expr rhs
+    | non-assoc gt: Expr lhs "\>" Expr rhs
+    | non-assoc \in: Expr lhs "in" Expr rhs
+    | non-assoc like: Expr lhs "like" Expr rhs
   )
-  > left And: Expr lhs "&&" Expr rhs
-  | left Or: Expr lhs "||" Expr rhs
+  > left and: Expr lhs "&&" Expr rhs
+  | left or: Expr lhs "||" Expr rhs
   ;
   
 
-syntax VId = Var: Id \ "true" \ "false" ;
+syntax VId =  Id \ "true" \ "false" ;
 
-syntax Bool = True: "true" | False: "false";
+syntax Bool = "true" | False: "false";
 
 // TODO: what about lists?
 syntax Obj = Label? labelOpt EId entity "{" {KeyVal ","}* keyVals "}";

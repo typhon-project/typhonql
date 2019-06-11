@@ -27,6 +27,11 @@ data DB = mongodb() | sql() | hyperj();
 alias Placement = rel[str entity, DB db];
 
 
+Schema myDbSchema() = model2schema(m)
+  when Model m := load(#Model, |project://typhonql/src/lang/typhonml/mydb3.model|);
+
+Rels myDbToRels() = model2rels(load(#Model, |project://typhonql/src/lang/typhonml/mydb3.model|));
+
 set[str] entities(Schema s) = s.rels<0> + s.attrs<0>;
 
 Placement model2placement(Model m) 
@@ -47,9 +52,6 @@ default Placement place(Database db, Model m) {
 
 Schema model2schema(Model m)
   = schema(model2rels(m), model2attrs(m));
-
-Schema myDbSchema() = model2schema(m)
-  when Model m := load(#Model, |project://typhonql/src/lang/typhonml/mydb3.model|);
 
 
 
@@ -105,9 +107,6 @@ Rels model2rels(Model m) {
   return result;
 }
 
-Rel findCanonical(str from, str fromRole, Rels rels) {
-
-}
 
 Rels symmetricReduction(Rels rels) {
   // filter out symmetric bidir relations
@@ -150,8 +149,6 @@ Rels sanityCheckOpposites(Rels rels) {
   return {};
 }
 
-
-Rels myDbToRels() = model2rels(load(#Model, |project://typhonql/src/lang/typhonml/mydb3.model|));
 
 void printOutPossibleRelations() {
   combs =  {"A contains", "A references"} join 
