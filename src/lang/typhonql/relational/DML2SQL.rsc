@@ -20,6 +20,7 @@ import String;
  * Update, in two acts
  */
 
+// Updating is a two-phase process: first obtain the affected objects
 alias Updater = tuple[SQLStat query, list[SQLStat](list[str]) update];
   
 Updater update2sql((Statement)`update <EId e> set {<{KeyVal ","}* kvs>}`, Schema schema) 
@@ -33,12 +34,18 @@ Updater update2sql((Statement)`update <EId e> where <{Expr ","}+ es> set {<{KeyV
   
   list[SQLStat] u(list[str] uuids) {
     return [ update(tableName("<e>"),
-      [ \set("<kv.feature>", lit(evalExpr(kv.\value, []))) | KeyVal kv <- kvs ],
+      [ \set(columnName(v.feature, "<e>"), lit(evalExpr(kv.\value, []))) | KeyVal kv <- kvs ],
       [ where([equ(column(typhonId("<e>")), lit(text(uuid)))]) ]) | str uuid <- uuids ];
   }
   
   return <q, u>;
 }
+
+str columnName((KeyVal)`<Id x>: <Expr _>`, str _) = "<x>"; // ???
+
+str columnName((KeyVal)`@id: <Expr _>`, str entity) = typehonId(entity); 
+
+
   
 /*
  * Insert
@@ -55,12 +62,12 @@ list[SQLStat] insert2sql(IdMap idMap, list[Obj] objList, Schema schema) {
   list[SQLStat] result = [];
   
   list[str] attrColumns({KeyVal ","}* kvs, int i) {
-    return [typhonId(idMap[i].entity)] + [ "<x>" | (KeyVal)`<Id x>: <Expr _>` <- kvs, 
+    return [typhonId(idMap[i].entity) | !((KeyVal)`@id: <Expr _>` <- kvs) ] + [ "<x>" | (KeyVal)`<Id x>: <Expr _>` <- kvs, 
       "<x>" in schema.attrs[idMap[i].entity]<0> ];
   }
   
   list[Value] attrValues({KeyVal ","}* kvs, int i) {
-    return [text(idMap[i].uuid)] + [ evalExpr(e, idMap) | (KeyVal)`<Id x>: <Expr e>` <- kvs,
+    return [text(idMap[i].uuid) | !((KeyVal)`@id: <Expr _>` <- kvs) ] + [ evalExpr(e, idMap) | (KeyVal)`<Id x>: <Expr e>` <- kvs,
        "<x>" in schema.attrs[idMap[i].entity]<0>  ];
   }
   

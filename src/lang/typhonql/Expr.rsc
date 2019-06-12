@@ -56,7 +56,12 @@ syntax Obj = Label? labelOpt EId entity "{" {KeyVal ","}* keyVals "}";
   
 syntax Label = "@" VId label;
   
-syntax KeyVal = Id feature ":" Expr value;
+syntax KeyVal 
+  = Id feature ":" Expr value
+  // needed for insert/update from workingset so that uuids can be used as identities
+  | "@id" ":" Expr value 
+  ;
+  
 
 lexical UUID = "#"[\-a-zA-Z0-9]+ !>> [\-a-zA-Z0-9];
 
