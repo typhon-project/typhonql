@@ -33,10 +33,8 @@ Approach:
 
 */
 
-bool allPathsEndInAttr(map[loc, list[SQLPath]] paths) {
-  iprintln(paths);
+bool allPathsEndInAttr(PathMap paths) {
   for (/SQLPath p := paths) {
-    println(p);
     if (!(p[-1] is attr)) {
       return false;
     } 
@@ -47,30 +45,28 @@ bool allPathsEndInAttr(map[loc, list[SQLPath]] paths) {
 SQLStat select2sql(q:(Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, Schema s) {
   map[str, str] env = ( "<x>": "<e>" | (Binding)`<EId e> <VId x>` <- q.bindings ); 
   
-  map[loc, list[SQLPath]] wps = wherePaths(es, env, s);
+  PathMap wps = wherePaths(es, env, s);
   
   
-  map[loc, list[SQLPath]] rps = resultPaths(rs, env, s);
+  PathMap rps = resultPaths(rs, env, s);
   
   assert allPathsEndInAttr(rps): "non-attribute path in results";
   
   
-  map[loc, list[SQLPath]] allPaths = wps + rps;
+  PathMap allPaths = wps + rps;
   
   
-  return select(pathsToResultExprs(rps), dup(pathsToFroms(allPaths)), [where(pathsToWheres(allPaths))]); 
-     //, [where([*connectPathsLongerThan1(allPaths, s)
-     //   , *wheres2sql(es, allPaths)])]);
-  
+  return select(pathsToResultExprs(rps), dup(pathsToFroms(allPaths))
+    , [where(pathsToWheres(allPaths) + wheres2sql(es, allPaths))]); 
 }
 
-list[SQLExpr] pathsToResultExprs(map[loc, list[SQLPath]] paths) 
+list[SQLExpr] pathsToResultExprs(PathMap paths) 
   = [ column(p[-2].as.name, p[-1].name) | /SQLPath p := paths ];
 
-list[As] pathsToFroms(map[loc, list[SQLPath]] paths) 
+list[As] pathsToFroms(PathMap paths) 
   = [ a | /As a := paths ];
   
-list[SQLExpr] pathsToWheres(map[loc, list[SQLPath]] paths) 
+list[SQLExpr] pathsToWheres(PathMap paths) 
   = [ *pathToWheres(p) | /SQLPath p := paths ];
 
 list[SQLExpr] pathToWheres(SQLPath p) {
@@ -84,23 +80,74 @@ list[SQLExpr] pathToWheres(SQLPath p) {
     }
     from = p[i];
     to = p[i+1];
-    println("FROM: <from>\nTO: <to>");
     tbl1 = from.as.name;
     tbl2 = to.as.name;
     if (to is child) {
       cs += [SQLExpr::eq(column(tbl2, fkName(to.role)), column(tbl1, typhonId(from.entity)))];
     }
     if (to is junction) {
-      cs += [SQLExpr::eq(column(tbl2, junctionFkName(from.entity, to.role)), column(tbl1, typhonId(from.entity)))];
+      cs += [equ(column(to.junction.name, junctionFkName(from.entity, to.role)), column(tbl1, typhonId(from.entity))),
+        equ(column(to.junction.name, junctionFkName(to.entity, to.toRole)), column(tbl2, typhonId(to.entity)))];
     }
   }
   return cs;
 }
 
-map[loc, list[SQLPath]] resultPaths({Result ","}+ rs, map[str, str] env, Schema s) 
+alias SQLPath = list[PathElement];
+
+alias PathMap = map[loc, list[SQLPath]];
+
+data PathElement 
+  = root(As as, str entity)
+  | child(As as, str entity, str role)
+  | junction(As junction, As as, str entity, str role, str toRole)
+  | attr(str name)
+  ;
+
+
+list[SQLExpr] wheres2sql({Expr ","}+ es, PathMap paths) 
+  = [ expr2sql(e, paths) | Expr e <- es ];
+   
+
+SQLExpr expr2sql(e:(Expr)`<VId x>.<{Id "."}+ ids>`, PathMap paths)
+  = path2expr(lookupPath(e, paths));
+
+
+SQLExpr expr2sql((Expr)`<Expr lhs> == <Expr rhs>`, PathMap paths) 
+  = equ(expr2sql(lhs, paths), expr2sql(rhs, paths));
+
+
+SQLExpr expr2sql((Expr)`true`, PathMap paths) = lit(boolean(true));
+
+SQLExpr expr2sql((Expr)`false`, PathMap paths) = lit(boolean(false));
+
+SQLExpr expr2sql((Expr)`<Str s>`, PathMap paths) = lit(text("<s>"[1..-1]));
+
+
+SQLPath lookupPath(Expr e, PathMap paths) {
+  assert isTableExpr(e);
+  assert size(paths[e@\loc]) == 1;
+  return paths[e@\loc][0];
+}  
+
+SQLExpr path2expr(SQLPath path) {
+  if (size(path) == 1) {
+    return column(path[0].as.name, typhonId(root.entity));
+  }
+  target = path[-1];
+  if (target is attr) {
+    return column(path[-2].as.name, target.name);
+  }
+  if (target is child) {
+    return column(target.as.name, typhonId(target.entity));
+  }
+  return column(target.as.name, junctionFkName(target.entity, target.role));
+}
+
+PathMap resultPaths({Result ","}+ rs, map[str, str] env, Schema s) 
   = ( e@\loc: path2sql(e, env, s, trans=true) | /Expr e := rs, isTableExpr(e) ); 
 
-map[loc, list[SQLPath]] wherePaths({Expr ","}+ es, map[str, str] env, Schema s) 
+PathMap wherePaths({Expr ","}+ es, map[str, str] env, Schema s) 
   = ( e@\loc: path2sql(e, env, s) | /Expr e := es, isTableExpr(e) ); 
 
 
@@ -113,14 +160,7 @@ str varForJunction(Id f) = "junction_<f>$<f@\loc.offset>";
 
 str varForClosure(str f, int i, loc l) = "<f>_<i>_$<origin.offset>"; 
 
-alias SQLPath = list[PathElement];
  
-data PathElement 
-  = root(As as, str entity)
-  | child(As as, str entity, str role)
-  | junction(As junction, As as, str entity, str role, str toRole)
-  | attr(str name)
-  ;
 
 // NB: this does not terminate if there are cycles in the containment relation
 // should be enforced by typhonML
@@ -134,7 +174,6 @@ list[SQLPath] containmentClosure(SQLPath p, Schema s, loc origin) {
   
   while (todo != {}) {
     <current, todo> = takeOneFrom(todo);
-    println("CURRENT: <current>");
     target = current[-1];
     
     if (target is attr) {
@@ -173,11 +212,11 @@ list[SQLPath] path2sql(Expr e, map[str, str] env, Schema s, bool trans = false) 
 	  for (Id f <- fs) {
 	    str role = "<f>"; 
 	    if (<entity, _, role, str toRole, _, str to, true> <- s.rels) {
-	      path += [child(as(tableName(to), varForTarget(f)), to, role)];
+	      path += [child(as(tableName(to), varForTarget(f)), to, toRole /* ??? */)];
 	      entity = to;
 	    }
 	    else if (<str to, _, str toRole, role, _, entity, true> <- s.rels) {
-	      path += [child(as(tableName(to), varForTarget(f)), to, toRole)];
+	      path += [child(as(tableName(to), varForTarget(f)), to, role /* ??? */)];
 	      entity = to;
 	    }
 	    else if (<entity, _, role, str toRole, _, str to, false> <- s.rels) {
@@ -193,8 +232,6 @@ list[SQLPath] path2sql(Expr e, map[str, str] env, Schema s, bool trans = false) 
 	}
 	
   }
-  
-  println("PATH: <path>");
   
   return trans ? containmentClosure(path, s, e@\loc) : [path];
 } 

@@ -23,7 +23,7 @@ data SQLExpr
   | not(SQLExpr arg) 
   | neg(SQLExpr arg) 
   | pos(SQLExpr arg) 
-  | eq(SQLExpr lhs, SQLExpr rhs) 
+  | equ(SQLExpr lhs, SQLExpr rhs) 
   | neq(SQLExpr lhs, SQLExpr rhs) 
   | leq(SQLExpr lhs, SQLExpr rhs) 
   | geq(SQLExpr lhs, SQLExpr rhs) 
@@ -87,6 +87,7 @@ data Value
   = text(str strVal)
   | decimal(real realVal)
   | integer(int intVal)
+  | boolean(bool boolVal)
   | null()
   ;
 

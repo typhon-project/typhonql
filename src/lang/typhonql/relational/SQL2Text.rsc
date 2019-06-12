@@ -57,7 +57,7 @@ str pp(lit(Value val)) = pp(val);
 str pp(not(SQLExpr arg)) = "not (<pp(arg)>)";
 str pp(neg(SQLExpr arg)) = "-(<pp(arg)>)"; 
 str pp(pos(SQLExpr arg)) = "+(<pp(arg)>)";
-str pp(eq(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) = (<pp(rhs)>)"; 
+str pp(equ(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) = (<pp(rhs)>)"; 
 str pp(neq(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) \<\> (<pp(rhs)>)"; 
 str pp(leq(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) \<= (<pp(rhs)>)"; 
 str pp(geq(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) \>= (<pp(rhs)>)"; 
@@ -100,6 +100,8 @@ str pp(text(str x)) = "\'<escape(x, ("\'": "\'\'"))>\'";
 str pp(decimal(real x)) = "<x>";
 
 str pp(integer(int x)) = "<x>";
+
+str pp(boolean(bool b)) = "<b>";
 
 str pp(null()) = "null";
 
