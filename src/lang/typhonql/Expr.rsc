@@ -14,6 +14,7 @@ syntax Expr
   | \int: Int
   | \str: Str
   | \bool: Bool
+  | bracket "(" Expr arg ")"
   | obj: Obj // for use in insert and allow nesting of objects
   | lst: "[" {Obj ","}* "]" // NB: only objects! TODO: we might want Object refs as well.
   | null: "null"
@@ -29,7 +30,7 @@ syntax Expr
       left add: Expr lhs "+" Expr rhs
     | left sub: Expr lhs "-" Expr rhs
   )
-  | non-assoc (
+  > non-assoc (
       non-assoc eq: Expr lhs "==" Expr rhs
     | non-assoc neq: Expr lhs "!=" Expr rhs
     | non-assoc geq: Expr lhs "\>=" Expr rhs
@@ -40,7 +41,7 @@ syntax Expr
     | non-assoc like: Expr lhs "like" Expr rhs
   )
   > left and: Expr lhs "&&" Expr rhs
-  | left or: Expr lhs "||" Expr rhs
+  > left or: Expr lhs "||" Expr rhs
   ;
   
 
