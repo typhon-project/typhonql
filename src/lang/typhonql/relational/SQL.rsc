@@ -19,6 +19,7 @@ data Alter
   
 data SQLExpr
   = column(str table, str name) // NB: always qualified
+  | column(str name) // only for use in update
   | lit(Value val)
   | not(SQLExpr arg) 
   | neg(SQLExpr arg) 

@@ -11,9 +11,11 @@ extend lang::typhonql::Type; // EId
 syntax Expr
   = attr: VId var "." {Id "."}+  attrs
   | var: VId 
+  | key: VId "." "@id"
   | \int: Int
   | \str: Str
   | \bool: Bool
+  | uuid: UUID
   | bracket "(" Expr arg ")"
   | obj: Obj // for use in insert and allow nesting of objects
   | lst: "[" {Obj ","}* "]" // NB: only objects! TODO: we might want Object refs as well.
@@ -56,6 +58,7 @@ syntax Label = "@" VId label;
   
 syntax KeyVal = Id feature ":" Expr value;
 
+lexical UUID = "#"[\-a-zA-Z0-9]+ !>> [\-a-zA-Z0-9];
 
 // todo: escaping etc.
 lexical Str = [\"] ![\"]* [\"];

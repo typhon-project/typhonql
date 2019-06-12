@@ -4,6 +4,7 @@ import lang::typhonql::DML;
 import lang::typhonql::util::Objects;
 
 import lang::typhonql::relational::SQL;
+import lang::typhonql::relational::Select2SQL;
 import lang::typhonql::relational::Util;
 
 import lang::typhonml::Util; // Schema
@@ -14,19 +15,39 @@ import IO;
 import String;
 
 
+
 /*
-TODO
-- complete expression interpreter
+ * Update, in two acts
+ */
+
+alias Updater = tuple[SQLStat query, list[SQLStat](list[str]) update];
+  
+Updater update2sql((Statement)`update <EId e> set {<{KeyVal ","}* kvs>}`, Schema schema) 
+  = update2sql((Statement)`update <EId e> where true set {<{KeyVal ","}* kvs>}`, schema);
 
 
+Updater update2sql((Statement)`update <EId e> where <{Expr ","}+ es> set {<{KeyVal ","}* kvs>}`, Schema schema) {
+  q = select2sql((Query)`from <EId e> x select x.@id where <{Expr ","}+ es>`, schema);
+  
+  // TODO: assigning a ref to an owned thing needs updating the kid table.
+  
+  list[SQLStat] u(list[str] uuids) {
+    return [ update(tableName("<e>"),
+      [ \set("<kv.feature>", lit(evalExpr(kv.\value, []))) | KeyVal kv <- kvs ],
+      [ where([equ(column(typhonId("<e>")), lit(text(uuid)))]) ]) | str uuid <- uuids ];
+  }
+  
+  return <q, u>;
+}
+  
+/*
+ * Insert
+ */  
 
-
-*/
-
-
-list[SQLStat] dml2sql((Statement)`insert <{Obj ","}* objs>`, Schema schema)
+list[SQLStat] insert2sql((Statement)`insert <{Obj ","}* objs>`, Schema schema)
   = insert2sql(makeIdMap(objList), objList, schema)
   when list[Obj] objList := flatten(objs);
+  
 
 list[SQLStat] insert2sql(IdMap idMap, list[Obj] objList, Schema schema) {
   // NB: this needs to be wrapped in a transaction  if we're gonna keep all the fk contraints and not null etc.
@@ -101,6 +122,10 @@ Value evalExpr((Expr)`<VId v>`, IdMap env) = text(uuid)
 Value evalExpr((Expr)`<Str s>`, IdMap env) = text("<s>"[1..-1]);
 
 Value evalExpr((Expr)`<Int n>`, IdMap env) = integer(toInt("<n>"));
+
+Value evalExpr((Expr)`<Bool b>`, IdMap env) = boolean("<b>" == true);
+
+Value evalExpr((Expr)`<UUID u>`, IdMap env) = text("<u>"[1..]);
 
 default Value evalExpr(Expr _, IdMap _) = null();
 

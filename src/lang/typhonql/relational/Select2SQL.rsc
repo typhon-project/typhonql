@@ -23,6 +23,9 @@ Approach:
  - add all paths > 1 as where clauses
  - in expression contexts use last element of path as result (attr itself, or typhon_id if ref)
 
+TODO:
+- aggregation
+- "as" in TyphonQL
 */
 
 
@@ -85,7 +88,7 @@ list[SQLExpr] pathToWheres(SQLPath p) {
     tbl1 = from.as.name;
     tbl2 = to.as.name;
     if (to is child) {
-      cs += [SQLExpr::eq(column(tbl2, fkName(to.role)), column(tbl1, typhonId(from.entity)))];
+      cs += [SQLExpr::equ(column(tbl2, fkName(to.role)), column(tbl1, typhonId(from.entity)))];
     }
     if (to is junction) {
       cs += [equ(column(to.junction.name, junctionFkName(from.entity, to.role)), column(tbl1, typhonId(from.entity))),
@@ -110,14 +113,14 @@ PathMap wherePaths({Expr ","}+ es, map[str, str] env, Schema s)
   = ( e@\loc: path2sql(e, env, s) | /Expr e := es, isTableExpr(e) ); 
 
 
-bool isTableExpr(Expr e) =  e is attr || e is var;
+bool isTableExpr(Expr e) =  e is attr || e is var || e is key;
 
 
 str varForTarget(Id f) = "<f>$<f@\loc.offset>";
 
 str varForJunction(Id f) = "junction_<f>$<f@\loc.offset>";
 
-str varForClosure(str f, int i, loc l) = "<f>_<i>_$<origin.offset>"; 
+str varForClosure(str f, int i, loc l) = "<f>_<i>_$<l.offset>"; 
 
  
 list[SQLPath] path2sql(Expr e, map[str, str] env, Schema s, bool trans = false) {
@@ -129,6 +132,12 @@ list[SQLPath] path2sql(Expr e, map[str, str] env, Schema s, bool trans = false) 
     case (Expr)`<VId x>`: {
       str entity = env["<x>"];
       path = [root(as(tableName(entity), "<x>"), entity)];
+    }
+
+    case (Expr)`<VId x>.@id`: {
+      str entity = env["<x>"];
+      // hack: should explicitly represent as path element
+      path = [root(as(tableName(entity), "<x>"), entity), attr(typhonId(entity))];
     }
 
     case (Expr)`<VId x>.<{Id "."}+ fs>`: {
@@ -162,7 +171,7 @@ list[SQLPath] path2sql(Expr e, map[str, str] env, Schema s, bool trans = false) 
   return trans ? containmentClosure(path, s, e@\loc) : [path];
 } 
 
-list[SQLPath] containmentClosure(SQLPath p, Schema s, loc origin) {
+list[SQLPath] containmentClosure(SQLPath p, Schema s, loc org) {
   // NB: this does not terminate if there are cycles in the containment relation
   // should be enforced by typhonML
   list[SQLPath] paths = [];
@@ -171,6 +180,7 @@ list[SQLPath] containmentClosure(SQLPath p, Schema s, loc origin) {
   int i = 0; // to make vars unique
 
   set[SQLPath] todo = {p};
+  set[str] done = {};
   
   while (todo != {}) {
     <current, todo> = takeOneFrom(todo);
@@ -179,7 +189,10 @@ list[SQLPath] containmentClosure(SQLPath p, Schema s, loc origin) {
     if (target is attr) {
       paths += [current];
     }
-    else if (target is child || target is root) {
+    else if (target is child || target is root, target.entity notin done) {
+      // to break recursive containment (e.g. Comment.responses :-> Comment [*]
+      // NB: in other words, this function does not work for recursive containment.
+      done += {target.entity}; 
       paths += [ p + [attr(x)] | <str x, _> <- s.attrs[target.entity] ];
       todo += { p + [child(as(tableName(to), varForClosure(fromRole, i, org)), to, fromRole)] 
                     | <_, fromRole, _, _, str to, true> <- rels[target.entity] };
@@ -235,6 +248,9 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<{Id "."}+ ids>`, PathMap paths)
   = path2expr(lookupPath(e, paths));
 
 SQLExpr expr2sql(e:(Expr)`<VId x>`, PathMap paths)
+  = path2expr(lookupPath(e, paths));
+
+SQLExpr expr2sql(e:(Expr)`<VId x>.@id`, PathMap paths)
   = path2expr(lookupPath(e, paths));
 
 SQLExpr expr2sql((Expr)`<Int i>`, PathMap paths) = lit(integer(toInt("<i>")));
