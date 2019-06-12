@@ -8,18 +8,238 @@ import lang::typhonml::Util; // Schema
 import lang::typhonml::TyphonML;
 
 import ParseTree;
+import Set;
+import IO;
 
 // for now, no aggregation
 
 
 alias Env = map[str var, str entity];
 
-list[SQLStat] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s) 
+SQLStat select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s) 
   = select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s);
 
-list[SQLStat] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, Schema s) 
-  = [];
 
+/*
+
+Approach:
+ - convert all paths, to SQL paths.
+ - add all tables from all paths to the from
+ - [subsumed by the previous point: add all bindings to the from]
+ - add all attrs of non-attr-end-points of paths, and plain vars (which are entities) to the select
+     including all transitively reachable attributes through containment references.
+ - add all paths > 1 as where clauses
+ - in expression contexts use last element of path as result (attr itself, or typhon_id if ref)
+
+*/
+
+bool allPathsEndInAttr(map[loc, list[SQLPath]] paths) {
+  iprintln(paths);
+  for (/SQLPath p := paths) {
+    println(p);
+    if (!(p[-1] is attr)) {
+      return false;
+    } 
+  }
+  return true;
+}
+
+SQLStat select2sql(q:(Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, Schema s) {
+  map[str, str] env = ( "<x>": "<e>" | (Binding)`<EId e> <VId x>` <- q.bindings ); 
+  
+  map[loc, list[SQLPath]] wps = wherePaths(es, env, s);
+  
+  
+  map[loc, list[SQLPath]] rps = resultPaths(rs, env, s);
+  
+  assert allPathsEndInAttr(rps): "non-attribute path in results";
+  
+  
+  map[loc, list[SQLPath]] allPaths = wps + rps;
+  
+  
+  return select(pathsToResultExprs(rps), dup(pathsToFroms(allPaths)), [where(pathsToWheres(allPaths))]); 
+     //, [where([*connectPathsLongerThan1(allPaths, s)
+     //   , *wheres2sql(es, allPaths)])]);
+  
+}
+
+list[SQLExpr] pathsToResultExprs(map[loc, list[SQLPath]] paths) 
+  = [ column(p[-2].as.name, p[-1].name) | /SQLPath p := paths ];
+
+list[As] pathsToFroms(map[loc, list[SQLPath]] paths) 
+  = [ a | /As a := paths ];
+  
+list[SQLExpr] pathsToWheres(map[loc, list[SQLPath]] paths) 
+  = [ *pathToWheres(p) | /SQLPath p := paths ];
+
+list[SQLExpr] pathToWheres(SQLPath p) {
+  if (size(p) <= 1) {
+    return [];
+  }
+  list[SQLExpr] cs = [];
+  for (int i <- [0..size(p)]) {
+    if (i == size(p) - 1 || (i == size(p) - 2 && p[-1] is attr)) {
+      break; // skip last attribute
+    }
+    from = p[i];
+    to = p[i+1];
+    println("FROM: <from>\nTO: <to>");
+    tbl1 = from.as.name;
+    tbl2 = to.as.name;
+    if (to is child) {
+      cs += [SQLExpr::eq(column(tbl2, fkName(to.role)), column(tbl1, typhonId(from.entity)))];
+    }
+    if (to is junction) {
+      cs += [SQLExpr::eq(column(tbl2, junctionFkName(from.entity, to.role)), column(tbl1, typhonId(from.entity)))];
+    }
+  }
+  return cs;
+}
+
+map[loc, list[SQLPath]] resultPaths({Result ","}+ rs, map[str, str] env, Schema s) 
+  = ( e@\loc: path2sql(e, env, s, trans=true) | /Expr e := rs, isTableExpr(e) ); 
+
+map[loc, list[SQLPath]] wherePaths({Expr ","}+ es, map[str, str] env, Schema s) 
+  = ( e@\loc: path2sql(e, env, s) | /Expr e := es, isTableExpr(e) ); 
+
+
+bool isTableExpr(Expr e) =  e is attr || e is var;
+
+
+str varForTarget(Id f) = "<f>$<f@\loc.offset>";
+
+str varForJunction(Id f) = "junction_<f>$<f@\loc.offset>";
+
+str varForClosure(str f, int i, loc l) = "<f>_<i>_$<origin.offset>"; 
+
+alias SQLPath = list[PathElement];
+ 
+data PathElement 
+  = root(As as, str entity)
+  | child(As as, str entity, str role)
+  | junction(As junction, As as, str entity, str role, str toRole)
+  | attr(str name)
+  ;
+
+// NB: this does not terminate if there are cycles in the containment relation
+// should be enforced by typhonML
+list[SQLPath] containmentClosure(SQLPath p, Schema s, loc origin) {
+  list[SQLPath] paths = [];
+  Rels rels = symmetricReduction(s.rels);
+
+  int i = 0; // to make vars unique
+
+  set[SQLPath] todo = {p};
+  
+  while (todo != {}) {
+    <current, todo> = takeOneFrom(todo);
+    println("CURRENT: <current>");
+    target = current[-1];
+    
+    if (target is attr) {
+      paths += [current];
+    }
+    else if (target is child || target is root) {
+      paths += [ p + [attr(x)] | <str x, _> <- s.attrs[target.entity] ];
+      todo += { p + [child(as(tableName(to), varForClosure(fromRole, i, org)), to, fromRole)] 
+                    | <_, fromRole, _, _, str to, true> <- rels[target.entity] };
+    }
+    else {
+      paths += [current + [attr(x)] | <str x, _> <- s.attrs[target.entity] ];
+    } 
+    
+    i += 1;
+  }
+  
+  return paths;  
+}
+  
+list[SQLPath] path2sql(Expr e, map[str, str] env, Schema s, bool trans = false) {
+  SQLPath path;
+  
+  assert isTableExpr(e);
+  
+  switch (e) {
+    case (Expr)`<VId x>`: {
+      str entity = env["<x>"];
+      path = [root(as(tableName(entity), "<x>"), entity)];
+    }
+
+    case (Expr)`<VId x>.<{Id "."}+ fs>`: {
+	  str entity = env["<x>"];
+	  path = [root(as(tableName(entity), "<x>"), entity)];
+	  
+	  for (Id f <- fs) {
+	    str role = "<f>"; 
+	    if (<entity, _, role, str toRole, _, str to, true> <- s.rels) {
+	      path += [child(as(tableName(to), varForTarget(f)), to, role)];
+	      entity = to;
+	    }
+	    else if (<str to, _, str toRole, role, _, entity, true> <- s.rels) {
+	      path += [child(as(tableName(to), varForTarget(f)), to, toRole)];
+	      entity = to;
+	    }
+	    else if (<entity, _, role, str toRole, _, str to, false> <- s.rels) {
+	      path += [junction(as(junctionTableName(entity, role, to, toRole), varForJunction(f)),
+	                        as(tableName(to), varForTarget(f)), to, role, toRole)];
+	      entity = to;
+	    }
+	    else {
+	      path += [attr(role)];
+	      assert size(path) - 1 == size([ f | Id f <- fs]): "navigation after attribute";
+	    }
+	  }
+	}
+	
+  }
+  
+  println("PATH: <path>");
+  
+  return trans ? containmentClosure(path, s, e@\loc) : [path];
+} 
+
+test bool navigateUsers() =
+  navigate("User", ["orders", "products", "review"], myDbSchema)
+    == ["User","Order","Product","Review"];
+
+// TODO: make this produce tables (including junction tables)
+// (nb: need to find the canonical thing again for containments
+// PER path we need to add where clauses, AND have junction tables (with unique names)
+
+list[str] navigate(str from, list[str] path, Schema s) {
+  if (path == []) {
+    return [from];
+  }
+  str role = path[0];
+  if (<from, _, role, _, _, str to, _> <- s.rels) {
+    return [from] + navigate(to, path[1..], s);
+  } // else it's an attribute
+  return [from];
+}
+
+
+// NB: .entity is save, because a path always starts with root
+list[SQLExpr] attrsReachedByPaths(map[loc, SQLPath] paths, Schema s) 
+  = [ *navigate(path[0].entity, p, s) | SQLPath p <- paths<1> ]; 
+
+
+
+//list[SQLExpr] navigate(SQLPath p, Schema s) {
+//  s.rels = symmetricReduction(s.rels);
+//  
+//  if (size(p) == 1) {
+//    // last element
+//    switch (p[0]) {
+//      case root(as(str tbl, str name), str entity): {
+//        es = [ column(name, fld) | <entity, fld, _> <- s.attrs ];
+//        for ((<entity, _, str role, str toRole, _, str to, true> <- s.rels) {
+//          
+//        }
+//      }
+//    }
+//  }
+//}
 
 
 // path navigations need additional foreign key where clauses, also when they are in the result
@@ -69,65 +289,4 @@ do
 
 // the strings here are
 
-alias SQLPath = list[PathElement];
- 
-data PathElement 
-  = root(As entity)
-  | child(As target)
-  | junction(As junction, As target)
-  | attr(str name)
-  ;
-
-str varForTarget(Id f) = "<f>$<f@\loc.offset>";
-
-str varForJunction(Id f) = "junction_<f>$<f@\loc.offset>";
-
-  
-SQLPath path2sql((Expr)`<VId x>.<{Id "."}+ fs>`, map[str, str] env, Schema s) {
-  str entity = env["<x>"];
-  SQLPath path = [root(as(tableName(entity), "<x>"))];
-  
-  
-  for (Id f <- fs) {
-    str role = "<f>"; 
-    if (<entity, _, role, str toRole, _, str to, true> <- s.rels) {
-      path += [child(as(tableName(to), varForTarget(f)))];
-      entity = to;
-    }
-    else if (<str to, _, str toRole, role, _, entity, true> <- s.rels) {
-      path += [child(as(tableName(entity), varForTarget(f)))];
-      entity = to;
-    }
-    else if (<entity, _, role, str toRole, _, str to, false> <- s.rels) {
-      path += [junction(as(junctionTableName(entity, role, to, toRole), varForJunction(f)),
-                        as(tableName(to), varForTarget(f)))];
-      entity = to;
-    }
-    else {
-      path += [attr(role)];
-      break;
-    }
-  }
-  
-  return path;
-} 
-
-test bool navigateUsers() =
-  navigate("User", ["orders", "products", "review"], myDbSchema)
-    == ["User","Order","Product","Review"];
-
-// TODO: make this produce tables (including junction tables)
-// (nb: need to find the canonical thing again for containments
-// PER path we need to add where clauses, AND have junction tables (with unique names)
-
-list[str] navigate(str from, list[str] path, Schema s) {
-  if (path == []) {
-    return [from];
-  }
-  str role = path[0];
-  if (<from, _, role, _, _, str to, _> <- s.rels) {
-    return [from] + navigate(to, path[1..], s);
-  } // else it's an attribute
-  return [from];
-}
 
