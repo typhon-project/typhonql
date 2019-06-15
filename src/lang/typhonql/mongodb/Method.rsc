@@ -2,12 +2,18 @@ module lang::typhonql::mongodb::Method
 
 // abstract syntax of MongoDB's collection methods
 
+@Obsolete
 data Method(bool many = false)
   = find(str coll, Doc pattern, set[Proj] projections = {})
   | \insert(str coll, Doc doc)
   | update(str coll, Doc pattern, list[Updates] updates)
   | delete(str coll, Doc pattern)
   ;
+  
+  
+//http://mongodb.github.io/mongo-java-driver/3.10/javadoc/index.html?com/mongodb/client/model/package-summary.html
+
+// http://mongodb.github.io/mongo-java-driver/3.10/javadoc/com/mongodb/client/model/Updates.html  
   
 data Update
   = inc(str field, int val)
