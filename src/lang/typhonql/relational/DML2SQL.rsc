@@ -14,36 +14,51 @@ import lang::typhonml::TyphonML;
 import IO;
 import String;
 
+/*
+ * Todo: make bindings optional
+ */
+
+/*
+ * Delete
+ */
+ 
+ 
+list[SQLStat] delete2sql((Statement)`delete <Binding b>`, Schema schema)
+  = delete2sql((Statement)`delete <Binding b> where true`, schema);
+
+list[SQLStat] delete2sql((Statement)`delete <EId e> <VId x> where <{Expr ","}+ es>`, Schema schema) {
+  q = select2sql((Query)`from <EId e> <VId x> select <VId x> where <{Expr ","}+ es>`, schema);
+  
+  // TODO: deleting stuff from junction tables explicitly?
+  // (for now contained stuff is dealt with by cascade, similar for junctions)
+  
+  return [delete(tableName("<e>"), q.clauses)];
+}
 
 
 /*
- * Update, in two acts
+ * Update
  */
 
-// Updating is a two-phase process: first obtain the affected objects
-alias Updater = tuple[SQLStat query, list[SQLStat](list[str]) update];
   
-Updater update2sql((Statement)`update <EId e> set {<{KeyVal ","}* kvs>}`, Schema schema) 
-  = update2sql((Statement)`update <EId e> where true set {<{KeyVal ","}* kvs>}`, schema);
+SQLStat update2sql((Statement)`update <Binding b> set {<{KeyVal ","}* kvs>}`, Schema schema) 
+  = update2sql((Statement)`update <Binding b> where true set {<{KeyVal ","}* kvs>}`, schema);
 
 
-Updater update2sql((Statement)`update <EId e> where <{Expr ","}+ es> set {<{KeyVal ","}* kvs>}`, Schema schema) {
-  q = select2sql((Query)`from <EId e> x select x.@id where <{Expr ","}+ es>`, schema);
+SQLStat update2sql((Statement)`update <EId e> <VId x> where <{Expr ","}+ es> set {<{KeyVal ","}* kvs>}`, Schema schema) {
+  q = select2sql((Query)`from <EId e> <VId x> select <VId x> where <{Expr ","}+ es>`, schema);
   
   // TODO: assigning a ref to an owned thing needs updating the kid table.
+  // and similar for cross references.
   
-  list[SQLStat] u(list[str] uuids) {
-    return [ update(tableName("<e>"),
-      [ \set(columnName(v.feature, "<e>"), lit(evalExpr(kv.\value, []))) | KeyVal kv <- kvs ],
-      [ where([equ(column(typhonId("<e>")), lit(text(uuid)))]) ]) | str uuid <- uuids ];
-  }
-  
-  return <q, u>;
+  return update(tableName("<e>"),
+      [ \set(columnName(kv, "<e>"), lit(evalExpr(kv.\value, []))) | KeyVal kv <- kvs ],
+      q.clauses);
 }
 
-str columnName((KeyVal)`<Id x>: <Expr _>`, str _) = "<x>"; // ???
+str columnName((KeyVal)`<Id x>: <Expr _>`, str entity) = columnName("<x>", entity); 
 
-str columnName((KeyVal)`@id: <Expr _>`, str entity) = typehonId(entity); 
+str columnName((KeyVal)`@id: <Expr _>`, str entity) = typhonId(entity); 
 
 
   
@@ -56,18 +71,21 @@ list[SQLStat] insert2sql((Statement)`insert <{Obj ","}* objs>`, Schema schema)
   when list[Obj] objList := flatten(objs);
   
 
+bool hasAssignedId({KeyVal ","}* kvs) = (KeyVal)`@id: <Expr _>` <- kvs;
+
 list[SQLStat] insert2sql(IdMap idMap, list[Obj] objList, Schema schema) {
   // NB: this needs to be wrapped in a transaction  if we're gonna keep all the fk contraints and not null etc.
 
   list[SQLStat] result = [];
   
   list[str] attrColumns({KeyVal ","}* kvs, int i) {
-    return [typhonId(idMap[i].entity) | !((KeyVal)`@id: <Expr _>` <- kvs) ] + [ "<x>" | (KeyVal)`<Id x>: <Expr _>` <- kvs, 
-      "<x>" in schema.attrs[idMap[i].entity]<0> ];
+    e = idMap[i].entity;
+    return [typhonId(e) | !hasAssignedId(kvs) ] + [ columnName("<x>", e) | (KeyVal)`<Id x>: <Expr _>` <- kvs, 
+      "<x>" in schema.attrs[e]<0> ];
   }
   
   list[Value] attrValues({KeyVal ","}* kvs, int i) {
-    return [text(idMap[i].uuid) | !((KeyVal)`@id: <Expr _>` <- kvs) ] + [ evalExpr(e, idMap) | (KeyVal)`<Id x>: <Expr e>` <- kvs,
+    return [text(idMap[i].uuid) | !hasAssignedId(kvs) ] + [ evalExpr(e, idMap) | (KeyVal)`<Id x>: <Expr e>` <- kvs,
        "<x>" in schema.attrs[idMap[i].entity]<0>  ];
   }
   
@@ -96,12 +114,12 @@ list[SQLStat] insert2sql(IdMap idMap, list[Obj] objList, Schema schema) {
         if (<from, _, fromRole, str toRole, _, to, true> <- schema.rels) {
           // found the canonical containment rel
           // but then reverse!!    
-          append outer: update(tableName(to), [\set(fkName(toRole, fromRole), lit(text(idMap[i].uuid)))],
-            [where([eq(column(tableName(to), typhonId(to)), lit(text(uuid)))])]);
+          append outer: update(tableName(to), [\set(fkName(from, to, fromRole), lit(text(idMap[i].uuid)))],
+            [where([equ(column(tableName(to), typhonId(to)), lit(text(uuid)))])]);
         }
         else if (<to, _, str toRole, fromRole, _, from, true> <- schema.rels) {
-          append outer: update(tableName(from), [\set(fkName(fromRole, toRole), lit(text(uuid)))],
-            [where([eq(column(tableName(from), typhonId(from)), lit(text(idMap[i].uuid)))])]);
+          append outer: update(tableName(from), [\set(fkName(from, to, toRole), lit(text(uuid)))],
+            [where([equ(column(tableName(from), typhonId(from)), lit(text(idMap[i].uuid)))])]);
         }
         else if(<from, _, fromRole, str toRole, _, to, false> <- schema.rels)  { // a cross ref
           append outer: \insert(junctionTableName(from, fromRole, to, toRole)

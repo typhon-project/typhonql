@@ -232,7 +232,7 @@ SQLExpr path2expr(SQLPath path) {
       return column(a.name, typhonId(e));
       
     case [*_, PathElement elt, attr(str x)]:
-      return column(elt.as.name, x);
+      return column(elt.as.name, columnName(x, elt.entity));
       
     case [*_, PathElement elt, child(As a, str e, _)]:
       return column(a.name, typhonId(e));

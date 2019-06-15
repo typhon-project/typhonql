@@ -7,6 +7,7 @@ import lang::ecore::IO;
 import IO;
 import Set;
 import List;
+import String;
 
 /*
  Consistency checks (for TyphonML)
@@ -80,7 +81,7 @@ Rels model2rels(Model m) {
     for (r:Relation(str fromRole, Cardinality fromCard) <- rels) {
       Entity target = lookup(m, #Entity, r.\type);
       str to = target.name;
-      str toRole = "";
+      str toRole = "<fromRole>^"; 
       Cardinality toCard = zero_one(); // check: is this the default?
       
       if (r.opposite != null()) {

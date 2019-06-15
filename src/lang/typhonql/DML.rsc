@@ -6,8 +6,8 @@ extend lang::typhonql::Query;
 
 syntax Statement
   = "insert" {Obj ","}* objs
-  | "delete" Query query
-  | "update" EId entity Where? where "set"  "{" {KeyVal ","}* keyVals "}" 
+  | "delete" Binding binding Where? where
+  | "update" Binding Where? where "set"  "{" {KeyVal ","}* keyVals "}" 
   ;
   
 

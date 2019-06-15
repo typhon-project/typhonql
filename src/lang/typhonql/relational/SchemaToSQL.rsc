@@ -22,7 +22,7 @@ list[SQLStat] schema2sql(Schema schema) {
  
   SQLStat attrs2create(str e, rel[str, str] attrs) {
     return create(tableName(e), [typhonIdColumn(e)]
-      + [column(attr, typhonType2SQL(typ), []) | <str attr, str typ> <- attrs ]
+      + [column(columnName(attr, e), typhonType2SQL(typ), []) | <str attr, str typ> <- attrs ]
       , [primaryKey(typhonId(e))]);
   }
  
@@ -35,7 +35,9 @@ list[SQLStat] schema2sql(Schema schema) {
         return i;
       }
     }
-    assert false: "Could not find create statement for entity <entity>";
+    stats += [create(tableName(entity), [], [])];
+    return size(stats) - 1;
+    //assert false: "Could not find create statement for entity <entity>";
   }
   
   void illegal(Rel r) {
@@ -46,7 +48,7 @@ list[SQLStat] schema2sql(Schema schema) {
   
   void addCascadingForeignKey(str from, str fromRole, str to, str toRole, list[ColumnConstraint] cs) {
     kid = createOfEntity(to);
-    fk = toRole == "" ? fkName(fromRole) : fkName(toRole);
+    fk = fkName(from, to, toRole == "" ? fromRole : toRole);
     stats[kid].cols += [ column(fk, typhonIdType(), cs) ]; 
     stats += [alterTable(tableName(to), [addConstraint(foreignKey(fk, tableName(from), typhonId(from), cascade()))])]; 
   }
