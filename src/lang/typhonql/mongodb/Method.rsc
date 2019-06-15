@@ -9,6 +9,34 @@ data Method(bool many = false)
   | delete(str coll, Doc pattern)
   ;
   
+data Update
+  = inc(str field, int val)
+  | \set(str field, Doc doc)
+  | unset(str field)
+  | max(str field, int val)
+  | min(str field, int val)
+  | mul(str field, int val)
+  | rename(str field, str newName)
+  | currentDate(str field, Type \type)
+  | bit(str field, BitOp op)
+  | push(str field, Doc doc)
+  | pushEach(str field, Doc lst)
+  | pushEachSlice(str field, Doc lst, int slice)
+  | pushEachPosition(str field, Doc lst, int position)
+  | addToSet(str field, Doc doc)
+  | popLast(str field)
+  | popFirst(str field)
+  | pull(str field, Doc pattern)
+  | pullAll(str field, Doc lst)
+  ;
+  
+
+data BitOp
+  = and(int val)
+  | or(int val)
+  | xor(int val)
+  ;
+ 
   
 data Proj
   = field(str name, bool suppress = false)
@@ -41,4 +69,6 @@ data Type
   | number()
   | array()
   | object()
+  | date()
+  | timestamp()
   ;  
