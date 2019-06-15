@@ -8,12 +8,12 @@ import IO;
 alias IdMap = lrel[str name, str entity, str uuid];
 
 
-// TODO: flattening *is* SQL specific...
+// TODO: flattening of lists *is* SQL specific...
 
 @doc{Flatten possibly nested objs to a list of labeled object literals
 where nesting is represented using references. Lists of nested objects are
 flattened to repeated field entries.}
-list[Obj] flatten({Obj ","}* objs) {
+list[Obj] flatten({Obj ","}* objs, bool flattentLists = true) {
   int i = 0;
   VId newLabel() {
     VId x =[VId]"obj_<i>";
@@ -23,8 +23,10 @@ list[Obj] flatten({Obj ","}* objs) {
   
   list[Obj] result = [];
   
-  objs = visit (objs) {
-    case {KeyVal ","}* kvs => flattenLists(kvs)
+  if (flattenLists) {
+    objs = visit (objs) {
+      case {KeyVal ","}* kvs => flattenLists(kvs)
+    }
   }
   
   // NB: bottom-up is essential here

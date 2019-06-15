@@ -3,17 +3,19 @@ module lang::typhonql::mongodb::DBCollection
 import IO;
 import List;
 
-  
+
+alias Prop
+  = tuple[str name, DBObject val];  
   
 data DBObject  
-  = object(lrel[str name, DBObject val] props)
+  = object(list[Prop] props)
   | array(list[DBObject] values)
   | \value(value v)
   ;
     
 // I'm skipping all readpreference, DBEncode, Object and *Options things  
 
-// NB: the names, arities and types of the match the methods names and params exactly
+// NB: the names, arities and types of the match the methods names and params in Java exactly,
 // so we can use reflection to map a CollMethod to an actual method call on DBCollection.
 // where ...varargs become keyword params, List<...> list, and array[] also list
   
