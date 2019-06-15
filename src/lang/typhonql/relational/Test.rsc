@@ -3,6 +3,7 @@ module lang::typhonql::relational::Test
 
 import lang::typhonql::relational::SchemaToSQL;
 import lang::typhonql::relational::DML2SQL;
+import lang::typhonql::relational::Select2SQL;
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::SQL2Text;
 import lang::typhonql::DML;
@@ -86,6 +87,14 @@ void smokeTest() {
   println("# TyphonQL: <ins5>");
 
   println(pp(insert2sql(ins5, myDb)));
+  
+  
+  println("\n### Joining select via junction table");
+  Query q1 = (Query) `from Order o select o.totalAmount where o.users.name == "alice"`;
+
+  println("# TyphonQL: <q1>");
+
+  println(pp(select2sql(q1, myDb)));
 
 }
 

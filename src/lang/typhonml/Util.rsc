@@ -27,9 +27,10 @@ data DB = mongodb() | sql() | hyperj();
 
 alias Placement = rel[str entity, DB db];
 
+Schema loadSchema(loc l) = model2schema(m)
+  when Model m := load(#Model, l);
 
-Schema myDbSchema() = model2schema(m)
-  when Model m := load(#Model, |project://typhonql/src/lang/typhonml/mydb3.model|);
+Schema myDbSchema() = loadSchema(|project://typhonql/src/lang/typhonml/mydb3.model|);
 
 Rels myDbToRels() = model2rels(load(#Model, |project://typhonql/src/lang/typhonml/mydb3.model|));
 

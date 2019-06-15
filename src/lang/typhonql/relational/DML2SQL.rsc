@@ -18,6 +18,24 @@ import String;
  * Todo: make bindings optional
  */
 
+
+list[SQLStat] dml2sql(s:(Statement)`insert <{Obj ","}* _>`, Schema m)
+  = insert2sql(s, m);
+
+list[SQLStat] dml2sql(s:(Statement)`delete <Binding _>`, Schema m)
+  = delete2sql(s, m);
+
+list[SQLStat] dml2sql(s:(Statement)`delete <Binding _> <Where _>`, Schema m)
+  = delete2sql(s, m);
+
+list[SQLStat] dml2sql(s:(Statement)`update <Binding _> set {<{KeyVal ","}* _>}`, Schema m)
+  = update2sql(s, m);
+
+list[SQLStat] dml2sql(s:(Statement)`update <Binding _> <Where _> set {<{KeyVal ","}* _>}`, Schema m)
+  = update2sql(s, m);
+
+
+
 /*
  * Delete
  */
@@ -41,19 +59,19 @@ list[SQLStat] delete2sql((Statement)`delete <EId e> <VId x> where <{Expr ","}+ e
  */
 
   
-SQLStat update2sql((Statement)`update <Binding b> set {<{KeyVal ","}* kvs>}`, Schema schema) 
+list[SQLStat] update2sql((Statement)`update <Binding b> set {<{KeyVal ","}* kvs>}`, Schema schema) 
   = update2sql((Statement)`update <Binding b> where true set {<{KeyVal ","}* kvs>}`, schema);
 
 
-SQLStat update2sql((Statement)`update <EId e> <VId x> where <{Expr ","}+ es> set {<{KeyVal ","}* kvs>}`, Schema schema) {
+list[SQLStat] update2sql((Statement)`update <EId e> <VId x> where <{Expr ","}+ es> set {<{KeyVal ","}* kvs>}`, Schema schema) {
   q = select2sql((Query)`from <EId e> <VId x> select <VId x> where <{Expr ","}+ es>`, schema);
   
   // TODO: assigning a ref to an owned thing needs updating the kid table.
   // and similar for cross references.
   
-  return update(tableName("<e>"),
+  return [update(tableName("<e>"),
       [ \set(columnName(kv, "<e>"), lit(evalExpr(kv.\value, []))) | KeyVal kv <- kvs ],
-      q.clauses);
+      q.clauses)];
 }
 
 str columnName((KeyVal)`<Id x>: <Expr _>`, str entity) = columnName("<x>", entity); 
