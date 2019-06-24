@@ -13,7 +13,7 @@ alias IdMap = lrel[str name, str entity, str uuid];
 @doc{Flatten possibly nested objs to a list of labeled object literals
 where nesting is represented using references. Lists of nested objects are
 flattened to repeated field entries.}
-list[Obj] flatten({Obj ","}* objs, bool flattentLists = true) {
+list[Obj] flatten({Obj ","}* objs, bool doFlattening = true) {
   int i = 0;
   VId newLabel() {
     VId x =[VId]"obj_<i>";
@@ -23,7 +23,7 @@ list[Obj] flatten({Obj ","}* objs, bool flattentLists = true) {
   
   list[Obj] result = [];
   
-  if (flattenLists) {
+  if (doFlattening) {
     objs = visit (objs) {
       case {KeyVal ","}* kvs => flattenLists(kvs)
     }

@@ -2,6 +2,8 @@ package lang.typhonql.util;
 
 import java.util.UUID;
 
+import org.eclipse.emf.ecore.EPackage;
+
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValueFactory;
 
@@ -15,6 +17,16 @@ public class MakeUUID {
 	}
 	
 	public IString makeUUID() {
-		return vf.string(UUID.randomUUID().toString());
+		return vf.string(randomUUID());
 	}
+	
+	public void registerTyphonML() {
+		EPackage.Registry.INSTANCE.put("http://org.typhon.dsls.typhonml.sirius", typhonml.TyphonmlPackage.eINSTANCE);
+	}
+
+	public static String randomUUID() {
+		return UUID.randomUUID().toString();
+	}
+	
+	
 }

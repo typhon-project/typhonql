@@ -1,7 +1,7 @@
 module lang::typhonml::TyphonML
 
 // Generated code; do not edit.
-// Date: $2019-06-09T08:18:36.498+00:00$
+// Date: $2019-06-24T14:05:41.215+00:00$
 
 import lang::ecore::Refs;
 import util::Maybe;
@@ -139,10 +139,13 @@ data ChangeOperator
       , lang::ecore::Refs::Ref[Attribute] \attributeToRemove = \removeAttribute.\attributeToRemove
       , lang::ecore::Refs::Id uid = \removeAttribute.uid
       , bool _inject = true)
-  | ChangeOperator(RenameIdentifier \renameIdentifier
-      , lang::ecore::Refs::Ref[EntityIdentifier] \identifier = \renameIdentifier.\identifier
-      , str \newName = \renameIdentifier.\newName
-      , lang::ecore::Refs::Id uid = \renameIdentifier.uid
+  | ChangeOperator(AddEntity \addEntity
+      , str \name = \addEntity.\name
+      , str \importedNamespace = \addEntity.\importedNamespace
+      , list[Attribute] \attributes = \addEntity.\attributes
+      , list[Relation] \relations = \addEntity.\relations
+      , lang::ecore::Refs::Ref[GenericList] \genericList = \addEntity.\genericList
+      , lang::ecore::Refs::Id uid = \addEntity.uid
       , bool _inject = true)
   | ChangeOperator(DisableRelationContainment \disableRelationContainment
       , lang::ecore::Refs::Ref[Relation] \relation = \disableRelationContainment.\relation
@@ -163,19 +166,10 @@ data ChangeOperator
       , list[lang::ecore::Refs::Ref[Attribute]] \attributes = \addIndex.\attributes
       , lang::ecore::Refs::Id uid = \addIndex.uid
       , bool _inject = true)
-  | ChangeOperator(AddAttributesToIdenfifier \addAttributesToIdenfifier
-      , lang::ecore::Refs::Ref[EntityIdentifier] \identifier = \addAttributesToIdenfifier.\identifier
-      , list[lang::ecore::Refs::Ref[Attribute]] \attributes = \addAttributesToIdenfifier.\attributes
-      , lang::ecore::Refs::Id uid = \addAttributesToIdenfifier.uid
-      , bool _inject = true)
-  | ChangeOperator(AddEntity \addEntity
-      , str \name = \addEntity.\name
-      , str \importedNamespace = \addEntity.\importedNamespace
-      , list[Attribute] \attributes = \addEntity.\attributes
-      , list[Relation] \relations = \addEntity.\relations
-      , EntityIdentifier \identifer = \addEntity.\identifer
-      , lang::ecore::Refs::Ref[GenericList] \genericList = \addEntity.\genericList
-      , lang::ecore::Refs::Id uid = \addEntity.uid
+  | ChangeOperator(RenameRelation \renameRelation
+      , lang::ecore::Refs::Ref[Relation] \relationToRename = \renameRelation.\relationToRename
+      , str \newRelationName = \renameRelation.\newRelationName
+      , lang::ecore::Refs::Id uid = \renameRelation.uid
       , bool _inject = true)
   | ChangeOperator(DropIndex \dropIndex
       , lang::ecore::Refs::Ref[Table] \table = \dropIndex.\table
@@ -204,11 +198,6 @@ data ChangeOperator
       , lang::ecore::Refs::Ref[Relation] \relation = \changeRelationCardinality.\relation
       , Cardinality \newCardinality = \changeRelationCardinality.\newCardinality
       , lang::ecore::Refs::Id uid = \changeRelationCardinality.uid
-      , bool _inject = true)
-  | ChangeOperator(RemoveAttributesToIdenfifier \removeAttributesToIdenfifier
-      , lang::ecore::Refs::Ref[EntityIdentifier] \identifier = \removeAttributesToIdenfifier.\identifier
-      , list[lang::ecore::Refs::Ref[Attribute]] \attributes = \removeAttributesToIdenfifier.\attributes
-      , lang::ecore::Refs::Id uid = \removeAttributesToIdenfifier.uid
       , bool _inject = true)
   | ChangeOperator(RenameTable \renameTable
       , lang::ecore::Refs::Ref[Table] \tableToRename = \renameTable.\tableToRename
@@ -265,30 +254,10 @@ data ChangeOperator
       , lang::ecore::Refs::Ref[DataType] \type = \addAttribute.\type
       , lang::ecore::Refs::Id uid = \addAttribute.uid
       , bool _inject = true)
-  | ChangeOperator(AddIdentifier \addIdentifier
-      , lang::ecore::Refs::Ref[Entity] \entity = \addIdentifier.\entity
-      , str \name = \addIdentifier.\name
-      , lang::ecore::Refs::Id uid = \addIdentifier.uid
-      , bool _inject = true)
-  | ChangeOperator(RemoveIdentifier \removeIdentifier
-      , lang::ecore::Refs::Ref[EntityIdentifier] \entityIdentifier = \removeIdentifier.\entityIdentifier
-      , lang::ecore::Refs::Id uid = \removeIdentifier.uid
-      , bool _inject = true)
-  | ChangeOperator(RenameRelation \renameRelation
-      , lang::ecore::Refs::Ref[Relation] \relationToRename = \renameRelation.\relationToRename
-      , str \newRelationName = \renameRelation.\newRelationName
-      , lang::ecore::Refs::Id uid = \renameRelation.uid
-      , bool _inject = true)
   ;
 
 data RemoveGraphEdge
   = RemoveGraphEdge(lang::ecore::Refs::Ref[GraphEdge] \graphEdgeToRemove
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
-data RenameIdentifier
-  = RenameIdentifier(lang::ecore::Refs::Ref[EntityIdentifier] \identifier
-      , str \newName = ""
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -302,17 +271,6 @@ data DropIndex
       , lang::ecore::Refs::Id uid = noId())
   ;
 
-data RemoveAttributesToIdenfifier
-  = RemoveAttributesToIdenfifier(lang::ecore::Refs::Ref[EntityIdentifier] \identifier
-      , list[lang::ecore::Refs::Ref[Attribute]] \attributes
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
-data RemoveIdentifier
-  = RemoveIdentifier(lang::ecore::Refs::Ref[EntityIdentifier] \entityIdentifier
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
 data MigrateEntity
   = MigrateEntity(lang::ecore::Refs::Ref[Entity] \entity
       , lang::ecore::Refs::Ref[Database] \newDatabase
@@ -321,18 +279,6 @@ data MigrateEntity
 
 data DisableRelationContainment
   = DisableRelationContainment(lang::ecore::Refs::Ref[Relation] \relation
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
-data AddAttributesToIdenfifier
-  = AddAttributesToIdenfifier(lang::ecore::Refs::Ref[EntityIdentifier] \identifier
-      , list[lang::ecore::Refs::Ref[Attribute]] \attributes
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
-data AddIdentifier
-  = AddIdentifier(lang::ecore::Refs::Ref[Entity] \entity
-      , str \name = ""
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -464,22 +410,20 @@ data AddRelation
   ;
 
 data Entity
-  = Entity(AddEntity \addEntity
+  = Entity(str \name
+      , list[Attribute] \attributes
+      , list[Relation] \relations
+      , str \importedNamespace = ""
+      , lang::ecore::Refs::Ref[GenericList] \genericList = null()
+      , lang::ecore::Refs::Id uid = noId())
+  | Entity(AddEntity \addEntity
       , str \name = \addEntity.\name
       , str \importedNamespace = \addEntity.\importedNamespace
       , list[Attribute] \attributes = \addEntity.\attributes
       , list[Relation] \relations = \addEntity.\relations
-      , EntityIdentifier \identifer = \addEntity.\identifer
       , lang::ecore::Refs::Ref[GenericList] \genericList = \addEntity.\genericList
       , lang::ecore::Refs::Id uid = \addEntity.uid
       , bool _inject = true)
-  | Entity(str \name
-      , list[Attribute] \attributes
-      , list[Relation] \relations
-      , str \importedNamespace = ""
-      , util::Maybe::Maybe[EntityIdentifier] \identifer = nothing()
-      , lang::ecore::Refs::Ref[GenericList] \genericList = null()
-      , lang::ecore::Refs::Id uid = noId())
   ;
 
 data GenericList
@@ -601,19 +545,18 @@ data AddAttribute
   ;
 
 data DataType
-  = DataType(Entity \entity
+  = DataType(PrimitiveDataType \primitiveDataType
+      , str \name = \primitiveDataType.\name
+      , str \importedNamespace = \primitiveDataType.\importedNamespace
+      , lang::ecore::Refs::Id uid = \primitiveDataType.uid
+      , bool _inject = true)
+  | DataType(Entity \entity
       , str \name = \entity.\name
       , str \importedNamespace = \entity.\importedNamespace
       , list[Attribute] \attributes = \entity.\attributes
       , list[Relation] \relations = \entity.\relations
-      , EntityIdentifier \identifer = \entity.\identifer
       , lang::ecore::Refs::Ref[GenericList] \genericList = \entity.\genericList
       , lang::ecore::Refs::Id uid = \entity.uid
-      , bool _inject = true)
-  | DataType(PrimitiveDataType \primitiveDataType
-      , str \name = \primitiveDataType.\name
-      , str \importedNamespace = \primitiveDataType.\importedNamespace
-      , lang::ecore::Refs::Id uid = \primitiveDataType.uid
       , bool _inject = true)
   | DataType(CustomDataType \customDataType
       , str \name = \customDataType.\name
@@ -628,11 +571,6 @@ data DataTypeItem
       , DataTypeImplementationPackage \implementation
       , str \importedNamespace = ""
       , lang::ecore::Refs::Ref[DataType] \type = null()
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
-data EntityIdentifier
-  = EntityIdentifier(list[lang::ecore::Refs::Ref[Attribute]] \attributes
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -772,7 +710,6 @@ data AddEntity
       , list[Attribute] \attributes
       , list[Relation] \relations
       , str \importedNamespace = ""
-      , util::Maybe::Maybe[EntityIdentifier] \identifer = nothing()
       , lang::ecore::Refs::Ref[GenericList] \genericList = null()
       , lang::ecore::Refs::Id uid = noId())
   ;

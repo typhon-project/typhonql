@@ -1,10 +1,9 @@
 package lang.typhonql.mongodb;
 
 import org.bson.Document;
-import org.rascalmpl.interpreter.Evaluator;
 import org.rascalmpl.interpreter.IEvaluatorContext;
 
-import com.mongodb.client.MongoClient;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
@@ -21,24 +20,33 @@ public class TyphonQL2MongoDB implements Queryable {
 	private IValueFactory vf;
 	private MongoDatabase mongoDb;
 
-	public TyphonQL2MongoDB(MongoDatabase mongoDb, IValueFactory vf, Evaluator eval) {
+	public TyphonQL2MongoDB(MongoDatabase mongoDb, IValueFactory vf, IEvaluatorContext eval) {
 		this.mongoDb = mongoDb;
 		this.eval = eval;
 		this.vf = vf;
 	}
 
 	public Object query(String query) {
-		IMap m = (IMap) eval.getEvaluator().call("typhon2mongodb", vf.string(query));
+		IMap m = (IMap) eval.getEvaluator().call("lang::typhonql::mongodb::TyphonQL2MongoDB::typhon2mongodb", vf.string(query));
 		Object result = null;
 		for (IValue k : m) {
-			addToResult(mongoDb.getCollection(((IString) k).getValue()), (IConstructor) m.get(k), result);
+			executeMethod(mongoDb.getCollection(((IString) k).getValue()), (IConstructor) m.get(k), result);
 		}
 		return result;
 	}
 
-	private void addToResult(MongoCollection<Document> collection, IConstructor method, Object result) {
+	private void executeMethod(MongoCollection<Document> collection, IConstructor method, Object result) {
 		switch (method.getName()) {
-		case "find": ; 
+		case "find": 
+			switch (method.arity()) {
+			case 0: FindIterable<Document> obj = collection.find();
+			case 1: //find(DBObject query)
+				break;
+			case 2: //find(DBObject query, DBObject projection)	
+			case 4: //find(DBObject query, DBObject projection, int numToSkip, int batchSize)	
+				
+			}
+			
 		default: throw new UnsupportedOperationException(method.toString());
 		}
 	}

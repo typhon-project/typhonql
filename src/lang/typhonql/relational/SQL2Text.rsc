@@ -32,13 +32,15 @@ str pp(select(list[SQLExpr] es, list[As] as, list[Clause] cs))
     '<intercalate("\n", [ pp(c) | Clause c <- cs ])>;";  
 
 str pp(alterTable(str t, list[Alter] as))
-  = "alter table <q(t)> <intercalate(", ", [ pp(a) | Alter a <- as ])>;";
+  = "alter table <q(t)>
+    '<intercalate(",\n", [ pp(a) | Alter a <- as ])>;";
 
 
 // Alter
 
 str pp(addConstraint(TableConstraint c))
-  = "add constraint <pp(c)>";
+  = "add constraint 
+    '<pp(c)>";
 
 
 // As
@@ -114,7 +116,8 @@ str pp(null()) = "null";
 str pp(primaryKey(str c)) = "primary key (<q(c)>)";
 
 str pp(foreignKey(str c, str p, str k, OnDelete od)) 
-  = "foreign key (<q(c)>) references <q(p)>(<q(k)>)<pp(od)>";
+  = "foreign key (<q(c)>) 
+    '  references <q(p)>(<q(k)>)<pp(od)>";
 
 
 // OnDelete

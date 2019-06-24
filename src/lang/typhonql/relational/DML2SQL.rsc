@@ -86,7 +86,7 @@ str columnName((KeyVal)`@id: <Expr _>`, str entity) = typhonId(entity);
 
 list[SQLStat] insert2sql((Statement)`insert <{Obj ","}* objs>`, Schema schema)
   = insert2sql(makeIdMap(objList), objList, schema)
-  when list[Obj] objList := flatten(objs);
+  when list[Obj] objList := flatten(objs, doFlattening=true);
   
 
 bool hasAssignedId({KeyVal ","}* kvs) = (KeyVal)`@id: <Expr _>` <- kvs;

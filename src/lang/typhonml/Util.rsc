@@ -17,22 +17,37 @@ import String;
 
 // abstraction over TyphonML, to be extended with back-end specific info in the generic map
 data Schema
-  = schema(Rels rels, Attrs attrs, map[str, value] config = ());
+  = schema(Rels rels, Attrs attrs, Placement placement = {}, map[str, value] config = ());
+
 
 alias Rel = tuple[str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool containment];
 alias Rels = set[Rel];
 alias Attrs = rel[str from, str name, str \type];
 
-data DB = mongodb() | sql() | hyperj();
+data DB = mongodb() | sql() | hyperj() | recombine();
 
-alias Placement = rel[str entity, DB db];
+alias Placement = rel[DB db, str name, str entity];
 
 Schema loadSchema(loc l) = model2schema(m)
   when Model m := load(#Model, l);
 
-Schema myDbSchema() = loadSchema(|project://typhonql/src/lang/typhonml/mydb3.model|);
+Schema myDbSchema() {
+  Schema s = loadSchema(|project://typhonql/src/lang/typhonml/mydb4.xmi|);
+  // Fake placement, because the entity ref cannot be found.
+  
+  s.placement = {
+    <sql(), "OrderDB", "Order">,
+    <sql(), "UserDB", "User">,
+    <sql(), "ProductDB", "Product">,
+    <sql(), "CreditCardDB", "CreditCard">,
+    <mongodb(), "ReviewsDB", "Review">,
+    <mongodb(), "CommentsDB", "Comment">
+  };
+   
+  return s;
+}
 
-Rels myDbToRels() = model2rels(load(#Model, |project://typhonql/src/lang/typhonml/mydb3.model|));
+Rels myDbToRels() = model2rels(load(#Model, |project://typhonql/src/lang/typhonml/mydb4.xmi|));
 
 set[str] entities(Schema s) = s.rels<0> + s.attrs<0>;
 

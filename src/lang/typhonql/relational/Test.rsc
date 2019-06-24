@@ -87,6 +87,13 @@ void smokeTest() {
   println("# TyphonQL: <ins5>");
 
   println(pp(insert2sql(ins5, myDb)));
+
+  println("\n### Insert with cross reference via nesting list flattening");
+  Statement ins6 = (Statement) `insert Order { users: [ User { name: "alice" }, User { name: "bob" } ]}`;
+
+  println("# TyphonQL: <ins6>");
+
+  println(pp(insert2sql(ins6, myDb)));
   
   
   println("\n### Joining select via junction table");

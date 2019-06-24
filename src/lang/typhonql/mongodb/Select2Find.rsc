@@ -97,7 +97,7 @@ tuple[str coll, str path, Expr other] split(Expr lhs, Expr rhs, Env env) {
     return <env["<x>"], "<fs>", lhs>;
   }
   else {
-    throw "One of binary expr must be contained field navigation, but got: <lhs>, <rhs>";
+    throw "One of binary expr must contain field navigation, but got: <lhs>, <rhs>";
   }
 }
     
