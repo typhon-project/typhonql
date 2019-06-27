@@ -48,24 +48,22 @@ set[DBPath] dbPaths(Expr e, map[str, str] env, Schema s) {
 
 
 DBPath navigate(str entity, list[str] path, Schema s) {
-
-  // for now we abstract from dbname, since it couples directly to entity
-  // (IOW: it's not a db abstraction, but a table/collection abstraction)
-  // -> this is a problem in TyphonML
-  // so we make name always ""
-
-  Place myPlace() = <db, ""> when <DB db, str name, entity> <- s.placement;
-
+  Place myPlace = <unknown(), "">;
+ 
+  if (<DB db, str dbName, entity> <- s.placement) {
+    myPlace = <db, dbName>;
+  }
+  
   if (path == []) {
-    return [<myPlace(), entity>];
+    return [<myPlace, entity>];
   }
   
   str head = path[0];
   if (<entity, _, head, _, _, str to, _> <- s.rels) {
-    return [<myPlace(), entity>] + navigate(to, path[1..], s);
+    return [<myPlace, entity>] + navigate(to, path[1..], s);
   }
   else if (<entity, head, _> <- s.attrs) {
-    return [<myPlace(), entity>];
+    return [<myPlace, entity>];
   }
   else { 
     throw "No such field in schema <head>";

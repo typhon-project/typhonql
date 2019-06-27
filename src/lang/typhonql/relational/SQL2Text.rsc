@@ -26,6 +26,10 @@ str pp(update(str t, list[Set] ss, list[Clause] cs))
   = "update <q(t)> set <intercalate(", ", [ pp(s) | Set s <- ss ])>
     '<intercalate("\n", [ pp(c) | Clause c <- cs ])>;";
   
+str pp(delete(str t, list[Clause] cs))
+  = "delete <q(t)>
+    '<intercalate("\n", [ pp(c) | Clause c <- cs ])>;";
+
 str pp(select(list[SQLExpr] es, list[As] as, list[Clause] cs))
   = "select <intercalate(", ", [ pp(e) | SQLExpr e <- es ])> 
     'from <intercalate(", ", [ pp(a) | As a <- as ])>

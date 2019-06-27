@@ -24,7 +24,7 @@ alias Rel = tuple[str from, Cardinality fromCard, str fromRole, str toRole, Card
 alias Rels = set[Rel];
 alias Attrs = rel[str from, str name, str \type];
 
-data DB = mongodb() | sql() | hyperj() | recombine();
+data DB = mongodb() | sql() | hyperj() | recombine() | unknown();
 
 alias Placement = rel[DB db, str name, str entity];
 
@@ -36,12 +36,12 @@ Schema myDbSchema() {
   // Fake placement, because the entity ref cannot be found.
   
   s.placement = {
-    <sql(), "OrderDB", "Order">,
-    <sql(), "UserDB", "User">,
-    <sql(), "ProductDB", "Product">,
-    <sql(), "CreditCardDB", "CreditCard">,
-    <mongodb(), "ReviewsDB", "Review">,
-    <mongodb(), "CommentsDB", "Comment">
+    <sql(), "RelationalDatabase", "Order">,
+    <sql(), "RelationalDatabase", "User">,
+    <sql(), "RelationalDatabase", "Product">,
+    <sql(), "RelationalDatabase", "CreditCard">,
+    <mongodb(), "DocumentDatabase", "Review">,
+    <mongodb(), "DocumentDatabase", "Comment">
   };
    
   return s;

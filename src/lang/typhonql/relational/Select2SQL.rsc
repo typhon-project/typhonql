@@ -88,7 +88,7 @@ list[SQLExpr] pathToWheres(SQLPath p) {
     tbl1 = from.as.name;
     tbl2 = to.as.name;
     if (to is child) {
-      cs += [SQLExpr::equ(column(tbl2, fkName(to.role)), column(tbl1, typhonId(from.entity)))];
+      cs += [SQLExpr::equ(column(tbl2, fkName(from.entity, to.entity, to.role)), column(tbl1, typhonId(from.entity)))];
     }
     if (to is junction) {
       cs += [equ(column(to.junction.name, junctionFkName(from.entity, to.role)), column(tbl1, typhonId(from.entity))),
@@ -177,15 +177,23 @@ list[SQLPath] containmentClosure(SQLPath p, Schema s, loc org) {
   list[SQLPath] paths = [];
   Rels rels = symmetricReduction(s.rels);
 
+  println("Computing containment closure");
+  
+  iprintln(rels);
+  
+
   int i = 0; // to make vars unique
 
   set[SQLPath] todo = {p};
   set[str] done = {};
   
   while (todo != {}) {
+    println("todo = <todo>");
+    println("done = <done>");
     <current, todo> = takeOneFrom(todo);
+    println("CURRENT: <current>");
     target = current[-1];
-    
+    println("target = <target>");
     if (target is attr) {
       paths += [current];
     }
@@ -193,8 +201,8 @@ list[SQLPath] containmentClosure(SQLPath p, Schema s, loc org) {
       // to break recursive containment (e.g. Comment.responses :-> Comment [*]
       // NB: in other words, this function does not work for recursive containment.
       done += {target.entity}; 
-      paths += [ p + [attr(x)] | <str x, _> <- s.attrs[target.entity] ];
-      todo += { p + [child(as(tableName(to), varForClosure(fromRole, i, org)), to, fromRole)] 
+      paths += [ current + [attr(x)] | <str x, _> <- s.attrs[target.entity], bprintln("ATTR: <x>") ];
+      todo += { current + [child(as(tableName(to), varForClosure(fromRole, i, org)), to, fromRole)] 
                     | <_, fromRole, _, _, str to, true> <- rels[target.entity] };
     }
     else {
@@ -204,6 +212,7 @@ list[SQLPath] containmentClosure(SQLPath p, Schema s, loc org) {
     i += 1;
   }
   
+  iprintln(paths);
   return paths;  
 }
 

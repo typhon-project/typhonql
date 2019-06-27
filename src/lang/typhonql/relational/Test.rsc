@@ -68,7 +68,7 @@ void smokeTest() {
   println(pp(insert2sql(ins2, myDb)));
   
   println("\n### Insert with cross reference");
-  Statement ins3 = (Statement) `insert Order { totalAmount: 23, paidWith: cc }, @cc CreditCard { number: "assa" }`;
+  Statement ins3 = (Statement) `insert Order { totalAmount: 23, paidWith: cc }, @cc CreditCard { number: "12345678" }`;
 
   println("# TyphonQL: <ins3>");
 
@@ -102,6 +102,28 @@ void smokeTest() {
   println("# TyphonQL: <q1>");
 
   println(pp(select2sql(q1, myDb)));
+  
+
+  println("\n### Select retrieves contained entities");
+  Query q2 = (Query) `from Product p select p`;
+
+  println("# TyphonQL: <q2>");
+
+  println(pp(select2sql(q2, myDb)));
+
+  
+  Statement stat;
+  
+  println("\n#### Update ");
+  stat = (Statement)`update User u where u.name == "alice" set { name: "bob"}`;
+  println("TyphonQL: <stat>");
+  println(pp(dml2sql(stat, myDb)));
+  
+  println("\n#### Delete ");
+  stat = (Statement)`delete User u where u.name == "alice"`;
+  println("TyphonQL: <stat>");
+  println(pp(dml2sql(stat, myDb)));
+  
 
 }
 

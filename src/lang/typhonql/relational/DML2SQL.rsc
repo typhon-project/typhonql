@@ -45,7 +45,7 @@ list[SQLStat] delete2sql((Statement)`delete <Binding b>`, Schema schema)
   = delete2sql((Statement)`delete <Binding b> where true`, schema);
 
 list[SQLStat] delete2sql((Statement)`delete <EId e> <VId x> where <{Expr ","}+ es>`, Schema schema) {
-  q = select2sql((Query)`from <EId e> <VId x> select <VId x> where <{Expr ","}+ es>`, schema);
+  q = select2sql((Query)`from <EId e> <VId x> select "" where <{Expr ","}+ es>`, schema);
   
   // TODO: deleting stuff from junction tables explicitly?
   // (for now contained stuff is dealt with by cascade, similar for junctions)
@@ -64,7 +64,7 @@ list[SQLStat] update2sql((Statement)`update <Binding b> set {<{KeyVal ","}* kvs>
 
 
 list[SQLStat] update2sql((Statement)`update <EId e> <VId x> where <{Expr ","}+ es> set {<{KeyVal ","}* kvs>}`, Schema schema) {
-  q = select2sql((Query)`from <EId e> <VId x> select <VId x> where <{Expr ","}+ es>`, schema);
+  q = select2sql((Query)`from <EId e> <VId x> select "" where <{Expr ","}+ es>`, schema);
   
   // TODO: assigning a ref to an owned thing needs updating the kid table.
   // and similar for cross references.
