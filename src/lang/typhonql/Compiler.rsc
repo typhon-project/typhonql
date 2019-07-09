@@ -5,7 +5,7 @@ import lang::typhonql::Partition;
 import lang::typhonml::TyphonML;
 
 
-map[Place, value] compile(str query, loc model) {
+map[Place, value] compile(str query, Model model) {
   
 }
 

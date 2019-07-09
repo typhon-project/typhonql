@@ -7,7 +7,6 @@ extend lang::typhonql::DML;
 start syntax Request
   = Query
   | Statement
-  | "{" Statement* "}"
   ;
 
 syntax Expr 
