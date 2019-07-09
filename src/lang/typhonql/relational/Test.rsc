@@ -111,6 +111,13 @@ void smokeTest() {
 
   println(pp(select2sql(q2, myDb)));
 
+  println("\n### Basic query");
+  Query q3 = (Query) `from Product p select p.name where p.description != ""`;
+
+  println("# TyphonQL: <q3>");
+
+  println(pp(select2sql(q3, myDb)));
+
   
   Statement stat;
   

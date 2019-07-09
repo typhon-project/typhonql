@@ -12,9 +12,8 @@ import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
-import lang.typhonql.Queryable;
 
-public class TyphonQL2MongoDB implements Queryable {
+public class TyphonQL2MongoDB  {
 
 	private final IEvaluatorContext eval;
 	private IValueFactory vf;

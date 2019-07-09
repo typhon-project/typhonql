@@ -26,24 +26,27 @@ entities to be retrieved:
 collections to be queried
 - all collections of the from clause?
 
+Todo: always return the typhon id
+
+
 
 
 */
 
 map[str, CollMethod] select2find((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s)
-  = select2find((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s);
+  = select2find((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, translateWheres=false);
 
 
-map[str, CollMethod] select2find((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}* es>`, Schema s) {
+map[str, CollMethod] select2find((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}* es>`, Schema s, bool translateWheres = true) {
   Env env = ( "<b.var>": "<b.entity>" | Binding b <- bs );
   map[str, CollMethod] result = ( "<b.entity>": find(object([]), object([])) | Binding b <- bs );
   
   
   for ((Result)`<VId x>.<{Id "."}+ fs>` <- rs) {
-    result[env["<x>"]].projection.props += [<"_typhon_id", \value(1)>, <"<fs>", \value(1)>];
+    result[env["<x>"]].projection.props += [<"@id", \value(1)>, <"<fs>", \value(1)>];
   }
  
-  for (Expr e <- es) {
+  for (translateWheres, Expr e <- es) {
     <coll, p> = expr2pattern(e, env);
     result[coll].query.props += [p];
   }

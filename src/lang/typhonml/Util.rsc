@@ -26,24 +26,16 @@ alias Attrs = rel[str from, str name, str \type];
 
 data DB = mongodb() | sql() | hyperj() | recombine() | unknown();
 
-alias Placement = rel[DB db, str name, str entity];
+alias Place = tuple[DB db, str name];
+
+alias Placement = rel[Place place, str entity];
 
 Schema loadSchema(loc l) = model2schema(m)
   when Model m := load(#Model, l);
 
 Schema myDbSchema() {
   Schema s = loadSchema(|project://typhonql/src/lang/typhonml/mydb4.xmi|);
-  // Fake placement, because the entity ref cannot be found.
   
-  s.placement = {
-    <sql(), "RelationalDatabase", "Order">,
-    <sql(), "RelationalDatabase", "User">,
-    <sql(), "RelationalDatabase", "Product">,
-    <sql(), "RelationalDatabase", "CreditCard">,
-    <mongodb(), "DocumentDatabase", "Review">,
-    <mongodb(), "DocumentDatabase", "Comment">
-  };
-   
   return s;
 }
 
@@ -57,10 +49,10 @@ Placement model2placement(Model m)
 // NB: the place function is an extension point.
 
 Placement place(Database(RelationalDB(str name, list[Table] tables)), Model m) 
-  = {<lookup(m, #Entity, t.entity).name, sql()> | Table t <- tables };
+  = {<<sql(), name>, lookup(m, #Entity, t.entity).name> | Table t <- tables };
   
 Placement place(Database(DocumentDB(str name, list[Collection] colls)), Model m) 
-  = {<lookup(m, #Entity, c.entity).name, mongodb()> | Collection c <- colls };
+  = {<<mongodb(), name>, lookup(m, #Entity, c.entity).name> | Collection c <- colls };
 
 default Placement place(Database db, Model m) {
   throw "Unsupported database: <db>";
@@ -68,7 +60,7 @@ default Placement place(Database db, Model m) {
 
 
 Schema model2schema(Model m)
-  = schema(model2rels(m), model2attrs(m));
+  = schema(model2rels(m), model2attrs(m), placement=model2placement(m));
 
 
 

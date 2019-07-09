@@ -6,7 +6,7 @@ syntax Query = "from" {Binding ","}+ bindings "select" {Result ","}+ selected Wh
 
 syntax Result 
   = Expr!obj!lst expr "as" Id attr
-  | Expr // only entity path is allowed, but we don't check
+  | Expr expr // only entity path is allowed, but we don't check
   ;
 
 syntax Binding = EId entity VId var;
