@@ -1,0 +1,7 @@
+Machine Doors {
+  states: [State NewState {
+    transitions: []
+    final: false
+  }]
+  initial: null
+}

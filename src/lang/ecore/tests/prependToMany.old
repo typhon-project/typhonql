@@ -1,0 +1,7 @@
+machine Doors
+init closed
+state closed
+end
+state opened
+end
+end

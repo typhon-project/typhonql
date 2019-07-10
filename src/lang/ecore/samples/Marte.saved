@@ -1,0 +1,1066 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="MARTE">
+  <eSubpackages name="MARTE_Foundations">
+    <eSubpackages name="NFPs">
+      <eClassifiers xsi:type="ecore:EEnum" name="ConstraintKind">
+        <eLiterals name="required" value="1"/>
+        <eLiterals name="offered" value="2"/>
+        <eLiterals name="constraint" value="3"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="NFP">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Property" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="Unit">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="convFactor" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="convOffset" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="baseUnit" ordered="false" eType="//MARTE_Foundations/NFPs/Unit"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_EnumerationLiteral" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="NfpConstraint">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="kind" ordered="false" unique="false" eType="//MARTE_Foundations/NFPs/ConstraintKind"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Constraint" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="NfpType">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="valueAttrib" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="unitAttrib" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="exprAttrib" ordered="false"/>
+      </eClassifiers>
+    </eSubpackages>
+    <eSubpackages name="Alloc">
+      <eClassifiers xsi:type="ecore:EClass" name="Allocated">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_NamedElement" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="ApplicationAllocationEnd">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="allocatedTo" ordered="false" upperBound="-1" eType="//MARTE_Foundations/Alloc/ExecutionPlatformAllocationEnd"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="ExecutionPlatformAllocationEnd">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="allocatedFrom" ordered="false" upperBound="-1" eType="//MARTE_Foundations/Alloc/ApplicationAllocationEnd"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EEnum" name="AllocationNature">
+        <eLiterals name="spatialDistribution" value="1"/>
+        <eLiterals name="timeScheduling" value="2"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EEnum" name="AllocationKind">
+        <eLiterals name="structural" value="1"/>
+        <eLiterals name="behavioral" value="2"/>
+        <eLiterals name="hybrid" value="3"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="AllocateActivityGroup">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isUnique" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_ActivityPartition" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="ClockRefine">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Dependency" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="constraint" ordered="false" upperBound="-1" eType="//MARTE_Foundations/Time/ClockConstraint" containment="true"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="Allocate">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="kind" ordered="false" unique="false" eType="//MARTE_Foundations/Alloc/AllocationKind"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="nature" ordered="false" unique="false" eType="//MARTE_Foundations/Alloc/AllocationNature"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Abstraction" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="impliedConstraint" ordered="false" upperBound="-1" eType="//MARTE_Foundations/NFPs/NfpConstraint" containment="true"/>
+      </eClassifiers>
+    </eSubpackages>
+    <eSubpackages name="Time">
+      <eClassifiers xsi:type="ecore:EClass" name="TimedDomain">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Package" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="Clock">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="standard" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_InstanceSpecification" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="type" ordered="false" eType="//MARTE_Foundations/Time/ClockType"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="unit" ordered="false" eType="//MARTE_Foundations/NFPs/Unit" containment="true"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="ClockType">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="nature" ordered="false" unique="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="unitType" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isLogical" ordered="false" unique="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="resolAttrib" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="maxValAttrib" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="offsetAttrib" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="getTime" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="setTime" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="indexToValue" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Class" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="TimedElement">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="on" ordered="false" lowerBound="1" upperBound="-1" eType="//MARTE_Foundations/Time/Clock" containment="true"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="TimedValueSpecification">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="interpretation" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_ValueSpecification" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="TimedConstraint">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="interpretation" ordered="false" unique="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="TimedObservation"/>
+      <eClassifiers xsi:type="ecore:EClass" name="TimedInstantObservation">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="obsKind" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_TimeObservation" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="TimedDurationObservation">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="obsKind" ordered="false" unique="false" upperBound="2"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_DurationObservation" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="TimedEvent">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="repetition" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_TimeEvent" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="every" ordered="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="TimedProcessing">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Action" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Behavior" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Message" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="duration" ordered="false" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="start" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="stop" ordered="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="ClockConstraint"/>
+    </eSubpackages>
+    <eSubpackages name="GRM">
+      <eClassifiers xsi:type="ecore:EClass" name="Resource">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="resMult" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isProtected" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isActive" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Property" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_InstanceSpecification" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Classifier" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Lifeline" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_ConnectableElement" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="StorageResource">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="elementSize" ordered="false" unique="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="CommunicationEndPoint">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="packetSize" ordered="false" unique="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="SynchronizationResource"/>
+      <eClassifiers xsi:type="ecore:EClass" name="ConcurrencyResource"/>
+      <eClassifiers xsi:type="ecore:EClass" name="Scheduler">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isPreemptible" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="schedPolicy" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="otherSchedPolicy" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="schedule" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="processingUnit" ordered="false" upperBound="-1" eType="//MARTE_Foundations/GRM/ProcessingResource"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="host" ordered="false" eType="//MARTE_Foundations/GRM/ComputingResource"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="ProcessingResource">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="speedFactor" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="scheduler" ordered="false" eType="//MARTE_Foundations/GRM/Scheduler"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="ComputingResource"/>
+      <eClassifiers xsi:type="ecore:EClass" name="MutualExclusionResource">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="protectKind" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="ceiling" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="otherProtectProtocol" ordered="false" unique="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="SecondaryScheduler"/>
+      <eClassifiers xsi:type="ecore:EClass" name="SchedulableResource">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="schedParams" ordered="false" upperBound="-1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="CommunicationMedia">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="elementSize" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Connector" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="DeviceResource"/>
+      <eClassifiers xsi:type="ecore:EClass" name="TimingResource"/>
+      <eClassifiers xsi:type="ecore:EClass" name="ClockResource"/>
+      <eClassifiers xsi:type="ecore:EClass" name="TimerResource">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="duration" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isPeriodic" ordered="false" unique="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GRService">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="owner" ordered="false" eType="//MARTE_Foundations/GRM/Resource"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_ExecutionSpecification" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_BehavioralFeature" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Behavior" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Collaboration" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_CollaborationUse" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="Release"/>
+      <eClassifiers xsi:type="ecore:EClass" name="Acquire">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isBlocking" ordered="false" unique="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="ResourceUsage">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="execTime" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="msgSize" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="allocatedMemory" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="usedMemory" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="powerPeak" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="energy" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_NamedElement" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="usedResources" upperBound="-1" eType="//MARTE_Foundations/GRM/Resource" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="subUsage" ordered="false" upperBound="-1" eType="//MARTE_Foundations/GRM/ResourceUsage" containment="true"/>
+      </eClassifiers>
+    </eSubpackages>
+    <eSubpackages name="GCM">
+      <eClassifiers xsi:type="ecore:EClass" name="FlowProperty">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="direction" ordered="false" unique="false" lowerBound="1" eType="//MARTE_Foundations/GCM/DirectionKind"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Property" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EEnum" name="DirectionKind">
+        <eLiterals name="in" value="1"/>
+        <eLiterals name="out" value="2"/>
+        <eLiterals name="inout" value="3"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="FlowPort">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isAtomic" ordered="false" unique="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isConjugated" ordered="false" unique="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="direction" ordered="false" unique="false" eType="//MARTE_Foundations/GCM/DirectionKind"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Port" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="MessagePort">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Port" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isAtomic" ordered="false" unique="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isConjugated" ordered="false" unique="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="direction" ordered="false" unique="false" eType="//MARTE_Foundations/GCM/DirectionKind"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="SendFlowAction">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_InvocationAction" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="FlowSpecification">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="direction" ordered="false" unique="false" eType="//MARTE_Foundations/GCM/DirectionKind"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Interface" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="SignalSpecification">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="kind" ordered="false" unique="false" eType="//MARTE_Foundations/GCM/BFeatureKind"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Interface" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EEnum" name="BFeatureKind">
+        <eLiterals name="in" value="1"/>
+        <eLiterals name="out" value="2"/>
+        <eLiterals name="inout" value="3"/>
+        <eLiterals name="required" value="4"/>
+        <eLiterals name="provided" value="5"/>
+        <eLiterals name="reqpro" value="6"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="FlowBFeature">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="kind" ordered="false" unique="false" lowerBound="1" eType="//MARTE_Foundations/GCM/BFeatureKind"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_BehavioralFeature" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+    </eSubpackages>
+  </eSubpackages>
+  <eSubpackages name="MARTE_Annexes">
+    <eSubpackages name="RSM">
+      <eClassifiers xsi:type="ecore:EClass" name="LinkTopology" abstract="true">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Connector" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="DefaultLink"/>
+      <eClassifiers xsi:type="ecore:EClass" name="InterRepetition">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="repetitionShapeDependence" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isModulo" ordered="false" unique="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="Distribute">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="patternShape" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="repetitionSpace" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="fromTiler" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="toTiler" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="Reshape">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="patternShape" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="repetitonShape" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="srcTiler" ordered="false" lowerBound="1" eType="//MARTE_Annexes/RSM/Tiler" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="targetTiler" ordered="false" lowerBound="1" eType="//MARTE_Annexes/RSM/Tiler" containment="true"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="Tiler">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="origin" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="paving" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="fitting" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="tiler" ordered="false"/>
+      </eClassifiers>
+    </eSubpackages>
+    <eSubpackages name="VSL">
+      <eSubpackages name="Variables">
+        <eClassifiers xsi:type="ecore:EEnum" name="VariableDirectionKind">
+          <eLiterals name="in" value="1"/>
+          <eLiterals name="out" value="2"/>
+          <eLiterals name="inout" value="3"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="Var">
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="dir" ordered="false" unique="false" eType="//MARTE_Annexes/VSL/Variables/VariableDirectionKind"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="base_Property" ordered="false" lowerBound="1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="ExpressionContext">
+          <eStructuralFeatures xsi:type="ecore:EReference" name="base_NamedElement" ordered="false" lowerBound="1"/>
+        </eClassifiers>
+      </eSubpackages>
+      <eSubpackages name="DataTypes">
+        <eClassifiers xsi:type="ecore:EClass" name="BoundedSubtype">
+          <eStructuralFeatures xsi:type="ecore:EReference" name="baseType" ordered="false" lowerBound="1"/>
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="minValue" ordered="false" unique="false" lowerBound="1"/>
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="maxValue" ordered="false" unique="false" lowerBound="1"/>
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="isMinOpen" ordered="false" unique="false" lowerBound="1"/>
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="isMaxOpen" ordered="false" unique="false" lowerBound="1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="base_DataType" ordered="false" lowerBound="1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="IntervalType">
+          <eStructuralFeatures xsi:type="ecore:EReference" name="intervalAttrib" ordered="false" lowerBound="1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="base_DataType" ordered="false" lowerBound="1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="CollectionType">
+          <eStructuralFeatures xsi:type="ecore:EReference" name="collectionAttrib" ordered="false" lowerBound="1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="base_DataType" ordered="false" lowerBound="1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="ChoiceType">
+          <eStructuralFeatures xsi:type="ecore:EReference" name="choiceAttrib" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="defaultAttrib" ordered="false"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="base_DataType" ordered="false" lowerBound="1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="TupleType">
+          <eStructuralFeatures xsi:type="ecore:EReference" name="tupleAttrib" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="base_DataType" ordered="false" lowerBound="1"/>
+        </eClassifiers>
+      </eSubpackages>
+    </eSubpackages>
+  </eSubpackages>
+  <eSubpackages name="MARTE_DesignModel">
+    <eSubpackages name="RTEMoCC">
+      <eClassifiers xsi:type="ecore:EClass" name="RtUnit">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isDynamic" ordered="false" unique="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isMain" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="poolSize" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="poolPolicy" ordered="false" unique="false" eType="//MARTE_DesignModel/RTEMoCC/PoolMgtPolicyKind"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="poolWaitingTime" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="operationalMode" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="main" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="memorySize" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_BehavioredClassifier" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EEnum" name="PoolMgtPolicyKind">
+        <eLiterals name="infiniteWait" value="1"/>
+        <eLiterals name="timedWait" value="2"/>
+        <eLiterals name="dynamic" value="3"/>
+        <eLiterals name="exception" value="4"/>
+        <eLiterals name="other" value="5"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="PpUnit">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="concPolicy" ordered="false" unique="false" eType="//MARTE_DesignModel/RTEMoCC/CallConcurrencyKind"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="memorySize" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_BehavioredClassifier" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EEnum" name="CallConcurrencyKind">
+        <eLiterals name="sequential" value="1"/>
+        <eLiterals name="guarded" value="2"/>
+        <eLiterals name="concurrent" value="3"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="RtBehavior">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="queueSchedPolicy" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="queueSize" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="msgMaxSize" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Behavior" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="rtf">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_BehavioralFeature" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Action" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Message" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Signal" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="utility" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="occKind" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="tRef" ordered="false" eType="//MARTE_Foundations/Time/TimedInstantObservation"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="relDl" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="absDl" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="boundDl" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="rdTime" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="miss" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="priority" ordered="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EEnum" name="SynchronizationKind">
+        <eLiterals name="synchronous" value="1"/>
+        <eLiterals name="asynchronous" value="2"/>
+        <eLiterals name="delayedSynchronous" value="3"/>
+        <eLiterals name="rendezVous" value="4"/>
+        <eLiterals name="other" value="5"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="RtAction">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isAtomic" ordered="false" unique="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="synchKind" ordered="false" unique="false" eType="//MARTE_DesignModel/RTEMoCC/SynchronizationKind"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="msgSize" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_BehavioralFeature" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_InvocationAction" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EEnum" name="ExecutionKind">
+        <eLiterals name="deferred" value="1"/>
+        <eLiterals name="remoteImmediate" value="2"/>
+        <eLiterals name="localImmediate" value="3"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EEnum" name="ConcurrencyKind">
+        <eLiterals name="reader" value="1"/>
+        <eLiterals name="writer" value="2"/>
+        <eLiterals name="parallel" value="3"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="RtService">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="concPolicy" ordered="false" unique="false" eType="//MARTE_DesignModel/RTEMoCC/ConcurrencyKind"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="exeKind" ordered="false" unique="false" eType="//MARTE_DesignModel/RTEMoCC/ExecutionKind"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="isAtomic" ordered="false" unique="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="synchKind" ordered="false" unique="false" eType="//MARTE_DesignModel/RTEMoCC/SynchronizationKind"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_BehavioralFeature" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="RteConnector">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="bandwidth" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="packetT" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="blockT" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="transmMode" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Connector" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+    </eSubpackages>
+    <eSubpackages name="HRM">
+      <eSubpackages name="HwLogical">
+        <eSubpackages name="HwGeneral">
+          <eClassifiers xsi:type="ecore:EClass" name="HwResource">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="description" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="p_HW_Services" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwGeneral/HwResourceService" containment="true"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="r_HW_Services" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwGeneral/HwResourceService" containment="true"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="ownedHW" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwGeneral/HwResource"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="endPoints" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwCommunication/HwEndPoint"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwResourceService"/>
+        </eSubpackages>
+        <eSubpackages name="HwCommunication">
+          <eClassifiers xsi:type="ecore:EClass" name="HwCommunicationResource"/>
+          <eClassifiers xsi:type="ecore:EClass" name="HwArbiter">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="controlledMedias" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwCommunication/HwMedia" eOpposite="//MARTE_DesignModel/HRM/HwLogical/HwCommunication/HwMedia/arbiters"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwMedia">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="bandWidth" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="base_Association" ordered="false" lowerBound="1"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="arbiters" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwCommunication/HwArbiter" eOpposite="//MARTE_DesignModel/HRM/HwLogical/HwCommunication/HwArbiter/controlledMedias"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwBus">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="adressWidth" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="wordWidth" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="isSynchronous" ordered="false" unique="false"/>
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="isSerial" ordered="false" unique="false"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwBridge">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="sides" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwCommunication/HwMedia"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwEndPoint">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="base_Port" ordered="false" lowerBound="1"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="connectedTo" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwCommunication/HwMedia"/>
+          </eClassifiers>
+        </eSubpackages>
+        <eSubpackages name="HwComputing">
+          <eClassifiers xsi:type="ecore:EEnum" name="ISA_Type">
+            <eLiterals name="RISC" value="1"/>
+            <eLiterals name="CISC" value="2"/>
+            <eLiterals name="VLIW" value="3"/>
+            <eLiterals name="SIMD" value="4"/>
+            <eLiterals name="Other" value="5"/>
+            <eLiterals name="Undef" value="6"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EEnum" name="PLD_Technology">
+            <eLiterals name="SRAM" value="1"/>
+            <eLiterals name="Antifuse" value="2"/>
+            <eLiterals name="Flash" value="3"/>
+            <eLiterals name="Other" value="4"/>
+            <eLiterals name="Undef" value="5"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EEnum" name="PLD_Class">
+            <eLiterals name="SymetricalArray" value="1"/>
+            <eLiterals name="RowBased" value="2"/>
+            <eLiterals name="SeaOfGates" value="3"/>
+            <eLiterals name="HierarchicalPLD" value="4"/>
+            <eLiterals name="Other" value="5"/>
+            <eLiterals name="Undef" value="6"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="PLD_Organization">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbRows" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbColumns" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="class" ordered="false" unique="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwComputing/PLD_Class"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwProcessor">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="architecture" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="mips" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="ipc" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbCores" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbPipelines" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbStages" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbALUs" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbFBUs" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="ownedISAs" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwComputing/HwISA" containment="true"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="predictors" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwComputing/HwBranchPredictor" containment="true"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="caches" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/HWCache" containment="true"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="ownedMMUs" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwStorageManager/HwMMU" containment="true"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwComputingResource">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="op_Frequencies" ordered="false"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwISA">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="family" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="inst_Width" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" ordered="false" unique="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwComputing/ISA_Type"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwBranchPredictor"/>
+          <eClassifiers xsi:type="ecore:EClass" name="HwASIC"/>
+          <eClassifiers xsi:type="ecore:EClass" name="HwPLD">
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="technology" ordered="false" unique="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwComputing/PLD_Technology"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="organization" ordered="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwComputing/PLD_Organization"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbLUTs" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="ndLUT_Inputs" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbFlipFlops" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="blocksRAM" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/HwRAM" containment="true"/>
+          </eClassifiers>
+        </eSubpackages>
+        <eSubpackages name="HwMemory">
+          <eClassifiers xsi:type="ecore:EClass" name="HwMemory">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="memorySize" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="adressSize" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="timings" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/Timing"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="Timing">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="notation" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="description" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="value" ordered="false"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EEnum" name="Repl_Policy">
+            <eLiterals name="LRU" value="1"/>
+            <eLiterals name="NFU" value="2"/>
+            <eLiterals name="FIFO" value="3"/>
+            <eLiterals name="Random" value="4"/>
+            <eLiterals name="Other" value="5"/>
+            <eLiterals name="Undef" value="6"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EEnum" name="WritePolicy">
+            <eLiterals name="WriteBack" value="1"/>
+            <eLiterals name="WriteThrough" value="2"/>
+            <eLiterals name="Other" value="3"/>
+            <eLiterals name="Undef" value="4"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EEnum" name="CacheType">
+            <eLiterals name="Data" value="1"/>
+            <eLiterals name="Instruction" value="2"/>
+            <eLiterals name="Unified" value="3"/>
+            <eLiterals name="Other" value="4"/>
+            <eLiterals name="Undef" value="5"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EEnum" name="ROM_Type">
+            <eLiterals name="MaskedROM" value="1"/>
+            <eLiterals name="EPROM" value="2"/>
+            <eLiterals name="OTP_EPROM" value="3"/>
+            <eLiterals name="EEPROM" value="4"/>
+            <eLiterals name="Flash" value="5"/>
+            <eLiterals name="Other" value="6"/>
+            <eLiterals name="Undef" value="7"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="CacheStructure">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nsSets" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="blockSize" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="associativity" ordered="false"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="MemoryOrganization">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbRows" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbColumns" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbBanks" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="wordSize" ordered="false"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwRAM">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="organization" ordered="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/MemoryOrganization"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="isSynchronous" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="isStatic" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="isNonVolatile" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="repl_Policy" ordered="false" unique="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/Repl_Policy"/>
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="writePolicy" ordered="false" unique="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/WritePolicy"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwROM">
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" ordered="false" unique="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/ROM_Type"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="organization" ordered="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/MemoryOrganization"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwDrive">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="sectorSize" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="buffer" ordered="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/HwRAM" containment="true"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HWCache">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="level" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" ordered="false" unique="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/CacheType"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="structure" ordered="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/CacheStructure"/>
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="repl_Policy" ordered="false" unique="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/Repl_Policy"/>
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="writePolicy" ordered="false" unique="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/WritePolicy"/>
+          </eClassifiers>
+        </eSubpackages>
+        <eSubpackages name="HwStorageManager">
+          <eClassifiers xsi:type="ecore:EClass" name="HwStorageManager">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="managedMemories" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/HwMemory" containment="true"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwDMA">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbChannels" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="transferWidth" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="drivenBy" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwComputing/HwProcessor" containment="true"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwMMU">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="virtualAddrSpace" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="physicalAddrSpace" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="memoryProtection" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbEntries" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="ownedTLBs" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwMemory/HWCache" containment="true"/>
+          </eClassifiers>
+        </eSubpackages>
+        <eSubpackages name="HwTiming">
+          <eClassifiers xsi:type="ecore:EClass" name="HwTimingResource"/>
+          <eClassifiers xsi:type="ecore:EClass" name="HwClock">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="frequency" ordered="false"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwTimer">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbCounter" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="counterWidth" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="inputClock" ordered="false" eType="//MARTE_DesignModel/HRM/HwLogical/HwTiming/HwClock"/>
+          </eClassifiers>
+        </eSubpackages>
+        <eSubpackages name="HwDevice">
+          <eClassifiers xsi:type="ecore:EClass" name="HwDevice"/>
+          <eClassifiers xsi:type="ecore:EClass" name="HwI_O"/>
+          <eClassifiers xsi:type="ecore:EClass" name="HwSupport"/>
+        </eSubpackages>
+      </eSubpackages>
+      <eSubpackages name="HwPhysical">
+        <eSubpackages name="HwPhysical_HwGeneral"/>
+        <eSubpackages name="HwLayout">
+          <eClassifiers xsi:type="ecore:EClass" name="HwComponent">
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="kind" ordered="false" unique="false" eType="//MARTE_DesignModel/HRM/HwPhysical/HwLayout/ComponentKind"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="dimenssions" ordered="false" upperBound="3"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="area" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="position" ordered="false" upperBound="2"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="grid" ordered="false" upperBound="2"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="nbPins" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="weight" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="price" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="r_Conditions" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwPhysical/HwLayout/Env_Condition"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="poweredServices" ordered="false" upperBound="-1" eType="//MARTE_DesignModel/HRM/HwLogical/HwGeneral/HwResourceService" containment="true"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="staticConsumption" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="staticDissipation" ordered="false"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EEnum" name="ComponentKind">
+            <eLiterals name="Card" value="1"/>
+            <eLiterals name="Channel" value="2"/>
+            <eLiterals name="Chip" value="3"/>
+            <eLiterals name="Port" value="4"/>
+            <eLiterals name="Unit" value="5"/>
+            <eLiterals name="Other" value="6"/>
+            <eLiterals name="Undef" value="7"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="Env_Condition">
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" ordered="false" unique="false" eType="//MARTE_DesignModel/HRM/HwPhysical/HwLayout/ConditionType"/>
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="status" ordered="false" unique="false" eType="//MARTE_DesignModel/HRM/HwPhysical/HwLayout/CompnentState"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="description" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="range" ordered="false"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EEnum" name="ConditionType">
+            <eLiterals name="Temperature" value="1"/>
+            <eLiterals name="Humidity" value="2"/>
+            <eLiterals name="Altitude" value="3"/>
+            <eLiterals name="Vibration" value="4"/>
+            <eLiterals name="Shock" value="5"/>
+            <eLiterals name="Other" value="6"/>
+            <eLiterals name="Undef" value="7"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EEnum" name="CompnentState">
+            <eLiterals name="Operating" value="1"/>
+            <eLiterals name="Storage" value="2"/>
+            <eLiterals name="Other" value="3"/>
+            <eLiterals name="Undef" value="4"/>
+          </eClassifiers>
+        </eSubpackages>
+        <eSubpackages name="HwPower">
+          <eClassifiers xsi:type="ecore:EClass" name="HwPowerSupply">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="suppliedPower" ordered="false"/>
+            <eStructuralFeatures xsi:type="ecore:EReference" name="capacity" ordered="false"/>
+          </eClassifiers>
+          <eClassifiers xsi:type="ecore:EClass" name="HwCoolingSupply">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="coolingPower" ordered="false"/>
+          </eClassifiers>
+        </eSubpackages>
+      </eSubpackages>
+    </eSubpackages>
+    <eSubpackages name="SRM">
+      <eSubpackages name="SW_ResourceCore">
+        <eClassifiers xsi:type="ecore:EClass" name="SwResource">
+          <eStructuralFeatures xsi:type="ecore:EReference" name="identifierElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="stateElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="memorySizeFootprint" ordered="false"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="createServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="deleteServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="initializeServices" ordered="false" upperBound="-1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="SwAccessService">
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="isModifier" ordered="false" unique="false"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="accessedElement" ordered="false" lowerBound="1"/>
+        </eClassifiers>
+      </eSubpackages>
+      <eSubpackages name="SW_Concurrency">
+        <eClassifiers xsi:type="ecore:EEnum" name="InterruptKind">
+          <eLiterals name="HardwareInterruption" value="1"/>
+          <eLiterals name="ProcessorDetectedException" value="2"/>
+          <eLiterals name="ProgrammedException" value="3"/>
+          <eLiterals name="Undef" value="4"/>
+          <eLiterals name="Other" value="5"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="EntryPoint">
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="isReentrant" ordered="false" unique="false"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="routine" ordered="false" lowerBound="1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="base_BehavioralFeature" ordered="false" lowerBound="1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="base_Dependency" ordered="false" lowerBound="1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="SwConcurrentResource" abstract="true">
+          <eStructuralFeatures xsi:type="ecore:EReference" name="type" ordered="false"/>
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="activationCapacity" ordered="false" unique="false"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="entryPoints" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="adressSpace" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="periodElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="priorityElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="stackSizeElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="activateServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="enableConcurrencyServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="resumeServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="suspendServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="terminateServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="disableConcurrencyServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="shareDataResources" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="messageResources" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="mutualExclusionResources" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="notificationResources" ordered="false" upperBound="-1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="InterruptResource">
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="kind" ordered="false" unique="false" eType="//MARTE_DesignModel/SRM/SW_Concurrency/InterruptKind"/>
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="isMaskable" ordered="false" unique="false"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="vectorElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="maskElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="routineConnectServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="routineDisconnectServices" ordered="false" upperBound="-1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="SwSchedulableResource">
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="isStaticSchedulingFeature" ordered="false" unique="false"/>
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="isPreemptable" ordered="false" unique="false"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="schedulers" ordered="false" lowerBound="1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="deadlineElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="deadlineTypeElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="timeScliceElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="delayServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="joinServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="yieldServices" ordered="false" upperBound="-1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="SwTimerResource">
+          <eStructuralFeatures xsi:type="ecore:EReference" name="durationElements" ordered="false"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="MemoryPartition">
+          <eStructuralFeatures xsi:type="ecore:EReference" name="concurrentResources" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="memorySpaces" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="fork" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="exit" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="base_Namespace" ordered="false" lowerBound="1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="Alarm">
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="isWatchdog" ordered="false" unique="false"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="timers" ordered="false" upperBound="-1"/>
+        </eClassifiers>
+      </eSubpackages>
+      <eSubpackages name="SW_Brokering">
+        <eClassifiers xsi:type="ecore:EEnum" name="AccessPolicyKind">
+          <eLiterals name="Read" value="1"/>
+          <eLiterals name="Write" value="2"/>
+          <eLiterals name="ReadWrite" value="3"/>
+          <eLiterals name="Undef" value="4"/>
+          <eLiterals name="Other" value="5"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="DeviceBroker">
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="accessPolicy" ordered="false" unique="false" eType="//MARTE_DesignModel/SRM/SW_Brokering/AccessPolicyKind"/>
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="isBuffered" ordered="false" unique="false"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="devices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="closeServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="controlServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="openServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="readServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="writeServices" ordered="false" upperBound="-1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="MemoryBroker">
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="accessPolicy" ordered="false" unique="false" eType="//MARTE_DesignModel/SRM/SW_Brokering/AccessPolicyKind"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="memories" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="memoryBlockAdressSelements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="memoryBlockSizeElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="lockServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="unlockServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="mapServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="unMapServices" ordered="false" upperBound="-1"/>
+        </eClassifiers>
+      </eSubpackages>
+      <eSubpackages name="SW_Interaction">
+        <eClassifiers xsi:type="ecore:EEnum" name="QueuePolicyKind">
+          <eLiterals name="FIFO" value="1"/>
+          <eLiterals name="LIFO" value="2"/>
+          <eLiterals name="Priority" value="3"/>
+          <eLiterals name="Undef" value="4"/>
+          <eLiterals name="Other" value="5"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EEnum" name="MessageResourceKind">
+          <eLiterals name="MessageQueue" value="1"/>
+          <eLiterals name="Pipe" value="2"/>
+          <eLiterals name="Blackboard" value="3"/>
+          <eLiterals name="Undef" value="4"/>
+          <eLiterals name="Other" value="5"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EEnum" name="NotificationKind">
+          <eLiterals name="Memorized" value="1"/>
+          <eLiterals name="Bounded" value="2"/>
+          <eLiterals name="Memoryless" value="3"/>
+          <eLiterals name="Undef" value="4"/>
+          <eLiterals name="Other" value="5"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EEnum" name="NotificationResourceKind">
+          <eLiterals name="Event" value="1"/>
+          <eLiterals name="Barrier" value="2"/>
+          <eLiterals name="Undef" value="3"/>
+          <eLiterals name="Other" value="4"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EEnum" name="MutualExclusionResourceKind">
+          <eLiterals name="BooleanSemaphore" value="1"/>
+          <eLiterals name="CountSemaphore" value="2"/>
+          <eLiterals name="Mutex" value="3"/>
+          <eLiterals name="Undef" value="4"/>
+          <eLiterals name="Other" value="5"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EEnum" name="ConcurrentAccessProtocolKind">
+          <eLiterals name="PIP" value="1"/>
+          <eLiterals name="PCP" value="2"/>
+          <eLiterals name="NoPreemption" value="3"/>
+          <eLiterals name="Undef" value="4"/>
+          <eLiterals name="Other" value="5"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="SwInteractionResource" abstract="true">
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="isIntraPartitionInteraction" ordered="false" unique="false"/>
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="waitingQueuePolicy" ordered="false" unique="false" eType="//MARTE_DesignModel/SRM/SW_Interaction/QueuePolicyKind"/>
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="waitingQueueCapacity" ordered="false" unique="false"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="waitingPolicyElements" ordered="false" upperBound="-1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="SwCommunicationResource" abstract="true"/>
+        <eClassifiers xsi:type="ecore:EClass" name="SwSynchronizationResource"/>
+        <eClassifiers xsi:type="ecore:EClass" name="SharedDataComResource">
+          <eStructuralFeatures xsi:type="ecore:EReference" name="readServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="writeServices" ordered="false" upperBound="-1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="MessageComResource">
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="isFixedMessageSize" ordered="false" unique="false"/>
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="meachnism" ordered="false" unique="false" eType="//MARTE_DesignModel/SRM/SW_Interaction/MessageResourceKind"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="messageSizeElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="messageQueueCapacityElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="messageQueuePolicy" ordered="false" unique="false" eType="//MARTE_DesignModel/SRM/SW_Interaction/QueuePolicyKind"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="sendServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="receiveServices" ordered="false" upperBound="-1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="NotificationResource">
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="occurence" ordered="false" unique="false" eType="//MARTE_DesignModel/SRM/SW_Interaction/NotificationKind"/>
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="mechanism" ordered="false" unique="false" eType="//MARTE_DesignModel/SRM/SW_Interaction/NotificationResourceKind"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="occurenceCountElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="maskElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="flushServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="signalServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="waitServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="clearServices" ordered="false" upperBound="-1"/>
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="SwMutualExclusionResource">
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="mechanism" ordered="false" unique="false" eType="//MARTE_DesignModel/SRM/SW_Interaction/MutualExclusionResourceKind"/>
+          <eStructuralFeatures xsi:type="ecore:EAttribute" name="concurrentAccessProtocol" ordered="false" unique="false" eType="//MARTE_DesignModel/SRM/SW_Interaction/ConcurrentAccessProtocolKind"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="accessTokenElements" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="releaseServices" ordered="false" upperBound="-1"/>
+          <eStructuralFeatures xsi:type="ecore:EReference" name="acquireServices" ordered="false" upperBound="-1"/>
+        </eClassifiers>
+      </eSubpackages>
+    </eSubpackages>
+  </eSubpackages>
+  <eSubpackages name="MARTE_AnalysisModel">
+    <eSubpackages name="GQAM">
+      <eClassifiers xsi:type="ecore:EClass" name="GaWorkloadGenerator">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="pop" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Behavior" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaEventTrace">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="content" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="format" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="location" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_NamedElement" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaWorkloadEvent">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="pattern" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="generator" ordered="false" eType="//MARTE_AnalysisModel/GQAM/GaWorkloadGenerator"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="trace" ordered="false" eType="//MARTE_AnalysisModel/GQAM/GaEventTrace"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="effect" ordered="false" eType="//MARTE_AnalysisModel/GQAM/GaScenario"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="timedEvent" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_NamedElement" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaScenario">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="cause" ordered="false" eType="//MARTE_AnalysisModel/GQAM/GaWorkloadEvent"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="hostDemand" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="hostDemandOps" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="interOccT" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="throughput" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="respT" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="utilization" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="utilizationHost" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="root" ordered="false" eType="//MARTE_AnalysisModel/GQAM/GaStep"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="timing" ordered="false" upperBound="-1" eType="//MARTE_AnalysisModel/GQAM/GaTimingObs"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="behavior" ordered="false" eType="//MARTE_AnalysisModel/GQAM/GaScenario"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaStep">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="isAtomic" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="blockT" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="rep" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="prob" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="priority" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="concurRes" ordered="false" eType="//MARTE_Foundations/GRM/SchedulableResource"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="host" ordered="false" eType="//MARTE_AnalysisModel/GQAM/GaExecHost"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="serDemand" upperBound="-1" eType="//MARTE_AnalysisModel/GQAM/GaRequestedService"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="servCount" upperBound="-1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaExecHost">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="commTxOch" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="commRcvOvh" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="cntxtSwt" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="clockOvh" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="schedPriRange" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="memSize" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="utilization" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="throughput" ordered="false" upperBound="-1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaRequestedService">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Operation" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaTimingObs">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="laxity" ordered="false" unique="false" eType="//MARTE_AnalysisModel/GQAM/LaxityKind"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="startObs" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="stopObs" ordered="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EEnum" name="LaxityKind">
+        <eLiterals name="hard" value="1"/>
+        <eLiterals name="soft" value="2"/>
+        <eLiterals name="other" value="3"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaCommStep"/>
+      <eClassifiers xsi:type="ecore:EClass" name="GaAcqStep">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="acqRes" ordered="false" eType="//MARTE_Foundations/GRM/Resource"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="resUnits" ordered="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaRelStep">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="relRes" ordered="false" eType="//MARTE_Foundations/GRM/Resource"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="resUnits" ordered="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaLatencyObs">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="latency" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="miss" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="utility" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="maxJitter" ordered="false" upperBound="-1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaCommHost">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="capacity" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="packetT" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="blockT" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="transmMode" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="utilization" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="throughput" ordered="false" upperBound="-1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaCommChannel">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="packetSize" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="utlization" ordered="false" upperBound="-1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaWorkloadBehavior">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="behavior" ordered="false" upperBound="-1" eType="//MARTE_AnalysisModel/GQAM/GaScenario"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="demand" ordered="false" upperBound="-1" eType="//MARTE_AnalysisModel/GQAM/GaWorkloadEvent"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_NamedElement" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaAnalysisContext">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="context" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="workload" ordered="false" lowerBound="1" upperBound="-1" eType="//MARTE_AnalysisModel/GQAM/GaWorkloadBehavior"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="platform" ordered="false" lowerBound="1" upperBound="-1" eType="//MARTE_AnalysisModel/GQAM/GaResourcesPlatform"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="GaResourcesPlatform">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="resources" ordered="false" upperBound="-1" eType="//MARTE_Foundations/GRM/Resource"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_Classifier" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+    </eSubpackages>
+    <eSubpackages name="SAM">
+      <eClassifiers xsi:type="ecore:EEnum" name="OptimallityCriterionKind">
+        <eLiterals name="meetHardDeadlines" value="1"/>
+        <eLiterals name="minimizeMissedDeadlines" value="2"/>
+        <eLiterals name="minimizedMeanTardiness" value="3"/>
+        <eLiterals name="undef" value="4"/>
+        <eLiterals name="other" value="5"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="SaAnalysisContext">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="isSched" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="optCriterion" ordered="false" unique="false" eType="//MARTE_AnalysisModel/SAM/OptimallityCriterionKind"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="SaEnd2EndFlow">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="isSched" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="schSlack" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="end2EndT" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="end2EndD" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="timing" upperBound="-1" eType="//MARTE_AnalysisModel/GQAM/GaTimingObs"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_NamedElement" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="SaCommStep">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="deadline" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="spareCap" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="schSlack" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_BehavioralFeature" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="SaExecStep">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_BehavioralFeature" ordered="false" lowerBound="1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="deadline" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="spareCap" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="schSlack" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="preemptT" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="readyT" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="delayT" ordered="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="SaSchedObs">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="suspentions" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="blockT" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="overlaps" ordered="false" upperBound="-1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="SaSharedResource">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="capacity" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="isPreemp" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="isConsum" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="acquisT" ordered="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="releaseT" ordered="false" upperBound="-1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="SaCommHost">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="isSched" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="schSlack" ordered="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="SaExecHost">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="isSched" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="schSlack" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="schedUtiliz" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="ISRswitchT" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="ISRprioRange" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="schedPolicy" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="isPreempible" ordered="false"/>
+      </eClassifiers>
+    </eSubpackages>
+    <eSubpackages name="PAM">
+      <eClassifiers xsi:type="ecore:EClass" name="PaStep">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="noSynch" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="extOpDemand" unique="false" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="extOpCount" upperBound="-1"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="behavDemand" upperBound="-1" eType="//MARTE_AnalysisModel/GQAM/GaScenario"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="behavCount" upperBound="-1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="PaRequestedStep"/>
+      <eClassifiers xsi:type="ecore:EClass" name="PaCommStep"/>
+      <eClassifiers xsi:type="ecore:EClass" name="PaResPassStep">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="resource" ordered="false" eType="//MARTE_Foundations/GRM/Resource"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="resUnits" ordered="false"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="PaLogicalResource">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="utilization" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="throughput" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="poolSize" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="PaRunTInstance">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="poolSize" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="unbddPool" ordered="false" unique="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="instance" ordered="false" eType="//MARTE_Foundations/GRM/Resource"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="host" ordered="false" eType="//MARTE_Foundations/GRM/SchedulableResource"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="utilization" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="throughput" ordered="false"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="base_NamedElement" ordered="false" lowerBound="1"/>
+      </eClassifiers>
+    </eSubpackages>
+  </eSubpackages>
+</ecore:EPackage>

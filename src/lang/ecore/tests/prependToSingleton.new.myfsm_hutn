@@ -1,0 +1,13 @@
+Machine Doors {
+  states: [
+    State NewState {
+      transitions: []
+      final: false
+    }
+    State closed {
+      transitions: []
+      final: false
+    }
+  ]
+  initial: |project://rascal-ecore/src/lang/ecore/tests/prependToSingleton.new#//@states.1|
+}

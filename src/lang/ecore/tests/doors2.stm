@@ -1,0 +1,14 @@
+machine Doors
+  init opened
+
+  state closed
+    on open => opened
+  end
+ 
+  state opened
+    on close => closed
+  end
+  
+  state locked
+  end
+end

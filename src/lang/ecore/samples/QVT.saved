@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="qvttemplate" nsURI="http:///qvttemplate.ecore">
+  <eClassifiers xsi:type="ecore:EClass" name="TemplateExp" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bindsTo" ordered="false" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="where" ordered="false" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ObjectTemplateExp">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="part" upperBound="-1" eType="//PropertyTemplateItem" containment="true" eOpposite="//PropertyTemplateItem/objContainer"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="referredClass" ordered="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CollectionTemplateExp">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="part" upperBound="-1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="kind" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="referredCollectionType" ordered="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="match" ordered="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PropertyTemplateItem">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="objContainer" ordered="false" lowerBound="1" eType="//ObjectTemplateExp" eOpposite="//ObjectTemplateExp/part"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="value" ordered="false" lowerBound="1" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="referredProperty" ordered="false" lowerBound="1"/>
+  </eClassifiers>
+</ecore:EPackage>

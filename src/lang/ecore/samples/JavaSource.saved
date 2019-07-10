@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="JavaSource">
+  <eClassifiers xsi:type="ecore:EClass" name="JavaSource">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="classes" ordered="false" lowerBound="1" upperBound="-1" eType="//ClassDeclaration" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="NamedElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ClassDeclaration">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="superclass" ordered="false" eType="//ClassDeclaration"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="methods" ordered="false" upperBound="-1" eType="//MethodDefinition" containment="true" eOpposite="//MethodDefinition/class"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="MethodDefinition">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="class" ordered="false" lowerBound="1" eType="//ClassDeclaration" eOpposite="//ClassDeclaration/methods"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="invocations" ordered="false" upperBound="-1" eType="//MethodInvocation" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="MethodInvocation">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="method" ordered="false" lowerBound="1" eType="//MethodDefinition"/>
+  </eClassifiers>
+</ecore:EPackage>

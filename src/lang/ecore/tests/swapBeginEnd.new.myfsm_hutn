@@ -1,0 +1,25 @@
+Machine Doors {
+  states: [
+    State opened {
+      transitions: []
+      final: false
+    }
+    State A {
+      transitions: []
+      final: false
+    }
+    State B {
+      transitions: []
+      final: false
+    }
+    State C {
+      transitions: []
+      final: false
+    }
+    State closed {
+      transitions: []
+      final: false
+    }
+  ]
+  initial: |project://rascal-ecore/src/lang/ecore/tests/swapBeginEnd.new#//@states.4|
+}

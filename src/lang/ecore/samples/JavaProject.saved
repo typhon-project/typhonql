@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="JavaProject">
+  <eClassifiers xsi:type="ecore:EClass" name="JavaProject">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ownedPackageFragment" upperBound="-1" eType="//PackageFragment" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PackageFragment">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ownedCompilationUnit" upperBound="-1" eType="//CompilationUnit" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CompilationUnit">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="importDeclaration" upperBound="-1" eType="//ImportDeclaration" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ownedType" upperBound="-1" eType="//Type" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="declaration" ordered="false" eType="//PackageDeclaration" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ImportDeclaration"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Type">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="nestedType" upperBound="-1" eType="//Type" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ownedSuperType" upperBound="-1" eType="//Type"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="elementName" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="member_kind" ordered="false" unique="false" eType="//MEMBER_KIND"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="methods" upperBound="-1" eType="//Method" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fields" upperBound="-1" eType="//Field" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Field"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Method">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="returnType" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="parametersName" upperBound="-1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="parametersType" upperBound="-1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="JavaElement" abstract="true"/>
+  <eClassifiers xsi:type="ecore:EEnum" name="MEMBER_KIND">
+    <eLiterals name="class" value="1"/>
+    <eLiterals name="enum" value="2"/>
+    <eLiterals name="interface" value="3"/>
+    <eLiterals name="Annotation" value="4"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="NamedElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PackageDeclaration"/>
+</ecore:EPackage>

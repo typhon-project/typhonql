@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="SimpleAirlineDomain">
+  <eClassifiers xsi:type="ecore:EClass" name="Airport">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="departingFlight" ordered="false" upperBound="-1" eType="//Flight" eOpposite="//Flight/origin"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="arrivingFlight" ordered="false" upperBound="-1" eType="//Flight" eOpposite="//Flight/destination"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Flight">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="departTime" ordered="false" lowerBound="1" eType="//Time"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="duration" ordered="false" lowerBound="1" eType="//Time"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="maxnrPassengers" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="passenger" upperBound="-1" eType="//Passenger" eOpposite="//Passenger/flight"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="airline" ordered="false" lowerBound="1" eType="//Airline" eOpposite="//Airline/flight"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="origin" ordered="false" lowerBound="1" eType="//Airport" eOpposite="//Airport/departingFlight"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="destination" ordered="false" lowerBound="1" eType="//Airport" eOpposite="//Airport/arrivingFlight"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Airline">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="nationality" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="flight" ordered="false" upperBound="-1" eType="//Flight" eOpposite="//Flight/airline"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Passenger">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="age" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="gender" ordered="false" unique="false" lowerBound="1" eType="//Genre"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="needsAssistance" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="flight" ordered="false" lowerBound="1" eType="//Flight" eOpposite="//Flight/passenger"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Genre">
+    <eLiterals name="male" value="1"/>
+    <eLiterals name="female" value="2"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Time">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="year" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="day" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="hour" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="minute" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="second" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+</ecore:EPackage>

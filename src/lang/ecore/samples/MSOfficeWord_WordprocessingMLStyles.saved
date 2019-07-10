@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="WordprocessingMLStyles">
+  <eClassifiers xsi:type="ecore:EClass" name="DateTimeType">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="year" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="day" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="hour" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="minute" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="second" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="VersionType">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="n" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="nn" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ValueType" abstract="true"/>
+  <eClassifiers xsi:type="ecore:EClass" name="StringValue">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="FloatValue">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="DateTimeTypeValue">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="value" ordered="false" lowerBound="1" eType="//DateTimeType"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BooleanValue">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="DocumentPropertiesCollection">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dp_wordDocument" ordered="false" lowerBound="1" eType="//WordDocument" eOpposite="//WordDocument/wd_docProperties"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="subject" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="keywords" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="category" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="author" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="lastAuthor" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="manager" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="company" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="hyperlinkBase" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="revision" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="presentationFormat" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="guid" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="appName" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="version" ordered="false" eType="//VersionType" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="totalTime" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="lastPrinted" ordered="false" eType="//DateTimeType" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="created" ordered="false" eType="//DateTimeType" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="lastSaved" ordered="false" eType="//DateTimeType" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="pages" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="words" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="characters" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="charactersWithSpaces" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="bytes" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="lines" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="paragraphs" ordered="false" unique="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CustomDocumentPropertiesCollection">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="cdp_wordDocument" ordered="false" lowerBound="1" eType="//WordDocument" eOpposite="//WordDocument/wd_customDocProperties"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="customDocumentProperties" ordered="false" lowerBound="1" upperBound="-1" eType="//CustomDocumentProperty" containment="true" eOpposite="//CustomDocumentProperty/customDocumentProperty_cdpe"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CustomDocumentProperty">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="customDocumentProperty_cdpe" ordered="false" lowerBound="1" eType="//CustomDocumentPropertiesCollection" eOpposite="//CustomDocumentPropertiesCollection/customDocumentProperties"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="value" ordered="false" lowerBound="1" eType="//ValueType" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SmartTagType">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="smartTagType_ste" ordered="false" lowerBound="1" eType="//SmartTagsCollection" eOpposite="//SmartTagsCollection/smartTagTypes"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="namespaceuri" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="url" ordered="false" unique="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SmartTagsCollection">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="st_wordDocument" ordered="false" lowerBound="1" eType="//WordDocument" eOpposite="//WordDocument/wd_smartTags"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="smartTagTypes" ordered="false" upperBound="-1" eType="//SmartTagType" containment="true" eOpposite="//SmartTagType/smartTagType_ste"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="StringProperty"/>
+  <eClassifiers xsi:type="ecore:EClass" name="StringType">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="val" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="BreakType">
+    <eLiterals name="bt_page" value="1"/>
+    <eLiterals name="bt_column" value="2"/>
+    <eLiterals name="bt_text_wrapping" value="3"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="NoteValue">
+    <eLiterals name="ftn_normal" value="1"/>
+    <eLiterals name="ftn_separator" value="2"/>
+    <eLiterals name="ftn_continuation_separator" value="3"/>
+    <eLiterals name="ftn_continuation_notice" value="4"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="OnOffType">
+    <eLiterals name="oot_on" value="1"/>
+    <eLiterals name="oot_off" value="2"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="FldCharTypeProperty">
+    <eLiterals name="fctp_begin" value="1"/>
+    <eLiterals name="fctp_separate" value="2"/>
+    <eLiterals name="fctp_end" value="3"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="HintType">
+    <eLiterals name="ht_default" value="1"/>
+    <eLiterals name="ht_fareast" value="2"/>
+    <eLiterals name="ht_cs" value="3"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="StyleKindValue">
+    <eLiterals name="skv_paragraph" value="1"/>
+    <eLiterals name="skv_character" value="2"/>
+    <eLiterals name="skv_table" value="3"/>
+    <eLiterals name="skv_list" value="4"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="UnderlineProperty">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="val" ordered="false" unique="false" eType="//UnderlineValues"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="color" ordered="false" unique="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="UnderlineValues">
+    <eLiterals name="uv_single" value="1"/>
+    <eLiterals name="uv_words" value="2"/>
+    <eLiterals name="uv_double" value="3"/>
+    <eLiterals name="uv_thick" value="4"/>
+    <eLiterals name="uv_dotted" value="5"/>
+    <eLiterals name="uv_dotted_heavy" value="6"/>
+    <eLiterals name="uv_dash" value="7"/>
+    <eLiterals name="uv_dashed_heavy" value="8"/>
+    <eLiterals name="uv_dash_long" value="9"/>
+    <eLiterals name="uv_dash_long_heavy" value="10"/>
+    <eLiterals name="uv_dot_dash" value="11"/>
+    <eLiterals name="uv_dash_dot_heavy" value="12"/>
+    <eLiterals name="uv_dot_dot_dash" value="13"/>
+    <eLiterals name="uv_dash_dot_dot_heavy" value="14"/>
+    <eLiterals name="uv_wave" value="15"/>
+    <eLiterals name="uv_wavy_heavy" value="16"/>
+    <eLiterals name="uv_wavy_double" value="17"/>
+    <eLiterals name="uv_none" value="18"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="HighlightColorValues">
+    <eLiterals name="hcv_black" value="1"/>
+    <eLiterals name="hcv_blue" value="2"/>
+    <eLiterals name="hcv_cyan" value="3"/>
+    <eLiterals name="hcv_green" value="4"/>
+    <eLiterals name="hcv_magenta" value="5"/>
+    <eLiterals name="hcv_red" value="6"/>
+    <eLiterals name="hcv_yellow" value="7"/>
+    <eLiterals name="hcv_white" value="8"/>
+    <eLiterals name="hcv_dark_blue" value="9"/>
+    <eLiterals name="hcv_dark_cyan" value="10"/>
+    <eLiterals name="hcv_dark_green" value="11"/>
+    <eLiterals name="hcv_dark_magenta" value="12"/>
+    <eLiterals name="hcv_dark_red" value="13"/>
+    <eLiterals name="hcv_dark_yellow" value="14"/>
+    <eLiterals name="hcv_dark_gray" value="15"/>
+    <eLiterals name="hcv_light_gray" value="16"/>
+    <eLiterals name="hcv_none" value="17"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="VerticalAlignRunType">
+    <eLiterals name="vart_baseline" value="1"/>
+    <eLiterals name="vart_superscript" value="2"/>
+    <eLiterals name="vart_subscript" value="3"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="JustificationValue">
+    <eLiterals name="jv_left" value="1"/>
+    <eLiterals name="jv_center" value="2"/>
+    <eLiterals name="jv_right" value="3"/>
+    <eLiterals name="jv_both" value="4"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="WordDocument">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="wd_smartTags" ordered="false" eType="//SmartTagsCollection" containment="true" eOpposite="//SmartTagsCollection/st_wordDocument"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="wd_docProperties" ordered="false" eType="//DocumentPropertiesCollection" containment="true" eOpposite="//DocumentPropertiesCollection/dp_wordDocument"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="wd_customDocProperties" ordered="false" eType="//CustomDocumentPropertiesCollection" containment="true" eOpposite="//CustomDocumentPropertiesCollection/cdp_wordDocument"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ignoreSubtree" ordered="false" eType="//StringProperty" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ignoreElements" ordered="false" eType="//StringProperty" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fonts" ordered="false" eType="//FontsListElt" containment="true" eOpposite="//FontsListElt/fle_wordDocument"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="lists" ordered="false" eType="//ListsElt" containment="true" eOpposite="//ListsElt/le_wordDocument"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="styles" ordered="false" eType="//StylesElt" containment="true" eOpposite="//StylesElt/se_wordDocument"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="docPr" ordered="false" eType="//DocPrElt" containment="true" eOpposite="//DocPrElt/dpe_wordDocument"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="body" ordered="false" lowerBound="1" eType="//BodyElt" containment="true" eOpposite="//BodyElt/be_wordDocument"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="DocPrElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dpe_wordDocument" ordered="false" lowerBound="1" eType="//WordDocument" eOpposite="//WordDocument/docPr"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BodyElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="be_wordDocument" ordered="false" lowerBound="1" eType="//WordDocument" eOpposite="//WordDocument/body"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="blockLevelElts" upperBound="-1" eType="//BlockLevelElt" containment="true" eOpposite="//BlockLevelElt/ble_bodyElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="sectPr" ordered="false" eType="//SectPrElt" containment="true" eOpposite="//SectPrElt/spe_bodyElt"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BlockLevelElt" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ble_bodyElt" ordered="false" lowerBound="1" eType="//BodyElt" eOpposite="//BodyElt/blockLevelElts"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ble_note" ordered="false" lowerBound="1" eType="//NoteElt" eOpposite="//NoteElt/n_blockLevelElts"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ble_tableCellElt" ordered="false" lowerBound="1" eType="//TableCellElt" eOpposite="//TableCellElt/tce_content"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BlockLevelChunkElt" abstract="true"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ParaElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="pPr" ordered="false" eType="//ParaPrElt" containment="true" eOpposite="//ParaPrElt/ppe_pElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="pContentElts" upperBound="-1" eType="//ParaContentElt" containment="true" eOpposite="//ParaContentElt/pce_pElt"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ParaPrElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ppe_pElt" ordered="false" lowerBound="1" eType="//ParaElt" eOpposite="//ParaElt/pPr"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ppe_styleElt" ordered="false" lowerBound="1" eType="//StyleElt" eOpposite="//StyleElt/se_pPr"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="pStyle" ordered="false" eType="//StringProperty" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="keepNext" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="keepLines" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="pageBreakBefore" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="supressLineNumbers" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="suppressAutoHyphens" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="contextualSpacing" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="bidi" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="justification" ordered="false" unique="false" eType="//JustificationValue"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ParaContentElt" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="pce_pElt" ordered="false" lowerBound="1" eType="//ParaElt" eOpposite="//ParaElt/pContentElts"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RunElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rPr" ordered="false" eType="//RunPrElt" containment="true" eOpposite="//RunPrElt/rpe_rElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rContentElts" upperBound="-1" eType="//RunContentElt" containment="true" eOpposite="//RunContentElt/rce_rElt"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RunPrElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rpe_rElt" ordered="false" lowerBound="1" eType="//RunElt" eOpposite="//RunElt/rPr"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rpe_styleElt" ordered="false" lowerBound="1" eType="//StyleElt" eOpposite="//StyleElt/se_rPr"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rStyle" ordered="false" eType="//StringProperty" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rFonts" ordered="false" eType="//FontsElt" containment="true" eOpposite="//FontsElt/fse_runPrElt"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="bold" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="bold_cs" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="italic" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="italic_cs" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="capitals" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="smallCapitals" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="strike" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="doubleStrike" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="outline" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="shadow" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="emboss" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="imprint" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="noProof" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="vanish" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="specVanish" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="rtl" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="cs" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="underline" ordered="false" eType="//UnderlineProperty"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="color" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="highlight" ordered="false" unique="false" eType="//HighlightColorValues"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="verticalAlign" ordered="false" unique="false" eType="//VerticalAlignRunType"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="language" ordered="false" eType="//LangElt" eOpposite="//LangElt/le_runPrElt"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="LangElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="le_runPrElt" ordered="false" lowerBound="1" eType="//RunPrElt" eOpposite="//RunPrElt/language"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="val" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="bidi" ordered="false" unique="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RunContentElt" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rce_rElt" ordered="false" lowerBound="1" eType="//RunElt" eOpposite="//RunElt/rContentElts"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BreakElt">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" ordered="false" unique="false" eType="//BreakType"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Text"/>
+  <eClassifiers xsi:type="ecore:EClass" name="DelText"/>
+  <eClassifiers xsi:type="ecore:EClass" name="InstrText"/>
+  <eClassifiers xsi:type="ecore:EClass" name="DelInstrText"/>
+  <eClassifiers xsi:type="ecore:EClass" name="NoBreakHyphen"/>
+  <eClassifiers xsi:type="ecore:EClass" name="SoftHyphen"/>
+  <eClassifiers xsi:type="ecore:EClass" name="AnnotationRef"/>
+  <eClassifiers xsi:type="ecore:EClass" name="FootnoteRef"/>
+  <eClassifiers xsi:type="ecore:EClass" name="EndnoteRef"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Separator"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ContinuationSeparator"/>
+  <eClassifiers xsi:type="ecore:EClass" name="PgNum"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Cr"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Footnote"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Endnote"/>
+  <eClassifiers xsi:type="ecore:EClass" name="NoteElt" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="n_blockLevelElts" lowerBound="1" upperBound="-1" eType="//BlockLevelElt" containment="true" eOpposite="//BlockLevelElt/ble_note"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" ordered="false" unique="false" eType="//NoteValue"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="suppressRef" ordered="false" unique="false" eType="//OnOffType"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Picture"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Symbol"/>
+  <eClassifiers xsi:type="ecore:EClass" name="SymElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="font" ordered="false" lowerBound="1" eType="//StringType" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="char" ordered="false" lowerBound="1" eType="//StringType" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Tab"/>
+  <eClassifiers xsi:type="ecore:EClass" name="FldChar"/>
+  <eClassifiers xsi:type="ecore:EClass" name="FldCharElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fldData" ordered="false" eType="//StringType" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="fldCharType" ordered="false" unique="false" lowerBound="1" eType="//FldCharTypeProperty"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="fldLock" ordered="false" unique="false" lowerBound="1" eType="//OnOffType"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TableElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tblPr" ordered="false" lowerBound="1" eType="//TablePrElt" containment="true" eOpposite="//TablePrElt/tpe_tblElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tblGrid" ordered="false" lowerBound="1" eType="//TableGridElt" containment="true" eOpposite="//TableGridElt/tge_tblElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tblContent" lowerBound="1" upperBound="-1" eType="//TableContentElt" containment="true" eOpposite="//TableContentElt/tce_tblElt"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TablePrElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tpe_tblElt" ordered="false" lowerBound="1" eType="//TableElt" eOpposite="//TableElt/tblPr"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tpe_styleElt" ordered="false" lowerBound="1" eType="//StyleElt" eOpposite="//StyleElt/se_tblPr"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TableGridElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tge_tblElt" ordered="false" lowerBound="1" eType="//TableElt" eOpposite="//TableElt/tblGrid"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TableContentElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tce_tblElt" ordered="false" lowerBound="1" eType="//TableElt" eOpposite="//TableElt/tblContent"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tr" upperBound="-1" eType="//RowElt" containment="true" eOpposite="//RowElt/re_tblContentElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tce_runLevelElts" ordered="false" eType="//RunLevelElt" containment="true" eOpposite="//RunLevelElt/rle_tblContentElt"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RowElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="re_tblContentElt" ordered="false" lowerBound="1" eType="//TableContentElt" eOpposite="//TableContentElt/tr"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tblPrEx" ordered="false" eType="//TablePrExElt" containment="true" eOpposite="//TablePrExElt/tpee_rowElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="trPr" ordered="false" eType="//TableRowPrElt" containment="true" eOpposite="//TableRowPrElt/tpe_rowElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rowContent" lowerBound="1" upperBound="-1" eType="//RowContentElt" containment="true" eOpposite="//RowContentElt/rce_rowElt"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TablePrExElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tpee_rowElt" ordered="false" lowerBound="1" eType="//RowElt" eOpposite="//RowElt/tblPrEx"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TableRowPrElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tpe_rowElt" ordered="false" lowerBound="1" eType="//RowElt" eOpposite="//RowElt/trPr"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="trpe_styleElt" ordered="false" lowerBound="1" eType="//StyleElt" eOpposite="//StyleElt/se_trPr"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RowContentElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rce_rowElt" ordered="false" lowerBound="1" eType="//RowElt" eOpposite="//RowElt/rowContent"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tc" upperBound="-1" eType="//TableCellElt" containment="true" eOpposite="//TableCellElt/tce_rowContentElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rce_runLevelElts" ordered="false" eType="//RunLevelElt" containment="true" eOpposite="//RunLevelElt/rle_rowContentElt"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TableCellElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tce_rowContentElt" ordered="false" lowerBound="1" eType="//RowContentElt" eOpposite="//RowContentElt/tc"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tcPr" ordered="false" eType="//TableCellPrElt" containment="true" eOpposite="//TableCellPrElt/tcpe_tableCellElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tce_content" lowerBound="1" upperBound="-1" eType="//BlockLevelElt" containment="true" eOpposite="//BlockLevelElt/ble_tableCellElt"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TableCellPrElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tcpe_tableCellElt" ordered="false" lowerBound="1" eType="//TableCellElt" eOpposite="//TableCellElt/tcPr"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tcpe_styleElt" ordered="false" lowerBound="1" eType="//StyleElt" eOpposite="//StyleElt/se_tcPr"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="FontsListElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fle_wordDocument" ordered="false" lowerBound="1" eType="//WordDocument" eOpposite="//WordDocument/fonts"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="defaultFonts" ordered="false" eType="//FontsElt" containment="true" eOpposite="//FontsElt/fse_fontsListElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fonts" upperBound="-1" eType="//FontElt" containment="true" eOpposite="//FontElt/fe_fontsListElt"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="FontsElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fse_fontsListElt" ordered="false" lowerBound="1" eType="//FontsListElt" eOpposite="//FontsListElt/defaultFonts"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fse_runPrElt" ordered="false" lowerBound="1" eType="//RunPrElt" eOpposite="//RunPrElt/rFonts"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="hint" ordered="false" unique="false" lowerBound="1" eType="//HintType"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ascii" ordered="false" lowerBound="1" eType="//StringType" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="h_ansi" ordered="false" lowerBound="1" eType="//StringType" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fareast" ordered="false" lowerBound="1" eType="//StringType" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="cs" ordered="false" lowerBound="1" eType="//StringType" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="FontElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fe_fontsListElt" ordered="false" lowerBound="1" eType="//FontsListElt" eOpposite="//FontsListElt/fonts"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="name" ordered="false" lowerBound="1" eType="//StringType" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="altName" ordered="false" eType="//StringProperty" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="StylesElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="se_wordDocument" ordered="false" lowerBound="1" eType="//WordDocument" eOpposite="//WordDocument/styles"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="versionOfBuiltInStylenames" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="styles" ordered="false" upperBound="-1" eType="//StyleElt" eOpposite="//StyleElt/se_stylesElt"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="StyleElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="se_stylesElt" ordered="false" lowerBound="1" eType="//StylesElt" eOpposite="//StylesElt/styles"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" ordered="false" unique="false" eType="//StyleKindValue"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="styleId" ordered="false" eType="//StringType" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="default" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="name" ordered="false" eType="//StringProperty" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="aliases" ordered="false" eType="//StringProperty" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="sti" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="basedOn" ordered="false" eType="//StringProperty" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="next" ordered="false" eType="//StringProperty" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="link" ordered="false" eType="//StringProperty" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="autoRedefine" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="hidden" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="semiHidden" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="locked" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="personal" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="personalCompose" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="personalReply" ordered="false" unique="false" eType="//OnOffType"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rsid" ordered="false" eType="//StringType" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="se_pPr" ordered="false" eType="//ParaPrElt" eOpposite="//ParaPrElt/ppe_styleElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="se_rPr" ordered="false" eType="//RunPrElt" eOpposite="//RunPrElt/rpe_styleElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="se_tblPr" ordered="false" eType="//TablePrElt" eOpposite="//TablePrElt/tpe_styleElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="se_trPr" ordered="false" eType="//TableRowPrElt" eOpposite="//TableRowPrElt/trpe_styleElt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="se_tcPr" ordered="false" eType="//TableCellPrElt" eOpposite="//TableCellPrElt/tcpe_styleElt"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ListsElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="le_wordDocument" ordered="false" lowerBound="1" eType="//WordDocument" eOpposite="//WordDocument/lists"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SectPrElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="spe_bodyElt" ordered="false" lowerBound="1" eType="//BodyElt" eOpposite="//BodyElt/sectPr"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RunLevelElt">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rle_tblContentElt" ordered="false" lowerBound="1" eType="//TableContentElt" eOpposite="//TableContentElt/tce_runLevelElts"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rle_rowContentElt" ordered="false" lowerBound="1" eType="//RowContentElt" eOpposite="//RowContentElt/rce_runLevelElts"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CfChunk"/>
+  <eClassifiers xsi:type="ecore:EClass" name="SimpleFieldElt"/>
+  <eClassifiers xsi:type="ecore:EClass" name="HLinkElt"/>
+  <eClassifiers xsi:type="ecore:EClass" name="SubDocElt"/>
+  <eClassifiers xsi:type="ecore:EClass" name="PictureType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="TabElt"/>
+</ecore:EPackage>

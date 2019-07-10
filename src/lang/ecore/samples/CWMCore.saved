@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="CWMCore">
+  <eClassifiers xsi:type="ecore:EEnum" name="VisibilityKind">
+    <eLiterals name="vk_public_vis" value="1"/>
+    <eLiterals name="vk_private_vis" value="2"/>
+    <eLiterals name="vk_protected_vis" value="3"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BooleanExpression">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="expresssion" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ModelElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="visibility" ordered="false" unique="false" lowerBound="1" eType="//VisibilityKind"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="contraints" ordered="false" upperBound="-1" eType="//Constraint" eOpposite="//Constraint/constrainedElements"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="clientDependencies" ordered="false" upperBound="-1" eType="//Dependency" eOpposite="//Dependency/clients"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="supplierDependencies" ordered="false" upperBound="-1" eType="//Dependency" eOpposite="//Dependency/suppliers"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="namespace" ordered="false" eType="//NameSpace" eOpposite="//NameSpace/ownedElements"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="importers" ordered="false" upperBound="-1" eType="//Package" eOpposite="//Package/importedElements"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Dependency">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="kind" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="clients" ordered="false" lowerBound="1" upperBound="-1" eType="//ModelElement" eOpposite="//ModelElement/clientDependencies"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="suppliers" ordered="false" lowerBound="1" upperBound="-1" eType="//ModelElement" eOpposite="//ModelElement/supplierDependencies"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Constraint">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="body" ordered="false" lowerBound="1" eType="//BooleanExpression" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="constrainedElements" ordered="false" upperBound="-1" eType="//ModelElement" eOpposite="//ModelElement/contraints"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Feature">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="owner" ordered="false" eType="//Classifier" eOpposite="//Classifier/features"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="StructuralFeature">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" ordered="false" lowerBound="1" eType="//Classifier"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Attribute"/>
+  <eClassifiers xsi:type="ecore:EClass" name="NameSpace">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ownedElements" ordered="false" upperBound="-1" eType="//ModelElement" containment="true" eOpposite="//ModelElement/namespace"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Classifier">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="features" upperBound="-1" eType="//Feature" containment="true" eOpposite="//Feature/owner"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Package">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="importedElements" ordered="false" upperBound="-1" eType="//ModelElement" eOpposite="//ModelElement/importers"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Class"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Datatype"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Subsystem"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Model"/>
+</ecore:EPackage>

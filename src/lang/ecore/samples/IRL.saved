@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="IRL">
+  <eClassifiers xsi:type="ecore:EClass" name="Element">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="location" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="commentsBefore" unique="false" upperBound="-1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="commentsAfter" unique="false" upperBound="-1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="NamedElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ExtendedIdentifier">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parentIdentifier" ordered="false" eType="//ExtendedIdentifier"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="extendedIdentifierOwner" ordered="false" lowerBound="1" eType="//Extended" eOpposite="//Extended/extendedIdentifier"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Extended" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="extendedIdentifier" ordered="false" lowerBound="1" eType="//ExtendedIdentifier" containment="true" eOpposite="//ExtendedIdentifier/extendedIdentifierOwner"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Definition" abstract="true"/>
+  <eClassifiers xsi:type="ecore:EClass" name="RuleSet">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="importDefinitions" upperBound="-1" eType="//ImportDefinition" containment="true" eOpposite="//ImportDefinition/importDefinitionOwners"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="propertyDefinitions" ordered="false" eType="//IRLDeclarations/PropertyDefinition" containment="true" eOpposite="//IRLDeclarations/PropertyDefinition/propertyDefinitionOwner"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rulesetElementDefinitions" ordered="false" upperBound="-1" eType="//IRLRules/RulesetElementDefinition" containment="true" eOpposite="//IRLRules/RulesetElementDefinition/rulesetElementDefinitionOwner"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ImportDefinition">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="importDefinitionOwners" ordered="false" lowerBound="1" eType="//RuleSet" eOpposite="//RuleSet/importDefinitions"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="dotStar" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eSubpackages name="IRLExpressions">
+    <eClassifiers xsi:type="ecore:EClass" name="Expression" abstract="true">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="appliedProperty" ordered="false" eType="//IRLExpressions/PropertyCallExpression" eOpposite="//IRLExpressions/PropertyCallExpression/source"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="expressionOwner" ordered="false" lowerBound="1" eType="//IRLDeclarations/RuleSetDeclaration" eOpposite="//IRLDeclarations/RuleSetDeclaration/expression"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="loopExpression" ordered="false" eType="//IRLExpressions/LoopExpression" eOpposite="//IRLExpressions/LoopExpression/body"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="parentOperation" ordered="false" eType="//IRLExpressions/OperationCallExpression" eOpposite="//IRLExpressions/OperationCallExpression/arguments"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="ruleConditionExpression" ordered="false" lowerBound="1" eType="//IRLRules/RuleCondition" eOpposite="//IRLRules/RuleCondition/conditionExpression"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="parentInsert" ordered="false" eType="//IRLRules/PRRActions/CreateAction" eOpposite="//IRLRules/PRRActions/CreateAction/insertArguments"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="parentModifying" ordered="false" eType="//IRLRules/PRRActions/ModifyAction" eOpposite="//IRLRules/PRRActions/ModifyAction/modifiedArguments"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="PropertyCallExpression" abstract="true">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="source" ordered="false" eType="//IRLExpressions/Expression" containment="true" eOpposite="//IRLExpressions/Expression/appliedProperty"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IteratorExp">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="LoopExpression">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="body" ordered="false" lowerBound="1" eType="//IRLExpressions/Expression" containment="true" eOpposite="//IRLExpressions/Expression/loopExpression"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="iterators" ordered="false" lowerBound="1" upperBound="-1" eType="//IRLExpressions/Iterator" containment="true" eOpposite="//IRLExpressions/Iterator/loopExpression"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="OperatorCallExpression"/>
+    <eClassifiers xsi:type="ecore:EClass" name="OperationCallExpression">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="arguments" upperBound="-1" eType="//IRLExpressions/Expression" containment="true" eOpposite="//IRLExpressions/Expression/parentOperation"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="operationName" ordered="false" unique="false" lowerBound="1"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="signature" ordered="false" unique="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="PrimitiveExpression" abstract="true"/>
+    <eClassifiers xsi:type="ecore:EClass" name="Iterator">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="loopExpression" ordered="false" eType="//IRLExpressions/LoopExpression" eOpposite="//IRLExpressions/LoopExpression/iterators"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="NumericExpression" abstract="true"/>
+    <eClassifiers xsi:type="ecore:EClass" name="IntegerExpression">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="integerSymbol" ordered="false" unique="false" lowerBound="1"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="RealExpression">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="realSymbol" ordered="false" unique="false" lowerBound="1"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="BooleanExpression">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="booleanSymbol" ordered="false" unique="false" lowerBound="1"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="NavigationOrAttributeCallExpression">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="VariableExpression">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="referredVariable" ordered="false" lowerBound="1" eType="//IRLDeclarations/VariableDeclaration" eOpposite="//IRLDeclarations/VariableDeclaration/variableExp"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="StringExpression">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="stringSymbol" ordered="false" unique="false" lowerBound="1"/>
+    </eClassifiers>
+  </eSubpackages>
+  <eSubpackages name="IRLTypes">
+    <eClassifiers xsi:type="ecore:EClass" name="Type" abstract="true">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="typeOwner" ordered="false" lowerBound="1" eType="//IRLTypes/Typed" eOpposite="//IRLTypes/Typed/type"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Typed" abstract="true">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="type" ordered="false" lowerBound="1" eType="//IRLTypes/Type" containment="true" eOpposite="//IRLTypes/Type/typeOwner"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Primitive" abstract="true"/>
+    <eClassifiers xsi:type="ecore:EClass" name="StringType"/>
+    <eClassifiers xsi:type="ecore:EClass" name="NumericType" abstract="true"/>
+    <eClassifiers xsi:type="ecore:EClass" name="IntegerType"/>
+    <eClassifiers xsi:type="ecore:EClass" name="RealType"/>
+    <eClassifiers xsi:type="ecore:EClass" name="BooleanType"/>
+    <eClassifiers xsi:type="ecore:EClass" name="ClassType"/>
+  </eSubpackages>
+  <eSubpackages name="IRLDeclarations">
+    <eClassifiers xsi:type="ecore:EClass" name="PropertyDefinition">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="propertyDefinitionOwner" ordered="false" lowerBound="1" eType="//RuleSet" eOpposite="//RuleSet/propertyDefinitions"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="ruleSetDeclarations" upperBound="-1" eType="//IRLDeclarations/RuleSetDeclaration" containment="true" eOpposite="//IRLDeclarations/RuleSetDeclaration/ruleSetDeclarationOwner"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="semicoloneOpt" ordered="false" unique="false" lowerBound="1"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="RuleSetDeclaration" abstract="true">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="ruleSetDeclarationOwner" ordered="false" lowerBound="1" eType="//IRLDeclarations/PropertyDefinition" eOpposite="//IRLDeclarations/PropertyDefinition/ruleSetDeclarations"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="expression" ordered="false" eType="//IRLExpressions/Expression" containment="true" eOpposite="//IRLExpressions/Expression/expressionOwner"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="ClassInstancesDeclaration"/>
+    <eClassifiers xsi:type="ecore:EClass" name="PropertyDeclaration"/>
+    <eClassifiers xsi:type="ecore:EClass" name="VariableDeclaration">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="varName" ordered="false" unique="false" lowerBound="1"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="variableExp" ordered="false" upperBound="-1" eType="//IRLExpressions/VariableExpression" eOpposite="//IRLExpressions/VariableExpression/referredVariable"/>
+    </eClassifiers>
+  </eSubpackages>
+  <eSubpackages name="IRLRules">
+    <eClassifiers xsi:type="ecore:EClass" name="RulesetElementDefinition" abstract="true">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="rulesetElementDefinitionOwner" ordered="false" lowerBound="1" eType="//RuleSet" eOpposite="//RuleSet/rulesetElementDefinitions"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="RuleDefinition">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="binding" ordered="false" eType="//IRLRules/Binding" containment="true" eOpposite="//IRLRules/Binding/bindingOwner"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="condition" ordered="false" eType="//IRLRules/RuleCondition" containment="true" eOpposite="//IRLRules/RuleCondition/ruleDefinitionCondition"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="actions" upperBound="-1" eType="//IRLRules/RuleAction" containment="true" eOpposite="//IRLRules/RuleAction/actionOwner"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Binding">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="bindingOwner" ordered="false" lowerBound="1" eType="//IRLRules/RuleDefinition" eOpposite="//IRLRules/RuleDefinition/binding"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="ruleVariable" ordered="false" upperBound="-1" eType="//IRLRules/RuleVariable" containment="true" eOpposite="//IRLRules/RuleVariable/ruleVariableOwner"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="RuleVariable" abstract="true">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="ruleVariableOwner" ordered="false" lowerBound="1" eType="//IRLRules/Binding" eOpposite="//IRLRules/Binding/ruleVariable"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="filter" upperBound="-1" eType="//IRLExpressions/Expression" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="collectIn" ordered="false" eType="//IRLExpressions/Expression" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="CollectionOperationRuleVariable">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="operationName" ordered="false" unique="false" lowerBound="1"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="collectWhere" ordered="false" eType="//IRLExpressions/Expression" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="SimpleRuleVariable"/>
+    <eClassifiers xsi:type="ecore:EClass" name="RuleCondition">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="conditionExpression" ordered="false" eType="//IRLExpressions/Expression" containment="true" eOpposite="//IRLExpressions/Expression/ruleConditionExpression"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="ruleDefinitionCondition" ordered="false" lowerBound="1" eType="//IRLRules/RuleDefinition" eOpposite="//IRLRules/RuleDefinition/condition"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="RuleAction">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="actionOwner" ordered="false" eType="//IRLRules/RuleDefinition" eOpposite="//IRLRules/RuleDefinition/actions"/>
+    </eClassifiers>
+    <eSubpackages name="PRRActions">
+      <eClassifiers xsi:type="ecore:EClass" name="DeleteAction">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="objValue" ordered="false" lowerBound="1" eType="//IRLExpressions/Expression" containment="true"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="CreateAction">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="insertArguments" upperBound="-1" eType="//IRLExpressions/Expression" containment="true" eOpposite="//IRLExpressions/Expression/parentInsert"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="ModifyAction">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="objValue" ordered="false" lowerBound="1" eType="//IRLExpressions/Expression" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="modifiedArguments" upperBound="-1" eType="//IRLExpressions/Expression" containment="true" eOpposite="//IRLExpressions/Expression/parentModifying"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="UpdateAction">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="objValue" ordered="false" lowerBound="1" eType="//IRLExpressions/Expression" containment="true"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="InvokeAction">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="invocation" ordered="false" lowerBound="1" eType="//IRLExpressions/Expression" containment="true"/>
+      </eClassifiers>
+    </eSubpackages>
+  </eSubpackages>
+</ecore:EPackage>

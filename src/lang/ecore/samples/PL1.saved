@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="PL/I">
+  <eClassifiers xsi:type="ecore:EClass" name="PLIClassifier">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="typedElements" ordered="false" upperBound="-1" eType="//PLIElement" eOpposite="//PLIElement/sharedType"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PLISimpleType">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="alias" ordered="false" lowerBound="1" eType="//PLIAlias" eOpposite="//PLIAlias/type"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PLINamedType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="PLIComposedType">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="elements" ordered="false" upperBound="-1" eType="//PLIElement" containment="true" eOpposite="//PLIElement/group"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PLIAlias">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" ordered="false" lowerBound="1" eType="//PLISimpleType" containment="true" eOpposite="//PLISimpleType/alias"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="contains" ordered="false" lowerBound="1" upperBound="-1" eType="//PLIAttribute" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PLIAttribute"/>
+  <eClassifiers xsi:type="ecore:EClass" name="PLIComputationalType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="PLINonComputationalType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="PLIElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="level" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="sharedType" ordered="false" eType="//PLIClassifier" eOpposite="//PLIClassifier/typedElements"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="group" ordered="false" eType="//PLIComposedType" eOpposite="//PLIComposedType/elements"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="initial" ordered="false" eType="//PLIElementInitialValue"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="source" ordered="false" lowerBound="1" eType="//PLISourceText"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="array" ordered="false" eType="//PLIArray" containment="true" eOpposite="//PLIArray/arrayOf"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PLIElementInitialValue">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="initialValue" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PLISourceText">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="source" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="fileName" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PLIArray">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="arrayOf" ordered="false" eType="//PLIElement" eOpposite="//PLIElement/array"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PLIFixedBoundArray">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="IBound" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="uBound" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="referredTo" ordered="false" lowerBound="1" eType="//PLIElement"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PLIFixedLboundArray">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="IBound" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="uBoundToAllocate" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="referredTo" ordered="false" lowerBound="1" eType="//PLIElement"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PLIHBoundArray">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="uBound" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="IBoundToAllocate" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="referredTo" ordered="false" lowerBound="1" eType="//PLIElement"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PLIVariableBoundArray">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="IBoundToAllocate" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="hBoundToAllocate" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="referredTo" ordered="false" lowerBound="1" eType="//PLIElement"/>
+  </eClassifiers>
+</ecore:EPackage>

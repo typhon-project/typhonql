@@ -1,0 +1,17 @@
+Machine Doors {
+  states: [
+    State closed {
+      transitions: []
+      final: false
+    }
+    State removed {
+      transitions: []
+      final: false
+    }
+    State opened {
+      transitions: []
+      final: false
+    }
+  ]
+  initial: |project://rascal-ecore/src/lang/ecore/tests/removeAll.old#//@states.0|
+}

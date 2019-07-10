@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="SWRC">
+  <eClassifiers xsi:type="ecore:EClass" name="Bibliography">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="publications" ordered="false" upperBound="-1" eType="//Publication" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Publication" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="abstract" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="keywords" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="note" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="year" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Article">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="author" ordered="false" lowerBound="1" upperBound="-1" eType="//Person"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="journal" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="number" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="pages" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="volume" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Book">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="number" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="volume" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="series" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="source" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="address" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="edition" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isbn" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="price" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="editor" ordered="false" lowerBound="1" eType="//Person"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="publisher" ordered="false" lowerBound="1" eType="//Organization"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="author" ordered="false" lowerBound="1" upperBound="-1" eType="//Person"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="InBook">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="author" ordered="false" lowerBound="1" upperBound="-1" eType="//Person"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="publisher" ordered="false" lowerBound="1" eType="//Organization"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="editor" ordered="false" lowerBound="1" eType="//Person"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="number" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="pages" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="volume" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="series" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="chapter" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="address" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Booklet">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="author" ordered="false" lowerBound="1" upperBound="-1" eType="//Person"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="address" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="edition" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="howpublished" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="InCollection">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="editor" ordered="false" lowerBound="1" eType="//Person"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="author" ordered="false" lowerBound="1" upperBound="-1" eType="//Person"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="publisher" ordered="false" lowerBound="1" eType="//Organization"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="number" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="pages" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="address" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="edition" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="volume" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="series" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="chapter" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="booktitle" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="InProceedings">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="editor" ordered="false" lowerBound="1" eType="//Person"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="author" ordered="false" lowerBound="1" upperBound="-1" eType="//Person"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="number" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="pages" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="address" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="volume" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="series" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="booktitle" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organization" ordered="false" lowerBound="1" eType="//Organization"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="publisher" ordered="false" lowerBound="1" eType="//Organization"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Proceedings">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="editor" ordered="false" lowerBound="1" eType="//Person"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="publisher" ordered="false" lowerBound="1" eType="//Organization"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organization" ordered="false" lowerBound="1" eType="//Organization"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="number" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="volume" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="address" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="series" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Manual">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="author" ordered="false" lowerBound="1" upperBound="-1" eType="//Person"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organization" ordered="false" lowerBound="1" eType="//Organization"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="address" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="edition" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Misc">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="howpublished" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Unpublished">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="author" ordered="false" lowerBound="1" upperBound="-1" eType="//Person"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Thesis" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="author" ordered="false" lowerBound="1" upperBound="-1" eType="//Person"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="school" ordered="false" lowerBound="1" eType="//University"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="address" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="MasterThesis"/>
+  <eClassifiers xsi:type="ecore:EClass" name="PhDThesis"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Report" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="author" ordered="false" upperBound="-1" eType="//Person"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ProjectReport">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="describesProject" ordered="false" lowerBound="1" eType="//Project" eOpposite="//Project/projectInfo"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TechnicalReport">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="series" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organization" ordered="false" lowerBound="1" eType="//Organization"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Event">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="date" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="eventTitle" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="location" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="atEvent" ordered="false" lowerBound="1" eType="//Event" eOpposite="//Event/hasPartEvent"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="hasPartEvent" ordered="false" lowerBound="1" eType="//Event" eOpposite="//Event/atEvent"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Conference">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="series" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Workshop">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="series" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Exhibition"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Lecture">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="givenBy" ordered="false" lowerBound="1" eType="//Person"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Meeting">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="participant" ordered="false" upperBound="-1" eType="//Person"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ProjectMeeting"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Person">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="address" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="email" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="fax" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="homepage" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="phone" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="photo" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Employee">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="affiliation" ordered="false" lowerBound="1" eType="//Organization" eOpposite="//Organization/employs"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Manager"/>
+  <eClassifiers xsi:type="ecore:EClass" name="AdministrativeStaff"/>
+  <eClassifiers xsi:type="ecore:EClass" name="TechnicalStaff"/>
+  <eClassifiers xsi:type="ecore:EClass" name="AcademicStaff">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="cooperateWith" ordered="false" upperBound="-1" eType="//AcademicStaff"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="editor" ordered="false" lowerBound="1" eType="//Publication"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="headOf" ordered="false" lowerBound="1" eType="//Project" eOpposite="//Project/head"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="headOfGroup" ordered="false" lowerBound="1" eType="//ResearchGroup" eOpposite="//ResearchGroup/head"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="memberOfPC" ordered="false" lowerBound="1" eType="//Event"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organizerOrChairOf" ordered="false" lowerBound="1" eType="//Event"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="publication" ordered="false" upperBound="-1" eType="//Publication"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="supervises" ordered="false" upperBound="-1" eType="//PhDStudent" eOpposite="//PhDStudent/supervisor"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="worksAtProject" ordered="false" lowerBound="1" eType="//ResearchTopic" eOpposite="//ResearchTopic/isWorkedOnBy"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Lecturer"/>
+  <eClassifiers xsi:type="ecore:EClass" name="FacultyMember"/>
+  <eClassifiers xsi:type="ecore:EClass" name="FullProfessor"/>
+  <eClassifiers xsi:type="ecore:EClass" name="AssistantProfessor"/>
+  <eClassifiers xsi:type="ecore:EClass" name="AssociateProfessor"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Student">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="studiesAt" ordered="false" lowerBound="1" eType="//University"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Undergraduate"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Graduate"/>
+  <eClassifiers xsi:type="ecore:EClass" name="PhDStudent">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="publication" ordered="false" upperBound="-1" eType="//Publication"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="worksAtProject" ordered="false" lowerBound="1" eType="//Project"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="supervisor" ordered="false" lowerBound="1" eType="//AcademicStaff" eOpposite="//AcademicStaff/supervises"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Organization">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="location" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="carriesOut" ordered="false" upperBound="-1" eType="//Project" eOpposite="//Project/carriedOutBy"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="develops" ordered="false" upperBound="-1" eType="//Product" eOpposite="//Product/developedBy"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="employs" ordered="false" upperBound="-1" eType="//Employee" eOpposite="//Employee/affiliation"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="finances" ordered="false" upperBound="-1" eType="//Project" eOpposite="//Project/financedBy"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="publishes" ordered="false" upperBound="-1" eType="//Publication"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="technicalReport" ordered="false" upperBound="-1" eType="//TechnicalReport"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ResearchGroup">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="head" ordered="false" lowerBound="1" eType="//AcademicStaff" eOpposite="//AcademicStaff/headOfGroup"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="member" ordered="false" upperBound="-1" eType="//Employee"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Association"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Department">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="hasParts" ordered="false" lowerBound="1" eType="//Institute"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Institute">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="cooperateWith" ordered="false" lowerBound="1" eType="//Institute"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="hasParts" ordered="false" upperBound="-1" eType="//ResearchGroup"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Enterprise"/>
+  <eClassifiers xsi:type="ecore:EClass" name="University">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="hasParts" ordered="false" upperBound="-1" eType="//Department"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="student" ordered="false" upperBound="-1" eType="//Student" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Project" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="carriedOutBy" ordered="false" lowerBound="1" eType="//Organization" eOpposite="//Organization/carriesOut"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="financedBy" ordered="false" lowerBound="1" eType="//Organization" eOpposite="//Organization/finances"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="head" ordered="false" lowerBound="1" eType="//AcademicStaff" eOpposite="//AcademicStaff/headOf"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="isAbout" ordered="false" lowerBound="1" upperBound="-1" eType="//ResearchTopic" eOpposite="//ResearchTopic/dealWithIn"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="member" ordered="false" upperBound="-1" eType="//Person"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="projectInfo" ordered="false" upperBound="-1" eType="//ProjectReport" eOpposite="//ProjectReport/describesProject"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ResearchProject"/>
+  <eClassifiers xsi:type="ecore:EClass" name="DevelopmentProject"/>
+  <eClassifiers xsi:type="ecore:EClass" name="SoftwareProject">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="product" ordered="false" lowerBound="1" eType="//Product"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Product">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="developedBy" ordered="false" lowerBound="1" eType="//Organization" eOpposite="//Organization/develops"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SoftwareComponent">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="hasPrice" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Topic">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ResearchTopic">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dealWithIn" ordered="false" lowerBound="1" eType="//Project" eOpposite="//Project/isAbout"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="isWorkedOnBy" ordered="false" upperBound="-1" eType="//AcademicStaff" eOpposite="//AcademicStaff/worksAtProject"/>
+  </eClassifiers>
+</ecore:EPackage>

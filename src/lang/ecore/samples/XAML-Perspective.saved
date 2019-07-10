@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="XAML">
+  <eClassifiers xsi:type="ecore:EClass" name="Page">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="xmlns" ordered="false" upperBound="-1" eType="//NameSpace" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="graphContainer" ordered="false" lowerBound="1" eType="//GraphicalContainer" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="pageResources" ordered="false" lowerBound="1" eType="//PageResource" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="NameSpace">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="namespace" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="identifier" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PageResource">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dictionaries" ordered="false" upperBound="-1" eType="//ResourceDictionary" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="GraphicalContainer" abstract="true"/>
+  <eClassifiers xsi:type="ecore:EClass" name="WinFXElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="namespace" ordered="false" lowerBound="1" eType="//NameSpace"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PerspectiveElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="namespace" ordered="false" lowerBound="1" eType="//NameSpace"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ResourceDictionary">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="source" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Grid">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="object3D" ordered="false" upperBound="-1" eType="//Object3D" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Object3D" abstract="true"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Workshop3D">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="elements3D" ordered="false" upperBound="-1" eType="//Element3D" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Element3D"/>
+  <eClassifiers xsi:type="ecore:EClass" name="UI3Delement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="transform" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="material" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="name" ordered="false" lowerBound="1" eType="//Name" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="XyzAxis3D">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="length" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Box3D"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Square3D"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Name">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+</ecore:EPackage>

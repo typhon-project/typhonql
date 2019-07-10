@@ -1,0 +1,6 @@
+machine Doors
+init closed
+state closed
+  on bar, newEvent, foo => closed
+end
+end

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="WSDL">
+  <eClassifiers xsi:type="ecore:EClass" name="Port">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="service" ordered="false" lowerBound="1" eType="//Service" eOpposite="//Service/ports"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="binding" ordered="false" lowerBound="1" eType="//Binding" eOpposite="//Binding/ports"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Service">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ports" ordered="false" upperBound="-1" eType="//Port" containment="true" eOpposite="//Port/service"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Param">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="message" ordered="false" lowerBound="1" eType="//Message" eOpposite="//Message/params"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Input">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="operation" ordered="false" lowerBound="1" eType="//Operation" eOpposite="//Operation/input"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Output">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="operation" ordered="false" lowerBound="1" eType="//Operation" eOpposite="//Operation/output"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PortType">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="operations" ordered="false" upperBound="-1" eType="//Operation" containment="true" eOpposite="//Operation/type"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bindings" ordered="false" upperBound="-1" eType="//Binding" eOpposite="//Binding/type"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Operation">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="input" ordered="false" eType="//Input" containment="true" eOpposite="//Input/operation"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="output" ordered="false" eType="//Output" containment="true" eOpposite="//Output/operation"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" ordered="false" lowerBound="1" eType="//PortType" eOpposite="//PortType/operations"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="faults" ordered="false" upperBound="-1" eType="//Fault" containment="true" eOpposite="//Fault/operation"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="StartWithExtensions"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Binding">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ports" ordered="false" upperBound="-1" eType="//Port" eOpposite="//Port/binding"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" ordered="false" lowerBound="1" eType="//PortType" eOpposite="//PortType/bindings"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="operations" ordered="false" upperBound="-1" eType="//BindingOperation" containment="true" eOpposite="//BindingOperation/bind"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BindingFault">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="operation" ordered="false" lowerBound="1" eType="//BindingOperation" containment="true" eOpposite="//BindingOperation/faults"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="binding" ordered="false" lowerBound="1" eType="//Fault"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BindingOperation">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bind" ordered="false" lowerBound="1" eType="//Binding" eOpposite="//Binding/operations"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="binding" ordered="false" lowerBound="1" eType="//Operation"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="input" ordered="false" eType="//StartWithExtensions"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="output" ordered="false" eType="//StartWithExtensions"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="faults" ordered="false" upperBound="-1" eType="//BindingFault" containment="true" eOpposite="//BindingFault/operation"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Fault">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="operation" ordered="false" lowerBound="1" eType="//Operation" eOpposite="//Operation/faults"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="message" ordered="false" lowerBound="1" eType="//Message" eOpposite="//Message/faults"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Message">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="params" ordered="false" upperBound="-1" eType="//Param" eOpposite="//Param/message"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="faults" ordered="false" upperBound="-1" eType="//Fault" eOpposite="//Fault/message"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parts" ordered="false" upperBound="-1" eType="//Part" eOpposite="//Part/message"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Part">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="message" ordered="false" lowerBound="1" eType="//Message" eOpposite="//Message/parts"/>
+  </eClassifiers>
+</ecore:EPackage>

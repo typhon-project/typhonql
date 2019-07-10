@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="Reqtify">
+  <eClassifiers xsi:type="ecore:EClass" name="Project">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="documents" ordered="false" lowerBound="1" upperBound="-1" eType="//Document" containment="true" eOpposite="//Document/project"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TypedElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ElementWithIL" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="label" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Document">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="project" ordered="false" lowerBound="1" eType="//Project" eOpposite="//Project/documents"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="sections" ordered="false" upperBound="-1" eType="//Section" containment="true" eOpposite="//Section/document"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TextElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Section">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="document" ordered="false" eType="//Document" eOpposite="//Document/sections"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="sectionChildren" ordered="false" upperBound="-1" eType="//Section" containment="true" eOpposite="//Section/sectionParent"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="sectionParent" ordered="false" eType="//Section" eOpposite="//Section/sectionChildren"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="requirements" ordered="false" upperBound="-1" eType="//AbstractRequirement" containment="true" eOpposite="//AbstractRequirement/section"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="AbstractRequirement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="section" ordered="false" eType="//Section" eOpposite="//Section/requirements"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="isContained" ordered="false" eType="//MacroRequirement" eOpposite="//MacroRequirement/contains"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="coverLinks" ordered="false" upperBound="-1" eType="//CoverLink" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="attribute" ordered="false" upperBound="-1" eType="//Attribute" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Requirement"/>
+  <eClassifiers xsi:type="ecore:EClass" name="MacroRequirement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="contains" ordered="false" upperBound="-1" eType="//AbstractRequirement" containment="true" eOpposite="//AbstractRequirement/isContained"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CoverLink">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="linkWith" ordered="false" lowerBound="1" eType="//AbstractRequirement"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Attribute">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+</ecore:EPackage>

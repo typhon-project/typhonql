@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="PIF">
+  <eClassifiers xsi:type="ecore:EClass" name="Entity"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Activity"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Object"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Timepoint"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Relation"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Decision"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Agent"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Creates"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Modifies"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Before"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Uses"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Performs"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ActivityStatus"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Succesor"/>
+</ecore:EPackage>

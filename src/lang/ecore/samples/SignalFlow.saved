@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="SignalFlow">
+  <eClassifiers xsi:type="ecore:EClass" name="RootFolder">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="compoundComponent" ordered="false" upperBound="-1" eType="//CompoundComponent" containment="true" eOpposite="//CompoundComponent/rootFolder"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CompoundComponent">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rootFolder" ordered="false" lowerBound="1" eType="//RootFolder" eOpposite="//RootFolder/compoundComponent"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="baseComponent" ordered="false" upperBound="-1" eType="//BaseComponent" containment="true" eOpposite="//BaseComponent/compoundComponent"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="localPort" ordered="false" upperBound="-1" eType="//LocalPort" containment="true" eOpposite="//LocalPort/compoundComponent"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PrimitiveComponent"/>
+  <eClassifiers xsi:type="ecore:EClass" name="BaseComponent">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="position" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="signal" ordered="false" upperBound="-1" eType="//Signal" containment="true" eOpposite="//Signal/baseComponent"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="outputPort" ordered="false" upperBound="-1" eType="//OutputPort" containment="true" eOpposite="//OutputPort/baseComponent"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="inputPort" ordered="false" upperBound="-1" eType="//InputPort" containment="true" eOpposite="//InputPort/baseComponent"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="compoundComponent" ordered="false" lowerBound="1" eType="//CompoundComponent" eOpposite="//CompoundComponent/baseComponent"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="InputPort">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="baseComponent" ordered="false" lowerBound="1" eType="//BaseComponent" eOpposite="//BaseComponent/inputPort"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="LocalPort">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="compoundComponent" ordered="false" lowerBound="1" eType="//CompoundComponent" eOpposite="//CompoundComponent/localPort"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="OutputPort">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="baseComponent" ordered="false" lowerBound="1" eType="//BaseComponent" eOpposite="//BaseComponent/outputPort"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PortBase">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="position" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="associationPortBase_PortBasesrc" ordered="false" lowerBound="1" eType="//AssociationPortBase_PortBase" eOpposite="//AssociationPortBase_PortBase/srcPortBase"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="associationPortBase_PortBasedst" ordered="false" lowerBound="1" eType="//AssociationPortBase_PortBase" eOpposite="//AssociationPortBase_PortBase/dstPortBase"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Signal">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="position" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="baseComponent" ordered="false" lowerBound="1" eType="//BaseComponent" eOpposite="//BaseComponent/signal"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="associationPortBase_PortBase" ordered="false" lowerBound="1" eType="//AssociationPortBase_PortBase" eOpposite="//AssociationPortBase_PortBase/signal"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="AssociationPortBase_PortBase">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="srcPortBase" ordered="false" lowerBound="1" upperBound="-1" eType="//PortBase" eOpposite="//PortBase/associationPortBase_PortBasesrc"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dstPortBase" ordered="false" lowerBound="1" upperBound="-1" eType="//PortBase" eOpposite="//PortBase/associationPortBase_PortBasedst"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="signal" ordered="false" lowerBound="1" eType="//Signal" eOpposite="//Signal/associationPortBase_PortBase"/>
+  </eClassifiers>
+</ecore:EPackage>

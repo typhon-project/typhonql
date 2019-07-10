@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="RDFS">
+  <eClassifiers xsi:type="ecore:EClass" name="Resource">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="graph" ordered="false" lowerBound="1" eType="//Graph" eOpposite="//Graph/resources"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="uriRef" ordered="false" upperBound="-1" eType="//URIReference" containment="true" eOpposite="//URIReference/resource"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="subjectStatement" ordered="false" upperBound="-1" eType="//Statement" eOpposite="//Statement/subject"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="objectStatement" ordered="false" upperBound="-1" eType="//Statement" eOpposite="//Statement/object"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="label" ordered="false" upperBound="-1" eType="//PlainLiteral" containment="true" eOpposite="//PlainLiteral/labeledResource"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" ordered="false" lowerBound="1" upperBound="-1" eType="//Class" eOpposite="//Class/typedResource"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="seeAlso" ordered="false" upperBound="-1" eType="//Resource" eOpposite="//Resource/referringResource"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="referringResource" ordered="false" upperBound="-1" eType="//Resource" eOpposite="//Resource/seeAlso"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="member" ordered="false" upperBound="-1" eType="//Resource" eOpposite="//Resource/container"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="container" ordered="false" upperBound="-1" eType="//Resource" eOpposite="//Resource/member"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="list" ordered="false" upperBound="-1" eType="//List" eOpposite="//List/first"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Graph">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="graphName" ordered="false" eType="//URIReference" containment="true" eOpposite="//URIReference/namedGraph"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="resources" ordered="false" upperBound="-1" eType="//Resource" containment="true" eOpposite="//Resource/graph"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="List">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="first" ordered="false" eType="//Resource" eOpposite="//Resource/list"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rest" ordered="false" eType="//List" eOpposite="//List/originalList"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="originalList" ordered="false" upperBound="-1" eType="//List" eOpposite="//List/rest"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Container"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Alt"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Bag"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Seq"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Property">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="predicateStatement" ordered="false" upperBound="-1" eType="//Statement" eOpposite="//Statement/predicate"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="subPropertyOf" ordered="false" upperBound="-1" eType="//Property" eOpposite="//Property/superProperty"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="superProperty" ordered="false" upperBound="-1" eType="//Property" eOpposite="//Property/subPropertyOf"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="domain" ordered="false" upperBound="-1" eType="//Class" eOpposite="//Class/propertyForDomain"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="range" ordered="false" upperBound="-1" eType="//Class" eOpposite="//Class/propertyForRange"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ContainerMembershipProperty"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Statement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="predicate" ordered="false" eType="//Property" eOpposite="//Property/predicateStatement"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="object" ordered="false" lowerBound="1" eType="//Resource" eOpposite="//Resource/objectStatement"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="subject" ordered="false" lowerBound="1" eType="//Resource" eOpposite="//Resource/subjectStatement"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isReifiedOnly" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isReified" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="nameForReification" ordered="false" upperBound="-1" eType="//URIReference" eOpposite="//URIReference/reifiedStatement"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="URIReferenceNode"/>
+  <eClassifiers xsi:type="ecore:EClass" name="BlankNode">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="nodeId" ordered="false" unique="false"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Class">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="subClassOf" ordered="false" upperBound="-1" eType="//Class" eOpposite="//Class/superClass"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="superClass" ordered="false" upperBound="-1" eType="//Class" eOpposite="//Class/subClassOf"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="typedResource" ordered="false" upperBound="-1" eType="//Resource" eOpposite="//Resource/type"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="propertyForDomain" ordered="false" upperBound="-1" eType="//Property" eOpposite="//Property/domain"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="propertyForRange" ordered="false" upperBound="-1" eType="//Property" eOpposite="//Property/range"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Datatype"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Literal">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="lexicalForm" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PlainLiteral">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="language" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="labeledResource" ordered="false" lowerBound="1" eType="//Resource" eOpposite="//Resource/label"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TypedLiteral">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="datatypeURI" ordered="false" lowerBound="1" eType="//URIReference" eOpposite="//URIReference/literal"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RDFXMLLiteral"/>
+  <eClassifiers xsi:type="ecore:EClass" name="URIReference">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="uri" ordered="false" eType="//UniformResourceIdentifier" eOpposite="//UniformResourceIdentifier/uriRef"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="resource" ordered="false" eType="//Resource" eOpposite="//Resource/uriRef"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="literal" ordered="false" eType="//TypedLiteral" eOpposite="//TypedLiteral/datatypeURI"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="namedGraph" ordered="false" eType="//Graph" eOpposite="//Graph/graphName"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="reifiedStatement" ordered="false" upperBound="-1" eType="//Statement" eOpposite="//Statement/nameForReification"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="UniformResourceIdentifier">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="uriRef" ordered="false" upperBound="-1" eType="//URIReference" eOpposite="//URIReference/uri"/>
+  </eClassifiers>
+</ecore:EPackage>

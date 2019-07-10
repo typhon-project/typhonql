@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="SeminarSchedulingSystem">
+  <eClassifiers xsi:type="ecore:EClass" name="SeminarSchedulingSystem">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="presenter" ordered="false" upperBound="-1" eType="//Presenter" eOpposite="//Presenter/seminarSchedulingSystem"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="seminar" ordered="false" upperBound="-1" eType="//Seminar" eOpposite="//Seminar/seminarSchedulingSystem"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Presenter">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="seminarSchedulingSystem" ordered="false" lowerBound="1" eType="//SeminarSchedulingSystem" eOpposite="//SeminarSchedulingSystem/presenter"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="qualifiedFor" ordered="false" upperBound="-1" eType="//Seminar" eOpposite="//Seminar/qualified"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="offering" upperBound="-1" eType="//Offering" eOpposite="//Offering/presenter"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Seminar">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="seminarSchedulingSystem" ordered="false" lowerBound="1" eType="//SeminarSchedulingSystem" eOpposite="//SeminarSchedulingSystem/seminar"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="qualified" ordered="false" upperBound="-1" eType="//Presenter" eOpposite="//Presenter/qualifiedFor"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="offering" upperBound="-1" eType="//Offering" eOpposite="//Offering/seminar"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Offering">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="is_cancelled" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="date" ordered="false" lowerBound="1" eType="//Date"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="attendee" ordered="false" upperBound="-1" eType="//Attendee" eOpposite="//Attendee/offering"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="presenter" ordered="false" eType="//Presenter" eOpposite="//Presenter/offering"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="seminar" ordered="false" eType="//Seminar" eOpposite="//Seminar/offering"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Date">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="year" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="day" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Attendee">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="offering" ordered="false" upperBound="-1" eType="//Offering" eOpposite="//Offering/attendee"/>
+  </eClassifiers>
+</ecore:EPackage>

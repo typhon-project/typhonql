@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="Common_Behavior">
+  <eClassifiers xsi:type="ecore:EClass" name="Signal"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Action" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="actualArgument" upperBound="-1" eType="//Argument" containment="true" eOpposite="//Argument/action"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="actionSequence" ordered="false" eType="//ActionSequence" eOpposite="//ActionSequence/action"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="recurrence" ordered="false" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="target" ordered="false" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isAsynchronous" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="script" ordered="false" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CreateAction">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="instantiation" ordered="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="DestroyAction"/>
+  <eClassifiers xsi:type="ecore:EClass" name="UninterpretedAction"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CallAction">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="operation" ordered="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SendAction">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="signal" ordered="false" lowerBound="1" eType="//Signal"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ActionSequence">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="action" upperBound="-1" eType="//Action" containment="true" eOpposite="//Action/actionSequence"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Argument">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="action" ordered="false" eType="//Action" eOpposite="//Action/actualArgument"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="value" ordered="false" lowerBound="1" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Reception">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="signal" ordered="false" lowerBound="1" eType="//Signal"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="specification" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isRoot" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isLeaf" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isAbstract" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ReturnAction"/>
+  <eClassifiers xsi:type="ecore:EClass" name="TerminateAction"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Exception"/>
+</ecore:EPackage>

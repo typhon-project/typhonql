@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="EclipseLaunchConfigurations">
+  <eClassifiers xsi:type="ecore:EClass" name="LaunchConfiguration">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="attributes" upperBound="-1" eType="//Attribute" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Attribute" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="key" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="StringAttribute">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BooleanAttribute">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="MapAttribute">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="entries" upperBound="-1" eType="//MapEntry" containment="true" eOpposite="//MapEntry/mapAttribute"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="MapEntry">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="mapAttribute" ordered="false" lowerBound="1" eType="//MapAttribute" eOpposite="//MapAttribute/entries"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ListAttribute">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="entries" upperBound="-1" eType="//ListEntry" containment="true" eOpposite="//ListEntry/listAttribute"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ListEntry">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="listAttribute" ordered="false" lowerBound="1" eType="//ListAttribute" eOpposite="//ListAttribute/entries"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+</ecore:EPackage>

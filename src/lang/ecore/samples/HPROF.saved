@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="HPROF">
+  <eClassifiers xsi:type="ecore:EClass" name="LocatedElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="location" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="commentsBefore" unique="false" upperBound="-1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="commentsAfter" unique="false" upperBound="-1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Profile">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="header" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="threadActions" upperBound="-1" eType="//ThreadAction" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="traces" upperBound="-1" eType="//Trace" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="times" ordered="false" lowerBound="1" eType="//Times" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="methods" upperBound="-1" eType="//Method" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Method">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="fullyQualifiedName" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="stackTraceElements" ordered="false" upperBound="-1" eType="//StackTraceElement" eOpposite="//StackTraceElement/method"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ThreadAction" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="id" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ThreadStart">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="obj" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="group" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ThreadEnd"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Trace">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="id" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="threadId" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="elements" upperBound="-1" eType="//StackTraceElement" containment="true" eOpposite="//StackTraceElement/trace"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="times" ordered="false" upperBound="-1" eType="//Time" eOpposite="//Time/trace"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="StackTraceElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="method" ordered="false" lowerBound="1" eType="//Method" eOpposite="//Method/stackTraceElements"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="fileName" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="line" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="trace" ordered="false" lowerBound="1" eType="//Trace" eOpposite="//Trace/elements"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Times">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="unit" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="total" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="date" ordered="false" lowerBound="1" eType="//Date" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="elements" ordered="false" upperBound="-1" eType="//Time" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Time">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="rank" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="self" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="accum" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="count" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="trace" ordered="false" lowerBound="1" eType="//Trace" eOpposite="//Trace/times"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="method" ordered="false" lowerBound="1" eType="//Method"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Date">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="day" ordered="false" unique="false" lowerBound="1" eType="//Day"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1" eType="//Month"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="dayOfMonth" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="hour" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="minutes" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="seconds" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="year" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Day">
+    <eLiterals name="Monday" value="1"/>
+    <eLiterals name="Tuesday" value="2"/>
+    <eLiterals name="Wednesday" value="3"/>
+    <eLiterals name="Thursday" value="4"/>
+    <eLiterals name="Friday" value="5"/>
+    <eLiterals name="Saturday" value="6"/>
+    <eLiterals name="Sunday" value="7"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Month">
+    <eLiterals name="January" value="1"/>
+    <eLiterals name="February" value="2"/>
+    <eLiterals name="March" value="3"/>
+    <eLiterals name="April" value="4"/>
+    <eLiterals name="May" value="5"/>
+    <eLiterals name="June" value="6"/>
+    <eLiterals name="July" value="7"/>
+    <eLiterals name="August" value="8"/>
+    <eLiterals name="September" value="9"/>
+    <eLiterals name="October" value="10"/>
+    <eLiterals name="November" value="11"/>
+    <eLiterals name="December" value="12"/>
+  </eClassifiers>
+</ecore:EPackage>

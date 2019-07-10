@@ -1,0 +1,4 @@
+machine Doors
+init <initial:Id>
+state NewState end
+end

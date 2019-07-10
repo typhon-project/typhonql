@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="OCLValues">
+  <eClassifiers xsi:type="ecore:EClass" name="Value" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" ordered="false" lowerBound="1" eType="//Type" containment="true" eOpposite="//Type/value"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bagValue" ordered="false" upperBound="-1" eType="//BagValue" eOpposite="//BagValue/elements"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="sequenceValue" ordered="false" upperBound="-1" eType="//SequenceValue" eOpposite="//SequenceValue/elements"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="setValue" ordered="false" upperBound="-1" eType="//SetValue" eOpposite="//SetValue/elements"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Type" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="value" ordered="false" upperBound="-1" eType="//Value" eOpposite="//Value/type"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BasicValue" abstract="true"/>
+  <eClassifiers xsi:type="ecore:EClass" name="IntegerValue">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="val" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RealValue">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="val" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="StringValue">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="val" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BooleanValue">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="val" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ObjectValue">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="object" ordered="false" lowerBound="1" eType="//Object" containment="true" eOpposite="//Object/objectValue"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Object">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="objectValue" ordered="false" eType="//ObjectValue" eOpposite="//ObjectValue/object"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="EnumValue">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="enumLiteral" ordered="false" lowerBound="1" eType="//EnumLiteral" containment="true" eOpposite="//EnumLiteral/enumValue"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="EnumLiteral">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="enumValue" ordered="false" eType="//EnumValue" eOpposite="//EnumValue/enumLiteral"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="UndefinedValue"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CollectionValue" abstract="true"/>
+  <eClassifiers xsi:type="ecore:EClass" name="BagValue">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="elements" ordered="false" upperBound="-1" eType="//Value" containment="true" eOpposite="//Value/bagValue"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SequenceValue">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="elements" upperBound="-1" eType="//Value" containment="true" eOpposite="//Value/sequenceValue"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SetValue">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="elements" ordered="false" upperBound="-1" eType="//Value" containment="true" eOpposite="//Value/setValue"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Count">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="num" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+</ecore:EPackage>

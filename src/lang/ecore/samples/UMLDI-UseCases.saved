@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="Common_Behavior">
+  <eClassifiers xsi:type="ecore:EClass" name="Instance" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ownedInstance" ordered="false" upperBound="-1" eType="//Instance" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="linkEnd" ordered="false" upperBound="-1" eType="//LinkEnd" eOpposite="//LinkEnd/instance"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="classifier" ordered="false" lowerBound="1" upperBound="-1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="componentInstance" ordered="false" eType="//ComponentInstance" eOpposite="//ComponentInstance/resident"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="slot" ordered="false" upperBound="-1" eType="//AttributeLink" containment="true" eOpposite="//AttributeLink/instance"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ownedLink" ordered="false" upperBound="-1" eType="//Link" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="AttributeLink">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="instance" ordered="false" eType="//Instance" eOpposite="//Instance/slot"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="value" ordered="false" lowerBound="1" eType="//Instance"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="linkEnd" ordered="false" eType="//LinkEnd" eOpposite="//LinkEnd/qualifiedValue"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="attribute" ordered="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Link">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="association" ordered="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="connection" ordered="false" lowerBound="2" upperBound="-1" eType="//LinkEnd" containment="true" eOpposite="//LinkEnd/link"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="LinkEnd">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="link" ordered="false" lowerBound="1" eType="//Link" eOpposite="//Link/connection"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="qualifiedValue" upperBound="-1" eType="//AttributeLink" containment="true" eOpposite="//AttributeLink/linkEnd"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="instance" ordered="false" lowerBound="1" eType="//Instance" eOpposite="//Instance/linkEnd"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="associationEnd" ordered="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ComponentInstance">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="resident" ordered="false" upperBound="-1" eType="//Instance" eOpposite="//Instance/componentInstance"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="nodeInstance" ordered="false" eType="//NodeInstance" eOpposite="//NodeInstance/resident"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="NodeInstance">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="resident" ordered="false" upperBound="-1" eType="//ComponentInstance" eOpposite="//ComponentInstance/nodeInstance"/>
+  </eClassifiers>
+</ecore:EPackage>

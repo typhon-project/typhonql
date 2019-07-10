@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="SimpleSBVR" nsPrefix="simplesbvr">
+  <eClassifiers xsi:type="ecore:EClass" name="Root">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="elements" ordered="false" upperBound="-1" eType="//Element" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Element">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="objectName" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Representation">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="meaning" ordered="false" lowerBound="1" eType="//Meaning" eOpposite="//Meaning/representations"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Designation">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="text" ordered="false" lowerBound="1" eType="//Text"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Text">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Meaning">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="representations" ordered="false" upperBound="-1" eType="//Representation" eOpposite="//Representation/meaning"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Concept"/>
+  <eClassifiers xsi:type="ecore:EClass" name="NounConcept"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ObjectType">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="specializes" ordered="false" eType="//ObjectType" eOpposite="//ObjectType/generalizes"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="generalizes" ordered="false" upperBound="-1" eType="//ObjectType" eOpposite="//ObjectType/specializes"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="IndividualConcept">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="instanceOf" ordered="false" eType="//ObjectType"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="DataType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="NonEmptyString">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="NonNegativeInteger">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="FactType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="BinaryFactType">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="role1" ordered="false" lowerBound="1" eType="//FactTypeRole"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="role2" ordered="false" lowerBound="1" eType="//FactTypeRole"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="IsPropertyOfFactType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="AssociativeFactType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CategorizationFactType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ObjectificationFactType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Role">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="nounConcept" ordered="false" lowerBound="1" eType="//NounConcept"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="FactTypeRole"/>
+  <eClassifiers xsi:type="ecore:EClass" name="LogicalFormulation"/>
+  <eClassifiers xsi:type="ecore:EClass" name="AtomicFormulation">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="isBasedOn" ordered="false" lowerBound="1" eType="//FactType"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BinaryAtomicFormulation">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="roleBinding1" ordered="false" lowerBound="1" eType="//RoleBinding"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="roleBinding2" ordered="false" lowerBound="1" eType="//RoleBinding"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="NecessityFormulation"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Quantification">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="introducedVariable" ordered="false" lowerBound="1" eType="//Variable"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="scopesOver" ordered="false" lowerBound="1" eType="//LogicalFormulation"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="UniversalQuantification"/>
+  <eClassifiers xsi:type="ecore:EClass" name="AtLeastNQuantification">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="minCardinality" ordered="false" lowerBound="1" eType="//NonNegativeInteger"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ExactlyNQuantification">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="cardinality" ordered="false" lowerBound="1" eType="//NonNegativeInteger"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="AtMostNQuantification">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="maxCardinality" ordered="false" lowerBound="1" eType="//NonNegativeInteger"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BindableTarget"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Variable">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rangesOver" ordered="false" lowerBound="1" eType="//ObjectType"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RoleBinding">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="occursIn" ordered="false" lowerBound="1" eType="//AtomicFormulation"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="isOf" ordered="false" lowerBound="1" eType="//FactType"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bindsTo" ordered="false" lowerBound="1" eType="//BindableTarget"/>
+  </eClassifiers>
+</ecore:EPackage>

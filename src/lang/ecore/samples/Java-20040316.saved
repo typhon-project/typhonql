@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="JAVA">
+  <eClassifiers xsi:type="ecore:EClass" name="JavaElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ClassFeature" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isFinal" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ClassMember" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="owner" ordered="false" lowerBound="1" eType="//JavaClass" eOpposite="//JavaClass/members"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" ordered="false" lowerBound="1" eType="//JavaClass" eOpposite="//JavaClass/typedElements"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isStatic" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isPublic" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Field"/>
+  <eClassifiers xsi:type="ecore:EClass" name="JavaClass">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="members" ordered="false" upperBound="-1" eType="//ClassMember" containment="true" eOpposite="//ClassMember/owner"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="package" ordered="false" lowerBound="1" eType="//Package" eOpposite="//Package/classes"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="typedElements" ordered="false" upperBound="-1" eType="//ClassMember" eOpposite="//ClassMember/type"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parameters" ordered="false" upperBound="-1" eType="//FeatureParameter" eOpposite="//FeatureParameter/type"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isAbstract" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isStatic" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isPublic" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Method">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parameters" upperBound="-1" eType="//FeatureParameter" containment="true" eOpposite="//FeatureParameter/method"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Package">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="classes" ordered="false" upperBound="-1" eType="//JavaClass" containment="true" eOpposite="//JavaClass/package"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PrimitiveType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="FeatureParameter">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" ordered="false" lowerBound="1" eType="//JavaClass" eOpposite="//JavaClass/parameters"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="method" ordered="false" lowerBound="1" eType="//Method" eOpposite="//Method/parameters"/>
+  </eClassifiers>
+</ecore:EPackage>

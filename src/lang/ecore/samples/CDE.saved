@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="CDE">
+  <eClassifiers xsi:type="ecore:EClass" name="IUmlType">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="members" ordered="false" upperBound="-1" eType="//IUmlMember"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ICdeComponentSpec"/>
+  <eClassifiers xsi:type="ecore:EClass" name="IUmlClass"/>
+  <eClassifiers xsi:type="ecore:EClass" name="IUmlComponent"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ICdeServer">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="implements" ordered="false" upperBound="-1" eType="//ICdeComponent"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ICdeComponent"/>
+  <eClassifiers xsi:type="ecore:EClass" name="IUmlMember"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ICdeMember"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ICdeMemberExe">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="executionPerformance" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="resourceNeeded" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="executionDetails" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+</ecore:EPackage>

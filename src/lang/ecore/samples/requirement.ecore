@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore">
+  <ecore:EPackage name="Requirement">
+    <eClassifiers xsi:type="ecore:EClass" name="Model">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="abstract" ordered="false" eType="/0/AbstractDocument/AbstractDocument" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="description" ordered="false" eType="/0/ProductDescription/ProductDescription" containment="true"/>
+    </eClassifiers>
+    <eSubpackages name="AbstractDocument">
+      <eClassifiers xsi:type="ecore:EClass" name="Purpose">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="id" ordered="false" unique="false" eType="/1/String"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="version" ordered="false" unique="false" eType="/1/String"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="release" ordered="false" unique="false" eType="/1/String"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" ordered="false" unique="false" eType="/1/String"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="IntendedAudience">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="readers" ordered="false" unique="false" eType="/0/AbstractDocument/READERS_KIND"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EEnum" name="READERS_KIND">
+        <eLiterals name="Developer" value="1"/>
+        <eLiterals name="ProjectManager" value="2"/>
+        <eLiterals name="MarketingStaff" value="3"/>
+        <eLiterals name="User" value="4"/>
+        <eLiterals name="Tester" value="5"/>
+        <eLiterals name="DocumentationWriter" value="6"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="Scope">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" ordered="false" unique="false" eType="/1/String"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="problem" ordered="false" eType="/0/AbstractDocument/BusinessProblem" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="mission" ordered="false" eType="/0/AbstractDocument/ProjectMission" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="background" ordered="false" eType="/0/AbstractDocument/BusinessBackground" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="goals" upperBound="-1" eType="/0/AbstractDocument/ProjectObjective" containment="true"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="Reference">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" ordered="false" unique="false" eType="/1/String"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="author" ordered="false" unique="false" eType="/1/String"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="version" ordered="false" unique="false" eType="/1/Integer"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="date" ordered="false" unique="false" eType="/1/Date"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="location" ordered="false" unique="false" eType="/1/String"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="Information">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="body" ordered="false" unique="false" eType="/1/String"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="AbstractDocument">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="intendedAudience" ordered="false" eType="/0/AbstractDocument/IntendedAudience" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="references" upperBound="-1" eType="/0/AbstractDocument/Reference" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="purpose" ordered="false" eType="/0/AbstractDocument/Purpose" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="scope" ordered="false" eType="/0/AbstractDocument/Scope" containment="true"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="BusinessBackground">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="overview" ordered="false" unique="false" eType="/1/String"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="BusinessProblem">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="problem" ordered="false" unique="false" eType="/1/String"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="ProjectMission">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="mission" ordered="false" unique="false" eType="/1/String"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="ProjectObjective" abstract="true">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" ordered="false" unique="false" eType="/1/String"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" ordered="false" unique="false" eType="/1/String"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="BusinessObjective" eSuperTypes="/0/AbstractDocument/ProjectObjective"/>
+      <eClassifiers xsi:type="ecore:EClass" name="TechnicalObjective" eSuperTypes="/0/AbstractDocument/ProjectObjective"/>
+      <eClassifiers xsi:type="ecore:EClass" name="BusinessCase" eSuperTypes="/0/AbstractDocument/ProjectObjective"/>
+    </eSubpackages>
+    <eSubpackages name="ProductDescription">
+      <eClassifiers xsi:type="ecore:EClass" name="ProductDescription">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="ownedRequirement" upperBound="-1" eType="/0/ProductDescription/AbstractRequirement" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="constraints" upperBound="-1" eType="/0/ProductDescription/Constraint"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="characteristics" upperBound="-1" eType="/0/ProductDescription/Characteristic"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="userDocumentation" ordered="false" eType="/0/ProductDescription/UserDocumentation"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="perspective" ordered="false" eType="/0/ProductDescription/Perspective"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="operatingEnvironment" ordered="false" eType="/0/ProductDescription/OperatingEnvironment"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="Perspective" eSuperTypes="/0/AbstractDocument/Information"/>
+      <eClassifiers xsi:type="ecore:EClass" name="Characteristic" eSuperTypes="/0/AbstractDocument/Information">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="priority" ordered="false" unique="false" eType="/0/ProductDescription/Priority"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EEnum" name="Priority">
+        <eLiterals name="low" value="1"/>
+        <eLiterals name="medium" value="2"/>
+        <eLiterals name="high" value="3"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="OperatingEnvironment">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="hardwarePlatform" upperBound="-1" eType="/0/ProductDescription/HardwarePlatform" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="operatingSystem" upperBound="-1" eType="/0/ProductDescription/OperatingSystem" containment="true"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="HardwarePlatform" eSuperTypes="/0/AbstractDocument/Information"/>
+      <eClassifiers xsi:type="ecore:EClass" name="OperatingSystem" eSuperTypes="/0/AbstractDocument/Information"/>
+      <eClassifiers xsi:type="ecore:EClass" name="Constraint" eSuperTypes="/0/AbstractDocument/Information"/>
+      <eClassifiers xsi:type="ecore:EClass" name="UserDocumentation" eSuperTypes="/0/AbstractDocument/Information">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="format" ordered="false" unique="false" eType="/0/ProductDescription/Format"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="standard" ordered="false" unique="false" eType="/1/String"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="SystemFeature" eSuperTypes="/0/ProductDescription/Feature">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="conditions" upperBound="-1" eType="/0/ProductDescription/Condition" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="flows" upperBound="-1" eType="/0/ProductDescription/EventFlow" containment="true"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="EventFlow">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="elements" upperBound="-1" eType="/0/ProductDescription/SequentialElement" containment="true"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" eType="/1/String"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="AbstractRequirement" abstract="true">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="seq_number" ordered="false" unique="false" eType="/1/Integer"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" ordered="false" unique="false" eType="/1/String"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="priority" ordered="false" unique="false" eType="/0/ProductDescription/Priority"/>
+        <eStructuralFeatures xsi:type="ecore:EReference" name="simpleFeatures" upperBound="-1" eType="/0/ProductDescription/SimpleFeature" containment="true"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="functionalRequirement" eSuperTypes="/0/ProductDescription/AbstractRequirement">
+        <eStructuralFeatures xsi:type="ecore:EReference" name="systemFeatures" upperBound="-1" eType="/0/ProductDescription/SystemFeature" containment="true"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="Condition"/>
+      <eClassifiers xsi:type="ecore:EClass" name="PreCondition" eSuperTypes="/0/ProductDescription/Condition"/>
+      <eClassifiers xsi:type="ecore:EClass" name="PostCondition" eSuperTypes="/0/ProductDescription/Condition"/>
+      <eClassifiers xsi:type="ecore:EClass" name="SafetyRequirement" eSuperTypes="/0/ProductDescription/AbstractRequirement"/>
+      <eClassifiers xsi:type="ecore:EClass" name="PerformanceRequirement" eSuperTypes="/0/ProductDescription/AbstractRequirement"/>
+      <eClassifiers xsi:type="ecore:EClass" name="SecurityRequirement" eSuperTypes="/0/ProductDescription/AbstractRequirement"/>
+      <eClassifiers xsi:type="ecore:EClass" name="SoftwareQuality" eSuperTypes="/0/ProductDescription/AbstractRequirement"/>
+      <eClassifiers xsi:type="ecore:EEnum" name="Format">
+        <eLiterals name="Word" value="1"/>
+        <eLiterals name="PDF" value="2"/>
+        <eLiterals name="Excel" value="3"/>
+        <eLiterals name="PPT" value="4"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="Action" eSuperTypes="/0/ProductDescription/SequentialElement"/>
+      <eClassifiers xsi:type="ecore:EClass" name="SequentialElement" abstract="true" eSuperTypes="/0/AbstractDocument/Information">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="step" ordered="false" unique="false" eType="/1/Integer"/>
+      </eClassifiers>
+      <eClassifiers xsi:type="ecore:EClass" name="Response" eSuperTypes="/0/ProductDescription/SequentialElement"/>
+      <eClassifiers xsi:type="ecore:EClass" name="Stimulus" eSuperTypes="/0/ProductDescription/SequentialElement"/>
+      <eClassifiers xsi:type="ecore:EClass" name="DesignConstraintRequirement" eSuperTypes="/0/ProductDescription/functionalRequirement"/>
+      <eClassifiers xsi:type="ecore:EClass" name="BusinessRuleRequirement" eSuperTypes="/0/ProductDescription/functionalRequirement"/>
+      <eClassifiers xsi:type="ecore:EClass" name="BusinessAutomationRequirement" eSuperTypes="/0/ProductDescription/functionalRequirement"/>
+      <eClassifiers xsi:type="ecore:EClass" name="UIRequirement" eSuperTypes="/0/ProductDescription/functionalRequirement"/>
+      <eClassifiers xsi:type="ecore:EClass" name="GeneralRequirement" eSuperTypes="/0/ProductDescription/functionalRequirement"/>
+      <eClassifiers xsi:type="ecore:EClass" name="InstallationRequirement" eSuperTypes="/0/ProductDescription/functionalRequirement"/>
+      <eClassifiers xsi:type="ecore:EClass" name="MigrationRequirement" eSuperTypes="/0/ProductDescription/functionalRequirement"/>
+      <eClassifiers xsi:type="ecore:EClass" name="OperationalRequirement" eSuperTypes="/0/ProductDescription/functionalRequirement"/>
+      <eClassifiers xsi:type="ecore:EClass" name="SimpleFeature" eSuperTypes="/0/ProductDescription/Feature"/>
+      <eClassifiers xsi:type="ecore:EClass" name="Feature" abstract="true">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" eType="/1/String"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="short_description" ordered="false" unique="false" eType="/1/String"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="priority" ordered="false" unique="false" eType="/0/ProductDescription/Priority"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="cost" ordered="false" unique="false" eType="/1/Double"/>
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="risk" ordered="false" unique="false" eType="/1/String"/>
+      </eClassifiers>
+    </eSubpackages>
+  </ecore:EPackage>
+  <ecore:EPackage name="PrimitiveTypes">
+    <eClassifiers xsi:type="ecore:EDataType" name="String"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="Integer"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="Date"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="Double"/>
+  </ecore:EPackage>
+</xmi:XMI>

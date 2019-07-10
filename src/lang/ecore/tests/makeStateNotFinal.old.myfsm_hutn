@@ -1,0 +1,7 @@
+Machine Doors {
+  states: [State closed {
+    transitions: []
+    final: true
+  }]
+  initial: |project://rascal-ecore/src/lang/ecore/tests/makeStateNotFinal.old#//@states.0|
+}

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="WfMC">
+  <eClassifiers xsi:type="ecore:EClass" name="WorkflowProcessDefinition">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="participantSpecificatons" ordered="false" upperBound="-1" eType="//WorkflowParticipantSpecification" containment="true" eOpposite="//WorkflowParticipantSpecification/processDefinition"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="revelantDatas" ordered="false" upperBound="-1" eType="//WorkflowRelevantData" containment="true" eOpposite="//WorkflowRelevantData/processDefinition"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="applicationDeclarations" ordered="false" upperBound="-1" eType="//WorkflowApplicationDeclaration" containment="true" eOpposite="//WorkflowApplicationDeclaration/processDefinition"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="processActivities" ordered="false" upperBound="-1" eType="//WorkflowProcessActivity" containment="true" eOpposite="//WorkflowProcessActivity/processDefinition"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="transitionInformations" ordered="false" upperBound="-1" eType="//TransitionInformation" containment="true" eOpposite="//TransitionInformation/processDefinition"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="WorkflowApplicationDeclaration">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="processDefinition" ordered="false" lowerBound="1" eType="//WorkflowProcessDefinition" eOpposite="//WorkflowProcessDefinition/applicationDeclarations"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="processActivities" ordered="false" upperBound="-1" eType="//WorkflowProcessActivity" eOpposite="//WorkflowProcessActivity/applicationDeclarations"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="revelantDatas" ordered="false" upperBound="-1" eType="//WorkflowRelevantData" eOpposite="//WorkflowRelevantData/applicationDeclarations"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="WorkflowRelevantData">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="processDefinition" ordered="false" lowerBound="1" eType="//WorkflowProcessDefinition" eOpposite="//WorkflowProcessDefinition/revelantDatas"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="applicationDeclarations" ordered="false" upperBound="-1" eType="//WorkflowApplicationDeclaration" eOpposite="//WorkflowApplicationDeclaration/revelantDatas"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="processActivities" ordered="false" upperBound="-1" eType="//WorkflowProcessActivity" eOpposite="//WorkflowProcessActivity/revelantDatas"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="participantSpecifications" ordered="false" upperBound="-1" eType="//WorkflowParticipantSpecification" eOpposite="//WorkflowParticipantSpecification/revelantDatas"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="transitionInformations" ordered="false" upperBound="-1" eType="//TransitionInformation" eOpposite="//TransitionInformation/revelantDatas"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="WorkflowParticipantSpecification">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="processDefinition" ordered="false" lowerBound="1" eType="//WorkflowProcessDefinition" eOpposite="//WorkflowProcessDefinition/participantSpecificatons"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="revelantDatas" ordered="false" upperBound="-1" eType="//WorkflowRelevantData" eOpposite="//WorkflowRelevantData/participantSpecifications"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="processActivities" ordered="false" upperBound="-1" eType="//WorkflowProcessActivity" eOpposite="//WorkflowProcessActivity/participantSpecifications"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="WorkflowProcessActivity">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="processDefinition" ordered="false" lowerBound="1" eType="//WorkflowProcessDefinition" eOpposite="//WorkflowProcessDefinition/processActivities"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="applicationDeclarations" ordered="false" upperBound="-1" eType="//WorkflowApplicationDeclaration" eOpposite="//WorkflowApplicationDeclaration/processActivities"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="revelantDatas" ordered="false" upperBound="-1" eType="//WorkflowRelevantData" eOpposite="//WorkflowRelevantData/processActivities"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="participantSpecifications" ordered="false" upperBound="-1" eType="//WorkflowParticipantSpecification" eOpposite="//WorkflowParticipantSpecification/processActivities"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="to_transitionInformation" ordered="false" lowerBound="1" eType="//TransitionInformation" eOpposite="//TransitionInformation/to_processActivity"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="from_transitionInformation" ordered="false" lowerBound="1" eType="//TransitionInformation" eOpposite="//TransitionInformation/from_processActivity"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TransitionInformation">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="processDefinition" ordered="false" lowerBound="1" eType="//WorkflowProcessDefinition" eOpposite="//WorkflowProcessDefinition/transitionInformations"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="revelantDatas" ordered="false" upperBound="-1" eType="//WorkflowRelevantData" eOpposite="//WorkflowRelevantData/transitionInformations"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="to_processActivity" ordered="false" lowerBound="1" eType="//WorkflowProcessActivity" eOpposite="//WorkflowProcessActivity/to_transitionInformation"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="from_processActivity" ordered="false" lowerBound="1" eType="//WorkflowProcessActivity" eOpposite="//WorkflowProcessActivity/from_transitionInformation"/>
+  </eClassifiers>
+</ecore:EPackage>

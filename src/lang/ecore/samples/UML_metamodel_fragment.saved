@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="UMLMetamodelFragment">
+  <eClassifiers xsi:type="ecore:EClass" name="Class">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parent" ordered="false" lowerBound="1" eType="//Generalization"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="child" ordered="false" lowerBound="1" eType="//Generalization"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dependency" ordered="false" lowerBound="1" eType="//Dependency" eOpposite="//Dependency/client"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Generalization"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Dependency">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="supplier" ordered="false" lowerBound="1" eType="//StateMachine"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="client" ordered="false" lowerBound="1" eType="//Class" eOpposite="//Class/dependency"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="stereotype" ordered="false" lowerBound="1" eType="//Stereotype" eOpposite="//Stereotype/extendedElement"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Stereotype">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="baseClass" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="extendedElement" ordered="false" lowerBound="1" eType="//Dependency" eOpposite="//Dependency/stereotype"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="StateMachine">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="context" ordered="false" lowerBound="1" eType="//Class"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="top" ordered="false" lowerBound="1" eType="//State" containment="true" eOpposite="//State/stateMachine"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="State">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="stateMachine" ordered="false" eType="//StateMachine" eOpposite="//StateMachine/top"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="internal" ordered="false" lowerBound="1" eType="//Transition" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CompositeState">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="subvertex" ordered="false" lowerBound="1" eType="//StateVertex" containment="true" eOpposite="//StateVertex/compositeState"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SimpleState"/>
+  <eClassifiers xsi:type="ecore:EClass" name="FinalState"/>
+  <eClassifiers xsi:type="ecore:EClass" name="StateVertex">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="compositeState" ordered="false" eType="//CompositeState" eOpposite="//CompositeState/subvertex"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PseudoState"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Transition">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="trigger" ordered="false" eType="//Event"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="source" ordered="false" lowerBound="1" eType="//StateVertex"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="target" ordered="false" lowerBound="1" eType="//StateVertex"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Event"/>
+</ecore:EPackage>

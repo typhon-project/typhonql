@@ -1,0 +1,14 @@
+Machine Doors {
+  states: [State closed {
+    transitions: [Trans {
+      events: [
+        "bar"
+        "removed"
+        "foo"
+      ]
+      target: |project://rascal-ecore/src/lang/ecore/tests/removeEventMid.old#//@states.0|
+    }]
+    final: false
+  }]
+  initial: |project://rascal-ecore/src/lang/ecore/tests/removeEventMid.old#//@states.0|
+}

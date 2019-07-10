@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="OCLExpressions">
+  <eClassifiers xsi:type="ecore:EClass" name="OclExpression" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="queryArg" ordered="false" upperBound="-1" eType="//QueryExp" eOpposite="//QueryExp/argument"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="querySrc" ordered="false" upperBound="-1" eType="//QueryExp" eOpposite="//QueryExp/source"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="resultType" ordered="false" lowerBound="1" eType="//Type" containment="true" eOpposite="//Type/oclExpression"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="varDec" ordered="false" lowerBound="1" upperBound="-1" eType="//VariableDeclaration" eOpposite="//VariableDeclaration/oclExpression"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="varInit" ordered="false" upperBound="-1" eType="//VariableInitialisation" eOpposite="//VariableInitialisation/initExpression"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SelfExp"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ResultExp"/>
+  <eClassifiers xsi:type="ecore:EClass" name="VariableExp">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="var" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="OperationExp" abstract="true"/>
+  <eClassifiers xsi:type="ecore:EClass" name="QueryExp" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="argument" ordered="false" lowerBound="1" eType="//OclExpression" containment="true" eOpposite="//OclExpression/queryArg"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="source" ordered="false" lowerBound="1" eType="//OclExpression" containment="true" eOpposite="//OclExpression/querySrc"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="varDeclaration" ordered="false" eType="//VariableDeclaration" containment="true" eOpposite="//VariableDeclaration/queryExp"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Type" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="oclExpression" ordered="false" upperBound="-1" eType="//OclExpression" eOpposite="//OclExpression/resultType"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="varDec" ordered="false" upperBound="-1" eType="//VariableDeclaration" containment="true" eOpposite="//VariableDeclaration/varType"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="VariableDeclaration">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="var" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="varType" ordered="false" lowerBound="1" eType="//Type" eOpposite="//Type/varDec"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="oclExpression" ordered="false" upperBound="-1" eType="//OclExpression" eOpposite="//OclExpression/varDec"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="queryExp" ordered="false" upperBound="-1" eType="//QueryExp" eOpposite="//QueryExp/varDeclaration"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="varInit" ordered="false" upperBound="-1" eType="//VariableInitialisation" eOpposite="//VariableInitialisation/varDec"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="VariableInitialisation">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="initExpression" ordered="false" lowerBound="1" eType="//OclExpression" containment="true" eOpposite="//OclExpression/varInit"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="varDec" ordered="false" lowerBound="1" eType="//VariableDeclaration" containment="true" eOpposite="//VariableDeclaration/varInit"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="iterateExp" ordered="false" lowerBound="1" eType="//IterateExp" containment="true" eOpposite="//IterateExp/varInit"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ForAllExp"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ExistsExp"/>
+  <eClassifiers xsi:type="ecore:EClass" name="SelectExp"/>
+  <eClassifiers xsi:type="ecore:EClass" name="RejectExp"/>
+  <eClassifiers xsi:type="ecore:EClass" name="CollectExp"/>
+  <eClassifiers xsi:type="ecore:EClass" name="IterateExp">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="varInit" ordered="false" lowerBound="1" eType="//VariableInitialisation" containment="true" eOpposite="//VariableInitialisation/iterateExp"/>
+  </eClassifiers>
+</ecore:EPackage>

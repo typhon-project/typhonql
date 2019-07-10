@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="Klaper">
+  <eClassifiers xsi:type="ecore:EClass" name="Resource">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="capacity" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="schedulingPolicy" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="acquire" ordered="false" lowerBound="1" eType="//Acquire" eOpposite="//Acquire/resource"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="release" ordered="false" lowerBound="1" eType="//Release" eOpposite="//Release/resource"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Service">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="formalParams" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="speedAttr" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="failAttr" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="behavior" ordered="false" lowerBound="1" upperBound="-1" eType="//Behavior" eOpposite="//Behavior/service"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="behaviorUsed" ordered="false" upperBound="-1" eType="//Behavior" eOpposite="//Behavior/usedService"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="serviceCall" ordered="false" upperBound="-1" eType="//ServiceCall" eOpposite="//ServiceCall/calledService"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Behavior">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="stepn" ordered="false" lowerBound="1" eType="//Step" eOpposite="//Step/nestedBehavior"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="stepb" ordered="false" lowerBound="1" upperBound="-1" eType="//Step" containment="true" eOpposite="//Step/behavior"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="service" ordered="false" lowerBound="1" eType="//Service" eOpposite="//Service/behavior"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="usedService" ordered="false" upperBound="-1" eType="//Service" eOpposite="//Service/behaviorUsed"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="workLoad" ordered="false" eType="//WorkLoad" eOpposite="//WorkLoad/behavior"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="WorkLoad">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="workLoadType" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="arrivalProcess" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="population" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="initialResource" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="behavior" ordered="false" lowerBound="1" eType="//Behavior" eOpposite="//Behavior/workLoad"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Step">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="repetition" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="internalExecTime" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="internalFailProb" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="completionModel" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="serviceCall" ordered="false" upperBound="-1" eType="//ServiceCall" containment="true" eOpposite="//ServiceCall/step"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="predecessor" ordered="false" upperBound="-1" eType="//Step" eOpposite="//Step/successor"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="successor" ordered="false" upperBound="-1" eType="//Step" eOpposite="//Step/predecessor"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="behavior" ordered="false" lowerBound="1" eType="//Behavior" eOpposite="//Behavior/stepb"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="nestedBehavior" ordered="false" eType="//Behavior" eOpposite="//Behavior/stepn"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Start"/>
+  <eClassifiers xsi:type="ecore:EClass" name="End"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Control"/>
+  <eClassifiers xsi:type="ecore:EClass" name="InternalActivity"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ServiceCall">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="resourceType" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="serviceName" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="isSynch" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="actualParam" upperBound="-1" eType="//ActualParam" eOpposite="//ActualParam/serviceCall"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="step" ordered="false" lowerBound="1" eType="//Step" eOpposite="//Step/serviceCall"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="calledService" ordered="false" eType="//Service" eOpposite="//Service/serviceCall"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ActualParam">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="serviceCall" ordered="false" lowerBound="1" eType="//ServiceCall" eOpposite="//ServiceCall/actualParam"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Branch">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="branchProbs" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Fork"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Join"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Acquire">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="resourceUnits" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="resource" ordered="false" lowerBound="1" eType="//Resource" eOpposite="//Resource/acquire"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Release">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="resourceUnits" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="resource" ordered="false" lowerBound="1" eType="//Resource" eOpposite="//Resource/release"/>
+  </eClassifiers>
+</ecore:EPackage>

@@ -1,0 +1,6 @@
+machine Doors
+init closed
+state closed
+  on bar, foo => closed
+end
+end

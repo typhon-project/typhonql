@@ -1,0 +1,3 @@
+machine Doors
+init closed
+end

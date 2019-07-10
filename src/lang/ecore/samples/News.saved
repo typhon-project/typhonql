@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="News">
+  <eClassifiers xsi:type="ecore:EClass" name="Element" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="link" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Newspaper">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="language" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="copyright" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="pubDate" ordered="false" eType="//Date" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="category" ordered="false" eType="//Category" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="news" ordered="false" upperBound="-1" eType="//News" containment="true" eOpposite="//News/newspaper"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="News">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="author" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="comments" ordered="false" unique="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="pubDate" ordered="false" eType="//Date" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="category" ordered="false" eType="//Category" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="newspaper" ordered="false" lowerBound="1" eType="//Newspaper" eOpposite="//Newspaper/news"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Category">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Date">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="eDay" ordered="false" unique="false" lowerBound="1" eType="//DayKind"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="day" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="year" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="hours" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="minutes" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="seconds" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="DayKind">
+    <eLiterals name="Monday" value="1"/>
+    <eLiterals name="Tuesday" value="2"/>
+    <eLiterals name="Wednesday" value="3"/>
+    <eLiterals name="Thursday" value="4"/>
+    <eLiterals name="Friday" value="5"/>
+    <eLiterals name="Saturday" value="6"/>
+    <eLiterals name="Sunday" value="7"/>
+  </eClassifiers>
+</ecore:EPackage>

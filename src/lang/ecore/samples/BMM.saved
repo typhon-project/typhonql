@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="BMM">
+  <eClassifiers xsi:type="ecore:EClass" name="MotivationElement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Assessment">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="usingAssessmentUsesUsedAssessment" ordered="false" upperBound="-1" eType="//Assessment"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="assessmentProvidesImpetusForDirective" ordered="false" upperBound="-1" eType="//Directive"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="assessmentIdentifiesPotentialImpact" ordered="false" upperBound="-1" eType="//PotentialImpact"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="assessmentJudgmentOfInfluencer" ordered="false" lowerBound="1" upperBound="-1" eType="//Influencer"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="End"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Influencer"/>
+  <eClassifiers xsi:type="ecore:EClass" name="InfluencingOrganization">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="influencingOrganizationIsSourceOfInfluencer" ordered="false" upperBound="-1" eType="//Influencer"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Means"/>
+  <eClassifiers xsi:type="ecore:EClass" name="PotentialImpact">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="potentialImpactProvidesImpetusForDirective" ordered="false" upperBound="-1" eType="//Directive"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="AssessmentCategory">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="assessmentCategoryCategoriesAssessment" ordered="false" upperBound="-1" eType="//Assessment"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="InfluencerCategory">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="influencerCategoryCategorizesInfluencer" ordered="false" upperBound="-1" eType="//Influencer"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="OrganizationCategory">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organizationCategoryCategorizesInfluencingOrganization" ordered="false" upperBound="-1" eType="//InfluencingOrganization"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="OrganizationUnit">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organizationUnitDefinesEnd" ordered="false" upperBound="-1" eType="//End"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organizationUnitEstablishesMeans" ordered="false" upperBound="-1" eType="//Means"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organizationUnitIsResponsibleForAsset" ordered="false" upperBound="-1" eType="//Asset"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organizationUnitIsResponsibleForLiability" ordered="false" upperBound="-1" eType="//Liability"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organizationUnitRecognizesInfluencer" ordered="false" upperBound="-1" eType="//Influencer"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organizationUnitActAsInfluencingOrganization" ordered="false" upperBound="-1" eType="//InfluencingOrganization"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organizationUnitMakesAssessment" ordered="false" upperBound="-1" eType="//Assessment"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="organizationUnitIsResponsibleForBusinessProcess" ordered="false" upperBound="-1" eType="//BusinessProcess"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BusinessProcess">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="businessProcessRealizesCourseOfAction" ordered="false" upperBound="-1" eType="//CourseOfAction"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="businessProcessManagerAsset" ordered="false" upperBound="-1" eType="//Asset"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="businessProcessDeliversOfeering" ordered="false" upperBound="-1" eType="//Offering"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Asset"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Liability">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="liabilityClaimsResource" ordered="false" upperBound="-1" eType="//Resource"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Resource"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Mission">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="missionMakesOperativeVision" ordered="false" eType="//Vision"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CourseOfAction">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="enablingCourseofActionEnablesEnabledCourseOfAction" ordered="false" upperBound="-1" eType="//CourseOfAction"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="broaderCourseofActionIncludesMoreSpecificCourseOfAction" ordered="false" upperBound="-1" eType="//CourseOfAction"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="courseOfActionChanneIsEffortsTowardsDesiredResult" ordered="false" eType="//DesiredResult"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="courseOfActionDeployAsset" ordered="false" upperBound="-1" eType="//Asset"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="courseOfActionDefiensOffering" ordered="false" upperBound="-1" eType="//Offering"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="FixedAsset">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fixedAssetProvidesResource" ordered="false" upperBound="-1" eType="//Resource"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Offering">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="offeringRequiresResource" ordered="false" upperBound="-1" eType="//Resource"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="offeringUsesFixedAsset" ordered="false" upperBound="-1" eType="//FixedAsset"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Directive">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="directiveGovernsCourseOfAction" ordered="false" upperBound="-1" eType="//CourseOfAction"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="directiveIsSourceOfCourseOfAction" ordered="false" upperBound="-1" eType="//CourseOfAction"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="directiveActAsRegulation" ordered="false" upperBound="-1" eType="//Regulation"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="directiveSupportsAchievementOfDesiredResult" ordered="false" upperBound="-1" eType="//DesiredResult"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="directiveGovernsUseOfAsset" ordered="false" upperBound="-1" eType="//Asset"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Strategy">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="strategyIsAComponentOfThePlanForMission" ordered="false" upperBound="-1" eType="//Mission"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="strategyDeterminesOrganizationUnit" ordered="false" upperBound="-1" eType="//OrganizationUnit"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Tactic">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tacticImplementsStrategy" ordered="false" upperBound="-1" eType="//Strategy"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tacticEffectsEnforcementLevelOfBusinessRule" ordered="false" upperBound="-1" eType="//BusinessRule"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BusinessRule">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="businessRuleGuidesBusinessProcess" ordered="false" upperBound="-1" eType="//BusinessProcess"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="BusinessPolicy">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="businessPolicyIsBasisForBusinessRule" ordered="false" upperBound="-1" eType="//BusinessRule"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="broaderBusinessPolicyIncludesMoreSpecificBusinessPolicy" ordered="false" upperBound="-1" eType="//BusinessPolicy"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="businessPolicyGovernsBusinessProcess" ordered="false" upperBound="-1" eType="//BusinessProcess"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Regulation"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Vision"/>
+  <eClassifiers xsi:type="ecore:EClass" name="DesiredResult">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="broaderDesiredResultIncludesMoreSpecificDesiredResult" ordered="false" upperBound="-1" eType="//DesiredResult"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Goal">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="goalAmplidfiesVision" ordered="false" eType="//Vision"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Objective">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="objectiveQuantifiesGoal" ordered="false" upperBound="-1" eType="//Goal"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PotentialReward"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Risk"/>
+</ecore:EPackage>

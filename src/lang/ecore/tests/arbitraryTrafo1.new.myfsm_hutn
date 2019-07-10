@@ -1,0 +1,24 @@
+Machine Doors_ {
+  states: [
+    State BLA {
+      transitions: [Trans {
+        events: ["bar"]
+        target: |project://rascal-ecore/src/lang/ecore/tests/arbitraryTrafo1.new#//@states.3|
+      }]
+      final: false
+    }
+    State closed {
+      transitions: []
+      final: false
+    }
+    State locked {
+      transitions: []
+      final: false
+    }
+    State NewState_3 {
+      transitions: []
+      final: false
+    }
+  ]
+  initial: |project://rascal-ecore/src/lang/ecore/tests/arbitraryTrafo1.new#//@states.3|
+}

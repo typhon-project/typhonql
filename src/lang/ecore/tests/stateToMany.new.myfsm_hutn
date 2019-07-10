@@ -1,0 +1,17 @@
+Machine Doors {
+  states: [
+    State closed {
+      transitions: []
+      final: false
+    }
+    State opened {
+      transitions: []
+      final: false
+    }
+    State NewState {
+      transitions: []
+      final: false
+    }
+  ]
+  initial: |project://rascal-ecore/src/lang/ecore/tests/stateToMany.new#//@states.0|
+}

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="PNML">
+  <eClassifiers xsi:type="ecore:EClass" name="LocatedElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="location" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="IdedElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="id" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="URI">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PNMLDocument">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="xmlns" ordered="false" lowerBound="1" eType="//URI" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="nets" ordered="false" lowerBound="1" upperBound="-1" eType="//NetElement" containment="true" eOpposite="//NetElement/document"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="NetElement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="type" ordered="false" lowerBound="1" eType="//URI" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="document" ordered="false" lowerBound="1" eType="//PNMLDocument" eOpposite="//PNMLDocument/nets"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="contents" ordered="false" upperBound="-1" eType="//NetContent" containment="true" eOpposite="//NetContent/net"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="name" ordered="false" eType="//Name" containment="true" eOpposite="//Name/net"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="NetContent" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="net" ordered="false" lowerBound="1" eType="//NetElement" eOpposite="//NetElement/contents"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="name" ordered="false" eType="//Name" containment="true" eOpposite="//Name/netContent"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="LabeledElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="labels" ordered="false" upperBound="-1" eType="//Label" containment="true" eOpposite="//Label/labeledElement"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Label">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="text" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="labeledElement" ordered="false" lowerBound="1" eType="//LabeledElement" eOpposite="//LabeledElement/labels"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Name">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="net" ordered="false" eType="//NetElement" eOpposite="//NetElement/name"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="netContent" ordered="false" eType="//NetContent" eOpposite="//NetContent/name"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="NetContentElement" abstract="true"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Arc">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="source" ordered="false" lowerBound="1" eType="//NetContentElement"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="target" ordered="false" lowerBound="1" eType="//NetContentElement"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Place"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Transition"/>
+</ecore:EPackage>

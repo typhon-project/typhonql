@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="BusinessEntityModel">
+  <eClassifiers xsi:type="ecore:EClass" name="DataType"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Action"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Class"/>
+  <eClassifiers xsi:type="ecore:EClass" name="BusinessEntityPropertySet" abstract="true"/>
+  <eClassifiers xsi:type="ecore:EClass" name="BusinessRole" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="characterisedby" ordered="false" lowerBound="1" eType="//BusinessEntityPropertySet"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="typ" ordered="false" lowerBound="1" eType="//Class"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="task" ordered="false" upperBound="-1" eType="//Task" eOpposite="//Task/associatedWith"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fille" ordered="false" lowerBound="1" upperBound="-1" eType="//BusinessEntity" eOpposite="//BusinessEntity/placehold"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Task">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="associatedWith" ordered="false" lowerBound="1" upperBound="-1" eType="//BusinessRole" eOpposite="//BusinessRole/task"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="needs" ordered="false" upperBound="-1" eType="//ArtifactRole"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ArtifactRole"/>
+  <eClassifiers xsi:type="ecore:EClass" name="PerformerRole">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="perform" ordered="false" lowerBound="1" eType="//Task"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="OrganisationalUnit"/>
+  <eClassifiers xsi:type="ecore:EClass" name="BusinessEntity">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="placehold" ordered="false" lowerBound="1" upperBound="-1" eType="//BusinessRole" eOpposite="//BusinessRole/fille"/>
+  </eClassifiers>
+</ecore:EPackage>

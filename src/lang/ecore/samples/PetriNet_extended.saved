@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="PetriNet">
+  <eClassifiers xsi:type="ecore:EClass" name="LocatedElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="location" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="NamedElement" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PetriNet">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="elements" ordered="false" upperBound="-1" eType="//Element" containment="true" eOpposite="//Element/net"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="arcs" ordered="false" upperBound="-1" eType="//Arc" containment="true" eOpposite="//Arc/net"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="execs" ordered="false" upperBound="-1" eType="//Execution" eOpposite="//Execution/net"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Element" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="net" ordered="false" lowerBound="1" eType="//PetriNet" eOpposite="//PetriNet/elements"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Place">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="incomingArc" ordered="false" upperBound="-1" eType="//TransitionToPlace" eOpposite="//TransitionToPlace/to"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="outgoingArc" ordered="false" upperBound="-1" eType="//PlaceToTransition" eOpposite="//PlaceToTransition/from"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Transition">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="incomingArc" ordered="false" lowerBound="1" upperBound="-1" eType="//PlaceToTransition" eOpposite="//PlaceToTransition/to"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="outgoingArc" ordered="false" lowerBound="1" upperBound="-1" eType="//TransitionToPlace" eOpposite="//TransitionToPlace/from"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Arc" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="weight" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="net" ordered="false" lowerBound="1" eType="//PetriNet" eOpposite="//PetriNet/arcs"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="PlaceToTransition">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="from" ordered="false" lowerBound="1" eType="//Place" eOpposite="//Place/outgoingArc"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="to" ordered="false" lowerBound="1" eType="//Transition" eOpposite="//Transition/incomingArc"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TransitionToPlace">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="from" ordered="false" lowerBound="1" eType="//Transition" eOpposite="//Transition/outgoingArc"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="to" ordered="false" lowerBound="1" eType="//Place" eOpposite="//Place/incomingArc"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Execution">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="net" ordered="false" lowerBound="1" eType="//PetriNet" eOpposite="//PetriNet/execs"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="markings" ordered="false" upperBound="-1" eType="//Marking" containment="true" eOpposite="//Marking/exec"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="movements" ordered="false" upperBound="-1" eType="//Movement" containment="true" eOpposite="//Movement/exec"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Token">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="placedAt" ordered="false" lowerBound="1" eType="//Place"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="marking" ordered="false" lowerBound="1" eType="//Marking" eOpposite="//Marking/tokens"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Marking">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="exec" ordered="false" lowerBound="1" eType="//Execution" eOpposite="//Execution/markings"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tokens" ordered="false" upperBound="-1" eType="//Token" containment="true" eOpposite="//Token/marking"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Movement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="exec" ordered="false" lowerBound="1" eType="//Execution" eOpposite="//Execution/movements"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fire" ordered="false" lowerBound="1" eType="//Transition"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="source" ordered="false" lowerBound="1" eType="//Marking"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="target" ordered="false" lowerBound="1" eType="//Marking"/>
+  </eClassifiers>
+</ecore:EPackage>

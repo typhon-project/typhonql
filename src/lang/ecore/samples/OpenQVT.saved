@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="OpenQVT">
+  <eClassifiers xsi:type="ecore:EClass" name="Variable">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="visibility" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="context" ordered="false" lowerBound="1" eType="//Context" eOpposite="//Context/variables"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Context">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="variables" ordered="false" upperBound="-1" eType="//Variable" containment="true" eOpposite="//Variable/context"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rule" ordered="false" lowerBound="1" eType="//Rule" eOpposite="//Rule/context"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Rule">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="context" ordered="false" lowerBound="1" eType="//Context" containment="true" eOpposite="//Context/rule"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="subRule" ordered="false" lowerBound="1" eType="//Rule" containment="true" eOpposite="//Rule/superRule"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="superRule" ordered="false" lowerBound="1" eType="//Rule" eOpposite="//Rule/subRule"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="services" ordered="false" upperBound="-1" eType="//Service" containment="true" eOpposite="//Service/rule"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RootRule">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ruleSet" ordered="false" lowerBound="1" eType="//RuleSet" eOpposite="//RuleSet/rootRule"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RuleSetCall">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ruleSet" ordered="false" lowerBound="1" eType="//RuleSet"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="QARule">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="query" ordered="false" lowerBound="1" eType="//Query" containment="true" eOpposite="//Query/qARule"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="action" ordered="false" lowerBound="1" eType="//Action" containment="true" eOpposite="//Action/qARule"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RuleSet">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rootRule" ordered="false" lowerBound="1" eType="//RootRule" containment="true" eOpposite="//RootRule/ruleSet"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Service">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="visibility" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="signature" ordered="false" unique="false" lowerBound="1"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rule" ordered="false" lowerBound="1" eType="//Rule" eOpposite="//Rule/services"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="OCLService"/>
+  <eClassifiers xsi:type="ecore:EClass" name="RTransService"/>
+  <eClassifiers xsi:type="ecore:EClass" name="JavaService"/>
+  <eClassifiers xsi:type="ecore:EClass" name="RulePart" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="service" ordered="false" lowerBound="1" eType="//Service"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Action">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="qARule" ordered="false" lowerBound="1" eType="//QARule" eOpposite="//QARule/action"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RTransAction"/>
+  <eClassifiers xsi:type="ecore:EClass" name="JavaAction"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Query">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="qARule" ordered="false" lowerBound="1" eType="//QARule" eOpposite="//QARule/query"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="OCLFilter"/>
+  <eClassifiers xsi:type="ecore:EClass" name="RTransQuery"/>
+  <eClassifiers xsi:type="ecore:EClass" name="JavaQuery"/>
+  <eClassifiers xsi:type="ecore:EClass" name="JavaFilter"/>
+</ecore:EPackage>
