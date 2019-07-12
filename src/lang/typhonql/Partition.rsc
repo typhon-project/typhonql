@@ -30,7 +30,7 @@ the order define order of execution, which is needed for doing recombine
 after back-end queries, and (implied) inserts before update,
 and (implicit) data flow from implied selects from update/delete
 
-Basically the compiler takes this lrel and then produces
+Basically the compiler takes this lrel and then produces/flatMaps it into
 lrel[Place place, value] where the value is the back-end specific query
 */
 
@@ -58,21 +58,6 @@ for object graphs: first flatten, then distribute, then for mongo unflatten to g
 
 */
 
-str partition2text(Partitioning pr) {
-  //str s = "ORIGINAL:\n  <pr[<typhon(), "">]>\n";
-  //s += "PARTITIONING:\n";
-  //for (Place p <- pr, p.db != typhon(), p.db != recombine()) {
-  //  s += "  <p>: <pr[p]>\n";
-  //}
-  //s += "RECOMBINE:\n  <pr[<recombine(), "">]>";
-  //return s;
-  
-  str s = "SCRIPT:\n";
-  for (<Place p, Request r> <- pr) {
-    s += "<p>: <r>\n";
-  }
-  return s;
-}
 
 
 Partitioning partition((Request)`delete <Binding b>`, Schema s)
@@ -103,7 +88,12 @@ Partitioning partition((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`,
 }
    
 
-Partitioning partition((Request)`update <Binding b> where <{Expr ","}+ es> set {<{KeyVal ","}* keyVals>}`, Schema s) {
+Partitioning partition((Request)`update <EId eid> <VId vid> where <{Expr ","}+ es> set {<{KeyVal ","}* keyVals>}`, Schema s) {
+  // we're gonna reject nested objects and lists in updates, because we cannot partition in advance:
+  // the required inserts would commit to uuids; the inserts however, needs to be done
+  // *per* object that will be updated (the result from the select); this means the whole
+  // compiler logic needs to be pushed till after the select-result is known, which, at least for now, is too complex.
+  
   // even though the update is always local to a db, the where clauses
   // may cross database boundaries, this is the reason we need the two stage process
   // - first create a select query with the where clauses selecting the @id field
@@ -116,27 +106,52 @@ Partitioning partition((Request)`update <Binding b> where <{Expr ","}+ es> set {
   
   // so the script for update will be
   // insert* select update(?)
+  
+  if (/Obj _ := keyVals) {
+    throw "Nested objects in update statements are unsupported";
+  }  
+  
+  Partitioning result = [];
+  selectReq = (Request)`from <EId eid> <VId vid> select <VId vid>.@id where <{Expr ","}+ es>`;
+  result += partition(selectReq, s); 
+  
+  if (<Place p, str entity> <- s.placement, "<eid>" == entity) {
+    result += [<p, (Request)`update <EId eid> <VId vid> where <VId vid>.@id == ? set {<{KeyVal ","}* keyVals>}`>];
+  }
+  else {
+    throw "Entity <e> is not in schema placement";
+  } 
+  
+  return result;
+  
 }
 
-Partitioning partition((Request)`insert <{Obj ","}* objs>`, Schema s) {
+UUID lookup(VId vid, IdMap ids) {
+  str x = "<vid>";
+  if (<x, _, str u> <- ids) {
+    return [UUID]"#<u>";
+  }
+  throw "No uuid for <vid>";
+}
+  
+
+Partitioning partition(r:(Request)`insert <{Obj ","}* objs>`, Schema s) { 
   // script: insert+
   // flatten but only according to cross links
   // but for now, we completely flatten, and join things per database in a single insert
   // the mongodb driver can for instance, unflatten and nest again/
   
   list[Obj] objLst = flatten(objs);
+  //if (skipTopLevel) { 
+  //  // this is a hack, to reuse insert partitioning for updates that contain nested object literals
+  //  // the top-level is the one that will be updated, not inserted (and flatten is bottom-up, so it's the last element)
+  //  objLst = objLst[0..-1];
+  //}
 
   IdMap ids = makeIdMap(objLst);  
   
   insPerPlace = ();
   
-  UUID lookup(VId vid) {
-    str x = "<vid>";
-    if (<x, _, str u> <- ids) {
-      return [UUID]"#<u>";
-    }
-    throw "No uuid for <vid>";
-  }
   
   for (<Place p, str e> <- s.placement) {
     if (p notin insPerPlace) {
@@ -150,10 +165,10 @@ Partitioning partition((Request)`insert <{Obj ","}* objs>`, Schema s) {
         kvs2 = visit (kvs) {
           case (Expr)`<VId x>` => (Expr)`<UUID id>`
             when
-              UUID id := lookup(x)
+              UUID id := lookup(x, ids)
         }
         
-        UUID id = lookup(vid);
+        UUID id = lookup(vid, ids);
         // NB: insert kvs2 here, in order to have variable refs resolve to uuids
         insPerPlace[p] = (Request)`insert <{Obj ","}* xs>, <EId eid> {@id: <UUID id>, <{KeyVal ","}* kvs2>}`;    
       }
@@ -163,7 +178,7 @@ Partitioning partition((Request)`insert <{Obj ","}* objs>`, Schema s) {
     }
   }
   
-  return [ <p, insPerPlace[p]> | Place p <- insPerPlace ];
+  return [ <p, insPerPlace[p]> | Place p <- insPerPlace, (Request)`insert` !:= insPerPlace[p] ];
 }
 
 
@@ -338,6 +353,21 @@ DBPath navigate(str entity, list[str] path, Schema s) {
   } 
 }
 
+str partition2text(Partitioning pr) {
+  //str s = "ORIGINAL:\n  <pr[<typhon(), "">]>\n";
+  //s += "PARTITIONING:\n";
+  //for (Place p <- pr, p.db != typhon(), p.db != recombine()) {
+  //  s += "  <p>: <pr[p]>\n";
+  //}
+  //s += "RECOMBINE:\n  <pr[<recombine(), "">]>";
+  //return s;
+  
+  str s = "SCRIPT:\n";
+  for (<Place p, Request r> <- pr) {
+    s += "<p>: <r>\n";
+  }
+  return s;
+}
 
 
 
