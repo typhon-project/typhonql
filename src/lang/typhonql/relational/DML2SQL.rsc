@@ -228,8 +228,8 @@ Value evalExpr((Expr)`<Int n>`) = integer(toInt("<n>"));
 
 Value evalExpr((Expr)`<Bool b>`) = boolean("<b>" == true);
 
-// cannot happen, because is a ref
-//Value evalExpr((Expr)`<UUID u>`) = text("<u>"[1..]);
+// should only happen for @id field (because refs should be done via keys etc.)
+Value evalExpr((Expr)`<UUID u>`) = text("<u>"[1..]);
 
 default Value evalExpr(Expr _) = null();
 

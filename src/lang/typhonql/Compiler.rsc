@@ -9,6 +9,9 @@ import lang::typhonql::relational::SQL2Text;
 import lang::typhonql::mongodb::Compiler;
 import lang::typhonql::mongodb::DBCollection;
 
+import lang::typhonql::recombine::Select2Java;
+import lang::typhonql::recombine::MuJava;
+
 import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
 
@@ -17,7 +20,7 @@ import IO;
 
 lrel[Place, value] compile(Request request, Schema schema) {
   lrel[Place, Request] script = partition(request, schema);
-  return [ *compile(p, r, schema) | <Place p, Request r> <- script, bprintln("COMPILING: <r>") ];
+  return [ *compile(p, r, schema) | <Place p, Request r> <- script ];
 }
 
 lrel[Place, value] compile(p:<mongodb(), _>, Request r, Schema s) 
@@ -28,7 +31,7 @@ lrel[Place, value] compile(p:<sql(), _>, Request r, Schema s)
   = [ <p, pp(stat)> | SQLStat stat <- compile2sql(r, s) ];
 
 lrel[Place, value] compile(p:<recombine(), _>, Request r, Schema s) 
-  = [ <p, "NYI">];
+  = [ <p, s> | Stm s <- compile2java(r, s) ];
 
 
 
@@ -54,6 +57,7 @@ void smokeTestCompiler() {
   
   testRequest((Request)`insert Product { name: "TV", review: Review {  } }`, s);
   testRequest((Request)`insert @tv Product { name: "TV"}, Review { product: tv }`, s);
+  testRequest((Request)`insert @tv Product { name: "TV"}, Product {name: "Bla" }, Review { product: tv }`, s);
   testRequest((Request)`insert Order { totalAmount: 23, paidWith: cc }, @cc CreditCard { number: "12345678" }`, s);
   testRequest((Request)`insert Order { users: alice }, @alice User { name: "alice" }`, s);
   testRequest((Request)`insert Order { users: [ User { name: "alice" } ]}`, s);
@@ -62,8 +66,16 @@ void smokeTestCompiler() {
   testRequest((Request)`from Order o select o.totalAmount where o.users.name == "alice"`, s);
   testRequest((Request)`from Product p select p`, s);
   testRequest((Request)`from Product p select p.name where p.description != ""`, s);
+  testRequest((Request)`from Product p select p.name where p.description != "", p.review.id != ""`, s);
+  
+  testRequest((Request)`from Product p select p.review where p.name != "", p.review.id != ""`, s);
+  
+  
+  
+  testRequest((Request)`update Product p where p.name == "TV" set {name: "Hallo"}`, s);
 
   testRequest((Request)`update User u where u.name == "alice" set { name: "bob"}`, s);
   testRequest((Request)`delete User u where u.name == "alice"`, s);
-
+  testRequest((Request)`delete Product p where p.name != "", p.review.id != ""`, s);
+  
 }

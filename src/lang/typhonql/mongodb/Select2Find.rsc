@@ -47,6 +47,10 @@ map[str, CollMethod] compile2mongo((Request)`from <{Binding ","}+ bs> select <{R
     result[env["<x>"]].projection.props += [<"@id", \value(1)>, <"<fs>", \value(1)>];
   }
  
+  // this is what you get if outside puts in the "true" placeholder
+  exprList = [ e | Expr e <- es ];
+  translateWheres = !(size(exprList) == 1 && ((Expr)`true` := exprList[0]));
+ 
   for (translateWheres, Expr e <- es) {
     <coll, p> = expr2pattern(e, env);
     result[coll].query.props += [p];

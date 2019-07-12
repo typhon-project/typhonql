@@ -36,6 +36,7 @@ alias SQLPath = list[PathElement];
 
 data PathElement 
   = root(As as, str entity)
+  | identity(As as, str entity)
   | child(As as, str entity, str role)
   | junction(As junction, As as, str entity, str role, str toRole)
   | attr(str name)
@@ -140,8 +141,7 @@ list[SQLPath] path2sql(Expr e, map[str, str] env, Schema s, bool trans = false) 
 
     case (Expr)`<VId x>.@id`: {
       str entity = env["<x>"];
-      // hack: should explicitly represent as path element
-      path = [root(as(tableName(entity), "<x>"), entity), attr(typhonId(entity))];
+      path = [identity(as(tableName(entity), "<x>"), entity)];
     }
 
     case (Expr)`<VId x>.<{Id "."}+ fs>`: {
@@ -228,18 +228,15 @@ SQLPath lookupPath(Expr e, PathMap paths) {
   return paths[e@\loc][0];
 }  
 
-data PathElement 
-  = root(As as, str entity)
-  | child(As as, str entity, str role)
-  | junction(As junction, As as, str entity, str role, str toRole)
-  | attr(str name)
-  ;
   
 SQLExpr path2expr(SQLPath path) {
   assert path != []: "empty path";
   
   switch (path) {
     case [root(As a, str e)]:
+      return column(a.name, typhonId(e));
+
+    case [identity(As a, str e)]:
       return column(a.name, typhonId(e));
       
     case [*_, PathElement elt, attr(str x)]:
