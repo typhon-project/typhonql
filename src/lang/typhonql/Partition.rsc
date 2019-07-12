@@ -3,6 +3,7 @@ module lang::typhonql::Partition
 
 import lang::typhonml::Util;
 import lang::typhonql::TDBC;
+import lang::typhonql::util::Objects;
 
 
 import IO;
@@ -20,13 +21,35 @@ Places include
 
 TODO: integrate name into the DB type instead of tupling
 }
-alias Partitioning = map[Place place, Request request];
+alias Partitioning = lrel[Place place, Request request];
+
+/*
+Alternative: 
+alias Partitioning = lrel[Place place, Request request]
+the order define order of execution, which is needed for doing recombine
+after back-end queries, and (implied) inserts before update,
+and (implicit) data flow from implied selects from update/delete
+
+Basically the compiler takes this lrel and then produces
+lrel[Place place, value] where the value is the back-end specific query
+*/
 
 
 void partitionSmokeTest() {
-  q = (Request)`from Product p select p.review where p.name != "", p.review.id != ""`;
   s = myDbSchema();
+  
+  q = (Request)`from Product p select p.review where p.name != "", p.review.id != ""`;
+  println("PARTITIONING: <q>");
   println(partition2text(partition(q, s)));
+  
+  q = (Request)`delete Product p where p.name != "", p.review.id != ""`;
+  println("PARTITIONING: <q>");
+  println(partition2text(partition(q, s)));
+  
+  q = (Request) `insert @tv Product { name: "TV"}, Product {name: "Bla" }, Review { product: tv }`;
+  println("PARTITIONING: <q>");
+  println(partition2text(partition(q, s)));
+  
 }
 
 /*
@@ -36,13 +59,111 @@ for object graphs: first flatten, then distribute, then for mongo unflatten to g
 */
 
 str partition2text(Partitioning pr) {
-  str s = "ORIGINAL:\n  <pr[<typhon(), "">]>\n";
-  s += "PARTITIONING:\n";
-  for (Place p <- pr, p.db != typhon(), p.db != recombine()) {
-    s += "  <p>: <pr[p]>\n";
+  //str s = "ORIGINAL:\n  <pr[<typhon(), "">]>\n";
+  //s += "PARTITIONING:\n";
+  //for (Place p <- pr, p.db != typhon(), p.db != recombine()) {
+  //  s += "  <p>: <pr[p]>\n";
+  //}
+  //s += "RECOMBINE:\n  <pr[<recombine(), "">]>";
+  //return s;
+  
+  str s = "SCRIPT:\n";
+  for (<Place p, Request r> <- pr) {
+    s += "<p>: <r>\n";
   }
-  s += "RECOMBINE:\n  <pr[<recombine(), "">]>";
   return s;
+}
+
+
+Partitioning partition((Request)`delete <Binding b>`, Schema s)
+  = partition((Request)`delete <Binding b> where true`, s);
+
+Partitioning partition((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`, Schema s) {
+  // even though the deletion is always local to a db, the where clauses
+  // may cross database boundaries, this is the reason we need the two stage process
+  // - first create a select query with the where clauses selecting the @id field
+  //     - partition this
+  //     - run through back-ends and recombine
+  //  - then perform the deletion locally based on that working set
+  //      i.e. delete <Binding b> where @id == ? 
+  // script: select* delete(?)
+  
+  Partitioning result = [];
+  selectReq = (Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ es>`;
+  result += partition(selectReq, s); 
+  
+  if (<Place p, str entity> <- s.placement, "<e>" == entity) {
+    result += [<p, (Request)`delete <EId e> <VId x> where <VId x>.@id == ?`>];
+  }
+  else {
+    throw "Entity <e> is not in schema placement";
+  } 
+  
+  return result;
+}
+   
+
+Partitioning partition((Request)`update <Binding b> where <{Expr ","}+ es> set {<{KeyVal ","}* keyVals>}`, Schema s) {
+  // even though the update is always local to a db, the where clauses
+  // may cross database boundaries, this is the reason we need the two stage process
+  // - first create a select query with the where clauses selecting the @id field
+  //     - partition this
+  //     - run through back-ends and recombine
+  //  - then perform the update locally based on that working set
+  //      i.e. update <Binding b> where @id == ? set {KeyVals}
+  // - but also create additional inserts for possibly nested entities in the key-value list
+  //   (and these may have to be partitioned 
+  
+  // so the script for update will be
+  // insert* select update(?)
+}
+
+Partitioning partition((Request)`insert <{Obj ","}* objs>`, Schema s) {
+  // script: insert+
+  // flatten but only according to cross links
+  // but for now, we completely flatten, and join things per database in a single insert
+  // the mongodb driver can for instance, unflatten and nest again/
+  
+  list[Obj] objLst = flatten(objs);
+
+  IdMap ids = makeIdMap(objLst);  
+  
+  insPerPlace = ();
+  
+  UUID lookup(VId vid) {
+    str x = "<vid>";
+    if (<x, _, str u> <- ids) {
+      return [UUID]"#<u>";
+    }
+    throw "No uuid for <vid>";
+  }
+  
+  for (<Place p, str e> <- s.placement) {
+    if (p notin insPerPlace) {
+      insPerPlace[p] = (Request)`insert`;
+    }
+  
+    for (x:(Obj)`@<VId vid> <EId eid> {<{KeyVal ","}* kvs>}` <- objLst, "<eid>" == e) {
+      if ((Request)`insert <{Obj ","}* xs>` := insPerPlace[p]) {
+      
+        // resolve variables into uuids because vars may span across multiple inserts
+        kvs2 = visit (kvs) {
+          case (Expr)`<VId x>` => (Expr)`<UUID id>`
+            when
+              UUID id := lookup(x)
+        }
+        
+        UUID id = lookup(vid);
+        // NB: insert kvs2 here, in order to have variable refs resolve to uuids
+        insPerPlace[p] = (Request)`insert <{Obj ","}* xs>, <EId eid> {@id: <UUID id>, <{KeyVal ","}* kvs2>}`;    
+      }
+      else {
+        throw "Invalid insert in map";
+      }
+    }
+  }
+  
+  return [ <p, insPerPlace[p]> | Place p <- insPerPlace ];
 }
 
 
@@ -51,6 +172,8 @@ Partitioning partition((Request)`from <{Binding ","}+ bs> select <{Result ","}+ 
 
 
 Partitioning partition(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, Schema s) {
+  // script: select+ (where last one is recombine)
+  
   map[str, str] env = ( "<x>": "<e>"  | (Binding)`<EId e> <VId x>` <- bs );
    
    
@@ -61,7 +184,7 @@ Partitioning partition(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}
     return x;
   }
   
-  map[Place, Request] result = (<typhon(), "">: q);
+  Partitioning result = [];
    
    // An end-result of this phase, is that we have a (unique?) variable for every entity...
    // Another invariant: in the combined result set  of the back-end queries
@@ -72,6 +195,11 @@ Partitioning partition(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}
    
     // restrict bindings to bindings on the current place
     newBindings = [ b | Binding b <- bs, str e := "<b.entity>", <p, e> <- s.placement ];
+    
+    //println("Local bindings:");
+    //for (Binding b <- newBindings) {
+    //  println("  <b>");
+    //}
     
     // kick out results that are not on the current db
     newResults = [ r | r:(Result)`<Expr re>` <- rs, isLocalTo(re, p, env, s) ];
@@ -105,10 +233,13 @@ Partitioning partition(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}
     
     
     
-     
-    Query newQ = buildQuery(newBindings, newResults, newWheres);
+    if (newBindings == []) {
+      // sometimes a back-end is not touched
+      continue;
+    } 
     
-    result[p] = (Request)`<Query newQ>`;
+    Query newQ = buildQuery(newBindings, newResults, newWheres);
+    result += [<p,(Request)`<Query newQ>`>];
   }
   
   // Recombination query
@@ -116,7 +247,7 @@ Partitioning partition(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}
   newWheres = [ e | Expr e <- es, !isLocal(e, env, s) ];
   
   Query recomb = buildQuery([ b | Binding b <- bs ], [ r | Result r <- rs ], newWheres); 
-  result[<recombine(), "">] =  (Request)`<Query recomb>`;
+  result += [<<recombine(), "">, (Request)`<Query recomb>`>];
 
   return result;
 }
