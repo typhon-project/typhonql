@@ -26,45 +26,52 @@ user does not do that.
 */
 
 map[str, CollMethod] compile2mongo((Request)`insert <{Obj ","}* objs>`, Schema s) {
-  objList = flattenForMongoDB(objs);
-  IdMap ids = makeIdMap(objList);
+  //objList = flattenForMongoDB(objs);
+  // assumes flattening as per partitioning
+  
+  map[str, Obj] env = ( lookupId(obj.keyVals): obj | Obj obj <- objs ); 
   
   // TODO: unflatten to get native nesting
   
-  // ugh this is ugly...
-  return ( e: \insert([ obj2dbObj((Expr)`<Obj obj>`, ids) | obj:(Obj)`@<VId x> <EId _> {<{KeyVal ","}* _>}` <- objList
-            , str name := "<x>", <name, e, _> <- ids ]) | str e <- ids<1> );
+  return ( "<obj.entity>": \insert([ obj2dbObj((Expr)`<Obj obj>`, env, s) | Obj obj <- objs  ]) );
 }
 
 str typhonId() = "@id";
 
-// TODO: need cardinality interpretation to
+// TODO: need cardinality interpretation too
 
-DBObject obj2dbObj((Expr)`@<VId x> <EId e> {<{KeyVal ","}* kvs>}`, IdMap ids)
-  = object([<typhonId(), \value(myId)>] + [ keyVal2prop(kv, ids) | KeyVal kv <- kvs ])
-  when <_, str myId> <- ids["<x>"];
+DBObject obj2dbObj((Expr)`<EId e> {<{KeyVal ","}* kvs>}`, map[str,Obj] env, Schema s)
+  = object([ keyVal2prop(kv, "<e>", env, s) | KeyVal kv <- kvs ]);
    
-DBObject obj2dbObj((Expr)`<EId e> {<{KeyVal ","}* kvs>}`, IdMap ids)
-  = object([ keyVal2prop(kv, ids) | KeyVal kv <- kvs ]);
+DBObject obj2dbObj((Expr)`[<{Obj ","}* objs>]`, map[str, Obj] env, Schema s)
+  = array([ obj2dbObj((Expr)`<Obj obj>`, env, s) | Obj obj <- objs ]);
 
-DBObject obj2dbObj((Expr)`[<{Obj ","}* objs>]`, IdMap ids)
-  = array([ obj2dbObj((Expr)`<Obj obj>`, ids) | Obj obj <- objs ]);
 
-DBObject obj2dbObj((Expr)`<Bool b>`, IdMap ids) = \value("<b>" == "true");
 
-DBObject obj2dbObj((Expr)`<Int n>`, IdMap ids) = \value(toInt("<n>"));
+DBObject obj2dbObj((Expr)`<Bool b>`, str from, str fld, map[str, Obj] env, Schema s) = \value("<b>" == "true");
+
+DBObject obj2dbObj((Expr)`<Int n>`,  str from, str fld, map[str, Obj] env, Schema s) = \value(toInt("<n>"));
 
 // todo: unescaping
-DBObject obj2dbObj((Expr)`<Str s>`, IdMap ids) = \value("<s>"[1..-1]);
+DBObject obj2dbObj((Expr)`<Str s>`, str from, str fld, map[str, Obj] env, Schema s) = \value("<s>"[1..-1]);
 
-DBObject obj2dbObj((Expr)`<VId x>`, IdMap ids) = \value(uuid)
-  when <_, str uuid> <- ids["<x>"];
+DBObject obj2dbObj((Expr)`<UUID u>`, str from, str fld, map[str, Obj] env, Schema s) {
+ // if it is a containment (canonical) lookup in env and inline.
+ if (<from, _, fld, _, _, str to, true> <- schema.rels) {
+   if (<Place p1, from> <- s.placement, <Place p2, to> <- s.placement, p1 == p2) {
+     str id = "<u>"[1..];
+     return obj2dbObj(env[id], env, s);
+   }
+ }
+ return \value("<u>");
+}
+
   
-Prop keyVal2prop((KeyVal)`<Id x>: <Expr e>`, IdMap ids)
-  = <"<x>", obj2dbObj(e, ids)>;
+Prop keyVal2prop((KeyVal)`<Id x>: <Expr e>`, str from, map[str, Obj] env, Schema s)
+  = <"<x>", obj2dbObj(e, from, "<x>", env, s)>;
   
-Prop keyVal2prop((KeyVal)`@id: <Expr e>`, IdMap ids)
-  = <typhonId(), obj2dbObj(e, ids)>;
+Prop keyVal2prop((KeyVal)`@id: <UUID u>`, str from, map[str, Obj] env, Schema s)
+  = <typhonId(), "<u>"[1..]>;
   
   
   

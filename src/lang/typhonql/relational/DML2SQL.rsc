@@ -86,14 +86,7 @@ bool isAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) = <e, "<x>", _> <- s.at
 
 bool isAttr((KeyVal)`@id: <Expr _>`, str _, Schema _) = true;
 
-str lookupId({KeyVal ","}* kvs) {
-  if ((KeyVal)`@id: <UUID uuid>` <- kvs) {
-    return "<uuid>"[1..];
-  }
-  throw "No @id field found in <kvs>";
-}
-  
-bool hasAssignedId({KeyVal ","}* kvs) = (KeyVal)`@id: <Expr _>` <- kvs;
+
   
 /*
  * Insert (NB: this assumes partitioning has happened, so all ids are assigned to @id and refs resolve to them)

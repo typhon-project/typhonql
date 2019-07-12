@@ -8,6 +8,15 @@ import IO;
 alias IdMap = lrel[str name, str entity, str uuid];
 
 
+str lookupId({KeyVal ","}* kvs) {
+  if ((KeyVal)`@id: <UUID uuid>` <- kvs) {
+    return "<uuid>"[1..];
+  }
+  throw "No @id field found in <kvs>";
+}
+  
+bool hasAssignedId({KeyVal ","}* kvs) = (KeyVal)`@id: <Expr _>` <- kvs;
+
 // TODO: flattening of lists *is* SQL specific...
 
 @doc{Flatten possibly nested objs to a list of labeled object literals
