@@ -22,6 +22,7 @@ data SQLExpr
   = column(str table, str name) // NB: always qualified
   | column(str name) // only for use in update
   | lit(Value val)
+  | placeholder() // for representing ? in id-parameteric updates, and deletes
   | not(SQLExpr arg) 
   | neg(SQLExpr arg) 
   | pos(SQLExpr arg) 

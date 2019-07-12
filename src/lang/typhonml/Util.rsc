@@ -24,7 +24,7 @@ alias Rel = tuple[str from, Cardinality fromCard, str fromRole, str toRole, Card
 alias Rels = set[Rel];
 alias Attrs = rel[str from, str name, str \type];
 
-data DB = mongodb() | sql() | hyperj() | recombine() | unknown();
+data DB = mongodb() | sql() | hyperj() | recombine() | unknown() | typhon();
 
 alias Place = tuple[DB db, str name];
 

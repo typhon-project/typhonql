@@ -33,8 +33,8 @@ private str TYPHONQL = "TyphonQL";
 
 void main() {
   
-  registerLanguage(TYPHONQL, "tql", start[Scratch](str src, loc org) {
-    return parse(#start[Scratch], src, org);
+  registerLanguage(TYPHONQL, "tql", start[Request](str src, loc org) {
+    return parse(#start[Request], src, org);
   });
   
   // fake it for now.

@@ -1,15 +1,10 @@
 package nl.cwi.swat.typhonql;
 
-import java.util.Map;
-
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 import org.rascalmpl.interpreter.TypeReifier;
 
 import io.usethesource.vallang.IConstructor;
-import io.usethesource.vallang.IList;
-import io.usethesource.vallang.IMap;
-import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
@@ -21,7 +16,6 @@ public class TyphonQL {
 	private final IValueFactory vf;
 	private final TypeReifier tr;
 	private typhonml.Model model;
-	private Map<String, Object> connections;
 		
 		
 	public TyphonQL(IValueFactory vf) {
@@ -37,7 +31,6 @@ public class TyphonQL {
 		TypeStore ts = new TypeStore(); // start afresh
 
 		model = null; // todo: get it from the platform
-		connections = null; // todo: get it from the platform
 		
 		Type rt = tr.valueToType((IConstructor) typeOfTyphonML, ts);
 		Convert.declareRefType(ts);
@@ -45,12 +38,5 @@ public class TyphonQL {
 		return Convert.obj2value(model, rt, vf, ts, null /* todo: some loc */);
 	}
 	
-	public IMap toMongoDB(IString dbName, IList calls) {
-		return vf.map();
-	}
-
-	public IMap toSQL(IString dbName, IList statements) {
-		return vf.map();
-	}
 		
 }

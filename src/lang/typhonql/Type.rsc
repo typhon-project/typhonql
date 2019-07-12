@@ -17,4 +17,3 @@ syntax Type
   | "freetext" "[" {Id ","}* nlpfeatures "]"
   | "image" "[" { Id ","}* metadata "]" 
   ;
-  

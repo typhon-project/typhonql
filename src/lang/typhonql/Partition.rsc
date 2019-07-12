@@ -2,20 +2,32 @@ module lang::typhonql::Partition
 
 
 import lang::typhonml::Util;
-import lang::typhonql::Query;
-import lang::typhonql::Expr;
+import lang::typhonql::TDBC;
+
 
 import IO;
 import Set;
 import String;
 import List;
 
-alias DBPath = lrel[Place place, str entity];
 
-alias Partitioning = map[Place place, Query query];
+@doc{
+The partitioning is a map from place to request
+Places include 
+- named database back-ends sql() mongodb()
+- anonymous recombination queries (in case of select-query partitioning)
+- the original request with db type "typhon()"
 
-alias PartitionResult = tuple[Partitioning partitioning, Query recombine, Query original]; 
+TODO: integrate name into the DB type instead of tupling
+}
+alias Partitioning = map[Place place, Request request];
 
+
+void partitionSmokeTest() {
+  q = (Request)`from Product p select p.review where p.name != "", p.review.id != ""`;
+  s = myDbSchema();
+  println(partition2text(partition(q, s)));
+}
 
 /*
 
@@ -23,17 +35,22 @@ for object graphs: first flatten, then distribute, then for mongo unflatten to g
 
 */
 
-str partitionResult2text(PartitionResult pr) {
-  str s = "ORIGINAL:\n  <pr.original>\n";
+str partition2text(Partitioning pr) {
+  str s = "ORIGINAL:\n  <pr[<typhon(), "">]>\n";
   s += "PARTITIONING:\n";
-  for (Place p <- pr.partitioning) {
-    s += "  <p>: <pr.partitioning[p]>\n";
+  for (Place p <- pr, p.db != typhon(), p.db != recombine()) {
+    s += "  <p>: <pr[p]>\n";
   }
-  s += "RECOMBINE:\n  <pr.recombine>";
+  s += "RECOMBINE:\n  <pr[<recombine(), "">]>";
   return s;
 }
 
-PartitionResult partition(q:(Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, Schema s) {
+
+Partitioning partition((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s) 
+  = partition((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s);
+
+
+Partitioning partition(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, Schema s) {
   map[str, str] env = ( "<x>": "<e>"  | (Binding)`<EId e> <VId x>` <- bs );
    
    
@@ -44,7 +61,7 @@ PartitionResult partition(q:(Query)`from <{Binding ","}+ bs> select <{Result ","
     return x;
   }
   
-  map[Place, Query] result = ();
+  map[Place, Request] result = (<typhon(), "">: q);
    
    // An end-result of this phase, is that we have a (unique?) variable for every entity...
    // Another invariant: in the combined result set  of the back-end queries
@@ -91,7 +108,7 @@ PartitionResult partition(q:(Query)`from <{Binding ","}+ bs> select <{Result ","
      
     Query newQ = buildQuery(newBindings, newResults, newWheres);
     
-    result[p] = newQ;
+    result[p] = (Request)`<Query newQ>`;
   }
   
   // Recombination query
@@ -99,8 +116,9 @@ PartitionResult partition(q:(Query)`from <{Binding ","}+ bs> select <{Result ","
   newWheres = [ e | Expr e <- es, !isLocal(e, env, s) ];
   
   Query recomb = buildQuery([ b | Binding b <- bs ], [ r | Result r <- rs ], newWheres); 
+  result[<recombine(), "">] =  (Request)`<Query recomb>`;
 
-  return <result, recomb, q>;
+  return result;
 }
 
 Query buildQuery(list[Binding] bs, list[Result] rs, list[Expr] ws) {
@@ -132,6 +150,8 @@ Query buildQuery(list[Binding] bs, list[Result] rs, list[Expr] ws) {
   return q;
 }
 
+
+alias DBPath = lrel[Place place, str entity];
 
 bool goesThrough(Expr e, Place p, map[str, str] env, Schema s) 
   = p in dbPlaces(e, env, s);

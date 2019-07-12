@@ -11,6 +11,7 @@ data DBObject
   = object(list[Prop] props)
   | array(list[DBObject] values)
   | \value(value v)
+  | placeholder() // simulating a kind of ? for doing updates and deletes
   ;
     
 // I'm skipping all readpreference, DBEncode, Object and *Options things  
