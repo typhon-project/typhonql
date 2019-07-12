@@ -33,7 +33,7 @@ map[str, CollMethod] compile2mongo((Request)`insert <{Obj ","}* objs>`, Schema s
   
   // TODO: unflatten to get native nesting
   
-  return ( "<obj.entity>": \insert([ obj2dbObj((Expr)`<Obj obj>`, env, s) | Obj obj <- objs  ]) );
+  return ( "<obj.entity>": \insert( [ obj2dbObj((Expr)`<Obj obj>`, env, s) ]) | Obj obj <- objs  ) ;
 }
 
 str typhonId() = "@id";
@@ -57,7 +57,7 @@ DBObject obj2dbObj((Expr)`<Str s>`, str from, str fld, map[str, Obj] env, Schema
 
 DBObject obj2dbObj((Expr)`<UUID u>`, str from, str fld, map[str, Obj] env, Schema s) {
  // if it is a containment (canonical) lookup in env and inline.
- if (<from, _, fld, _, _, str to, true> <- schema.rels) {
+ if (<from, _, fld, _, _, str to, true> <- s.rels) {
    if (<Place p1, from> <- s.placement, <Place p2, to> <- s.placement, p1 == p2) {
      str id = "<u>"[1..];
      return obj2dbObj(env[id], env, s);
@@ -71,7 +71,7 @@ Prop keyVal2prop((KeyVal)`<Id x>: <Expr e>`, str from, map[str, Obj] env, Schema
   = <"<x>", obj2dbObj(e, from, "<x>", env, s)>;
   
 Prop keyVal2prop((KeyVal)`@id: <UUID u>`, str from, map[str, Obj] env, Schema s)
-  = <typhonId(), "<u>"[1..]>;
+  = <typhonId(), \value("<u>"[1..])>;
   
   
   

@@ -70,7 +70,7 @@ list[SQLStat] update2sql((Request)`update <EId e> <VId x> where <{Expr ","}+ es>
   // and similar for cross references.
   
   return [update(tableName("<e>"),
-      [ \set(columnName(kv, "<e>"), lit(evalExpr(kv.\value, []))) | KeyVal kv <- kvs ],
+      [ \set(columnName(kv, "<e>"), lit(evalExpr(kv.\value))) | KeyVal kv <- kvs ],
       q.clauses)];
 }
 
@@ -105,7 +105,7 @@ list[SQLStat] insert2sql((Request)`insert <{Obj ","}* objs>`, Schema schema) {
   
   
   
-  result += outer: for ((Obj)`<EId entity> {<{KeyVal ","}* kvs>}` <- objList) {
+  result += outer: for ((Obj)`<EId entity> {<{KeyVal ","}* kvs>}` <- objs) {
     str myUUID = lookupId(kvs);
     // this assumes a VId is always an object ref, not an "ordinary" variable (do we have them?)
     
