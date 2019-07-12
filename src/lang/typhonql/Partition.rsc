@@ -50,6 +50,10 @@ void partitionSmokeTest() {
   println("PARTITIONING: <q>");
   println(partition2text(partition(q, s)));
   
+  q = (Request) `update Product p where p.name == "TV" set {name: "Hallo"}`;
+  println("PARTITIONING: <q>");
+  println(partition2text(partition(q, s)));
+  
 }
 
 /*
@@ -94,18 +98,8 @@ Partitioning partition((Request)`update <EId eid> <VId vid> where <{Expr ","}+ e
   // *per* object that will be updated (the result from the select); this means the whole
   // compiler logic needs to be pushed till after the select-result is known, which, at least for now, is too complex.
   
-  // even though the update is always local to a db, the where clauses
-  // may cross database boundaries, this is the reason we need the two stage process
-  // - first create a select query with the where clauses selecting the @id field
-  //     - partition this
-  //     - run through back-ends and recombine
-  //  - then perform the update locally based on that working set
-  //      i.e. update <Binding b> where @id == ? set {KeyVals}
-  // - but also create additional inserts for possibly nested entities in the key-value list
-  //   (and these may have to be partitioned 
-  
   // so the script for update will be
-  // insert* select update(?)
+  // select update(?)
   
   if (/Obj _ := keyVals) {
     throw "Nested objects in update statements are unsupported";
@@ -169,7 +163,7 @@ Partitioning partition(r:(Request)`insert <{Obj ","}* objs>`, Schema s) {
         }
         
         UUID id = lookup(vid, ids);
-        // NB: insert kvs2 here, in order to have variable refs resolve to uuids
+        // NB: insert kvs2 here, in order to have variable refs resolved to uuids
         insPerPlace[p] = (Request)`insert <{Obj ","}* xs>, <EId eid> {@id: <UUID id>, <{KeyVal ","}* kvs2>}`;    
       }
       else {
@@ -220,6 +214,7 @@ Partitioning partition(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}
     newResults = [ r | r:(Result)`<Expr re>` <- rs, isLocalTo(re, p, env, s) ];
     
     // need to add results for bindings that are local, but not in the result
+    // TODO: this needs to be refined, it adds too many results in some cases... 
     newResults += [ (Result)`<VId x>` | (Binding)`<EId e> <VId x>` <- bs, isLocalTo((Expr)`<VId x>`, p, env, s) ]; 
     
     set[str] addedEntities = { e | Expr w <- es, <p, str e> <- dbPlacements(w, env, s) }
@@ -233,7 +228,7 @@ Partitioning partition(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}
     //for (<eid, vid> <- addedBindings) {
     //  println("Adding binding: <eid> <vid>");
     //}
-    
+    //
     // Add bindings for required cross-clause evaluation 
     newBindings += [ (Binding)`<EId eid> <VId x>` | <EId eid, VId x> <- addedBindings ]; 
     newResults += [ (Result)`<VId x>` | VId x <- addedBindings<1> ];

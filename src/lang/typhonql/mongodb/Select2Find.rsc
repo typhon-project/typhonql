@@ -1,7 +1,7 @@
 module lang::typhonql::mongodb::Select2Find
 
 import lang::typhonql::mongodb::DBCollection;
-import lang::typhonql::Query;
+import lang::typhonql::TDBC;
 import lang::typhonml::Util;
 import String;
 
@@ -33,11 +33,12 @@ Todo: always return the typhon id
 
 */
 
-map[str, CollMethod] select2find((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s)
-  = select2find((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, translateWheres=false);
+map[str, CollMethod] compile2mongo((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s)
+  = select2find((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, translateWheres=false);
 
 
-map[str, CollMethod] select2find((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}* es>`, Schema s, bool translateWheres = true) {
+// TODO: how to deal with multi entity finds?
+map[str, CollMethod] compile2mongo((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}* es>`, Schema s, bool translateWheres = true) {
   Env env = ( "<b.var>": "<b.entity>" | Binding b <- bs );
   map[str, CollMethod] result = ( "<b.entity>": find(object([]), object([])) | Binding b <- bs );
   
@@ -55,6 +56,7 @@ map[str, CollMethod] select2find((Query)`from <{Binding ","}+ bs> select <{Resul
 }
 
 alias Env = map[str, str];
+
 
 tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> == <Expr rhs>`, Env env)
   = <coll, <path, expr2obj(other)>> 
@@ -103,7 +105,8 @@ tuple[str coll, str path, Expr other] split(Expr lhs, Expr rhs, Env env) {
     throw "One of binary expr must contain field navigation, but got: <lhs>, <rhs>";
   }
 }
-    
+
+DBObject expr2obj((Expr)`?`) = placeholder();
 
 DBObject expr2obj((Expr)`<Int i>`) = \value(toInt("<i>"));
 

@@ -1,7 +1,7 @@
 module lang::typhonql::mongodb::DML2Method
 
 import lang::typhonql::mongodb::DBCollection;
-import lang::typhonql::DML;
+import lang::typhonql::TDBC;
 import lang::typhonql::Expr;
 import lang::typhonml::Util;
 import lang::typhonql::util::Objects;
@@ -25,12 +25,13 @@ user does not do that.
 
 */
 
-map[str, CollMethod] dml2mongo((Statement)`insert <{Obj ","}* objs>`, Schema s) {
+map[str, CollMethod] compile2mongo((Request)`insert <{Obj ","}* objs>`, Schema s) {
   objList = flattenForMongoDB(objs);
   IdMap ids = makeIdMap(objList);
   
   // ugh this is ugly...
-  return ( e: \insert([ obj2dbObj((Expr)`<Obj obj>`, ids) | obj:(Obj)`@<VId x> <EId _> {<{KeyVal ","}* _>}` <- objList, str name := "<x>", <name, e, _> <- ids ]) | str e <- ids<1> );
+  return ( e: \insert([ obj2dbObj((Expr)`<Obj obj>`, ids) | obj:(Obj)`@<VId x> <EId _> {<{KeyVal ","}* _>}` <- objList
+            , str name := "<x>", <name, e, _> <- ids ]) | str e <- ids<1> );
 }
 
 str typhonId() = "@id";

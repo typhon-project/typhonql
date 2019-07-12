@@ -1,6 +1,6 @@
 module lang::typhonql::relational::Select2SQL
 
-import lang::typhonql::Query;
+import lang::typhonql::TDBC;
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::Util;
 
@@ -44,6 +44,9 @@ data PathElement
 // the loc identifies the source expression of the path
 alias PathMap = map[loc, list[SQLPath]];
 
+
+list[SQLStat] compile2sql((Request)`<Query q>`, Schema s)
+  = [ select2sql(q, s) ];
 
 SQLStat select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s) 
   = select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s);
@@ -260,6 +263,8 @@ SQLExpr expr2sql(e:(Expr)`<VId x>`, PathMap paths)
 
 SQLExpr expr2sql(e:(Expr)`<VId x>.@id`, PathMap paths)
   = path2expr(lookupPath(e, paths));
+
+SQLExpr expr2sql((Expr)`?`, PathMap paths) = placeholder();
 
 SQLExpr expr2sql((Expr)`<Int i>`, PathMap paths) = lit(integer(toInt("<i>")));
 

@@ -6,7 +6,7 @@ import lang::typhonql::relational::DML2SQL;
 import lang::typhonql::relational::Select2SQL;
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::SQL2Text;
-import lang::typhonql::DML;
+import lang::typhonql::TDBC;
 import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
 
@@ -55,41 +55,41 @@ void smokeTest() {
   println(pp(schema2sql(myDb)));
   
   println("\n### Insert with nesting");
-  Statement ins1 = (Statement)`insert Product { name: "TV", review: Review {  } }`;
+  Request ins1 = (Request)`insert Product { name: "TV", review: Review {  } }`;
   println("# TyphonQL <ins1>");
   
   println(pp(insert2sql(ins1, myDb)));
   
   
   println("\n### Insert without nesting but containment via opposite");
-  Statement ins2 = (Statement) `insert @tv Product { name: "TV"}, Review { product: tv }`;
+  Request ins2 = (Request) `insert @tv Product { name: "TV"}, Review { product: tv }`;
   println("# TyphonQL: <ins2>");
 
   println(pp(insert2sql(ins2, myDb)));
   
   println("\n### Insert with cross reference");
-  Statement ins3 = (Statement) `insert Order { totalAmount: 23, paidWith: cc }, @cc CreditCard { number: "12345678" }`;
+  Request ins3 = (Request) `insert Order { totalAmount: 23, paidWith: cc }, @cc CreditCard { number: "12345678" }`;
 
   println("# TyphonQL: <ins3>");
 
   println(pp(insert2sql(ins3, myDb)));
 
   println("\n### Insert with cross reference via opposite");
-  Statement ins4 = (Statement) `insert Order { users: alice }, @alice User { name: "alice" }`;
+  Request ins4 = (Request) `insert Order { users: alice }, @alice User { name: "alice" }`;
 
   println("# TyphonQL: <ins4>");
 
   println(pp(insert2sql(ins4, myDb)));
 
   println("\n### Insert with cross reference via nesting");
-  Statement ins5 = (Statement) `insert Order { users: [ User { name: "alice" } ]}`;
+  Request ins5 = (Request) `insert Order { users: [ User { name: "alice" } ]}`;
 
   println("# TyphonQL: <ins5>");
 
   println(pp(insert2sql(ins5, myDb)));
 
   println("\n### Insert with cross reference via nesting list flattening");
-  Statement ins6 = (Statement) `insert Order { users: [ User { name: "alice" }, User { name: "bob" } ]}`;
+  Request ins6 = (Request) `insert Order { users: [ User { name: "alice" }, User { name: "bob" } ]}`;
 
   println("# TyphonQL: <ins6>");
 
@@ -119,17 +119,17 @@ void smokeTest() {
   println(pp(select2sql(q3, myDb)));
 
   
-  Statement stat;
+  Request stat;
   
   println("\n#### Update ");
-  stat = (Statement)`update User u where u.name == "alice" set { name: "bob"}`;
+  stat = (Request)`update User u where u.name == "alice" set { name: "bob"}`;
   println("TyphonQL: <stat>");
-  println(pp(dml2sql(stat, myDb)));
+  println(pp(compile2sql(stat, myDb)));
   
   println("\n#### Delete ");
-  stat = (Statement)`delete User u where u.name == "alice"`;
+  stat = (Request)`delete User u where u.name == "alice"`;
   println("TyphonQL: <stat>");
-  println(pp(dml2sql(stat, myDb)));
+  println(pp(compile2sql(stat, myDb)));
   
 
 }

@@ -1,6 +1,6 @@
 module lang::typhonql::relational::DML2SQL
 
-import lang::typhonql::DML;
+import lang::typhonql::TDBC;
 import lang::typhonql::util::Objects;
 
 import lang::typhonql::relational::SQL;
@@ -19,19 +19,19 @@ import String;
  */
 
 
-list[SQLStat] dml2sql(s:(Statement)`insert <{Obj ","}* _>`, Schema m)
+list[SQLStat] compile2sql(s:(Request)`insert <{Obj ","}* _>`, Schema m)
   = insert2sql(s, m);
 
-list[SQLStat] dml2sql(s:(Statement)`delete <Binding _>`, Schema m)
+list[SQLStat] compile2sql(s:(Request)`delete <Binding _>`, Schema m)
   = delete2sql(s, m);
 
-list[SQLStat] dml2sql(s:(Statement)`delete <Binding _> <Where _>`, Schema m)
+list[SQLStat] compile2sql(s:(Request)`delete <Binding _> <Where _>`, Schema m)
   = delete2sql(s, m);
 
-list[SQLStat] dml2sql(s:(Statement)`update <Binding _> set {<{KeyVal ","}* _>}`, Schema m)
+list[SQLStat] compile2sql(s:(Request)`update <Binding _> set {<{KeyVal ","}* _>}`, Schema m)
   = update2sql(s, m);
 
-list[SQLStat] dml2sql(s:(Statement)`update <Binding _> <Where _> set {<{KeyVal ","}* _>}`, Schema m)
+list[SQLStat] compile2sql(s:(Request)`update <Binding _> <Where _> set {<{KeyVal ","}* _>}`, Schema m)
   = update2sql(s, m);
 
 
@@ -41,10 +41,10 @@ list[SQLStat] dml2sql(s:(Statement)`update <Binding _> <Where _> set {<{KeyVal "
  */
  
  
-list[SQLStat] delete2sql((Statement)`delete <Binding b>`, Schema schema)
+list[SQLStat] delete2sql((Request)`delete <Binding b>`, Schema schema)
   = delete2sql((Statement)`delete <Binding b> where true`, schema);
 
-list[SQLStat] delete2sql((Statement)`delete <EId e> <VId x> where <{Expr ","}+ es>`, Schema schema) {
+list[SQLStat] delete2sql((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`, Schema schema) {
   q = select2sql((Query)`from <EId e> <VId x> select "" where <{Expr ","}+ es>`, schema);
   
   // TODO: deleting stuff from junction tables explicitly?
@@ -59,11 +59,11 @@ list[SQLStat] delete2sql((Statement)`delete <EId e> <VId x> where <{Expr ","}+ e
  */
 
   
-list[SQLStat] update2sql((Statement)`update <Binding b> set {<{KeyVal ","}* kvs>}`, Schema schema) 
-  = update2sql((Statement)`update <Binding b> where true set {<{KeyVal ","}* kvs>}`, schema);
+list[SQLStat] update2sql((Request)`update <Binding b> set {<{KeyVal ","}* kvs>}`, Schema schema) 
+  = update2sql((Request)`update <Binding b> where true set {<{KeyVal ","}* kvs>}`, schema);
 
 
-list[SQLStat] update2sql((Statement)`update <EId e> <VId x> where <{Expr ","}+ es> set {<{KeyVal ","}* kvs>}`, Schema schema) {
+list[SQLStat] update2sql((Request)`update <EId e> <VId x> where <{Expr ","}+ es> set {<{KeyVal ","}* kvs>}`, Schema schema) {
   q = select2sql((Query)`from <EId e> <VId x> select "" where <{Expr ","}+ es>`, schema);
   
   // TODO: assigning a ref to an owned thing needs updating the kid table.
@@ -81,10 +81,10 @@ str columnName((KeyVal)`@id: <Expr _>`, str entity) = typhonId(entity);
 
   
 /*
- * Insert
+ * Insert (TODO: flattening is already done by partitioning)
  */  
 
-list[SQLStat] insert2sql((Statement)`insert <{Obj ","}* objs>`, Schema schema)
+list[SQLStat] insert2sql((Request)`insert <{Obj ","}* objs>`, Schema schema)
   = insert2sql(makeIdMap(objList), objList, schema)
   when list[Obj] objList := flatten(objs, doFlattening=true);
   
