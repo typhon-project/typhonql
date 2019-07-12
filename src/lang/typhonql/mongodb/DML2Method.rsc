@@ -29,6 +29,8 @@ map[str, CollMethod] compile2mongo((Request)`insert <{Obj ","}* objs>`, Schema s
   objList = flattenForMongoDB(objs);
   IdMap ids = makeIdMap(objList);
   
+  // TODO: unflatten to get native nesting
+  
   // ugh this is ugly...
   return ( e: \insert([ obj2dbObj((Expr)`<Obj obj>`, ids) | obj:(Obj)`@<VId x> <EId _> {<{KeyVal ","}* _>}` <- objList
             , str name := "<x>", <name, e, _> <- ids ]) | str e <- ids<1> );
