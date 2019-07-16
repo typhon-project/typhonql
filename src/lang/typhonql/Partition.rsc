@@ -254,10 +254,12 @@ Partitioning partition(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}
   
   // Recombination query
   
-  newWheres = [ e | Expr e <- es, !isLocal(e, env, s) ];
+  if (size(result) > 1) {
+    newWheres = [ e | Expr e <- es, !isLocal(e, env, s) ];
   
-  Query recomb = buildQuery([ b | Binding b <- bs ], [ r | Result r <- rs ], newWheres); 
-  result += [<<recombine(), "">, (Request)`<Query recomb>`>];
+    Query recomb = buildQuery([ b | Binding b <- bs ], [ r | Result r <- rs ], newWheres); 
+    result += [<<recombine(), "">, (Request)`<Query recomb>`>];
+  }
 
   return result;
 }

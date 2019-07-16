@@ -15,9 +15,16 @@ import List;
  */
 
 
-list[SQLStat] schema2sql(Schema schema) {
-  // for now, assume everyhting is local, (need fix of TyphonML)
- 
+map[Place, list[SQLStat]] schema2sql(Schema schema) {
+  result = ();
+  for (Place p <- schema.placement<0>, p.db is sql) {
+    result[p] = schema2sql(schema, p, schema.placement[p]);
+  }
+  return result;
+}
+
+
+list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities) {
   schema.rels = symmetricReduction(schema.rels);
  
   SQLStat attrs2create(str e, rel[str, str] attrs) {
@@ -67,7 +74,9 @@ list[SQLStat] schema2sql(Schema schema) {
     stats += [stat];
   }
   
-  for (r:<str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain> <- schema.rels) {
+  for (r:<str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain> <- schema.rels
+        // first do all the local ones
+         , from in placedEntities, to in placedEntities) { 
      switch (<fromCard, toCard, contain>) {
        case <one_many(), one_many(), true>: illegal(r);
        case <one_many(), zero_many(), true>: illegal(r);
@@ -91,31 +100,28 @@ list[SQLStat] schema2sql(Schema schema) {
        case <\one(), zero_one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, []);
        case <\one(), \one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [unique(), notNull()]);
        
-       // for now, we realize all cross refs using a junction table.
+       // we realize all cross refs using a junction table.
        case <_, _, false>: addJunctionTable(from, fromRole, to, toRole);
        
-//       case <one_many(), one_many(), false>: ;
-//       case <one_many(), zero_many(), false>: ;
-//       case <one_many(), zero_one(), false>: ;
-//       case <one_many(), \one(), false>: ;
-//       
-//       
-//       case <zero_many(), one_many(), false>: ;
-//       case <zero_many(), zero_many(), false>: ;
-//       case <zero_many(), zero_one(), false>: ;
-//       case <zero_many(), \one(), false>: ;
-//
-//       case <zero_one(), one_many(), false>: ;
-//       case <zero_one(), zero_many(), false>: ;
-//       case <zero_one(), zero_one(), false>: ;
-//       case <zero_one(), \one(), false>: ;
-//       
-//       case <\one(), one_many(), false>: ; //unique left
-//       case <\one(), zero_many(), false>: ; //unique left
-//       case <\one(), zero_one(), false>: ; // unique left, 
-//       case <\one(), \one(), false>: ; // unique left, unique right
-       
      }
+  } 
+  
+  void addJunctionTableOutside(str from, str fromRole, str to, str toRole) {
+    str left = junctionFkName(from, fromRole);
+    str right = junctionFkName(to, toRole);
+    SQLStat stat = create(junctionTableName(from, fromRole, to, toRole), [
+      column(left, typhonIdType(), [notNull()]),
+      column(right, typhonIdType(), [notNull()])      
+    ], [
+      foreignKey(left, tableName(from), typhonId(from), cascade())
+    ]);
+    stats += [stat];
+  }
+  
+  for (r:<str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain> <- schema.rels
+        // then relations to outside
+         , from in placedEntities, to notin placedEntities) {
+     addJunctionTableOutside(from, fromRole, to, toRole); 
   } 
   
   return  stats;  

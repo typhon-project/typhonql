@@ -54,6 +54,7 @@ void smokeTest() {
   println("### SQL Schema for MyDb\n");
   println(pp(schema2sql(myDb)));
   
+  return;
   println("\n### Insert with nesting");
   Request ins1 = (Request)`insert Product { name: "TV", review: Review {  } }`;
   println("# TyphonQL <ins1>");

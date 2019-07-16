@@ -31,8 +31,6 @@ map[str, CollMethod] compile2mongo((Request)`insert <{Obj ","}* objs>`, Schema s
   
   map[str, Obj] env = ( lookupId(obj.keyVals): obj | Obj obj <- objs ); 
   
-  // TODO: unflatten to get native nesting
-  
   return ( "<obj.entity>": \insert( [ obj2dbObj((Expr)`<Obj obj>`, env, s) ]) | Obj obj <- objs  ) ;
 }
 
@@ -68,10 +66,10 @@ DBObject obj2dbObj((Expr)`<UUID u>`, str from, str fld, map[str, Obj] env, Schem
 
   
 Prop keyVal2prop((KeyVal)`<Id x>: <Expr e>`, str from, map[str, Obj] env, Schema s)
-  = <"<x>", obj2dbObj(e, from, "<x>", env, s)>;
+  = <"<from>.<x>", obj2dbObj(e, from, "<x>", env, s)>;
   
 Prop keyVal2prop((KeyVal)`@id: <UUID u>`, str from, map[str, Obj] env, Schema s)
-  = <typhonId(), \value("<u>"[1..])>;
+  = <"<from>.<typhonId()>", \value("<u>"[1..])>;
   
   
   

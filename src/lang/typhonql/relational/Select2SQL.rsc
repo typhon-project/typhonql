@@ -67,12 +67,12 @@ SQLStat select2sql(q:(Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> 
 
   PathMap allPaths = wps + rps;
   
-  return select(pathsToResultExprs(rps), dup(pathsToFroms(allPaths))
+  return select(dup(pathsToResultExprs(rps)), dup(pathsToFroms(allPaths))
     , [where(pathsToWheres(allPaths) + wheres2sql(es, allPaths))]); 
 }
 
-list[SQLExpr] pathsToResultExprs(PathMap paths) 
-  = [ column(p[-2].as.name, p[-1].name) | /SQLPath p := paths ];
+list[SQLExpr] pathsToResultExprs(PathMap paths)
+  = [ path2expr(p) | /SQLPath p := paths ];
 
 list[As] pathsToFroms(PathMap paths) = [ a | /As a := paths ];
   

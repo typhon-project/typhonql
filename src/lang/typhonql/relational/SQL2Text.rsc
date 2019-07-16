@@ -1,6 +1,7 @@
 module lang::typhonql::relational::SQL2Text
 
 import lang::typhonql::relational::SQL;
+import lang::typhonml::Util;
 import List;
 import String;
 
@@ -8,7 +9,10 @@ import String;
 str q(str x) = "`<x>`";
 
 
-str pp(list[SQLStat] stats) = intercalate("\n\n", [ pp(s) | SQLStat s <- stats ]); 
+str pp(list[SQLStat] stats) = intercalate("\n\n", [ pp(s) | SQLStat s <- stats ]);
+
+str pp(map[Place,list[SQLStat]] placed)
+  = intercalate("\n", [ "<p>: <pp(placed[p])>" | Place p <- placed ]); 
 
 // SQLStat
 
