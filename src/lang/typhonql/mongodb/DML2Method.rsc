@@ -34,7 +34,7 @@ map[str, CollMethod] compile2mongo((Request)`insert <{Obj ","}* objs>`, Schema s
   return ( "<obj.entity>": \insert( [ obj2dbObj((Expr)`<Obj obj>`, env, s) ]) | Obj obj <- objs  ) ;
 }
 
-str typhonId() = "@id";
+str typhonId() = "_id";
 
 // TODO: need cardinality interpretation too
 
@@ -66,10 +66,10 @@ DBObject obj2dbObj((Expr)`<UUID u>`, str from, str fld, map[str, Obj] env, Schem
 
   
 Prop keyVal2prop((KeyVal)`<Id x>: <Expr e>`, str from, map[str, Obj] env, Schema s)
-  = <"<from>.<x>", obj2dbObj(e, from, "<x>", env, s)>;
+  = <"<x>", obj2dbObj(e, from, "<x>", env, s)>;
   
 Prop keyVal2prop((KeyVal)`@id: <UUID u>`, str from, map[str, Obj] env, Schema s)
-  = <"<from>.<typhonId()>", \value("<u>"[1..])>;
+  = <typhonId(), \value("<u>"[1..])>;
   
   
   

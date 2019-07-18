@@ -5,17 +5,31 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
+import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.result.UpdateResult;
+
+import io.usethesource.vallang.IBool;
 import io.usethesource.vallang.IInteger;
+import io.usethesource.vallang.IReal;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IMapWriter;
 import io.usethesource.vallang.IString;
+import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
+import io.usethesource.vallang.type.Type;
 
 public class Bridge {
 	
@@ -29,9 +43,17 @@ public class Bridge {
 	private static Connection getJDBCConnection(IString dbName) {
 		Connection con = (Connection) Connections.getInstance().getConnection(dbName.getValue());
 		if (con == null) {
-			throw RuntimeExceptionFactory.illegalArgument(dbName, null, null, "No connection for database");
+			throw RuntimeExceptionFactory.illegalArgument(dbName, null, null, "No SQL connection for database");
 		}
 		return con;
+	}
+	
+	private static MongoDatabase getMongoDB(IString dbName) {
+		MongoDatabase db = (MongoDatabase) Connections.getInstance().getConnection(dbName.getValue());
+		if (db == null) {
+			throw RuntimeExceptionFactory.illegalArgument(dbName, null, null, "No MongoDB for database");
+		}
+		return db;
 	}
 	
 	
@@ -45,7 +67,7 @@ public class Bridge {
 			while (rs.next()) {
 				IMapWriter record = vf.mapWriter();
 				for (int i = 1; i <= meta.getColumnCount(); i++) {
-					record.put(vf.string(meta.getColumnName(i)), toValue(rs.getObject(i))); 
+					record.put(vf.string(meta.getColumnName(i)), prim2value(rs.getObject(i))); 
 				}
 				w.append(record.done());
 			}
@@ -68,19 +90,119 @@ public class Bridge {
 		}
 	}
 	
-	public IMap find(IString dbName, IMap pattern) {
-		return vf.map();
+	public void createCollection(IString dbName, IString collectionName) {
+		MongoDatabase db = getMongoDB(dbName);
+		db.createCollection(collectionName.getValue());
 	}
 	
-	public IMap find(IString dbName, IMap pattern, IMap projection) {
-		return vf.map();
+	public void drop(IString dbName, IString collectionName) {
+		MongoDatabase db = getMongoDB(dbName);
+		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
+		coll.drop();
 	}
 	
-	public IMap findAndModify(IString dbName, IMap pattern, IMap update) {
-		return vf.map();
+	public IList find(IString dbName, IString collectionName, IMap pattern) {
+		MongoDatabase db = getMongoDB(dbName);
+		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
+		IListWriter result = vf.listWriter();
+		for (Document doc: coll.find((Document)value2doc(pattern))) {
+			result.append(doc2value(doc));
+		}
+		return result.done();
+	}
+
+	public void deleteOne(IString dbName, IString collectionName, IMap doc) {
+		MongoDatabase db = getMongoDB(dbName);
+		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
+		coll.deleteOne((Document) value2doc(doc));
+	}
+
+	public void insertOne(IString dbName, IString collectionName, IMap doc) {
+		MongoDatabase db = getMongoDB(dbName);
+		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
+		coll.insertOne((Document) value2doc(doc));
 	}
 	
-	private IValue toValue(Object obj) {
+
+	
+	public ITuple updateMany(IString dbName, IString collectionName, IMap pattern, IMap update) {
+		MongoDatabase db = getMongoDB(dbName);
+		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
+		UpdateResult result = coll.updateMany((Document)value2doc(pattern), (Document)value2doc(update));
+		return vf.tuple(vf.integer(result.getMatchedCount()), vf.integer(result.getModifiedCount()));
+	}
+	
+	
+	@SuppressWarnings({"rawtypes" })
+	private IValue doc2value(Object doc) {
+		if (doc instanceof Document) {
+			IMapWriter w = vf.mapWriter();
+			for (Map.Entry<String, Object> entry: ((Document)doc).entrySet()) {
+				String k = entry.getKey();
+				Object v = entry.getValue();
+				IValue value = doc2value(v);
+				w.put(vf.string(k), value);
+			}
+			return w.done();
+		}
+		
+		if (doc instanceof List) {
+			IListWriter w = vf.listWriter();
+			for (Object obj: ((List)doc)) {
+				w.append(doc2value(obj));
+			}
+			return w.done();
+		}
+		
+		return prim2value(doc);
+	}
+	
+	private Object value2doc(IValue value) {
+		if (value.getType().isMap()) {
+			Document doc = new Document();
+			IMap map = (IMap)value;
+			for (IValue k: map) {
+				doc.append(((IString)k).getValue(), value2doc(map.get(k)));
+			}
+			return doc;
+		}
+		
+		if (value.getType().isList()) {
+			List<Object> lst = new ArrayList<Object>();
+			for (IValue v: ((IList)value)) {
+				lst.add(value2doc(v));
+			}
+			return lst;
+		}
+		
+		return value2prim(value);
+	}
+	
+	private Object value2prim(IValue value) {
+		Type t = value.getType();
+		
+		if (t.isString()) {
+			return ((IString)value).getValue();
+		}
+		
+		if (t.isInteger()) {
+			return ((IInteger)value).intValue();
+		}
+		
+		if (t.isBool()) {
+			return ((IBool)value).getValue();
+		}
+		
+		if (t.isReal()) {
+			return ((IReal)value).doubleValue();
+		}
+
+		throw RuntimeExceptionFactory.illegalArgument(value, null, null, 
+				"Cannot convert Rascal value to Java object");
+	}
+
+
+	private IValue prim2value(Object obj) {
 		if (obj instanceof String) {
 			return vf.string((String)obj);
 		}
@@ -92,6 +214,9 @@ public class Bridge {
 		}
 		if (obj instanceof Double) {
 			return vf.real(((Double)obj).doubleValue());
+		}
+		if (obj instanceof ObjectId) {
+			return vf.string(((ObjectId)obj).toHexString());
 		}
 		throw RuntimeExceptionFactory.illegalArgument(vf.string(obj.getClass().getName()), null, null, 
 				"Cannot convert Java object to Rascal value");

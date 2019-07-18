@@ -1,8 +1,5 @@
 module lang::typhonql::Bridge
 
-import lang::typhonql::WorkingSet;
-import lang::typhonql::mongodb::DBCollection;
-
 
 // TODO: also expose the analytics features here
 
@@ -29,12 +26,23 @@ java int executeUpdate(str dbName, str sql);
 alias Doc = map[str field, value val];
 
 @javaClass{nl.cwi.swat.typhonql.Bridge}
-java Doc find(str dbName, Doc pattern);
+java void createCollection(str dbName, str collectionName);
 
 @javaClass{nl.cwi.swat.typhonql.Bridge}
-java Doc find(str dbName, Doc pattern, Doc projection);
+java void drop(str dbName, str collectionName);
 
 @javaClass{nl.cwi.swat.typhonql.Bridge}
-java Doc findAndModify(str dbName, Doc pattern, Doc update);
+java void insertOne(str dbName, str collectionName, Doc doc);
+
+@javaClass{nl.cwi.swat.typhonql.Bridge}
+java void deleteOne(str dbName, str collectionName, Doc doc);
+
+@javaClass{nl.cwi.swat.typhonql.Bridge}
+java list[Doc] find(str dbName, str collectionName, Doc pattern);
+
+alias UpdateResult = tuple[int matchedCount, int modifiedCount];
+
+@javaClass{nl.cwi.swat.typhonql.Bridge}
+java UpdateResult updateMany(str dbName, str collectionName, Doc pattern, Doc update);
 
 
