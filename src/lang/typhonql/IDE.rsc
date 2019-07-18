@@ -21,13 +21,13 @@ import IO;
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java Model bootTyphonQL(type[Model] model);
 
-@javaClass{nl.cwi.swat.typhonql.TyphonQL}
-java WorkingSet toMongoDB(str dbName, list[CollMethod] calls);
-
-@javaClass{nl.cwi.swat.typhonql.TyphonQL}
-java WorkingSet toSQL(str dbName, list[str] statements);
-
-WorkingSet toSQL(str dbName, list[SQLStat] statements) = toSQL([ pp(s) | SQLStat s <- statements ]);
+//@javaClass{nl.cwi.swat.typhonql.TyphonQL}
+//java WorkingSet toMongoDB(str dbName, list[CollMethod] calls);
+//
+//@javaClass{nl.cwi.swat.typhonql.TyphonQL}
+//java WorkingSet toSQL(str dbName, list[str] statements);
+//
+//WorkingSet toSQL(str dbName, list[SQLStat] statements) = toSQL([ pp(s) | SQLStat s <- statements ]);
 
 private str TYPHONQL = "TyphonQL";
 
@@ -42,7 +42,7 @@ void main() {
   
   // call this in the parse handler or from a menu to avoid race conditions
   // with the rest of the platform.
-  //bootTyphonQL(#Model);
+  println(bootTyphonQL(#Model));
   
   registerContributions(TYPHONQL, {
     popup(menu("TyphonQL", [

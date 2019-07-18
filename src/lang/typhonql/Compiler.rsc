@@ -9,13 +9,24 @@ import lang::typhonql::relational::SQL2Text;
 import lang::typhonql::mongodb::Compiler;
 import lang::typhonql::mongodb::DBCollection;
 
-import lang::typhonql::recombine::Select2Java;
-import lang::typhonql::recombine::MuJava;
-
 import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
 
 import IO;
+
+
+/*
+
+Global assumptions of the compiler/partitioner
+
+- Cross ownership is possible, but no cascade delete semantics is realized 
+  because this requires full recursion over the partitioning and select/delete cycle.
+  Ownership local to database (sql/mongo) is dealt with the respective native m
+  mechanisms (cascade delete in SQL, and nesting in MongoDB).
+  
+
+
+*/
 
 
 lrel[Place, value] compile(Request request, Schema schema) {

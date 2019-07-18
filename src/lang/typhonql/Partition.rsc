@@ -268,7 +268,8 @@ Query buildQuery(list[Binding] bs, list[Result] rs, list[Expr] ws) {
   Binding b0 = bs[0];
   Result r0 = rs[0];
   Query q = (Query)`from <Binding b0> select <Result r0> where true`;
-  wherePos = 0;
+  
+  int wherePos = 0;
   if (size(ws) > 0) {
     Expr w = ws[0];
     q = (Query)`from <Binding b0> select <Result r0> where <Expr w>`;
