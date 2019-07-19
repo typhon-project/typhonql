@@ -92,7 +92,7 @@ bool isAttr((KeyVal)`@id: <Expr _>`, str _, Schema _) = true;
  * Insert (NB: this assumes partitioning has happened, so all ids are assigned to @id and refs resolve to them)
  */  
 
-list[SQLStat] insert2sql((Request)`insert <{Obj ","}* objs>`, Schema schema) {
+list[SQLStat] insert2sql((Request)`insert <{Obj ","}* objs>`, Place p, Schema schema) {
   // NB: this needs to be wrapped in a transaction  if we're gonna keep all the fk contraints and not null etc.
 
   list[str] aCols({KeyVal ","}* kvs, str entity) 
@@ -104,6 +104,12 @@ list[SQLStat] insert2sql((Request)`insert <{Obj ","}* objs>`, Schema schema) {
   result = [ \insert(tableName("<e>"), aCols(kvs, "<e>"), aVals(kvs, "<e>")) | (Obj)`<EId e> {<{KeyVal ","}* kvs>}` <- objs ]; 
   
   
+  Place placeOf(str entity) = p
+    when 
+      <Place p, entity> <- schema.placement;
+  
+  bool bothAt(str from, str to, Place p)
+    = placeOf(from) == p && placeOf(to) == p;
   
   result += outer: for ((Obj)`<EId entity> {<{KeyVal ","}* kvs>}` <- objs) {
     str myUUID = lookupId(kvs);
@@ -121,18 +127,26 @@ list[SQLStat] insert2sql((Request)`insert <{Obj ","}* objs>`, Schema schema) {
       // note: for junction tables it doesn't matter which one we use
       // because the it's a single insert, and the order of columns are explicitly specified
       
-      if (<from, _, fromRole, str toRole, _, to, true> <- schema.rels) {
+      // from in placedEntities, to notin placedEntities
+      
+      // the below holds only for when both from and to are on the same place
+      if (<from, _, fromRole, str toRole, _, to, true> <- schema.rels, bothAt(from, to, p)) {
         // found the canonical containment rel
         // but then reverse!!    
         append outer: update(tableName(to), [\set(fkName(from, to, fromRole), lit(text(myUUID)))],
             [where([equ(column(tableName(to), typhonId(to)), lit(text(uuid)))])]);
       }
-      else if (<to, _, str toRole, fromRole, _, from, true> <- schema.rels) {
+      else if (<to, _, str toRole, fromRole, _, from, true> <- schema.rels, bothAt(from, to, p)) {
         append outer: update(tableName(from), [\set(fkName(from, to, toRole), lit(text(uuid)))],
           [where([equ(column(tableName(from), typhonId(from)), lit(text(myUUID)))])]);
       }
-      else if(<from, _, fromRole, str toRole, _, to, false> <- schema.rels)  { // a cross ref
+      else if(<from, _, fromRole, str toRole, _, to, false> <- schema.rels, bothAt(from, to, p))  { // a cross ref
         append outer: \insert(junctionTableName(from, fromRole, to, toRole)
+                        , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
+                        , [text(myUUID), text(uuid)]);
+      }
+      else if(<from, _, fromRole, str toRole, _, to, _> <- schema.rels, !bothAt(from, to, p))  { 
+         append outer: \insert(junctionTableName(from, fromRole, to, toRole)
                         , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
                         , [text(myUUID), text(uuid)]);
       }

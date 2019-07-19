@@ -2,15 +2,46 @@ module lang::typhonql::Eval
 
 import lang::typhonql::Expr;
 import lang::typhonql::WorkingSet;
+import lang::typhonql::util::UUID;
 
 
-value eval((Expr)`<VId x>.<{Id ","}+ xs>`, map[str, Entity] env, WorkingSet scope) 
+Entity evalResult((Expr)`<VId x>.<{Id "."}+ xs>`, map[str, Entity] env, WorkingSet scope) 
+  = navigateEntity(xs, e, scope)
+  when
+    Entity e := env["<x>"];
+
+
+Entity evalResult((Expr)`<VId x>.@id`, map[str, Entity] env, WorkingSet scope) 
+  = e
+  when
+    Entity e := env["<x>"];
+    
+Entity evalResult((Expr)`<VId x>`, map[str, Entity] env, WorkingSet scope)
+  = e 
+  when
+    Entity e := env["<x>"];
+
+
+default Entity evalResult(Expr e, map[str, Entity] env, WorkingSet scope)
+  = <"anonymous", makeUUID(), ("value": toWsValue(v))>;
+
+/*
+ * Eval in where clauses
+ */
+
+value eval((Expr)`<VId x>.<{Id "."}+ xs>`, map[str, Entity] env, WorkingSet scope) 
   = navigate(xs, e, scope)
   when
     Entity e := env["<x>"];
   
 value eval((Expr)`<VId x>.@id`, map[str, Entity] env, WorkingSet scope) 
   = uuid(e.uuid)
+  when
+    Entity e := env["<x>"];
+
+
+value eval((Expr)`<VId x>`, map[str, Entity] env, WorkingSet scope) 
+  = e
   when
     Entity e := env["<x>"];
   
@@ -26,8 +57,9 @@ value eval((Expr)`<UUID u>`, map[str, Entity] env, WorkingSet scope)
 value eval((Expr)`(<Expr e>)`, map[str, Entity] env, WorkingSet scope) 
   = eval(e, env, scope);
   
-value eval((Expr)`null`, map[str, Entity] env, WorkingSet scope) 
-  = null();
+// ??? error in concrete syntax (?)
+//value eval((Expr)`null`, map[str, Entity] env, WorkingSet scope) 
+//  = null();
   
 value eval((Expr)`+<Expr e>`, map[str, Entity] env, WorkingSet scope) 
   = n
@@ -133,7 +165,7 @@ value lookupEntity(str uuid, WorkingSet scope) {
   return null();
 }
 
-value navigate({Id ","}+ xs, Entity e, WorkingSet scope) {
+value navigate({Id "."}+ xs, Entity e, WorkingSet scope) {
   value cur = e;
   for (Id x <- xs, Entity curEntity := cur) {
     str fld = "<x>";
@@ -145,6 +177,32 @@ value navigate({Id ","}+ xs, Entity e, WorkingSet scope) {
       cur = lookupEntity(u, scope);
     }
   }
+  return cur;
+}
+
+Entity navigateEntity({Id "."}+ xs, Entity e, WorkingSet scope) {
+  Entity cur = e;
+  
+  for (Id x <- xs) {
+    str fld = "<x>";
+    if (fld notin cur.fields) {
+       return null();
+    }
+  
+    if (Entity to := cur.fields[fld]) {
+      cur = to;
+    } 
+    else if (uuid(str u) := cur.fields[fld]) {
+      cur = lookupEntity(u, scope);
+    }
+    else {
+      return cur;
+    }
+    
+  }
+  
+  assert Entity _ := cur: "navigateEntity should return entity";
+  
   return cur;
 }
 

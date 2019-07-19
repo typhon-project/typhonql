@@ -25,7 +25,7 @@ default Entity toEntity(value v) = <"anonymous", makeUUID(), ("value": toWsValue
 // BRITTLE (need schema to actually interpret)
 value toWsValue(str s) = uuid(s)
   when 
-    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/ := s;
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/ := s;
     
 default value toWsValue(value v) = v;
     
@@ -68,8 +68,30 @@ default list[value] tuple2list(value v) {
 
 
 // value, because we don't know how wide the tuples are
-list[value] bigProduct(lrel[str, str] env, WorkingSet ws) 
-  = ( tupleize(ws[env[0][1]])  | it join tupleize(ws[e]) | <str _, str e> <- env[1..] );
+list[value] bigProduct(lrel[str, str] env, WorkingSet ws) {
+ // int i = 0;
+ // str firstEntity = env[i][1];
+ // while (firstEntity notin ws, i < size(env) - 1) {
+ //    i += 1;
+ //    firstEntity = env[i][1];
+ // }
+ // 
+ // // Ugh this should be automatic somehow...
+ // if (i == size(env) - 1, firstEntity notin ws) {
+ //    return [];
+ // }
+ //
+ 
+  for (<str _, str e> <- env) {
+     if (e notin ws) {
+       ws[e] = [];
+     }
+  }
+ 
+  return ( tupleize(ws[env[0][1]])  | it join tupleize(ws[e]) | <str _, str e> <- env[1..], e in ws );
+    
+  
+}
 
 
 list[tuple[&T]] tupleize(list[&T] xs) = [ <x> | &T x <- xs ];

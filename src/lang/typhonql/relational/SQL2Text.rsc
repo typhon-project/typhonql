@@ -45,8 +45,7 @@ str pp(alterTable(str t, list[Alter] as))
 
 
 str pp(dropTable(list[str] tables, bool ifExists, list[DropOption] options))
-  = "drop table <ifExists ? "if exists " : ""><intercalate(", ", [ q(t) | str t <- tables])>
-    '<intercalate(", ", [ pp(opt) | DropOption opt <- options ])>;";
+  = "drop table <ifExists ? "if exists " : ""><intercalate(", ", [ q(t) | str t <- tables])> <intercalate(", ", [ pp(opt) | DropOption opt <- options ])>;";
 
 str pp(DropOption::restrict()) = "restrict";
 

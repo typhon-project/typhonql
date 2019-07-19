@@ -12,8 +12,13 @@ import lang::typhonql::Eval;
 import lang::typhonql::util::Log;
 
 
-
+import Set;
 import List;
+
+value run(str src, Schema s, Log log = noLog) {
+  Request req = [Request]src;
+  return run(req, s, log = log);
+}
 
 void runSchema(Schema s, Log log = noLog) {
   for (Place p <- s.placement<0>) {
@@ -22,18 +27,27 @@ void runSchema(Schema s, Log log = noLog) {
   }
 }
 
+value run((Request)`delete <EId e> <VId x>`, Schema s, Log log = noLog) 
+  = run((Request)`delete <EId e> <VId x> where true`, s, log = log);
+
 
 value run((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`, Schema s, Log log = noLog) {
-  WorkingSet ws = run((Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ es>`);
-  assert size(ws<0>) == 1: "multiple or zero entity types returned from select implied by delete";
+  if (WorkingSet ws := run((Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ es>`, s, log = log)) {
+    assert size(ws<0>) == 1: "multiple or zero entity types returned from select implied by delete";
   
-  if (str entity <- ws, <Place p, entity> <- s.placement) {
-    entities = ws[entity];
-    for (<entity, str uuid, _> <- ws[entity]) {
-      log("[RUN-delete] Deleting <entity> with id <uuid> from <p>");
-      runDeleteById(p, entity, uuid);
+    if (str entity <- ws, <Place p, entity> <- s.placement) {
+      list[Entity] entities = ws[entity];
+      for (<entity, str uuid, _> <- ws[entity]) {
+        log("[RUN-delete] Deleting <entity> with id <uuid> from <p>");
+        runDeleteById(p, entity, uuid);
+      }
     }
   } 
+  else {
+    throw "Did not get workingset from select evaluation";
+  }
+  
+  return -1;
   
   // TODO: cross-db containment cascade semantics
 
@@ -65,36 +79,49 @@ value run((Request)`update <EId e> <VId x> where <{Expr ","}+ es> set {<{KeyVal 
     throw "Nested objects in update statements are unsupported";
   }  
   
-  WorkingSet ws = run((Request)`from <EId eid> <VId vid> select <VId vid>.@id where <{Expr ","}+ es>`, s);
-  assert size(ws<0>) == 1: "multiple or zero entity types returned from select implied by update";
+  if (WorkingSet ws := run((Request)`from <EId eid> <VId vid> select <VId vid>.@id where <{Expr ","}+ es>`, s, log = log)) {
+    assert size(ws<0>) == 1: "multiple or zero entity types returned from select implied by update";
   
 
-  int affected = 0;  
-  if (str entity <- ws, <Place p, entity> <- s.placement) {
-    entities = ws[entity];
-    for (<entity, str uuid, _> <- ws[entity]) {
-      log("[RUN-update] Updating <entity> with id <uuid> from <p> with <kvs>");
-      affected += runUpdateById(p, entity, uuid, kvs);
-    }
-  } 
-  return affected;
+    int affected = 0;  
+    if (str entity <- ws, <Place p, entity> <- s.placement) {
+      entities = ws[entity];
+      for (<entity, str uuid, _> <- ws[entity]) {
+        log("[RUN-update] Updating <entity> with id <uuid> from <p> with <kvs>");
+        affected += runUpdateById(p, entity, uuid, kvs);
+      }
+    } 
+    return affected;
+  }
+  else {
+    throw "Did not get workingset from select evaluation";
+  }
 }
+
+value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s, Log log = noLog) 
+  = run((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, log = log);
+  
 
 value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, Schema s, Log log = noLog) {
   Partitioning part = partition(q, s);
-  WorkingSet ws = runPartitionedQueries(part, s);
+  WorkingSet ws = runPartitionedQueries(part, s, log = log);
   
   lrel[str, str] lenv = [ <"<x>", "<e>">  | (Binding)`<EId e> <VId x>` <- bs ];
-  map[str, str] env = ( x: e  | <x, e> <- lenv );
+  map[str, str] env = ( x: e  | <str x, str e> <- lenv );
   
-  WorkingSet result = ();
+  // TODO: initialize with types from result expressions.
+  // before doing bigproduct.
+  WorkingSet result = ( e: [] | <str x, str e> <- lenv );
   
   for (map[str, Entity] binding <- toBindings(lenv, bigProduct(lenv, ws))) {
     bool yes = ( true | it && truthy(eval(e, binding, ws)) | Expr e <- es, !isLocal(e, env, s) );  
     for (yes, (Result)`<Expr re>` <- rs) {
-      Entity r = toEntity(eval(re, binding, ws));
-      log("[RUN-query] Adding <r> to final result");
-      result[r.entity]?[] += [r];
+      Entity r = evalResult(re, binding, ws);
+      log("[RUN-query] Adding <r> to final result for <re>");
+      if (r.name notin result) {
+        result[r.name] = [];
+      }
+      result[r.name] += [r];
     }
   }
 
@@ -102,7 +129,7 @@ value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <
 }
 
 
-WorkingSet runPartitionedQueries(Partitioning part, Schema s) 
-  = ( () | it + runQuery(p, q, s) | <Place p, Request q> <- part );
+WorkingSet runPartitionedQueries(Partitioning part, Schema s, Log log = noLog) 
+  = ( () | it + runQuery(p, q, s, log = log) | <Place p, Request q> <- part );
 
 

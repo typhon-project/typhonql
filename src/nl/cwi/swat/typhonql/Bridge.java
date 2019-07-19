@@ -67,7 +67,10 @@ public class Bridge {
 			while (rs.next()) {
 				IMapWriter record = vf.mapWriter();
 				for (int i = 1; i <= meta.getColumnCount(); i++) {
-					record.put(vf.string(meta.getColumnName(i)), prim2value(rs.getObject(i))); 
+					Object val = rs.getObject(i);
+					if (val != null) {
+						record.put(vf.string(meta.getColumnName(i)), prim2value(val));
+					} // else, don't add
 				}
 				w.append(record.done());
 			}
@@ -210,6 +213,8 @@ public class Bridge {
 
 
 	private IValue prim2value(Object obj) {
+		assert obj != null;
+		
 		if (obj instanceof String) {
 			return vf.string((String)obj);
 		}

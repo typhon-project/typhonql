@@ -20,6 +20,7 @@ import lang::typhonql::mongodb::Select2Find;
 
 
 import String;
+import IO;
 
 
 
@@ -56,16 +57,24 @@ void runSchema(p:<mongodb(), str db>, Schema s, Log log = noLog) {
  */
 
 Doc dbObject2doc(object(list[Prop] props))
-  = ( p.name: dbObject2doc(p.val) | Prop p <- props );
+  = ( p.name: dbObject2val(p.val) | Prop p <- props );
 
 Doc dbObject2doc(array(list[DBObject] values))
-  = [ dbObject2doc(v) | DBObject v <- values ];
+  = [ dbObject2val(v) | DBObject v <- values ];
+ 
+
+value dbObject2val(\value(value v)) = v;
+
+value dbObject2val(obj:object(_)) = dbObject2doc(obj);
+
+value dbObject2val(arr:array(_)) = dbObject2doc(arr);
   
-Doc dbObject2doc(\value(value v)) = v;
 
 // assumes flattening, so no nested docs in d
 Entity doc2entity(str entity, Doc d)
-  = <e, d["_id"], ( k: toWsValue(d[k]) | str k <- d, k != "_id" )>;
+  = <entity, id, ( k: toWsValue(d[k]) | str k <- d, k != "_id" )>
+  when
+    str id := d["_id"];
 
 WorkingSet runQuery(<mongodb(), str db>, Request q, Schema s, Log log = noLog) {
   map[str, CollMethod] methods = compile2mongo(q, s);
@@ -80,19 +89,44 @@ WorkingSet runQuery(<mongodb(), str db>, Request q, Schema s, Log log = noLog) {
     
     list[Doc] docs = find(db, entity, dbObject2doc(method.query));
     
-    lrel[str, Doc] flattened = unnest(docs);
+    //lrel[str, Doc] flattened = unnest(docs);
     
-    for (<str e, Doc d> <- unnest(docs)) {
-      result[e]?[] += doc2Entity(e, d);
+    for (<str e, Doc d> <- unnest(docs, entity, s)) {
+      if (e notin  result) {
+        result[e] = [];
+      }
+      result[e] += doc2entity(e, d);
     }
   }
   
   return result;
 }
 
-WorkingSet runQuery(<sql(), str db>, Request q, Schema s, Log log = noLog) {
+lrel[str, Doc] unnest(list[Doc] docs, str entity, Schema s) 
+  = ( [] | it + unnestRec(d, entity, s) | Doc d <- docs );
+
+lrel[str, Doc] unnestRec(Doc doc, str entity, Schema s) {
+  result = [];
+  for (<entity, _, str fld, _, _, str to, true> <- s.rels) {
+    if (fld in doc, Doc d := doc[fld]) {
+      doc[fld] = d["_id"];
+      result += unnest(d, to, s);
+    }
+  }
+  result += [<entity, doc>];
+  return result;
+}
+
+
+WorkingSet runQuery(<sql(), str db>, (Request)`<Query q>`, Schema s, Log log = noLog) {
+  log("[RUN-query/sql/<db>] <q>");
   SQLStat stat = select2sql(q, s);
+  
+  log("[RUN-query/sql/<db>] <pp(stat)>");
+  
   ResultSet rs = executeQuery(db, pp(stat));
+  
+  log("[RUN-query/sql/<db>] resultset = <rs>");
   
   WorkingSet ws = ();
 
@@ -102,11 +136,16 @@ WorkingSet runQuery(<sql(), str db>, Request q, Schema s, Log log = noLog) {
   for (Record r <- rs) {
     rel[str,str,value] values = { <e, f, r[col]> | str col <- r, <str e, str f> := splitColName(col) };
     
+    println("values = <values>");
+    
     for (str e <- values<0>) {
-      ws[e]?[] += [ <e, r[typhonId(e)], (f: toWsValue(v) | <str f, value v> <- values[e], f != typhonId(e) )>];
+      if (e notin ws) {
+        ws[e] = [];
+      }
+      ws[e] += [ <e, id, (f: toWsValue(v) | <str f, value v> <- values[e], f != typhonId(e) )> | str id := r[typhonId(e)] ];
     }
   }
-  
+  iprintln(ws);
   return ws;
 }
 
@@ -115,11 +154,11 @@ WorkingSet runQuery(<sql(), str db>, Request q, Schema s, Log log = noLog) {
  */
 
 
-int runInsert(<sql(), str db>, Request ins, Schema s, Log log = noLog) {
-  list[SQLStat] stats = insert2sql(ins, s);
+int runInsert(p:<sql(), str db>, Request ins, Schema s, Log log = noLog) {
+  list[SQLStat] stats = insert2sql(ins, p, s);
   int affected = 0;
   for (SQLStat s <- stats) {
-    affected += executeUpdate(db, pp(s), s);
+    affected += executeUpdate(db, pp(s));
   }
   return affected;
 }
@@ -128,6 +167,7 @@ int runInsert(<mongodb(), str db>, Request ins, Schema s, Log log = noLog) {
   map[str, CollMethod] methods = compile2mongo(ins, s);
   for (str entity <- methods) {
     CollMethod method = methods[entity];
+    iprintln(method);
     assert method is \insert;
     for (DBObject obj <- method.documents) {
       insertOne(db, entity, dbObject2doc(obj));

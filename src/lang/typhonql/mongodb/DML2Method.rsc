@@ -51,7 +51,7 @@ DBObject obj2dbObj((Expr)`<Bool b>`, str from, str fld, map[str, Obj] env, Schem
 DBObject obj2dbObj((Expr)`<Int n>`,  str from, str fld, map[str, Obj] env, Schema s) = \value(toInt("<n>"));
 
 // todo: unescaping
-DBObject obj2dbObj((Expr)`<Str s>`, str from, str fld, map[str, Obj] env, Schema s) = \value("<s>"[1..-1]);
+DBObject obj2dbObj((Expr)`<Str x>`, str from, str fld, map[str, Obj] env, Schema s) = \value("<x>"[1..-1]);
 
 DBObject obj2dbObj((Expr)`<UUID u>`, str from, str fld, map[str, Obj] env, Schema s) {
  // if it is a containment (canonical) lookup in env and inline.

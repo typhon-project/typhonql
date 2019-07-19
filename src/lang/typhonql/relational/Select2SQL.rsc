@@ -61,7 +61,7 @@ SQLStat select2sql(q:(Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> 
   Env env = ( "<x>": "<e>" | (Binding)`<EId e> <VId x>` <- q.bindings ); 
   
   PathMap rps = resultPaths(rs, env, s);  
-  assert allPathsEndInAttr(rps): "non-attribute path in results";
+  //assert allPathsEndInAttr(rps): "non-attribute path in results";
   
   PathMap wps = wherePaths(es, env, s);
 
@@ -112,7 +112,7 @@ list[SQLExpr] wheres2sql({Expr ","}+ es, PathMap paths)
  */
 
 PathMap resultPaths({Result ","}+ rs, map[str, str] env, Schema s) 
-  = ( e@\loc: path2sql(e, env, s, trans=true) | /Expr e := rs, isTableExpr(e) ); 
+  = ( e@\loc: path2sql(e, env, s /*, trans=true*/) | /Expr e := rs, isTableExpr(e) ); 
 
 PathMap wherePaths({Expr ","}+ es, map[str, str] env, Schema s) 
   = ( e@\loc: path2sql(e, env, s) | /Expr e := es, isTableExpr(e) ); 
