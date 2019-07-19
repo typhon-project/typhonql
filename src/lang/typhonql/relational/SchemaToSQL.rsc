@@ -2,6 +2,7 @@ module lang::typhonql::relational::SchemaToSQL
 
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::Util;
+import lang::typhonql::relational::SQL2Text;
 import lang::typhonml::Util; // Schema
 import lang::typhonml::TyphonML;
 import IO;
@@ -22,6 +23,13 @@ import List;
 //  }
 //  return result;
 //}
+
+
+void printSQLSchema(Schema schema, str dbName) {
+  Place p = <sql(), dbName>;
+  set[str] es = schema.placement[p];
+  println(pp(schema2sql(schema, p, es, doForeignKeys = false)));
+}
 
 
 list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bool doForeignKeys = true) {

@@ -133,11 +133,13 @@ list[SQLStat] insert2sql((Request)`insert <{Obj ","}* objs>`, Place p, Schema sc
       if (<from, _, fromRole, str toRole, _, to, true> <- schema.rels, bothAt(from, to, p)) {
         // found the canonical containment rel
         // but then reverse!!    
-        append outer: update(tableName(to), [\set(fkName(from, to, fromRole), lit(text(myUUID)))],
+        str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
+        append outer: update(tableName(to), [\set(fk, lit(text(myUUID)))],
             [where([equ(column(tableName(to), typhonId(to)), lit(text(uuid)))])]);
       }
       else if (<to, _, str toRole, fromRole, _, from, true> <- schema.rels, bothAt(from, to, p)) {
-        append outer: update(tableName(from), [\set(fkName(from, to, toRole), lit(text(uuid)))],
+        str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
+        append outer: update(tableName(from), [\set(fk, lit(text(uuid)))],
           [where([equ(column(tableName(from), typhonId(from)), lit(text(myUUID)))])]);
       }
       else if(<from, _, fromRole, str toRole, _, to, false> <- schema.rels, bothAt(from, to, p))  { // a cross ref

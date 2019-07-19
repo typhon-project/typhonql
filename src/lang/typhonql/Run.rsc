@@ -23,6 +23,18 @@ value run(str src, Schema s, Log log = noLog) {
   return run(req, s, log = log);
 }
 
+WorkingSet dumpDB(Schema s) {
+  //WorkingSet ws = ( e : [] | <_, str e> <- s.placement );
+  
+  WorkingSet ws = ();
+  
+  for (<Place p, str e> <- s.placement) {
+    ws += runGetEntities(p, e, s);
+  }
+  
+  return ws;
+}
+
 void runSchema(Schema s, Log log = noLog) {
   for (Place p <- s.placement<0>) {
     log("[RUN-schema] executing schema for <p>");
@@ -67,11 +79,11 @@ value run(r:(Request)`insert <{Obj ","}* objs>`, Schema s, Log log = noLog) {
 }
 
 
-value run((Request)`update <Binding b> set {<{KeyVal ","}* kvs>}`, Schema schema, Log log = noLog) 
-  = run((Request)`update <Binding b> where true set {<{KeyVal ","}* kvs>}`, schema, log = log);
+value run((Request)`update <Binding b> set {<{KeyVal ","}* kvs>}`, Schema s, Log log = noLog) 
+  = run((Request)`update <Binding b> where true set {<{KeyVal ","}* kvs>}`, s, log = log);
 
 
-value run((Request)`update <EId e> <VId x> where <{Expr ","}+ es> set {<{KeyVal ","}* kvs>}`, Schema schema, Log log = noLog) {
+value run((Request)`update <EId eid> <VId vid> where <{Expr ","}+ es> set {<{KeyVal ","}* kvs>}`, Schema s, Log log = noLog) {
   // we're gonna reject nested objects and lists in updates for now, because we cannot partition in advance:
   // the required inserts would commit to uuids; the inserts however, needs to be done
   // *per* object that will be updated (the result from the select); this means the whole
@@ -88,7 +100,7 @@ value run((Request)`update <EId e> <VId x> where <{Expr ","}+ es> set {<{KeyVal 
 
     int affected = 0;  
     if (str entity <- ws, <Place p, entity> <- s.placement) {
-      entities = ws[entity];
+      list[Entity] entities = ws[entity];
       for (<entity, str uuid, _> <- ws[entity]) {
         log("[RUN-update] Updating <entity> with id <uuid> from <p> with <kvs>");
         affected += runUpdateById(p, entity, uuid, kvs);
@@ -108,15 +120,11 @@ value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schem
 value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, Schema s, Log log = noLog) {
   rel[Place, str] cl = closure(q, s);
   
-  println("CLOSURE: <cl>");
-  
   WorkingSet ws = ( e : [] | <_, str e> <- cl );
   
   for (<Place p, str e> <- cl) {
     ws[e] += runGetEntities(p, e, s)[e];
   }
-  
-  //iprintln(ws);
   
   lrel[str, str] lenv = [ <"<x>", "<e>">  | (Binding)`<EId e> <VId x>` <- bs ];
   map[str, str] env = ( x: e  | <str x, str e> <- lenv );
@@ -124,12 +132,10 @@ value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <
   WorkingSet result = ();
   
   for (map[str, Entity] binding <- toBindings(lenv, bigProduct(lenv, ws))) {
-    println("Recombining <binding>");
     bool yes = ( true | it && truthy(eval(e, binding, ws)) | Expr e <- es ); 
 
     for (yes, (Result)`<Expr re>` <- rs) {
       Entity r = evalResult(re, binding, ws);
-      println("ADDING <re>");
       log("[RUN-query] Adding <r> to final result for <re>");
       if (r.name notin result) {
         result[r.name] = [];
@@ -142,55 +148,6 @@ value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <
 
 }
 
-/*
-value _run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, Schema s, Log log = noLog) {
-  Partitioning part = partition(q, s);
-  
-  println(partition2text(part));
-  
-  WorkingSet ws = runPartitionedQueries(part, s, log = log);
-  
-  lrel[str, str] lenv = [];
-  
-  for (<_, (Request)`<Query q>`> <- part) {
-    lenv += [ <"<x>", "<e>">  | (Binding)`<EId e> <VId x>` <- q.bindings ];
-  }
-  map[str, str] env = ( x: e  | <str x, str e> <- lenv );
-  
-  // TODO: initialize with types from result expressions 
-  // from *all* queries, because bindings are taken from the
-  // union from the back-end results.
-  // before doing bigproduct.
-  
-  WorkingSet result = ();
-  
-  //iprintln(ws);
-  //
-  //for (<_, (Request)`<Query q>`> <- part, (Binding)`<EId e> <VId _>` <- q.bindings) {
-  //  result["<e>"] = [];
-  //}
-  
-  //WorkingSet result = ( inferEntity(e, env, s): [] | (Result)`<Expr e>` <- rs );
-  
-  iprintln(lenv);
-  for (map[str, Entity] binding <- toBindings(lenv, bigProduct(lenv, ws))) {
-    //println("Recombining <binding>");
-    bool yes = ( true | it && truthy(eval(e, binding, ws)) | Expr e <- es, !isLocal(e, env, s) , bprintln("E = <e>")); 
-    //println("YES: <yes>");
-    if (yes) throw "Yes";
-    for (yes, (Result)`<Expr re>` <- rs) {
-      Entity r = evalResult(re, binding, ws);
-      log("[RUN-query] Adding <r> to final result for <re>");
-      if (r.name notin result) {
-        result[r.name] = [];
-      }
-      result[r.name] += [r];
-    }
-  }
-
-  return result;
-}
-*/
 
 str inferEntity((Expr)`<VId x>`, map[str, str] env, Schema s)
   = env["<x>"];

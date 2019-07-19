@@ -81,7 +81,7 @@ WorkingSet runGetEntities(<sql(), str db>, str entity, Schema s) {
       } 
       
       for (<entity, Cardinality card, str role, str toRole, Cardinality toCard, str to, bool contained> <- s.rels) {
-        println("Recovering relation <entity>.<role> (inverse <to>.<toRole>)");
+        //println("Recovering relation <entity>.<role> (inverse <to>.<toRole>)");
         if (contained) {
         
           if (<<sql(), db>,  to> <- s.placement) { // it's local
@@ -208,7 +208,6 @@ int runInsert(p:<sql(), str db>, Request ins, Schema s, Log log = noLog) {
   list[SQLStat] stats = insert2sql(ins, p, s);
   int affected = 0;
   for (SQLStat s <- stats) {
-    println("Executing in runInsert: <pp(s)>");
     affected += executeUpdate(db, pp(s));
   }
   return affected;
@@ -233,7 +232,7 @@ int runInsert(<mongodb(), str db>, Request ins, Schema s, Log log = noLog) {
 int runUpdateById(<sql(), str db>, str entity, str uuid, {KeyVal ","}* kvs) {
   str tbl = tableName(entity);
   SQLStat upd = update(tbl,
-      [ \set(columnName("<kv.name>", entity), lit(evalExpr(kv.\value))) | KeyVal kv <- kvs ],
+      [ \set(columnName("<kv.feature>", entity), lit(evalExpr(kv.\value))) | KeyVal kv <- kvs ],
       [where([equ(column(tbl, typhonId(entity)), lit(text(uuid)))])]);
   return executeUpdate(db, pp(upd)); 
 }

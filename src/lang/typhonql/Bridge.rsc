@@ -40,7 +40,11 @@ java void deleteOne(str dbName, str collectionName, Doc doc);
 @javaClass{nl.cwi.swat.typhonql.Bridge}
 java list[Doc] find(str dbName, str collectionName, Doc pattern);
 
+
 alias UpdateResult = tuple[int matchedCount, int modifiedCount];
+
+@javaClass{nl.cwi.swat.typhonql.Bridge}
+java UpdateResult updateOne(str dbName, str collectionName, Doc pattern, Doc update);
 
 @javaClass{nl.cwi.swat.typhonql.Bridge}
 java UpdateResult updateMany(str dbName, str collectionName, Doc pattern, Doc update);
