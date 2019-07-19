@@ -123,6 +123,13 @@ public class Bridge {
 		coll.insertOne((Document) value2doc(doc));
 	}
 	
+	
+	public ITuple updateOne(IString dbName, IString collectionName, IMap pattern, IMap update) {
+		MongoDatabase db = getMongoDB(dbName);
+		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
+		UpdateResult result = coll.updateOne((Document)value2doc(pattern), (Document)value2doc(update));
+		return vf.tuple(vf.integer(result.getMatchedCount()), vf.integer(result.getModifiedCount()));
+	}
 
 	
 	public ITuple updateMany(IString dbName, IString collectionName, IMap pattern, IMap update) {

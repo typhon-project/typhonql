@@ -8,7 +8,13 @@ data SQLStat
   | delete(str table, list[Clause] clauses)
   | select(list[SQLExpr] exprs, list[As] tables, list[Clause] clauses)
   | alterTable(str table, list[Alter] alters)
+  | dropTable(list[str] tableNames, bool ifExists, list[DropOption] options)
   ;
+
+
+data DropOption
+  = restrict()
+  | cascade();
 
 data Set
   = \set(str column, SQLExpr expr);

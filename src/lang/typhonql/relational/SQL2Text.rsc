@@ -44,6 +44,14 @@ str pp(alterTable(str t, list[Alter] as))
     '<intercalate(",\n", [ pp(a) | Alter a <- as ])>;";
 
 
+str pp(dropTable(list[str] tables, bool ifExists, list[DropOption] options))
+  = "drop table <ifExists ? "if exists " : ""><intercalate(", ", [ q(t) | str t <- tables])>
+    '<intercalate(", ", [ pp(opt) | DropOption opt <- options ])>;";
+
+str pp(DropOption::restrict()) = "restrict";
+
+str pp(DropOption::cascade()) = "cascade";
+
 // Alter
 
 str pp(addConstraint(TableConstraint c))
@@ -131,9 +139,9 @@ str pp(foreignKey(str c, str p, str k, OnDelete od))
 
 // OnDelete
 
-str pp(cascade()) = " on delete cascade";
+str pp(OnDelete::cascade()) = " on delete cascade";
 
-str pp(nothing()) = "";
+str pp(OnDelete::nothing()) = "";
 
 
 // ColumnConstraint

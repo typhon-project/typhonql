@@ -15,16 +15,16 @@ import List;
  */
 
 
-map[Place, list[SQLStat]] schema2sql(Schema schema) {
-  result = ();
-  for (Place p <- schema.placement<0>, p.db is sql) {
-    result[p] = schema2sql(schema, p, schema.placement[p]);
-  }
-  return result;
-}
+//map[Place, list[SQLStat]] schema2sql(Schema schema) {
+//  result = ();
+//  for (Place p <- schema.placement<0>, p.db is sql) {
+//    result[p] = schema2sql(schema, p, schema.placement[p]);
+//  }
+//  return result;
+//}
 
 
-list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities) {
+list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bool doForeignKeys = true) {
   schema.rels = symmetricReduction(schema.rels);
  
   SQLStat attrs2create(str e, rel[str, str] attrs) {
@@ -33,16 +33,18 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities) {
       , [primaryKey(typhonId(e))]);
   }
  
-  stats = [ attrs2create(e, schema.attrs[e]) | str e <- entities(schema) ];
+  stats = [ dropTable([tableName(e)], true, []) | str e <- placedEntities ];
+  stats += [ attrs2create(e, schema.attrs[e]) | str e <- placedEntities ];
   
   // ugh...
   int createOfEntity(str entity) {
     for (int i <- [0..size(stats)]) {
-      if (stats[i].table == tableName(entity)) {
+      if (stats[i] is create, stats[i].table == tableName(entity)) {
         return i;
       }
     }
-    stats += [create(tableName(entity), [], [])];
+    stats += [dropTable([tableName(entity)], true, []), 
+              create(tableName(entity), [], [])];
     return size(stats) - 1;
     //assert false: "Could not find create statement for entity <entity>";
   }
@@ -57,21 +59,22 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities) {
     kid = createOfEntity(to);
     fk = fkName(from, to, toRole == "" ? fromRole : toRole);
     stats[kid].cols += [ column(fk, typhonIdType(), cs) ]; 
-    stats += [alterTable(tableName(to), [addConstraint(foreignKey(fk, tableName(from), typhonId(from), cascade()))])]; 
+    stats += [alterTable(tableName(to), [addConstraint(foreignKey(fk, tableName(from), typhonId(from), cascade()))]) | doForeignKeys ]; 
   }
   
   // should we make both fk's the combined primary key, if so, when?
   void addJunctionTable(str from, str fromRole, str to, str toRole) {
     str left = junctionFkName(from, fromRole);
     str right = junctionFkName(to, toRole);
-    SQLStat stat = create(junctionTableName(from, fromRole, to, toRole), [
+    str tbl = junctionTableName(from, fromRole, to, toRole);
+    SQLStat stat = create(tbl, [
       column(left, typhonIdType(), [notNull()]),
       column(right, typhonIdType(), [notNull()])      
     ], [
       foreignKey(left, tableName(from), typhonId(from), cascade()),
-      foreignKey(right, tableName(to), typhonId(to), cascade())
-    ]);
-    stats += [stat];
+      foreignKey(right, tableName(to), typhonId(to), cascade()) 
+        | doForeignKeys ]);
+    stats += [dropTable([tbl], true, []), stat];
   }
   
   for (r:<str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain> <- schema.rels
@@ -109,13 +112,14 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities) {
   void addJunctionTableOutside(str from, str fromRole, str to, str toRole) {
     str left = junctionFkName(from, fromRole);
     str right = junctionFkName(to, toRole);
-    SQLStat stat = create(junctionTableName(from, fromRole, to, toRole), [
+    str tbl = junctionTableName(from, fromRole, to, toRole);
+    SQLStat stat = create(tbl, [
       column(left, typhonIdType(), [notNull()]),
       column(right, typhonIdType(), [notNull()])      
     ], [
-      foreignKey(left, tableName(from), typhonId(from), cascade())
+      foreignKey(left, tableName(from), typhonId(from), cascade()) | doForeignKeys
     ]);
-    stats += [stat];
+    stats += [dropTable([tbl], true, []), stat];
   }
   
   for (r:<str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain> <- schema.rels

@@ -49,7 +49,7 @@ public class Connections {
 			connection = DriverManager.getConnection("jdbc:sqlite:sample.db");
 			
 			// schema specific, for now
-			connections.put("RelationalDB", connection);
+			connections.put("RelationalDatabase", connection);
 			
 		} catch (ClassNotFoundException | SQLException e) {
 			e.printStackTrace();
@@ -58,7 +58,7 @@ public class Connections {
 		
 		MongoClient mongoClient = MongoClients.create("mongodb://localhost:27017");
 		MongoDatabase db = mongoClient.getDatabase("test");
-		connections.put("DocumentDB", db);
+		connections.put("DocumentDatabase", db);
 	}
 
 }
