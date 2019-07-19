@@ -8,6 +8,7 @@ import IO;
 import Set;
 import List;
 import String;
+import Node;
 
 /*
  Consistency checks (for TyphonML)
@@ -29,6 +30,32 @@ data DB = mongodb() | sql() | hyperj() | recombine() | unknown() | typhon();
 alias Place = tuple[DB db, str name];
 
 alias Placement = rel[Place place, str entity];
+
+
+void dumpSchema(s) {
+  println(ppSchema(s));
+}
+
+str ppSchema(Schema s) {
+  str txt = "";
+  for (str ent <- s.rels<0> + s.attrs<0>, <Place p, ent> <- s.placement) {
+    txt += "entity <ent> @ <getName(p.db)>/<p.name> {\n";
+    for (<ent, str fld, str typ> <- s.attrs) {
+      txt += "  <fld>: <typ>\n";
+    }
+    for (<ent, Cardinality card, str role, str toRole, Cardinality toCard, str to, bool cont> <- s.rels) {
+      txt += "  <role><cont ? ":" : " -\>"> <to><card2str(card)> <if (toRole != "") {>(inv=<toRole><card2str(toCard)>)<}>\n";
+    }
+    txt += "}\n\n";
+  } 
+  return txt;
+}
+
+str card2str(one_many()) = "+";
+str card2str(zero_many()) = "*";
+str card2str(zero_one()) = "?";
+str card2str(\one()) = "";
+
 
 Schema loadSchema(loc l) = model2schema(m)
   when Model m := load(#Model, l);

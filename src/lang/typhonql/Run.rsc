@@ -23,6 +23,8 @@ value run(str src, Schema s, Log log = noLog) {
   return run(req, s, log = log);
 }
 
+
+
 WorkingSet dumpDB(Schema s) {
   //WorkingSet ws = ( e : [] | <_, str e> <- s.placement );
   
@@ -48,7 +50,7 @@ value run((Request)`delete <EId e> <VId x>`, Schema s, Log log = noLog)
 
 value run((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`, Schema s, Log log = noLog) {
   if (WorkingSet ws := run((Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ es>`, s, log = log)) {
-    assert size(ws<0>) == 1: "multiple or zero entity types returned from select implied by delete";
+    assert size(ws<0>) == 1: "multiple or zero entity types returned from select implied by delete: <ws>";
   
     if (str entity <- ws, <Place p, entity> <- s.placement) {
       list[Entity] entities = ws[entity];
@@ -129,7 +131,7 @@ value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <
   lrel[str, str] lenv = [ <"<x>", "<e>">  | (Binding)`<EId e> <VId x>` <- bs ];
   map[str, str] env = ( x: e  | <str x, str e> <- lenv );
   
-  WorkingSet result = ();
+  WorkingSet result = ( inferEntity(e, env, s): [] | (Result)`<Expr e>` <- rs );
   
   for (map[str, Entity] binding <- toBindings(lenv, bigProduct(lenv, ws))) {
     bool yes = ( true | it && truthy(eval(e, binding, ws)) | Expr e <- es ); 
@@ -150,6 +152,9 @@ value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <
 
 
 str inferEntity((Expr)`<VId x>`, map[str, str] env, Schema s)
+  = env["<x>"];
+  
+str inferEntity((Expr)`<VId x>.@id`, map[str, str] env, Schema s)
   = env["<x>"];
   
 

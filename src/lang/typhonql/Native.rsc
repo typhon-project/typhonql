@@ -21,6 +21,7 @@ import lang::typhonql::mongodb::Select2Find;
 
 
 import String;
+import List;
 import IO;
 
 
@@ -72,7 +73,7 @@ WorkingSet runGetEntities(<sql(), str db>, str entity, Schema s) {
   WorkingSet ws = (entity: []);
   
   for (Record record <- rs) {
-    println("RECORD: <record>");
+    //println("RECORD: <record>");
     if (str id := record[typhonId(entity)]) {
       Entity e = <entity, id, ()>;
       
@@ -124,7 +125,13 @@ WorkingSet runGetEntities(<sql(), str db>, str entity, Schema s) {
             e.fields[role] = [ uuid(kidId) | Record kid <- kids, str kidId := kid[junctionFkName(to, toRole)] ];
           }
           else {
-            e.fields[role] = [ uuid(kidId) | Record kid <- kids, str kidId := kid[junctionFkName(to, toRole)] ][0];
+            list[Ref] refs = [ uuid(kidId) | Record kid <- kids, str kidId := kid[junctionFkName(to, toRole)] ]; 
+            if (size(refs) > 0) {
+              e.fields[role] = refs[0];
+            }
+            else {
+              ; // it was optional (?)
+            }
           }
           
         }
