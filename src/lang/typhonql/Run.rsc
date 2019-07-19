@@ -108,15 +108,41 @@ value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schem
 value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, Schema s, Log log = noLog) {
   rel[Place, str] cl = closure(q, s);
   
-  WorkingSet approx = ();
+  println("CLOSURE: <cl>");
+  
+  WorkingSet ws = ( e : [] | <_, str e> <- cl );
   
   for (<Place p, str e> <- cl) {
-    approx += runGetEntities(p, e);
+    ws[e] += runGetEntities(p, e, s)[e];
   }
-    
+  
+  //iprintln(ws);
+  
+  lrel[str, str] lenv = [ <"<x>", "<e>">  | (Binding)`<EId e> <VId x>` <- bs ];
+  map[str, str] env = ( x: e  | <str x, str e> <- lenv );
+  
+  WorkingSet result = ();
+  
+  for (map[str, Entity] binding <- toBindings(lenv, bigProduct(lenv, ws))) {
+    println("Recombining <binding>");
+    bool yes = ( true | it && truthy(eval(e, binding, ws)) | Expr e <- es ); 
+
+    for (yes, (Result)`<Expr re>` <- rs) {
+      Entity r = evalResult(re, binding, ws);
+      println("ADDING <re>");
+      log("[RUN-query] Adding <r> to final result for <re>");
+      if (r.name notin result) {
+        result[r.name] = [];
+      }
+      result[r.name] += [r];
+    }
+  }
+
+  return result;  
 
 }
 
+/*
 value _run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, Schema s, Log log = noLog) {
   Partitioning part = partition(q, s);
   
@@ -148,9 +174,9 @@ value _run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where 
   
   iprintln(lenv);
   for (map[str, Entity] binding <- toBindings(lenv, bigProduct(lenv, ws))) {
-    println("Recombining <binding>");
+    //println("Recombining <binding>");
     bool yes = ( true | it && truthy(eval(e, binding, ws)) | Expr e <- es, !isLocal(e, env, s) , bprintln("E = <e>")); 
-    println("YES: <yes>");
+    //println("YES: <yes>");
     if (yes) throw "Yes";
     for (yes, (Result)`<Expr re>` <- rs) {
       Entity r = evalResult(re, binding, ws);
@@ -164,7 +190,7 @@ value _run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where 
 
   return result;
 }
-
+*/
 
 str inferEntity((Expr)`<VId x>`, map[str, str] env, Schema s)
   = env["<x>"];

@@ -31,7 +31,7 @@ str pp(update(str t, list[Set] ss, list[Clause] cs))
     '<intercalate("\n", [ pp(c) | Clause c <- cs ])>;";
   
 str pp(delete(str t, list[Clause] cs))
-  = "delete <q(t)>
+  = "delete from <q(t)> 
     '<intercalate("\n", [ pp(c) | Clause c <- cs ])>;";
 
 str pp(select(list[SQLExpr] es, list[As] as, list[Clause] cs))

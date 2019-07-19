@@ -41,7 +41,8 @@ WorkingSet exampleWorkingSet() =
       <"Person", "#hijk", ("name": "Jurgen", "age": 42)>,
       <"Person", "#lmno", ("name": "Thijs", "age": 41)>,
       <"Person", "#pqrs", ("name": "Paul", "age": 67)>
-   ]
+   ],
+   "Empty": []
  );
 
 

@@ -56,80 +56,9 @@ void runSchema(p:<mongodb(), str db>, Schema s, Log log = noLog) {
 /*
  * Selection
  */
-
-Doc dbObject2doc(object(list[Prop] props))
-  = ( p.name: dbObject2val(p.val) | Prop p <- props );
-
-Doc dbObject2doc(array(list[DBObject] values))
-  = [ dbObject2val(v) | DBObject v <- values ];
  
-
-value dbObject2val(\value(value v)) = v;
-
-value dbObject2val(obj:object(_)) = dbObject2doc(obj);
-
-value dbObject2val(arr:array(_)) = dbObject2doc(arr);
-  
-
-// assumes flattening, so no nested docs in d
-Entity doc2entity(str entity, Doc d)
-  = <entity, id, ( k: toWsValue(d[k]) | str k <- d, k != "_id" )>
-  when
-    str id := d["_id"];
-
-WorkingSet runQuery(<mongodb(), str db>, Request q, Schema s, Log log = noLog) {
-  lrel[str, CollMethod] methods = compile2mongo(q, s);
-  
-  // NB: this is unwrapping the "legacy" mongo compiler, dbObject and CollMethod need to go.
-  
-  WorkingSet result = ();
-  
-  for (<str entity, CollMethod method> <- methods) {
-    assert method is find;
-    
-    list[Doc] docs = find(db, entity, dbObject2doc(method.query));
-    
-    iprintln(docs);
-    
-    //lrel[str, Doc] flattened = unnest(docs);
-    
-    flattened = unnest(docs, entity, s);
-    
-    println("FLATTENED: <flattened>");
-    
-    
-    for (<str e, Doc d> <- flattened) {
-      if (e notin result) {
-        result[e] = [];
-      }
-      result[e] += doc2entity(e, d);
-    }
-  }
-  
-  return result;
-}
-
-lrel[str, Doc] unnest(list[Doc] docs, str entity, Schema s) 
-  = ( [] | it + unnestRec(d, entity, s) | Doc d <- docs );
-
-lrel[str, Doc] unnestRec(Doc doc, str entity, Schema s) {
-  result = [];
-  for (<entity, _, str fld, _, _, str to, true> <- s.rels) {
-    if (fld in doc, Doc d := doc[fld]) {
-      doc[fld] = d["_id"];
-      result += unnest(d, to, s);
-    }
-  }
-  result += [<entity, doc>];
-  return result;
-}
-
-
-
 WorkingSet runGetEntities(<sql(), str db>, str entity, Schema s) {
   str tbl = tableName(entity);
-  
-  
   
   SQLStat q = select( [ column("x", typhonId(entity)) ] 
      + [ column("x", columnName(fld, entity)) | <entity, str fld, _> <- s.attrs ]
@@ -143,6 +72,7 @@ WorkingSet runGetEntities(<sql(), str db>, str entity, Schema s) {
   WorkingSet ws = (entity: []);
   
   for (Record record <- rs) {
+    println("RECORD: <record>");
     if (str id := record[typhonId(entity)]) {
       Entity e = <entity, id, ()>;
       
@@ -151,6 +81,7 @@ WorkingSet runGetEntities(<sql(), str db>, str entity, Schema s) {
       } 
       
       for (<entity, Cardinality card, str role, str toRole, Cardinality toCard, str to, bool contained> <- s.rels) {
+        println("Recovering relation <entity>.<role> (inverse <to>.<toRole>)");
         if (contained) {
         
           if (<<sql(), db>,  to> <- s.placement) { // it's local
@@ -199,46 +130,74 @@ WorkingSet runGetEntities(<sql(), str db>, str entity, Schema s) {
         }
       }
       
-      ws[entity] += [e];
+      ws[entity] += [e];  
     }
     else {
       throw "No id found for <entity> in record <record>";
     }
+    
+    
   }
   
   return ws;
 }
 
-WorkingSet runQuery(<sql(), str db>, (Request)`<Query q>`, Schema s, Log log = noLog) {
-  log("[RUN-query/sql/<db>] <q>");
-  SQLStat stat = select2sql(q, s);
-  
-  log("[RUN-query/sql/<db>] <pp(stat)>");
-  
-  ResultSet rs = executeQuery(db, pp(stat));
-  
-  log("[RUN-query/sql/<db>] resultset = <rs>");
-  
-  WorkingSet ws = ();
+WorkingSet runGetEntities(<mongodb(), str db>, str entity, Schema s) {  
+  list[Doc] docs = find(db, entity, ());
+  lrel[str, Doc] flattened = unnest(docs, entity, s);
 
-  tuple[str,str] splitColName(str col) = <l, r>
-    when [str l, str r] := split(".", col);
+  println("flattened: <flattened>");
+  WorkingSet result = (entity: []) // this one's always there 
+    + ( e : [] | str e <- flattened<0> );
+      
+  for (<str e, Doc d> <- flattened) {
+    result[e] += doc2entity(e, d);
+  }
   
-  for (Record r <- rs) {
-    rel[str,str,value] values = { <e, f, r[col]> | str col <- r, <str e, str f> := splitColName(col) };
-    
-    println("values = <values>");
-    
-    for (str e <- values<0>) {
-      if (e notin ws) {
-        ws[e] = [];
-      }
-      ws[e] += [ <e, id, (f: toWsValue(v) | <str f, value v> <- values[e], f != typhonId(e) )> | str id := r[typhonId(e)] ];
+  return result;
+}
+ 
+
+Doc dbObject2doc(object(list[Prop] props))
+  = ( p.name: dbObject2val(p.val) | Prop p <- props );
+
+Doc dbObject2doc(array(list[DBObject] values))
+  = [ dbObject2val(v) | DBObject v <- values ];
+ 
+
+value dbObject2val(\value(value v)) = v;
+
+value dbObject2val(obj:object(_)) = dbObject2doc(obj);
+
+value dbObject2val(arr:array(_)) = dbObject2doc(arr);
+  
+
+// assumes flattening, so no nested docs in d
+Entity doc2entity(str entity, Doc d)
+  = <entity, id, ( k: toWsValue(d[k]) | str k <- d, k != "_id" )>
+  when
+    str id := d["_id"];
+
+
+lrel[str, Doc] unnest(list[Doc] docs, str entity, Schema s) 
+  = ( [] | it + unnestRec(d, entity, s) | Doc d <- docs );
+
+lrel[str, Doc] unnestRec(Doc doc, str entity, Schema s) {
+  result = [];
+  for (<entity, _, str fld, _, _, str to, true> <- s.rels) {
+    if (fld in doc, Doc d := doc[fld]) {
+      doc[fld] = d["_id"];
+      result += unnest(d, to, s);
     }
   }
-  iprintln(ws);
-  return ws;
+  result += [<entity, doc>];
+  return result;
 }
+
+
+
+
+
 
 /*
  * Insertion
@@ -322,3 +281,70 @@ int runDeleteById(<sql(), str db>, str entity, str uuid) {
   SQLStat stat = delete(tbl, [where([equ(column(tbl, typhonId(entity)), lit(text(uuid)))])]);
   return executeUpdate(db, pp(stat));
 }
+
+
+/*
+
+WorkingSet runQuery(<sql(), str db>, (Request)`<Query q>`, Schema s, Log log = noLog) {
+  log("[RUN-query/sql/<db>] <q>");
+  SQLStat stat = select2sql(q, s);
+  
+  log("[RUN-query/sql/<db>] <pp(stat)>");
+  
+  ResultSet rs = executeQuery(db, pp(stat));
+  
+  log("[RUN-query/sql/<db>] resultset = <rs>");
+  
+  WorkingSet ws = ();
+
+  tuple[str,str] splitColName(str col) = <l, r>
+    when [str l, str r] := split(".", col);
+  
+  for (Record r <- rs) {
+    rel[str,str,value] values = { <e, f, r[col]> | str col <- r, <str e, str f> := splitColName(col) };
+    
+    println("values = <values>");
+    
+    for (str e <- values<0>) {
+      if (e notin ws) {
+        ws[e] = [];
+      }
+      ws[e] += [ <e, id, (f: toWsValue(v) | <str f, value v> <- values[e], f != typhonId(e) )> | str id := r[typhonId(e)] ];
+    }
+  }
+  iprintln(ws);
+  return ws;
+}
+
+WorkingSet runQuery(<mongodb(), str db>, Request q, Schema s, Log log = noLog) {
+  lrel[str, CollMethod] methods = compile2mongo(q, s);
+  
+  // NB: this is unwrapping the "legacy" mongo compiler, dbObject and CollMethod need to go.
+  
+  WorkingSet result = ();
+  
+  for (<str entity, CollMethod method> <- methods) {
+    assert method is find;
+    
+    list[Doc] docs = find(db, entity, dbObject2doc(method.query));
+    
+    iprintln(docs);
+    
+    //lrel[str, Doc] flattened = unnest(docs);
+    
+    flattened = unnest(docs, entity, s);
+    
+    println("FLATTENED: <flattened>");
+    
+    
+    for (<str e, Doc d> <- flattened) {
+      if (e notin result) {
+        result[e] = [];
+      }
+      result[e] += doc2entity(e, d);
+    }
+  }
+  
+  return result;
+}
+*/
