@@ -25,13 +25,13 @@ user does not do that.
 
 */
 
-map[str, CollMethod] compile2mongo((Request)`insert <{Obj ","}* objs>`, Schema s) {
+lrel[str, CollMethod] compile2mongo((Request)`insert <{Obj ","}* objs>`, Schema s) {
   //objList = flattenForMongoDB(objs);
   // assumes flattening as per partitioning
   
   map[str, Obj] env = ( lookupId(obj.keyVals): obj | Obj obj <- objs ); 
   
-  return ( "<obj.entity>": \insert( [ obj2dbObj((Expr)`<Obj obj>`, env, s) ]) | Obj obj <- objs  ) ;
+  return [ <"<obj.entity>", \insert( [ obj2dbObj((Expr)`<Obj obj>`, env, s) ])>  | Obj obj <- objs  ] ;
 }
 
 str typhonId() = "_id";

@@ -6,6 +6,7 @@ import lang::typhonml::Util;
 
 import String;
 import List;
+import IO;
 
 /*
 
@@ -35,13 +36,16 @@ Todo: always return the typhon id
 
 */
 
-map[str, CollMethod] compile2mongo((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s)
+lrel[str, CollMethod] compile2mongo((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s)
   = select2find((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, translateWheres=false);
 
 
 // TODO: how to deal with multi entity finds?
-map[str, CollMethod] compile2mongo((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}* es>`, Schema s, bool translateWheres = true) {
+lrel[str, CollMethod] compile2mongo(r:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}* es>`, Schema s, bool translateWheres = true) {
   Env env = ( "<b.var>": "<b.entity>" | Binding b <- bs );
+  
+  println("Compiling <r> to mongo");
+  
   map[str, CollMethod] result = ( "<b.entity>": find(object([]), object([])) | Binding b <- bs );
   
   
@@ -58,7 +62,9 @@ map[str, CollMethod] compile2mongo((Request)`from <{Binding ","}+ bs> select <{R
     result[coll].query.props += [p];
   }
   
-  return result;
+  iprintln(result);
+  
+  return [ <k, result[k]> | str k <- result ];
 }
 
 alias Env = map[str, str];

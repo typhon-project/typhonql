@@ -51,6 +51,9 @@ value eval((Expr)`<Int n>`, map[str, Entity] env, WorkingSet scope)
 value eval((Expr)`<Bool b>`, map[str, Entity] env, WorkingSet scope) 
   = ((Bool)`true` := b);
   
+value eval((Expr)`<Str s>`, map[str, Entity] env, WorkingSet scope) 
+  = "<s>"[1..-1];
+  
 value eval((Expr)`<UUID u>`, map[str, Entity] env, WorkingSet scope) 
   = uuid("<u>"[1..]);
   

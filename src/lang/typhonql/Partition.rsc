@@ -136,6 +136,10 @@ Partitioning partition(r:(Request)`insert <{Obj ","}* objs>`, Schema s) {
   // the mongodb driver can for instance, unflatten and nest again/
   
   list[Obj] objLst = flatten(objs);
+  
+  for (Obj obj <- objLst) {
+    println("OBJ: <obj>");
+  }
   //if (skipTopLevel) { 
   //  // this is a hack, to reuse insert partitioning for updates that contain nested object literals
   //  // the top-level is the one that will be updated, not inserted (and flatten is bottom-up, so it's the last element)
@@ -170,6 +174,10 @@ Partitioning partition(r:(Request)`insert <{Obj ","}* objs>`, Schema s) {
         throw "Invalid insert in map";
       }
     }
+  }
+  
+  for (Place p <- insPerPlace) {
+    println("PP: <p> :: <insPerPlace[p]>");
   }
   
   return [ <p, insPerPlace[p]> | Place p <- insPerPlace, (Request)`insert` !:= insPerPlace[p] ];
@@ -254,12 +262,12 @@ Partitioning partition(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}
   
   // Recombination query
   
-  if (size(result) > 1) {
-    newWheres = [ e | Expr e <- es, !isLocal(e, env, s) ];
-  
-    Query recomb = buildQuery([ b | Binding b <- bs ], [ r | Result r <- rs ], newWheres); 
-    result += [<<recombine(), "">, (Request)`<Query recomb>`>];
-  }
+  //if (size(result) > 1) {
+  //  newWheres = [ e | Expr e <- es, !isLocal(e, env, s) ];
+  //
+  //  Query recomb = buildQuery([ b | Binding b <- bs ], [ r | Result r <- rs ], newWheres); 
+  //  result += [<<recombine(), "">, (Request)`<Query recomb>`>];
+  //}
 
   return result;
 }

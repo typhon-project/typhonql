@@ -5,6 +5,7 @@ import lang::typhonql::TDBC;
 import lang::typhonql::WorkingSet;
 import lang::typhonql::util::Log;
 
+import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
 
 import lang::typhonql::relational::SQL;
@@ -77,22 +78,28 @@ Entity doc2entity(str entity, Doc d)
     str id := d["_id"];
 
 WorkingSet runQuery(<mongodb(), str db>, Request q, Schema s, Log log = noLog) {
-  map[str, CollMethod] methods = compile2mongo(q, s);
+  lrel[str, CollMethod] methods = compile2mongo(q, s);
   
   // NB: this is unwrapping the "legacy" mongo compiler, dbObject and CollMethod need to go.
   
   WorkingSet result = ();
   
-  for (str entity <- methods) {
-    CollMethod method = methods[entity];
+  for (<str entity, CollMethod method> <- methods) {
     assert method is find;
     
     list[Doc] docs = find(db, entity, dbObject2doc(method.query));
     
+    iprintln(docs);
+    
     //lrel[str, Doc] flattened = unnest(docs);
     
-    for (<str e, Doc d> <- unnest(docs, entity, s)) {
-      if (e notin  result) {
+    flattened = unnest(docs, entity, s);
+    
+    println("FLATTENED: <flattened>");
+    
+    
+    for (<str e, Doc d> <- flattened) {
+      if (e notin result) {
         result[e] = [];
       }
       result[e] += doc2entity(e, d);
@@ -117,6 +124,90 @@ lrel[str, Doc] unnestRec(Doc doc, str entity, Schema s) {
   return result;
 }
 
+
+
+WorkingSet runGetEntities(<sql(), str db>, str entity, Schema s) {
+  str tbl = tableName(entity);
+  
+  
+  
+  SQLStat q = select( [ column("x", typhonId(entity)) ] 
+     + [ column("x", columnName(fld, entity)) | <entity, str fld, _> <- s.attrs ]
+    , [as(tbl, "x")], []);
+    
+  ResultSet rs = executeQuery(db, pp(q));
+  
+  map[str, str] col2fld = 
+    ( columnName(fld, entity): fld | <entity, str fld, _> <- s.attrs );
+  
+  WorkingSet ws = (entity: []);
+  
+  for (Record record <- rs) {
+    if (str id := record[typhonId(entity)]) {
+      Entity e = <entity, id, ()>;
+      
+      for (str col <- record, col != typhonId(entity)) {
+        e.fields[col2fld[col]] = record[col];
+      } 
+      
+      for (<entity, Cardinality card, str role, str toRole, Cardinality toCard, str to, bool contained> <- s.rels) {
+        if (contained) {
+        
+          if (<<sql(), db>,  to> <- s.placement) { // it's local
+            
+            str fkCol = fkName(entity, to, toRole == "" ? role : toRole); 
+            SQLStat q = select([ column("x", typhonId(to)) ] 
+     						   , [as(tableName(to), "x")]
+     						   , [where([equ(column("x", fkCol), lit(text(id)))])]);
+     		ResultSet kids = executeQuery(db, pp(q));				
+            
+            if (card != \one()) { // many-valued
+              e.fields[role] = [ uuid(kidId) | Record kid <- kids, str kidId := kid[typhonId(to)] ];
+            }
+            else { // single valued
+              e.fields[role] = [ uuid(kidId) | Record kid <- kids, str kidId := kid[typhonId(to)] ][0];
+            }
+          }
+          else { // it's outside
+            SQLStat q = select([ column("x", junctionFkName(to, toRole))]
+                                , [as(junctionTableName(entity, role, to, toRole), "x")]
+                                , [where([equ(column("x", junctionFkName(entity, role)), lit(text(id)))])]);
+            ResultSet kids = executeQuery(db, pp(q));  
+            if (card != \one()) {
+              e.fields[role] = [ uuid(kidId) | Record kid <- kids, str kidId := kid[junctionFkName(to, toRole)] ];
+            }
+            else {
+              e.fields[role] = [ uuid(kidId) | Record kid <- kids, str kidId := kid[junctionFkName(to, toRole)] ][0];
+            }
+          }
+        
+        
+        }
+        else {  // a cross ref; this subsumes both inside and outside
+        
+          SQLStat q = select([ column("x", junctionFkName(to, toRole)) ]
+                              , [as(junctionTableName(entity, role, to, toRole), "x")]
+                              , [where([equ(column("x", junctionFkName(entity, role)), lit(text(id)))])]);
+          ResultSet kids = executeQuery(db, pp(q));          
+          if (card != \one()) {
+            e.fields[role] = [ uuid(kidId) | Record kid <- kids, str kidId := kid[junctionFkName(to, toRole)] ];
+          }
+          else {
+            e.fields[role] = [ uuid(kidId) | Record kid <- kids, str kidId := kid[junctionFkName(to, toRole)] ][0];
+          }
+          
+        }
+      }
+      
+      ws[entity] += [e];
+    }
+    else {
+      throw "No id found for <entity> in record <record>";
+    }
+  }
+  
+  return ws;
+}
 
 WorkingSet runQuery(<sql(), str db>, (Request)`<Query q>`, Schema s, Log log = noLog) {
   log("[RUN-query/sql/<db>] <q>");
@@ -158,15 +249,15 @@ int runInsert(p:<sql(), str db>, Request ins, Schema s, Log log = noLog) {
   list[SQLStat] stats = insert2sql(ins, p, s);
   int affected = 0;
   for (SQLStat s <- stats) {
+    println("Executing in runInsert: <pp(s)>");
     affected += executeUpdate(db, pp(s));
   }
   return affected;
 }
 
 int runInsert(<mongodb(), str db>, Request ins, Schema s, Log log = noLog) {
-  map[str, CollMethod] methods = compile2mongo(ins, s);
-  for (str entity <- methods) {
-    CollMethod method = methods[entity];
+  lrel[str, CollMethod] methods = compile2mongo(ins, s);
+  for (<str entity, CollMethod method> <- methods) {
     iprintln(method);
     assert method is \insert;
     for (DBObject obj <- method.documents) {
