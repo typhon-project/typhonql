@@ -32,7 +32,7 @@ alias Place = tuple[DB db, str name];
 alias Placement = rel[Place place, str entity];
 
 
-void dumpSchema(s) {
+void dumpSchema(Schema s) {
   println(ppSchema(s));
 }
 

@@ -5,9 +5,9 @@ extend lang::typhonql::Query;
 
 
 syntax Statement
-  = "insert" {Obj ","}* objs
-  | "delete" Binding binding Where? where
-  | "update" Binding binding Where? where "set"  "{" {KeyVal ","}* keyVals "}" 
+  = \insert: "insert" {Obj ","}* objs
+  | delete: "delete" Binding binding Where? where
+  | update: "update" Binding binding Where? where "set"  "{" {KeyVal ","}* keyVals "}" 
   ;
   
 

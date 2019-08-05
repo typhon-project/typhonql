@@ -12,8 +12,8 @@ syntax Expr
   = attr: VId var "." {Id "."}+  attrs
   | var: VId 
   | key: VId "." "@id"
-  | \int: Int
-  | \str: Str
+  | @category="Number" \int: Int
+  | @category="Constant" \str: Str
   | \bool: Bool
   | uuid: UUID
   | bracket "(" Expr arg ")"

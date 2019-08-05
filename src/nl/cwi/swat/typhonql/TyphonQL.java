@@ -23,7 +23,7 @@ public class TyphonQL {
 		
 	// TODO: we might have to delay returning the schema, since the platform
 	// might not be ready when this code is run.
-	public IValue bootTyphonQL(IValue typeOfTyphonML) {
+	public void bootTyphonQL(IValue typeOfTyphonML) {
 		//TypeStore ts = new TypeStore(); // start afresh
 		
 		Connections.boot();
@@ -38,7 +38,7 @@ public class TyphonQL {
 //		Convert.declareMaybeType(ts);
 //		return Convert.obj2value(model, rt, vf, ts, null /* todo: some loc */);
 		
-		return vf.integer(0);
+		//return vf.integer(0);
 	}
 	
 //	public static void main(String[] args) {
