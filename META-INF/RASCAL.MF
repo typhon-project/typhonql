@@ -1,6 +1,6 @@
 Manifest-Version: 0.0.1
 Main-Function: main
 Courses: courses
-Main-Module: lang::typhonql::IDE
+Main-Module: Plugin
 Source: src
 
