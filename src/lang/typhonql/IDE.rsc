@@ -18,13 +18,12 @@ import IO;
 
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
-//java Model bootTyphonQL(type[Model] model);
-java void bootTyphonQL(type[Model] model);
+java Model bootTyphonQL(type[Model] model, loc pathToTML);
 
 
 private str TYPHONQL = "TyphonQL";
 
-void main() {
+void setupIDE() {
   Schema schema = schema({}, {}); // empty 
   
   registerLanguage(TYPHONQL, "tql", start[Script](str src, loc org) {
@@ -36,7 +35,10 @@ void main() {
 
   // call this in the parse handler or from a menu to avoid race conditions
   // with the rest of the platform.
-  bootTyphonQL(#Model);
+  //Model m = bootTyphonQL(#Model, |tmp:///|);
+  
+  //iprintln(m);
+  // todo: assert loaded on all actions (now an initial save is needed)
   
   
   registerContributions(TYPHONQL, {

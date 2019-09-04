@@ -6,6 +6,13 @@ import lang::typhonql::Partition;
 
 import lang::typhonml::Util;
 
+/*
+
+Compute the "database closure" of a TyphonQL query. It computes all database
+placements that are "hit" by the query.
+
+*/
+
 
 rel[Place, str] closure(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, Schema s) {
   map[str, str] env = ( "<x>": "<e>"  | (Binding)`<EId e> <VId x>` <- bs );

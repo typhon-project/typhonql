@@ -29,6 +29,15 @@ import IO;
 
 /*
 The run* functions are the "interface" that needs to be implemented for every backend.
+For every back-end we should have the following functions:
+
+- runSchema: initializing a database with the schema entities
+- runGetEntities: getting all entities of a certain type from a database
+- runInsert: inserting objects into a database
+- runUpdateById: updating a single entity identified by its Typhon Id
+- runDeleteById: deleting a single entity identified by its Typhon Id
+- [TODO] runQuery: running a TyphonQL query natively, after partitioning
+
 */
 
 /*
@@ -153,7 +162,7 @@ WorkingSet runGetEntities(<mongodb(), str db>, str entity, Schema s) {
   list[Doc] docs = find(db, entity, ());
   lrel[str, Doc] flattened = unnest(docs, entity, s);
 
-  println("flattened: <flattened>");
+  //println("flattened: <flattened>");
   WorkingSet result = (entity: []) // this one's always there 
     + ( e : [] | str e <- flattened<0> );
       
@@ -223,7 +232,7 @@ int runInsert(p:<sql(), str db>, Request ins, Schema s, Log log = noLog) {
 int runInsert(<mongodb(), str db>, Request ins, Schema s, Log log = noLog) {
   lrel[str, CollMethod] methods = compile2mongo(ins, s);
   for (<str entity, CollMethod method> <- methods) {
-    iprintln(method);
+    //iprintln(method);
     assert method is \insert;
     for (DBObject obj <- method.documents) {
       insertOne(db, entity, dbObject2doc(obj));

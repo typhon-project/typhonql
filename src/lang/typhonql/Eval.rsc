@@ -4,6 +4,18 @@ import lang::typhonql::Expr;
 import lang::typhonql::WorkingSet;
 import lang::typhonql::util::UUID;
 
+/*
+
+This module contains an interpreter of the TyphonQL expression sub-language.
+The eval functions receive an expression, and environment (mapping variable name 
+to entities), and a WorkingSet as scope. The latter is used to navigate
+across references to evaluate path expressions.
+
+- `evalResult` evaluates expressions in the "select" clause of a query to an entity
+- `eval` evaluates expressions in where clauses to a value 
+
+*/
+
 
 Entity evalResult((Expr)`<VId x>.<{Id "."}+ xs>`, map[str, Entity] env, WorkingSet scope) 
   = navigateEntity(xs, e, scope)

@@ -19,7 +19,6 @@ Places include
 - anonymous recombination queries (in case of select-query partitioning)
 - the original request with db type "typhon()"
 
-TODO: integrate name into the DB type instead of tupling
 }
 alias Partitioning = lrel[Place place, Request request];
 

@@ -1,4 +1,4 @@
-module lang::typhonql::Compiler
+module lang::typhonql::attic::Compiler
 
 import lang::typhonql::TDBC;
 import lang::typhonql::Partition;

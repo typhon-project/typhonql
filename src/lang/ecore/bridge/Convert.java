@@ -392,7 +392,8 @@ public class Convert {
 					fields.add(visitAttribute(att, featureValue, fieldType, vf, ts));
 				}
 				else {
-					throw RuntimeExceptionFactory.illegalArgument(vf.string(feature.toString()), null, null);
+					throw RuntimeExceptionFactory.illegalArgument(vf.string(feature.toString()),
+							null, null, "Bad feature: " + feature.toString());
 				}
 			}
 			
@@ -611,7 +612,8 @@ public class Convert {
 			if (fieldType.isString()) {
 				return vf.string("");
 			}
-			throw RuntimeExceptionFactory.illegalArgument(vf.string("null"), null, null);
+			throw RuntimeExceptionFactory.illegalArgument(vf.string("null"), null, null, 
+					"Null value for field " + fieldType);
 		}
 		
 		if (obj instanceof Boolean) {
@@ -643,7 +645,7 @@ public class Convert {
 		}
 		// FIXME: Datatypes?
 		
-		throw RuntimeExceptionFactory.illegalArgument(vf.string("Unsupported prim: " + obj.toString()), null, null);
+		throw RuntimeExceptionFactory.illegalArgument(vf.string(obj.toString()), null, null, "Unsupported prim: " + obj.toString());
 	}
 
 	

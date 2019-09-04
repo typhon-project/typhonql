@@ -1,6 +1,15 @@
 module lang::typhonql::Bridge
 
 
+/*
+
+This module Bridges the Java DB API world to the TyphonQL world
+in Rascal. The bridge is very thin by design, encoding Java
+types returned by various API calls as directly as possible in
+Rascal so that all (possibly heavy lifting) conversions is done
+in Rascal.
+*/
+
 // TODO: also expose the analytics features here
 
 /*

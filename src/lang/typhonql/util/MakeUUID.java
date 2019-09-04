@@ -20,6 +20,8 @@ public class MakeUUID {
 		return vf.string(randomUUID());
 	}
 	
+	
+	@Deprecated
 	public void registerTyphonML() {
 		EPackage.Registry.INSTANCE.put("http://org.typhon.dsls.typhonml.sirius", typhonml.TyphonmlPackage.eINSTANCE);
 	}

@@ -1,3 +1,7 @@
+@doc{
+Utility functions and data types to abstract over details of the Ecore representation
+of TyphonML.
+}
 module lang::typhonml::Util
 
 

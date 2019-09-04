@@ -131,6 +131,7 @@ value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <
   lrel[str, str] lenv = [ <"<x>", "<e>">  | (Binding)`<EId e> <VId x>` <- bs ];
   map[str, str] env = ( x: e  | <str x, str e> <- lenv );
   
+  
   WorkingSet result = ( inferEntity(e, env, s): [] | (Result)`<Expr e>` <- rs );
   
   for (map[str, Entity] binding <- toBindings(lenv, bigProduct(lenv, ws))) {

@@ -4,6 +4,11 @@ import lang::typhonql::Expr;
 import lang::typhonql::util::UUID;
 import IO;
 
+/*
+
+Utility module to manipulate Object Literals (see lang::typhonql::Expr).
+
+*/
 
 alias IdMap = lrel[str name, str entity, str uuid];
 

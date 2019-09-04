@@ -2,11 +2,7 @@ module lang::typhonql::Expr
 
 extend lang::std::Layout;
 extend lang::std::Id;
-extend lang::typhonql::Type; // EId
-
-
-// TODO: path navigation a.b.c
-// --> a.b.c  
+extend lang::std::Id;
 
 syntax Expr
   = attr: VId var "." {Id "."}+  attrs
@@ -47,11 +43,18 @@ syntax Expr
   ;
   
 
-syntax VId =  Id \ "true" \ "false" ;
+// Entity Ids  
+syntax EId = Id \ Primitives;
+  
+keyword Primitives
+  = "int" | "str" | "bool" | "text" | "float" | "blob" | "freetext" ;
+  
+
+// Variable Ids
+syntax VId =  Id \ "true" \ "false" \ "null";
 
 syntax Bool = "true" | False: "false";
 
-// TODO: what about lists?
 syntax Obj = Label? labelOpt EId entity "{" {KeyVal ","}* keyVals "}";
   
 syntax Label = "@" VId label;
@@ -63,6 +66,7 @@ syntax KeyVal
   ;
   
 
+// textual encoding of reference
 lexical UUID = "#"[\-a-zA-Z0-9]+ !>> [\-a-zA-Z0-9];
 
 // todo: escaping etc.
