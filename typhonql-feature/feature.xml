@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="typhonql_feature"
+      label="typhonql IDE"
+      version="0.1.0.qualifier">
+
+   <description url="http://www.example.com/description">
+       Typhon QL
+   </description>
+
+   <copyright>
+       ?
+   </copyright>
+
+   <plugin id="impulse" version="0.0.0" download-size="0" install-size="0" unpack="false"/>
+
+   <plugin id="rascal_eclipse" version="0.0.0" download-size="0" install-size="0" unpack="false"/>
+
+   <plugin id="typhonql" version="0.0.0" download-size="0" install-size="0" unpack="false"/>
+
+</feature>

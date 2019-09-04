@@ -2,20 +2,15 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-<parent>
-	<groupId>it.univaq.disim.typhonml</groupId>
-	<artifactId>typhonml</artifactId>
-	<version>0.1.1-SNAPSHOT</version>
-</parent>	
-	<groupId>nl.cwi.swat.typhon</groupId>
-	<artifactId>typhonql</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+    <parent>
+        <groupId>engineering.swat.typhon</groupId>
+        <artifactId>typhonql-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>	
 
+	<artifactId>typhonql</artifactId>
 	<packaging>eclipse-plugin</packaging>
 	
-	<properties>
-		<tycho-version>1.4.0</tycho-version>
-	</properties>
 
 	<build>
 		<sourceDirectory>src</sourceDirectory>
@@ -27,87 +22,16 @@
 				</excludes>
 			</resource>
 		</resources>
-		<plugins>
-			<plugin>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.8.0</version>
-				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.eclipse.tycho</groupId>
-				<artifactId>tycho-maven-plugin</artifactId>
-				<version>${tycho-version}</version>
-				<extensions>true</extensions>
-			</plugin>
-			<plugin>
-				<groupId>org.eclipse.tycho</groupId>
-				<artifactId>target-platform-configuration</artifactId>
-				<version>${tycho-version}</version>
-
-				<configuration>
-					<resolver>p2</resolver>
-					<pomDependencies>consider</pomDependencies>
-				</configuration>
-			</plugin>
-		</plugins>
 	</build>
 
 	<dependencies>
         <dependency>
-            <groupId>nl.cwi.swat.typhon</groupId>
+            <groupId>engineering.swat.typhon</groupId>
             <artifactId>bundle-typhoneql-dependencies</artifactId>
-            <version>0.0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>nl.cwi.swat.typhon</groupId>
-            <artifactId>bundle-typhoneql-dependencies</artifactId>
-            <version>0.0.1</version>
+            <version>0.2.0</version>
         </dependency>
 	   <!-- WARNING! maven dependencies need to be added to the bundler, and any change needs an update of the bundler version (and a local mvn install) -->
 	</dependencies>
 
-	<repositories>
-<!--  		<repository>
-			<id>typhon</id>
-			<layout>p2</layout>
-			<url>file:///${project.build.directory}/repository/</url>
-		</repository>
-		-->
-
-        <repository>
-            <id>usethesource-cache</id>
-            <url>http://nexus.usethesource.io/content/repositories/public/</url>
-        </repository>
-        <repository>
-            <id>usethesource-snapshots</id>
-            <url>http://nexus.usethesource.io/content/repositories/snapshots/</url>
-        </repository>
-
-        <repository>
-            <id>usethesource-rascalmpl-unstable</id>
-            <layout>p2</layout>
-            <url>https://update.rascal-mpl.org/unstable/</url>
-        </repository>
-
-        <repository>
-            <id>rascalmpl-libs</id>
-            <layout>p2</layout>
-            <url>https://update.rascal-mpl.org/libs/</url>
-        </repository>
-
-        <repository>
-            <id>neon</id>
-            <layout>p2</layout>
-            <url>http://nexus.usethesource.io/content/repositories/eclipse-oxygen/</url>
-        </repository>
-        <repository>
-            <id>tm</id>
-            <layout>p2</layout>
-            <url>http://nexus.usethesource.io/content/repositories/tm-terminal-marketplace/</url>
-        </repository>
-	</repositories>
 
 </project>
