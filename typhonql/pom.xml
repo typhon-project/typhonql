@@ -31,6 +31,29 @@
             <version>0.2.0</version>
         </dependency>
 	   <!-- WARNING! maven dependencies need to be added to the bundler, and any change needs an update of the bundler version (and a local mvn install) -->
+
+        <!--  dependencies below are only to help eclipse, you need to keep them synced with the bundler -->
+
+		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongodb-driver-sync</artifactId>
+			<version>3.11.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.xerial</groupId>
+			<artifactId>sqlite-jdbc</artifactId>
+			<version>3.28.0</version>
+		</dependency>
+        <dependency>
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+            <version>2.4.3</version>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.17</version>
+        </dependency>
 	</dependencies>
 
 
