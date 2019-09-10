@@ -8,7 +8,7 @@ start syntax Script
 
 
 lexical ProjectLoc
-  = @category="Constant" [a-zA-Z_\-.0-9/]+ !>> [a-zA-Z_\-.0-9/];
+  = @category="Constant" [a-zA-Z_\-.0-9/:@]+ !>> [a-zA-Z_\-.0-9/:@];
    
 
 start syntax Scratch
