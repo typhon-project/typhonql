@@ -1,10 +1,7 @@
 package lang.ecore.bridge;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 //import org.eclipse.core.filesystem.EFS;
 //import org.eclipse.core.filesystem.IFileStore;
@@ -22,54 +19,20 @@ import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
-//import org.eclipse.emf.edit.command.ChangeCommand;
-//import org.eclipse.emf.edit.domain.EditingDomain;
-//import org.eclipse.emf.edit.domain.IEditingDomainProvider;
-//import org.eclipse.jface.text.BadLocationException;
-//import org.eclipse.jface.text.DocumentRewriteSession;
-//import org.eclipse.jface.text.DocumentRewriteSessionType;
-//import org.eclipse.jface.text.IDocument;
-//import org.eclipse.jface.text.IDocumentExtension4;
-//import org.eclipse.swt.widgets.Display;
-//import org.eclipse.ui.IEditorDescriptor;
-//import org.eclipse.ui.IEditorInput;
-//import org.eclipse.ui.IEditorPart;
-//import org.eclipse.ui.IPropertyListener;
-//import org.eclipse.ui.IWorkbench;
-//import org.eclipse.ui.IWorkbenchPage;
-//import org.eclipse.ui.IWorkbenchWindow;
-//import org.eclipse.ui.PartInitException;
-//import org.eclipse.ui.PlatformUI;
-//import org.eclipse.ui.ide.IDE;
-//import org.eclipse.ui.part.FileEditorInput;
-//import org.eclipse.ui.progress.UIJob;
-import org.rascalmpl.debug.IRascalMonitor;
-import org.rascalmpl.interpreter.IEvaluator;
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.TypeReifier;
-import org.rascalmpl.interpreter.env.Environment;
-import org.rascalmpl.interpreter.result.AbstractFunction;
-import org.rascalmpl.interpreter.result.ICallableValue;
-import org.rascalmpl.interpreter.result.Result;
-import org.rascalmpl.interpreter.types.FunctionType;
-import org.rascalmpl.interpreter.types.RascalTypeFactory;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 //import org.rascalmpl.uri.URIEditorInput;
 import org.rascalmpl.uri.URIResolverRegistry;
-//import org.rascalmpl.uri.URIStorage;
-import org.rascalmpl.values.uptr.RascalValueFactory;
 
 //import io.usethesource.impulse.editor.UniversalEditor;
 import io.usethesource.vallang.IConstructor;
-import io.usethesource.vallang.IList;
 import io.usethesource.vallang.INode;
 import io.usethesource.vallang.ISourceLocation;
 import io.usethesource.vallang.IString;
-import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
-import io.usethesource.vallang.type.TypeFactory;
 import io.usethesource.vallang.type.TypeStore;
 
 /**
@@ -147,8 +110,21 @@ public class IO {
 			throw RuntimeExceptionFactory.io(vf.string("could not load model at " + uri), null, null);
 		}
 	}
-
 	
+	public IValue load(IValue reifiedType, IString input, ISourceLocation refBase, EPackage ecorePackage, IEvaluatorContext ctx) {
+		TypeStore ts = new TypeStore(); // start afresh
+		ctx.getStdOut().println("rt:" + reifiedType);
+		Type rt = tr.valueToType((IConstructor) reifiedType, ts);
+		Convert.declareRefType(ts);
+		Convert.declareMaybeType(ts);
+		try {
+			EObject root = Convert.loadResource(refBase, input, ecorePackage).getContents().get(0);
+			return Convert.obj2value(root, rt, vf, ts, refBase);
+		} catch (IOException e) {
+			throw RuntimeExceptionFactory.io(vf.string("could not load model at " + refBase), null, null);
+		}
+	}
+
 	
 	public void save(IValue reifiedType, INode model, ISourceLocation uri, ISourceLocation pkgUri) {
 		TypeStore ts = new TypeStore(); // start afresh
