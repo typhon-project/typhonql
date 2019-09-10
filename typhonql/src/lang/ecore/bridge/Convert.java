@@ -1,7 +1,10 @@
 package lang.ecore.bridge;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,6 +67,29 @@ public class Convert {
 		Resource res = rs.getResource(bla, true);
 		URIResolverRegistry reg = URIResolverRegistry.getInstance();
 		res.load(reg.getInputStream(uri), Collections.emptyMap());
+		return res;
+	}
+	
+	public static Resource loadResource(ISourceLocation uri, IString inputString, EPackage ecorePackage) throws IOException {
+		//EPackage.Registry.INSTANCE.put(TyphonmlPackage.eNS_URI, TyphonmlPackage.eINSTANCE);
+		
+		System.out.println("refBase: " +uri);
+		System.out.println("input: " +inputString.length());
+		System.out.println("ecorePkg: " +ecorePackage);
+		/*if (ctx != null) {
+			ctx.getStdOut().println("refBase: " +uri);
+			ctx.getStdOut().println("input: " +inputString);
+			ctx.getStdOut().println("ecorePkg: " +ecorePackage);
+			
+			
+		}*/
+		ResourceSet rs = new ResourceSetImpl();
+		java.net.URI x = uri.getURI();
+		URI bla = URI.createURI(normalizeURI(x.toString()));
+		Resource res = rs.createResource(bla);
+		//res.getContents().add(ecorePackage);
+		InputStream inputStream = new ByteArrayInputStream(inputString.getValue().getBytes(StandardCharsets.UTF_8));
+		res.load(inputStream, Collections.emptyMap());
 		return res;
 	}
 	
