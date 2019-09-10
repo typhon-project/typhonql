@@ -8,23 +8,46 @@ import lang::typhonql::TDBC;
 import lang::typhonql::WorkingSet;
 import lang::typhonql::Run;
 
-import lang::ecore::IO;
-
 import util::IDE;
 import util::Prompt;
 import util::ValueUI;
 import ParseTree;
 import IO;
+import String;
 
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java Model bootTyphonQL(type[Model] model, loc pathToTML);
 
+@javaClass{nl.cwi.swat.typhonql.TyphonQL}
+java str readHttpLocation(loc pathToResource);
+
 
 private str TYPHONQL = "TyphonQL";
 
+Schema getSchema(start[Script] s) {
+	lo = toLocation("<s.top.model>");
+	println(lo);
+	//try{
+		if (lo.scheme == "http") {
+			str modelStr = readHttpLocation(lo);
+			Schema sch = loadTyphonMLSchema(lo, modelStr);
+			return sch;
+		}
+		else {
+			loc modelLoc = |project://typhonql/src/lang/typhonml/mydb4.xmi|;
+			Schema sch = loadSchema(modelLoc);
+			return sch;
+		}
+		
+	/*} catch value v:{
+		println(v);
+		return schema({}, {});
+	}*/
+}
+
 void setupIDE() {
-  Schema schema = schema({}, {}); // empty 
+  map[loc, Schema] schemas = (); // empty 
   
   registerLanguage(TYPHONQL, "tql", start[Script](str src, loc org) {
     return parse(#start[Script], src, org);
@@ -43,20 +66,21 @@ void setupIDE() {
   
   registerContributions(TYPHONQL, {
     builder(set[Message] (start[Script] s) {
-      loc modelLoc = |project://typhonql/<s.top.model>|;
-      try {
-        schema = loadSchema(modelLoc);
-      }
+      //try {
+      	println(s@\loc);
+        schemas += (s@\loc : getSchema(s));
+      /*}
       catch value v: {
         return {error("Error loading schema: <v>", s@\loc)};
-      }
+      }*/
       return {};
     }),
     outliner(scriptOutliner),
     popup(menu("TyphonQL", [
       action("Execute",  void (Tree tree, loc selection) {
         if (treeFound(Request req) := treeAt(#Request, selection, tree)) {
-          value result = run(req, schema);
+          sch = schemas[tree@\loc];
+          value result = run(req, sch);
           if (WorkingSet ws := result) {
             text(ws);
           }
@@ -66,15 +90,20 @@ void setupIDE() {
         }
       }),
       action("Dump schema",  void (Tree tree, loc selection) {
-        dumpSchema(schema);
+        sch = schemas[tree@\loc];
+        println(tree@\loc);
+        println("About to print schema");
+        dumpSchema(sch);
       }),
       action("Dump database",  void (Tree tree, loc selection) {
-        text(dumpDB(schema));
+      	sch = schemas[tree@\loc];
+        text(dumpDB(sch));
       }),
       action("Reset database...", void (Tree tree, loc selection) {
+      	sch = schemas[tree@\loc];
         str yes = prompt("Are you sure to reset the polystore? (type \'yes\' to confirm)");
         if (yes == "yes") {
-          runSchema(schema);
+          runSchema(sch);
         }
       })
       
