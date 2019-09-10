@@ -336,13 +336,27 @@ public class Convert {
 	 * Build ADT while visiting EObject content
 	 */
 	public static IValue obj2value(Object obj, Type type, IValueFactory vf, TypeStore ts, ISourceLocation src) {
-		if (obj instanceof EEnumLiteral) {
-			// TODO: enum support does not yet work for the other direction (rascal -> EMF)
-			EEnumLiteral enumLit = (EEnumLiteral)obj;
-			
-			Type t = ts.lookupAbstractDataType(((EEnum)enumLit.eContainer()).getName());
-			return vf.constructor(ts.lookupConstructor(t, enumLit.getName()).iterator().next());
+		if (obj instanceof EObject) {
+			System.out.println("Yes object");
 		}
+		
+		/*
+		 * Meta models don't contain enumliteral *values*, however, such values
+		 * in other models are still instanceof EEnumLiteral, hence, meta and object level
+		 * get confused when distinguishing enumliteral values from eObjects.
+		 * Conclusion: find another way to distinguish enumliteral values from eObjects
+		 * other than using instanceof EEnumLiteral.
+		 */
+		
+		
+//		if (obj instanceof EEnumLiteral) {
+//			// TODO: enum support does not yet work for the other direction (rascal -> EMF)
+//			EEnumLiteral enumLit = (EEnumLiteral)obj;
+//			System.out.println(((EObject)obj).eClass());
+//			
+//			Type t = ts.lookupAbstractDataType(((EEnum)enumLit.eContainer()).getName());
+//			return vf.constructor(ts.lookupConstructor(t, enumLit.getName()).iterator().next());
+//		}
 		
 		if (obj instanceof EObject) {
 			EObject eObj = (EObject) obj;
@@ -510,7 +524,14 @@ public class Convert {
 		if (ref.isMany()) {
 			return makeMultiValued((List<Object>)refValue, vf, x -> makePrimitive(x, fieldType, vf));
 		}
-		if (refValue != null && (refValue.getClass().isEnum() || refValue instanceof EEnumLiteral)) {
+
+		if (refValue != null && refValue.getClass().isEnum()) {
+			EEnumLiteral enumLit = (EEnumLiteral)refValue;
+			Type t = ts.lookupAbstractDataType(((EEnum)enumLit.eContainer()).getName());
+			return vf.constructor(ts.lookupConstructor(t, enumLit.getName()).iterator().next());
+		}
+
+		if (refValue != null) {
 			return obj2value(refValue, fieldType, vf, ts, null);
 		}
 		return makePrimitive(refValue, fieldType, vf);
