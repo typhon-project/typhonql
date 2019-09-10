@@ -4,10 +4,11 @@ of TyphonML.
 }
 module lang::typhonml::Util
 
-
+import ParseTree;
 import lang::typhonml::TyphonML;
 import lang::ecore::Refs;
 import lang::ecore::IO;
+import lang::typhonml::TyphonIO;
 import IO;
 import Set;
 import List;
@@ -63,6 +64,9 @@ str card2str(\one()) = "";
 
 Schema loadSchema(loc l) = model2schema(m)
   when Model m := load(#Model, l);
+  
+Schema loadTyphonMLSchema(loc l, str s) = model2schema(m)
+  when Model m := loadTyphon(#Model, s, l);
 
 Schema myDbSchema() {
   Schema s = loadSchema(|project://typhonql/src/lang/typhonml/mydb4.xmi|);
