@@ -216,6 +216,10 @@ str default4sym(adt("Id", list[Symbol] ps))
 
 str default4sym(adt("Maybe", list[Symbol] ps)) 
   = "nothing()";
+  
+// TODO check if this default is fine
+str default4sym(adt("NlpTaskType", list[Symbol] ps)) 
+  = "TextClassification()";  
 
 default str default4sym(adt(str x, list[Symbol] ps)) { throw "No default for ADT <x> we don\'t know"; }
 
