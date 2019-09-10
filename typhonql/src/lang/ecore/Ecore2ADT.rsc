@@ -221,7 +221,10 @@ str default4sym(adt("Maybe", list[Symbol] ps))
 str default4sym(adt("NlpTaskType", list[Symbol] ps)) 
   = "TextClassification()";  
 
-default str default4sym(adt(str x, list[Symbol] ps)) { throw "No default for ADT <x> we don\'t know"; }
+default str default4sym(adt(str x, list[Symbol] ps)) { 
+  return "\"FIX_MANUALLY\"";
+  //throw "No default for ADT <x> we don\'t know"; 
+}
 
 
 str fieldName(str x) = "\\<uncapitalize(x)>";
