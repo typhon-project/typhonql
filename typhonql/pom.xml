@@ -28,15 +28,19 @@
         <dependency>
             <groupId>engineering.swat.typhon</groupId>
             <artifactId>bundle-typhoneql-dependencies</artifactId>
-            <version>0.2.0</version>
+            <version>0.6.0</version>
         </dependency>
 	   <!-- WARNING! maven dependencies need to be added to the bundler, and any change needs an update of the bundler version (and a local mvn install) -->
 
         <!--  dependencies below are only to help eclipse, you need to keep them synced with the bundler -->
-
 		<dependency>
 			<groupId>org.mongodb</groupId>
 			<artifactId>mongodb-driver-sync</artifactId>
+			<version>3.11.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongodb-driver</artifactId>
 			<version>3.11.0</version>
 		</dependency>
 		<dependency>
@@ -54,7 +58,29 @@
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.17</version>
         </dependency>
+        <dependency>
+    		<groupId>org.apache.httpcomponents</groupId>
+    		<artifactId>httpclient</artifactId>
+    		<version>4.5.9</version>
+		</dependency>
+		<dependency>
+    		<groupId>org.apache.httpcomponents</groupId>
+    		<artifactId>httpcore</artifactId>
+    		<version>4.4.12</version>
+		</dependency>
+		
+		<!-- This is needed only to make Java functions callable from IDE in Rascal code -->
+		<dependency>
+    		<groupId>commons-codec</groupId>
+    		<artifactId>commons-codec</artifactId>
+    		<version>1.11</version>
+		</dependency>
+		
+		<dependency>
+   			<groupId>commons-logging</groupId>
+    		<artifactId>commons-logging</artifactId>
+    		<version>1.2</version>
+		</dependency>
+		
 	</dependencies>
-
-
 </project>
