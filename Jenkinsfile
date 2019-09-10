@@ -4,7 +4,7 @@ node {
     }
 
     stage('Build bundle') {
-        sh 'cd typhonql-bundle && mvn clean install'
+        sh 'cd typhonql-bundler && mvn clean install'
     }
 
     stage('Build typhonql') {
