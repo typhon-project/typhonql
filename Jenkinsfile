@@ -8,6 +8,6 @@ node {
     }
 
     stage('Build typhonql') {
-        sh 'cd typhon && mvn clean package'
+        sh 'cd .. && mvn clean package'
     }
 }
