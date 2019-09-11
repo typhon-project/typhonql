@@ -552,9 +552,14 @@ public class Convert {
 		}
 
 		if (refValue != null && refValue.getClass().isEnum()) {
-			EEnumLiteral enumLit = (EEnumLiteral)refValue;
-			Type t = ts.lookupAbstractDataType(((EEnum)enumLit.eContainer()).getName());
-			return vf.constructor(ts.lookupConstructor(t, enumLit.getName()).iterator().next());
+			if (refValue instanceof EEnumLiteral) {
+				EEnumLiteral enumLit = (EEnumLiteral)refValue;
+				if (enumLit.eContainer() instanceof EEnum) {
+					Type t = ts.lookupAbstractDataType(((EEnum)enumLit.eContainer()).getName());
+					return vf.constructor(ts.lookupConstructor(t, enumLit.getName()).iterator().next());
+				}
+
+			}
 		}
 
 		if (refValue != null) {
