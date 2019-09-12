@@ -551,15 +551,10 @@ public class Convert {
 			return makeMultiValued((List<Object>)refValue, vf, x -> makePrimitive(x, fieldType, vf));
 		}
 
-		if (refValue != null && refValue.getClass().isEnum()) {
-			if (refValue instanceof EEnumLiteral) {
-				EEnumLiteral enumLit = (EEnumLiteral)refValue;
-				if (enumLit.eContainer() instanceof EEnum) {
-					Type t = ts.lookupAbstractDataType(((EEnum)enumLit.eContainer()).getName());
-					return vf.constructor(ts.lookupConstructor(t, enumLit.getName()).iterator().next());
-				}
-
-			}
+		if (refValue != null && ref.getEType() instanceof EEnum) {
+			EEnumLiteral enumLit = (EEnumLiteral)refValue;
+			Type t = ts.lookupAbstractDataType(((EEnum)enumLit.eContainer()).getName());
+			return vf.constructor(ts.lookupConstructor(t, enumLit.getName()).iterator().next());
 		}
 
 		if (refValue != null) {
