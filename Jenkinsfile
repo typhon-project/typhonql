@@ -1,7 +1,7 @@
 node {
 	properties([
         parameters(
-            [string(defaultValue: '/var/site/nemo2', name: 'UPDATE_SITE_PATH')]
+            [string(defaultValue: '/var/site/typhon-ql', name: 'UPDATE_SITE_PATH')]
         )
     ])  
 
