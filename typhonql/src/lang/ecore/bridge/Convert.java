@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.emf.common.util.BasicEList;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.common.util.Enumerator;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
@@ -552,9 +553,10 @@ public class Convert {
 		}
 
 		if (refValue != null && ref.getEType() instanceof EEnum) {
-			EEnumLiteral enumLit = (EEnumLiteral)refValue;
-			Type t = ts.lookupAbstractDataType(((EEnum)enumLit.eContainer()).getName());
-			return vf.constructor(ts.lookupConstructor(t, enumLit.getName()).iterator().next());
+			//EEnumLiteral enumLit = (EEnumLiteral)refValue;
+			Enumerator enumr = (Enumerator)refValue;
+			Type t = ts.lookupAbstractDataType(enumr.getClass().getSimpleName());
+			return vf.constructor(ts.lookupConstructor(t, enumr.getLiteral()).iterator().next());
 		}
 
 		if (refValue != null) {
