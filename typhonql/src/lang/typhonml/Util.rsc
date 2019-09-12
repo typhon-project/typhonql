@@ -101,7 +101,7 @@ Schema model2schema(Model m)
 
 Attrs model2attrs(Model m) {
   Attrs result = {};
-  for (DataType(Entity(str from, list[Attribute] attrs, _)) <- m.dataTypes) {
+  for (DataType(Entity(str from, list[Attribute] attrs, _, _)) <- m.dataTypes) {
     for (Attribute a <- attrs) {
       DataType dt = lookup(m, #DataType, a.\type);
       assert DataType(PrimitiveDataType(_)) := dt : "Only built-in primitives allowed for attributes (for now).";
@@ -120,7 +120,8 @@ will ease querying later down the line.
 }
 Rels model2rels(Model m) {
   Rels result = {};
-  for (DataType(Entity(str from, _, list[Relation] rels)) <- m.dataTypes) {
+  // todo: freetextAttributes
+  for (DataType(Entity(str from, _, _, list[Relation] rels)) <- m.dataTypes) {
     for (r:Relation(str fromRole, Cardinality fromCard) <- rels) {
       Entity target = lookup(m, #Entity, r.\type);
       str to = target.name;
