@@ -5,17 +5,56 @@
       version="0.1.0.qualifier">
 
    <description url="http://www.example.com/description">
-       Typhon QL
+      Typhon QL
    </description>
 
    <copyright>
-       ?
+      ?
    </copyright>
 
-   <plugin id="impulse" version="0.0.0" download-size="0" install-size="0" unpack="false"/>
 
-   <plugin id="rascal_eclipse" version="0.0.0" download-size="0" install-size="0" unpack="false"/>
+<!--
+   <includes
+         id="TyphondlFeature"
+         version="0.0.0"
+         search-location="both"/>
 
-   <plugin id="typhonql" version="0.0.0" download-size="0" install-size="0" unpack="false"/>
+   <includes
+         id="TyphonmlFeature"
+         version="0.0.0"
+         search-location="both"/>
+         -->
 
+   <includes
+         id="rascal-feature"
+         version="0.0.0"
+         search-location="both"/>
+
+   <plugin
+         id="engineering.swat.typhon.bundle-typhoneql-dependencies"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="typhonql"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <!--
+
+		<plugin id="it.univaq.disim.typhon.acceleo" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+		<plugin id="it.univaq.disim.typhonml" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+		<plugin id="it.univaq.disim.typhonml.design" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+		<plugin id="it.univaq.disim.typhonml.edit" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+		<plugin id="it.univaq.disim.typhonml.editor" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+		<plugin id="it.univaq.disim.typhonml.evaluator" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+		<plugin id="it.univaq.disim.typhonml.ui" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+		<plugin id="it.univaq.disim.typhonml.xtext" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+		<plugin id="it.univaq.disim.typhonml.xtext.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+		<plugin id="it.univaq.disim.typhonml.xtext.ui" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   -->
 </feature>
