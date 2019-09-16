@@ -11,4 +11,9 @@ public class MongoDB implements DBMS {
 	public String getConnectionString(String host, int port, String dbName, String user, String password) {
 		return "mongodb://" + user + ":" + password + "@" + host + ":" + port;
 	}
+
+	@Override
+	public void initializeDriver() {
+		
+	}
 }

@@ -70,6 +70,7 @@ public class Connections {
 	private void addRelationalConnection(String host, int port, String dbName,
 			String dbms, String user, String password) {
 		DBMS ms = DBType.relationaldb.getDBMS(dbms);
+		ms.initializeDriver();
 		String connString = ms.getConnectionString(host, port, dbName, user, password);
 		Connection connection = null;
 		try {
