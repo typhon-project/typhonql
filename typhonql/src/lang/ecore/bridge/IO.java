@@ -113,7 +113,6 @@ public class IO {
 	
 	public IValue load(IValue reifiedType, IString input, ISourceLocation refBase, EPackage ecorePackage, IEvaluatorContext ctx) {
 		TypeStore ts = new TypeStore(); // start afresh
-		ctx.getStdOut().println("rt:" + reifiedType);
 		Type rt = tr.valueToType((IConstructor) reifiedType, ts);
 		Convert.declareRefType(ts);
 		Convert.declareMaybeType(ts);
