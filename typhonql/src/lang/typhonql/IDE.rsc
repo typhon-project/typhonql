@@ -61,13 +61,24 @@ TyphonQLManifest readTyphonConfig(loc file) {
    return mf;
 }
 
-loc buildPolystoreUri(TyphonQLManifest typhonConf) 
-	= |http://<typhonConf.PolystoreHost>:<typhonConf.PolystorePort>|;
+loc buildPolystoreUri(loc projectLoc) {
+	TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
+	return |http://<typhonConf.PolystoreHost>:<typhonConf.PolystorePort>|;
+}
 
-Schema getSchema(loc polystoreUri, str user, str password) {
-	str modelStr = readHttpModel(polystoreUri, user, password);
-	Schema sch = loadTyphonMLSchema(polystoreUri, modelStr);
-	return sch;
+Schema checkSchema(Schema sch, loc projectLoc) {
+	if (schema({}, {}) := sch) {
+		loc polystoreUri = buildPolystoreUri(projectLoc);
+		TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
+		str user = typhonConf.PolystoreUser;
+		str password = typhonConf.PolystorePassword;
+		str modelStr = readHttpModel(polystoreUri, user, password);
+		Schema newSch = loadTyphonMLSchema(polystoreUri, modelStr);
+		bootConnections(polystoreUri, user, password);
+		return newSch;
+	}
+	else
+		return sch;
 	/*
 		}
 		else {
@@ -105,10 +116,9 @@ void setupIDE() {
     builder(set[Message] (start[Script] s) {
       //try {
       	//Model m = bootTyphonQL(#Model, |tmp:///|);
-      	TyphonQLManifest typhonConf = readTyphonConfig(s@\loc);
-      	loc polystoreUri = buildPolystoreUri(typhonConf);
-      	bootConnections(polystoreUri, typhonConf.PolystoreUser, typhonConf.PolystorePassword);
-        sch = getSchema(polystoreUri, typhonConf.PolystoreUser, typhonConf.PolystorePassword);
+      	//loc polystoreUri = buildPolystoreUri(tree@\loc);
+      	//bootConnections(polystoreUri, typhonConf.PolystoreUser, typhonConf.PolystorePassword);
+        //sch = getSchema(polystoreUri, typhonConf.PolystoreUser, typhonConf.PolystorePassword);
       /*}
       catch value v: {
         return {error("Error loading schema: <v>", s@\loc)};
@@ -119,9 +129,10 @@ void setupIDE() {
     popup(menu("TyphonQL", [
       action("Execute",  void (Tree tree, loc selection) {
         if (treeFound(Request req) := treeAt(#Request, selection, tree)) {
-          TyphonQLManifest typhonConf = readTyphonConfig(tree@\loc);
-      	  loc polystoreUri = buildPolystoreUri(typhonConf);
-          value result = run(req, "<polystoreUri>", sch);
+          sch = checkSchema(sch, tree@\loc);
+      	  loc polystoreUri = buildPolystoreUri(tree@\loc);
+      	  
+          value result = run(req, polystoreUri.uri, sch);
           if (WorkingSet ws := result) {
             text(ws);
           }
@@ -130,25 +141,26 @@ void setupIDE() {
           }
         }
       }),
+      action("Reload schema from polystore",  void (Tree tree, loc selection) {
+        sch = schema({}, {});
+        sch = checkSchema(sch, tree@\loc);  
+      }),
       action("Dump schema",  void (Tree tree, loc selection) {
-        println(tree@\loc);
-        println("About to print schema");
-        TyphonQLManifest typhonConf = readTyphonConfig(tree@\loc);
-      	loc polystoreUri = buildPolystoreUri(typhonConf);
-        dumpSchema(sch, typhonConf.PolystoreUser, typhonConf.PolystorePassword);
+      	sch = checkSchema(sch, tree@\loc);
+        dumpSchema(sch);
+        text(sch);
       }),
       action("Dump database",  void (Tree tree, loc selection) {
-      	TyphonQLManifest typhonConf = readTyphonConfig(tree@\loc);
-      	loc polystoreUri = buildPolystoreUri(typhonConf);
-      	sch = schemas[polystoreUri];
-      	text(dumpDB("<polystoreUri>", sch));
+      	sch = checkSchema(sch, tree@\loc);
+      	loc polystoreUri = buildPolystoreUri(tree@\loc);
+      	text(dumpDB(polystoreUri.uri, sch));
       }),
       action("Reset database...", void (Tree tree, loc selection) {
       	str yes = prompt("Are you sure to reset the polystore? (type \'yes\' to confirm)");
         if (yes == "yes") {
-          TyphonQLManifest typhonConf = readTyphonConfig(tree@\loc);
-          loc polystoreUri = buildPolystoreUri(typhonConf);
-          runSchema("<polystoreUri>", sch);
+          sch = checkSchema(sch, tree@\loc);
+          loc polystoreUri = buildPolystoreUri(tree@\loc);
+          runSchema(polystoreUri.uri, sch);
         }
       })
       
