@@ -74,9 +74,6 @@ public class Convert {
 	public static Resource loadResource(ISourceLocation uri, IString inputString, EPackage ecorePackage) throws IOException {
 		//EPackage.Registry.INSTANCE.put(TyphonmlPackage.eNS_URI, TyphonmlPackage.eINSTANCE);
 		
-		System.out.println("refBase: " +uri);
-		System.out.println("input: " +inputString.length());
-		System.out.println("ecorePkg: " +ecorePackage);
 		/*if (ctx != null) {
 			ctx.getStdOut().println("refBase: " +uri);
 			ctx.getStdOut().println("input: " +inputString);
@@ -363,9 +360,9 @@ public class Convert {
 	 * Build ADT while visiting EObject content
 	 */
 	public static IValue obj2value(Object obj, Type type, IValueFactory vf, TypeStore ts, ISourceLocation src) {
-		if (obj instanceof EObject) {
+		/* if (obj instanceof EObject) {
 			System.out.println("Yes object");
-		}
+		}*/
 		
 		/*
 		 * Meta models don't contain enumliteral *values*, however, such values
