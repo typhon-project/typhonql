@@ -195,24 +195,3 @@ node scriptOutliner(start[Script] script) {
     
 }
 
-void test1() {
-	str cmd = "insert Order {totalAmount: 32, products: [Product { name: \"TV\" } ]}";
-	bootConnections(|http://localhost:8080|, "pablo", "antonio");
-	Schema sch = getSchema(|http://localhost:8080|, "pablo", "antonio");
-	run(cmd, "http://localhost:8080", sch);
-}
-
-void test2() {
-	str cmd = "from Order o select o";
-	bootConnections(|http://localhost:8080|, "pablo", "antonio");
-	Schema sch = getSchema(|http://localhost:8080|, "pablo", "antonio");
-	r = run(cmd, "http://localhost:8080", sch);
-	println(r);
-}
-
-
-
-void resetDatabase() {
-	Schema sch = getSchema(|http://localhost:8080|, "pablo", "antonio");
-	runSchema("http://localhost:8080", sch);
-}
