@@ -2,16 +2,24 @@ package nl.cwi.swat.typhonql;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -69,20 +77,21 @@ public class TyphonQL {
 		}
 	}
 	
-	public void bootConnections(ISourceLocation path) {
+	public void bootConnections(ISourceLocation path, IString user, IString password) {
 		// TODO eliminate this code as soon as we have extended REST API
 		Map<String, DBType> dbTypes = new HashMap<>();
 		dbTypes.put("MongoDb", DBType.documentdb);
 		dbTypes.put("MariaDB", DBType.relationaldb);
 		// end todo
-		
-		String json = readHttp(path);
+		URI uri = buildUri(path.getURI(), "/api/databases");
+		String json = readHttp(uri, user.getValue(), password.getValue());
 		BsonArray array = BsonArray.parse(json);
 		List<ConnectionInfo> infos = new ArrayList<ConnectionInfo>();
 		for (BsonValue v : array.getValues()) {
 			BsonDocument d = v.asDocument();
 			try {
 				ConnectionInfo info = new ConnectionInfo(
+					path.getURI().toString(),
 					d.getString("host").getValue(), 
 					d.getNumber("port").intValue(), 
 					d.getString("name").getValue(), 
@@ -97,21 +106,35 @@ public class TyphonQL {
 		}
 		// TODO remove this workaround because the MariaDB info in the endpoint is incorrect
 		// and let Rascal code parse the json
-		infos.add(new ConnectionInfo("localhost", 3306, "RelationalDatabase", DBType.relationaldb, 
+		infos.add(new ConnectionInfo(path.getURI().toString(), "localhost", 3306, "RelationalDatabase", DBType.relationaldb, 
 				"MariaDB", "root", "example"));
 		Connections.boot(infos.toArray(new ConnectionInfo[0]));
 	}
-
-	public IString readHttpModel(ISourceLocation path) {
-		String json = readHttp(path);
+	
+	public IString readHttpModel(ISourceLocation path, IString user, IString password) {
+		URI uri = buildUri(path.getURI(), "/api/models/ml");
+		String json = readHttp(uri, user.getValue(), password.getValue());
 		BsonArray array = BsonArray.parse(json);
 		String contents = array.get(0).asDocument().getString("contents").getValue();
 		return vf.string(contents);
 	}
+	
+	private URI buildUri(URI base, String path) {
+		URIBuilder builder = new URIBuilder(base);
+		builder.setPath(path);
+		try {
+			return builder.build();
+		} catch (URISyntaxException e1) {
+			throw new RuntimeException(e1);
+		}
+	}
 
-	private String readHttp(ISourceLocation path) {
-		CloseableHttpClient httpclient = HttpClients.createDefault();
-		HttpGet httpGet = new HttpGet(path.getURI());
+	private String readHttp(URI path, String user, String password) {
+		CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+		credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(user, password));
+		CloseableHttpClient httpclient = HttpClientBuilder.create().setDefaultCredentialsProvider(credentialsProvider).build();
+		HttpGet httpGet = new HttpGet(path);
+		
 		CloseableHttpResponse response1;
 		try {
 			response1 = httpclient.execute(httpGet);
