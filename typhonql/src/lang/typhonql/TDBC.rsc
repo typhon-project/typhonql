@@ -4,12 +4,7 @@ extend lang::typhonql::Query;
 extend lang::typhonql::DML;
 
 start syntax Script
-  = "#" ProjectLoc model Scratch scratch;
-
-
-lexical ProjectLoc
-  = @category="Constant" [a-zA-Z_\-.0-9/:@]+ !>> [a-zA-Z_\-.0-9/:@];
-   
+  = Scratch scratch;
 
 start syntax Scratch
   = Request* requests
