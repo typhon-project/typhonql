@@ -45,20 +45,20 @@ For every back-end we should have the following functions:
  */
  
 
-void runSchema(p:<sql(), str db>, Schema s, Log log = noLog) {
+void runSchema(p:<sql(), str db>, str polystoreId, Schema s, Log log = noLog) {
   list[SQLStat] stats = schema2sql(s, p, s.placement[p], doForeignKeys = false);
   for (SQLStat stat <- stats) {
     log("[RUN-schema/sql/<db>] executing <pp(stat)>");
-    executeUpdate(db, pp(stat));     
+    executeUpdate(polystoreId, db, pp(stat));     
   }
 }
 
 
-void runSchema(p:<mongodb(), str db>, Schema s, Log log = noLog) {
+void runSchema(p:<mongodb(), str db>, str polystoreId, Schema s, Log log = noLog) {
   for (str entity <- s.placement[p]) {
     log("[RUN-schema/mongodb/<db>] creating collection <entity>");
-    drop(db, entity);
-    createCollection(db, entity);
+    drop(polystoreId, db, entity);
+    createCollection(polystoreId, db, entity);
   }
 }
 
@@ -67,14 +67,14 @@ void runSchema(p:<mongodb(), str db>, Schema s, Log log = noLog) {
  * Selection
  */
  
-WorkingSet runGetEntities(<sql(), str db>, str entity, Schema s) {
+WorkingSet runGetEntities(<sql(), str db>, str entity, str polystoreId, Schema s) {
   str tbl = tableName(entity);
   
   SQLStat q = select( [ column("x", typhonId(entity)) ] 
      + [ column("x", columnName(fld, entity)) | <entity, str fld, _> <- s.attrs ]
     , [as(tbl, "x")], []);
     
-  ResultSet rs = executeQuery(db, pp(q));
+  ResultSet rs = executeQuery(polystoreId, db, pp(q));
   
   map[str, str] col2fld = 
     ( columnName(fld, entity): fld | <entity, str fld, _> <- s.attrs );
@@ -100,7 +100,7 @@ WorkingSet runGetEntities(<sql(), str db>, str entity, Schema s) {
             SQLStat q = select([ column("x", typhonId(to)) ] 
      						   , [as(tableName(to), "x")]
      						   , [where([equ(column("x", fkCol), lit(text(id)))])]);
-     		ResultSet kids = executeQuery(db, pp(q));				
+     		ResultSet kids = executeQuery(polystoreId, db, pp(q));				
             
             if (card != \one()) { // many-valued
               e.fields[role] = [ uuid(kidId) | Record kid <- kids, str kidId := kid[typhonId(to)] ];
@@ -113,7 +113,7 @@ WorkingSet runGetEntities(<sql(), str db>, str entity, Schema s) {
             SQLStat q = select([ column("x", junctionFkName(to, toRole))]
                                 , [as(junctionTableName(entity, role, to, toRole), "x")]
                                 , [where([equ(column("x", junctionFkName(entity, role)), lit(text(id)))])]);
-            ResultSet kids = executeQuery(db, pp(q));  
+            ResultSet kids = executeQuery(polystoreId, db, pp(q));  
             if (card != \one()) {
               e.fields[role] = [ uuid(kidId) | Record kid <- kids, str kidId := kid[junctionFkName(to, toRole)] ];
             }
@@ -129,7 +129,7 @@ WorkingSet runGetEntities(<sql(), str db>, str entity, Schema s) {
           SQLStat q = select([ column("x", junctionFkName(to, toRole)) ]
                               , [as(junctionTableName(entity, role, to, toRole), "x")]
                               , [where([equ(column("x", junctionFkName(entity, role)), lit(text(id)))])]);
-          ResultSet kids = executeQuery(db, pp(q));          
+          ResultSet kids = executeQuery(polystoreId, db, pp(q));          
           if (card != \one()) {
             e.fields[role] = [ uuid(kidId) | Record kid <- kids, str kidId := kid[junctionFkName(to, toRole)] ];
           }
@@ -158,8 +158,8 @@ WorkingSet runGetEntities(<sql(), str db>, str entity, Schema s) {
   return ws;
 }
 
-WorkingSet runGetEntities(<mongodb(), str db>, str entity, Schema s) {  
-  list[Doc] docs = find(db, entity, ());
+WorkingSet runGetEntities(<mongodb(), str db>, str entity, str polystoreId, Schema s) {  
+  list[Doc] docs = find(polystoreId, db, entity, ());
   lrel[str, Doc] flattened = unnest(docs, entity, s);
 
   //println("flattened: <flattened>");
@@ -220,22 +220,22 @@ lrel[str, Doc] unnestRec(Doc doc, str entity, Schema s) {
  */
 
 
-int runInsert(p:<sql(), str db>, Request ins, Schema s, Log log = noLog) {
+int runInsert(p:<sql(), str db>, Request ins, str polystoreId, Schema s, Log log = noLog) {
   list[SQLStat] stats = insert2sql(ins, p, s);
   int affected = 0;
   for (SQLStat s <- stats) {
-    affected += executeUpdate(db, pp(s));
+    affected += executeUpdate(polystoreId, db, pp(s));
   }
   return affected;
 }
 
-int runInsert(<mongodb(), str db>, Request ins, Schema s, Log log = noLog) {
+int runInsert(<mongodb(), str db>, Request ins, str polystoreId, Schema s, Log log = noLog) {
   lrel[str, CollMethod] methods = compile2mongo(ins, s);
   for (<str entity, CollMethod method> <- methods) {
     //iprintln(method);
     assert method is \insert;
     for (DBObject obj <- method.documents) {
-      insertOne(db, entity, dbObject2doc(obj));
+      insertOne(polystoreId, db, entity, dbObject2doc(obj));
     } 
   }
   return -1;
@@ -245,17 +245,17 @@ int runInsert(<mongodb(), str db>, Request ins, Schema s, Log log = noLog) {
  * Update
  */
  
-int runUpdateById(<sql(), str db>, str entity, str uuid, {KeyVal ","}* kvs) {
+int runUpdateById(<sql(), str db>, str polystoreId, str entity, str uuid, {KeyVal ","}* kvs) {
   str tbl = tableName(entity);
   SQLStat upd = update(tbl,
       [ \set(columnName("<kv.feature>", entity), lit(evalExpr(kv.\value))) | KeyVal kv <- kvs ],
       [where([equ(column(tbl, typhonId(entity)), lit(text(uuid)))])]);
-  return executeUpdate(db, pp(upd)); 
+  return executeUpdate(polystoreId, db, pp(upd)); 
 }
 
-int runUpdateById(<mongodb(), str db>, str entity, str uuid, {KeyVal ","}* kvs) {
+int runUpdateById(<mongodb(), str db>, str polystoreId, str entity, str uuid, {KeyVal ","}* kvs) {
   Doc doc = keyvals2update(kvs);
-  UpdateResult result = updateOne(db, entity, ("_id": uuid), doc);
+  UpdateResult result = updateOne(polystoreId, db, entity, ("_id": uuid), doc);
   return result.modifiedCount;
 }
 
@@ -286,15 +286,15 @@ default value eval2value(Expr e) {
  */  
   
 
-int runDeleteById(<mongodb(), str db>, str entity, str uuid) {
-  deleteOne(db, entity, ("_id": uuid));
+int runDeleteById(<mongodb(), str db>, str polystoreId, str entity, str uuid) {
+  deleteOne(polystoreId, db, entity, ("_id": uuid));
   return -1;
 }
 
-int runDeleteById(<sql(), str db>, str entity, str uuid) {
+int runDeleteById(<sql(), str db>, str polystoreId, str entity, str uuid) {
   str tbl = tableName("<entity>");
   SQLStat stat = delete(tbl, [where([equ(column(tbl, typhonId(entity)), lit(text(uuid)))])]);
-  return executeUpdate(db, pp(stat));
+  return executeUpdate(polystoreId, db, pp(stat));
 }
 
 

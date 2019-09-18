@@ -18,37 +18,38 @@ import IO;
 import Set;
 import List;
 
-value run(str src, Schema s, Log log = noLog) {
+value run(str src, str polystoreId, Schema s, Log log = noLog) {
   Request req = [Request]src;
-  return run(req, s, log = log);
+  return run(req, polystoreId, s, log = log);
 }
 
 
 
-WorkingSet dumpDB(Schema s) {
+WorkingSet dumpDB(str polystoreId, Schema s) {
   //WorkingSet ws = ( e : [] | <_, str e> <- s.placement );
   
   WorkingSet ws = ();
   
   for (<Place p, str e> <- s.placement) {
-    ws += runGetEntities(p, e, s);
+  	println(p);
+    ws += runGetEntities(p, e, polystoreId, s);
   }
   
   return ws;
 }
 
-void runSchema(Schema s, Log log = noLog) {
+void runSchema(str polystoreId, Schema s, Log log = noLog) {
   for (Place p <- s.placement<0>) {
     log("[RUN-schema] executing schema for <p>");
-    runSchema(p, s, log = log);
+    runSchema(p, polystoreId, s, log = log);
   }
 }
 
-value run((Request)`delete <EId e> <VId x>`, Schema s, Log log = noLog) 
-  = run((Request)`delete <EId e> <VId x> where true`, s, log = log);
+value run((Request)`delete <EId e> <VId x>`, str polystoreId, Schema s, Log log = noLog) 
+  = run((Request)`delete <EId e> <VId x> where true`, polystoreId, s, log = log);
 
 
-value run((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`, Schema s, Log log = noLog) {
+value run((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`, str polystoreId, Schema s, Log log = noLog) {
   if (WorkingSet ws := run((Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ es>`, s, log = log)) {
     assert size(ws<0>) == 1: "multiple or zero entity types returned from select implied by delete: <ws>";
   
@@ -56,7 +57,7 @@ value run((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`, Schema s, Lo
       list[Entity] entities = ws[entity];
       for (<entity, str uuid, _> <- ws[entity]) {
         log("[RUN-delete] Deleting <entity> with id <uuid> from <p>");
-        runDeleteById(p, entity, uuid);
+        runDeleteById(polystoreId, p, entity, uuid);
       }
     }
   } 
@@ -70,22 +71,22 @@ value run((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`, Schema s, Lo
 
 }
 
-value run(r:(Request)`insert <{Obj ","}* objs>`, Schema s, Log log = noLog) {
+value run(r:(Request)`insert <{Obj ","}* objs>`, str polystoreId, Schema s, Log log = noLog) {
   // NB: partitioning flattens the object list; and back-ends assume this
   Partitioning part = partition(r, s);
   int affected = 0;
   for (<Place p, Request q> <- part) {
-    affected += runInsert(p, q, s);
+    affected += runInsert(p, q, polystoreId, s);
   }
   return affected;
 }
 
 
-value run((Request)`update <Binding b> set {<{KeyVal ","}* kvs>}`, Schema s, Log log = noLog) 
-  = run((Request)`update <Binding b> where true set {<{KeyVal ","}* kvs>}`, s, log = log);
+value run((Request)`update <Binding b> set {<{KeyVal ","}* kvs>}`, str polystoreId, Schema s, Log log = noLog) 
+  = run((Request)`update <Binding b> where true set {<{KeyVal ","}* kvs>}`, polystoreId, s, log = log);
 
 
-value run((Request)`update <EId eid> <VId vid> where <{Expr ","}+ es> set {<{KeyVal ","}* kvs>}`, Schema s, Log log = noLog) {
+value run((Request)`update <EId eid> <VId vid> where <{Expr ","}+ es> set {<{KeyVal ","}* kvs>}`, str polystoreId, Schema s, Log log = noLog) {
   // we're gonna reject nested objects and lists in updates for now, because we cannot partition in advance:
   // the required inserts would commit to uuids; the inserts however, needs to be done
   // *per* object that will be updated (the result from the select); this means the whole
@@ -105,7 +106,7 @@ value run((Request)`update <EId eid> <VId vid> where <{Expr ","}+ es> set {<{Key
       list[Entity] entities = ws[entity];
       for (<entity, str uuid, _> <- ws[entity]) {
         log("[RUN-update] Updating <entity> with id <uuid> from <p> with <kvs>");
-        affected += runUpdateById(p, entity, uuid, kvs);
+        affected += runUpdateById(polystoreId, p, entity, uuid, kvs);
       }
     } 
     return affected;
@@ -115,17 +116,17 @@ value run((Request)`update <EId eid> <VId vid> where <{Expr ","}+ es> set {<{Key
   }
 }
 
-value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s, Log log = noLog) 
-  = run((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, log = log);
+value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, str polystoreId, Schema s, Log log = noLog) 
+  = run((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, polystoreId, s, log = log);
   
 
-value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, Schema s, Log log = noLog) {
+value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, str polystoreId, Schema s, Log log = noLog) {
   rel[Place, str] cl = closure(q, s);
   
   WorkingSet ws = ( e : [] | <_, str e> <- cl );
   
   for (<Place p, str e> <- cl) {
-    ws[e] += runGetEntities(p, e, s)[e];
+    ws[e] += runGetEntities(p, e, polystoreId, s)[e];
   }
   
   lrel[str, str] lenv = [ <"<x>", "<e>">  | (Binding)`<EId e> <VId x>` <- bs ];
@@ -179,7 +180,7 @@ str navigateTo({Id "."}+ xs, str from, Schema s) {
 
 
 
-WorkingSet runPartitionedQueries(Partitioning part, Schema s, Log log = noLog) 
-  = ( () | it + runQuery(p, q, s, log = log) | <Place p, Request q> <- part );
+WorkingSet runPartitionedQueries(Partitioning part, str polystoreId, Schema s, Log log = noLog) 
+  = ( () | it + runQuery(p, q, polystoreId, s, log = log) | <Place p, Request q> <- part );
 
 

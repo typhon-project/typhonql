@@ -15,7 +15,7 @@ public class Connections {
 // singleton to provide connections to the Bridge
 // should be configured from the polystore API
 
-	private final Map<String, Object> connections;
+	private final Map<String, Map<String, Object>> connections;
 
 	private static Connections instance;
 
@@ -28,12 +28,16 @@ public class Connections {
 		return instance;
 	}
 
-	public Object getConnection(String dbName) {
-		return connections.get(dbName);
+	public Object getConnection(String polystoreId, String dbName) {
+		Map<String, Object> perPolystore = connections.get(polystoreId);
+		if (perPolystore != null)
+			return perPolystore.get(dbName);
+		else
+			return null;
 	}
 
 	private Connections() {
-		this.connections = new HashMap<String, Object>();
+		this.connections = new HashMap<>();
 	}
 	
 	public static void boot(ConnectionInfo[] infos) {
@@ -46,28 +50,39 @@ public class Connections {
 	private void addConnection(ConnectionInfo info) {
 		switch (info.getDbType()) {
 		case relationaldb: {
-			addRelationalConnection(info.getHost(), info.getPort(), info.getDbName(), 
+			addRelationalConnection(info.getPolystoreId(), info.getHost(), info.getPort(), info.getDbName(), 
 					info.getDbms(), info.getUser(), info.getPassword());
 			break;
 		}
 		case documentdb: {
-			addDocumentConnection(info.getHost(), info.getPort(), info.getDbName(),
+			addDocumentConnection(info.getPolystoreId(), info.getHost(), info.getPort(), info.getDbName(),
 					info.getDbms(), info.getUser(), info.getPassword());
 			break;
 		}
 		}
 	}
 
-	private void addDocumentConnection(String host, int port, String dbName,
+	private void addDocumentConnection(String polystoreId, String host, int port, String dbName,
 			String dbms, String user, String password) {
 		DBMS ms = DBType.documentdb.getDBMS(dbms);
 		String connString = ms.getConnectionString(host, port, dbName, user, password);
 		MongoClient mongoClient = MongoClients.create(connString);
 		MongoDatabase db = mongoClient.getDatabase(dbName);
-		connections.put(dbName, db);
+		put(polystoreId, dbName, db);
 	}
 
-	private void addRelationalConnection(String host, int port, String dbName,
+	private void put(String polystoreId, String dbName, Object db) {
+		Map<String, Object> perPolystore = null;
+		if (!connections.containsKey(polystoreId)) {
+			perPolystore = new HashMap<String, Object>();
+			connections.put(polystoreId, perPolystore);
+		}
+		else 
+			perPolystore = connections.get(polystoreId);
+		perPolystore.put(dbName, db);
+	}
+
+	private void addRelationalConnection(String polystoreId, String host, int port, String dbName,
 			String dbms, String user, String password) {
 		DBMS ms = DBType.relationaldb.getDBMS(dbms);
 		ms.initializeDriver();
@@ -75,13 +90,13 @@ public class Connections {
 		Connection connection = null;
 		try {
 			connection = DriverManager.getConnection(connString);
-			connections.put(dbName, connection);
+			put(polystoreId, dbName, connection);
 		} catch (SQLException e) {
 			try {
 				Connection conn = DriverManager.getConnection(ms.getConnectionString("localhost", 3306, "", "root", "example"));
 				Statement stmt = conn.createStatement();
 				int result = stmt.executeUpdate("CREATE DATABASE " + dbName);
-				addRelationalConnection(host, port, dbName, dbms, user, password);
+				addRelationalConnection(polystoreId, host, port, dbName, dbms, user, password);
 			} catch (SQLException e1) {
 				throw new RuntimeException(e1);
 			}

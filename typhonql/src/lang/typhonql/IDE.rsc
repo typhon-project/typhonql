@@ -25,10 +25,10 @@ alias ConnectionInfo = tuple[str dbType, str host, int port, str dbName, str use
 java Model bootTyphonQL(type[Model] model, loc pathToTML);
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
-java Model bootConnections(loc pathToMetaInfo);
+java Model bootConnections(loc polystoreUri, str user, str password);
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
-java str readHttpModel(loc pathToResource);
+java str readHttpModel(loc polystoreUri, str user, str password);
 
 
 private str TYPHONQL = "TyphonQL";
@@ -61,17 +61,12 @@ TyphonQLManifest readTyphonConfig(loc file) {
    return mf;
 }
 
-loc getPolystoreModelLocation(TyphonQLManifest typhonConf) 
-	= |http://<typhonConf.PolystoreUser>:<typhonConf.PolystorePassword>@<typhonConf.PolystoreHost>:<typhonConf.PolystorePort>/api/models/ml|;
+loc buildPolystoreUri(TyphonQLManifest typhonConf) 
+	= |http://<typhonConf.PolystoreHost>:<typhonConf.PolystorePort>|;
 
-loc getPolystoreMetaInformationLocation(TyphonQLManifest typhonConf)
-	= |http://<typhonConf.PolystoreUser>:<typhonConf.PolystorePassword>@<typhonConf.PolystoreHost>:<typhonConf.PolystorePort>/api/databases|;
-
-Schema initializeSchema(TyphonQLManifest typhonConf, start[Script] s) {
-	loc modelLoc = getPolystoreModelLocation(typhonConf);
-	str modelStr = readHttpModel(modelLoc);
-	loc modelUri = |http://<typhonConf.PolystoreHost>:<typhonConf.PolystorePort>/api/ml|;
-	Schema sch = loadTyphonMLSchema(modelUri, modelStr);
+Schema getSchema(loc polystoreUri, str user, str password) {
+	str modelStr = readHttpModel(polystoreUri, user, password);
+	Schema sch = loadTyphonMLSchema(polystoreUri, modelStr);
 	return sch;
 	/*
 		}
@@ -89,8 +84,8 @@ Schema initializeSchema(TyphonQLManifest typhonConf, start[Script] s) {
 }
 
 void setupIDE() {
-  Schema sch = schema({}, {}); // empty 
-  
+  Schema sch = schema({}, {});
+
   registerLanguage(TYPHONQL, "tql", start[Script](str src, loc org) {
     return parse(#start[Script], src, org);
   });
@@ -111,9 +106,9 @@ void setupIDE() {
       //try {
       	//Model m = bootTyphonQL(#Model, |tmp:///|);
       	TyphonQLManifest typhonConf = readTyphonConfig(s@\loc);
-      	loc dbMetaLoc = getPolystoreMetaInformationLocation(typhonConf);
-      	bootConnections(dbMetaLoc);
-        sch = initializeSchema(typhonConf, s);
+      	loc polystoreUri = buildPolystoreUri(typhonConf);
+      	bootConnections(polystoreUri, typhonConf.PolystoreUser, typhonConf.PolystorePassword);
+        sch = getSchema(polystoreUri, typhonConf.PolystoreUser, typhonConf.PolystorePassword);
       /*}
       catch value v: {
         return {error("Error loading schema: <v>", s@\loc)};
@@ -124,7 +119,9 @@ void setupIDE() {
     popup(menu("TyphonQL", [
       action("Execute",  void (Tree tree, loc selection) {
         if (treeFound(Request req) := treeAt(#Request, selection, tree)) {
-          value result = run(req, sch);
+          TyphonQLManifest typhonConf = readTyphonConfig(tree@\loc);
+      	  loc polystoreUri = buildPolystoreUri(typhonConf);
+          value result = run(req, "<polystoreUri>", sch);
           if (WorkingSet ws := result) {
             text(ws);
           }
@@ -136,15 +133,22 @@ void setupIDE() {
       action("Dump schema",  void (Tree tree, loc selection) {
         println(tree@\loc);
         println("About to print schema");
-        dumpSchema(sch);
+        TyphonQLManifest typhonConf = readTyphonConfig(tree@\loc);
+      	loc polystoreUri = buildPolystoreUri(typhonConf);
+        dumpSchema(sch, typhonConf.PolystoreUser, typhonConf.PolystorePassword);
       }),
       action("Dump database",  void (Tree tree, loc selection) {
-      	text(dumpDB(sch));
+      	TyphonQLManifest typhonConf = readTyphonConfig(tree@\loc);
+      	loc polystoreUri = buildPolystoreUri(typhonConf);
+      	sch = schemas[polystoreUri];
+      	text(dumpDB("<polystoreUri>", sch));
       }),
       action("Reset database...", void (Tree tree, loc selection) {
       	str yes = prompt("Are you sure to reset the polystore? (type \'yes\' to confirm)");
         if (yes == "yes") {
-          runSchema(sch);
+          TyphonQLManifest typhonConf = readTyphonConfig(tree@\loc);
+          loc polystoreUri = buildPolystoreUri(typhonConf);
+          runSchema("<polystoreUri>", sch);
         }
       })
       
@@ -191,3 +195,24 @@ node scriptOutliner(start[Script] script) {
     
 }
 
+void test1() {
+	str cmd = "insert Order {totalAmount: 32, products: [Product { name: \"TV\" } ]}";
+	bootConnections(|http://localhost:8080|, "pablo", "antonio");
+	Schema sch = getSchema(|http://localhost:8080|, "pablo", "antonio");
+	run(cmd, "http://localhost:8080", sch);
+}
+
+void test2() {
+	str cmd = "from Order o select o";
+	bootConnections(|http://localhost:8080|, "pablo", "antonio");
+	Schema sch = getSchema(|http://localhost:8080|, "pablo", "antonio");
+	r = run(cmd, "http://localhost:8080", sch);
+	println(r);
+}
+
+
+
+void resetDatabase() {
+	Schema sch = getSchema(|http://localhost:8080|, "pablo", "antonio");
+	runSchema("http://localhost:8080", sch);
+}

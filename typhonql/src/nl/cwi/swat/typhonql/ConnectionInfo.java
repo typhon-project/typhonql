@@ -1,6 +1,7 @@
 package nl.cwi.swat.typhonql;
 
 public class ConnectionInfo {
+	private String polystoreId;
 	private String host; 
 	private int port; 
 	private String dbName; 
@@ -9,9 +10,10 @@ public class ConnectionInfo {
 	private String user; 
 	private String password;
 	
-	public ConnectionInfo(String host, int port, String dbName, DBType dbType, String dbms, String user,
+	public ConnectionInfo(String polystoreId, String host, int port, String dbName, DBType dbType, String dbms, String user,
 			String password) {
 		super();
+		this.polystoreId = polystoreId;
 		this.host = host;
 		this.port = port;
 		this.dbName = dbName;
@@ -19,6 +21,10 @@ public class ConnectionInfo {
 		this.dbms = dbms;
 		this.user = user;
 		this.password = password;
+	}
+	
+	public String getPolystoreId() {
+		return polystoreId;
 	}
 	
 	public String getHost() {

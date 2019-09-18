@@ -6,7 +6,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -20,11 +19,11 @@ import com.mongodb.client.result.UpdateResult;
 
 import io.usethesource.vallang.IBool;
 import io.usethesource.vallang.IInteger;
-import io.usethesource.vallang.IReal;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IMapWriter;
+import io.usethesource.vallang.IReal;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
@@ -40,16 +39,16 @@ public class Bridge {
 	}
 	
 	
-	private static Connection getJDBCConnection(IString dbName) {
-		Connection con = (Connection) Connections.getInstance().getConnection(dbName.getValue());
+	private static Connection getJDBCConnection(IString polystoreId, IString dbName) {
+		Connection con = (Connection) Connections.getInstance().getConnection(polystoreId.getValue(), dbName.getValue());
 		if (con == null) {
 			throw RuntimeExceptionFactory.illegalArgument(dbName, null, null, "No SQL connection for database");
 		}
 		return con;
 	}
 	
-	private static MongoDatabase getMongoDB(IString dbName) {
-		MongoDatabase db = (MongoDatabase) Connections.getInstance().getConnection(dbName.getValue());
+	private static MongoDatabase getMongoDB(IString polystoreId, IString dbName) {
+		MongoDatabase db = (MongoDatabase) Connections.getInstance().getConnection(polystoreId.getValue(), dbName.getValue());
 		if (db == null) {
 			throw RuntimeExceptionFactory.illegalArgument(dbName, null, null, "No MongoDB for database");
 		}
@@ -57,8 +56,8 @@ public class Bridge {
 	}
 	
 	
-	public IList executeQuery(IString dbName, IString sql) {
-		Connection con = getJDBCConnection(dbName);
+	public IList executeQuery(IString polystoreId, IString dbName, IString sql) {
+		Connection con = getJDBCConnection(polystoreId, dbName);
 		try {
 			Statement stat = con.createStatement();
 			ResultSet rs = stat.executeQuery(sql.getValue());
@@ -82,8 +81,8 @@ public class Bridge {
 	}
 	
 
-	public IInteger executeUpdate(IString dbName, IString sql) {
-		Connection con = getJDBCConnection(dbName);
+	public IInteger executeUpdate(IString polystoreId, IString dbName, IString sql) {
+		Connection con = getJDBCConnection(polystoreId, dbName);
 		try {
 			Statement stat = con.createStatement();
 			int result = stat.executeUpdate(sql.getValue());
@@ -93,19 +92,19 @@ public class Bridge {
 		}
 	}
 	
-	public void createCollection(IString dbName, IString collectionName) {
-		MongoDatabase db = getMongoDB(dbName);
+	public void createCollection(IString polystoreId, IString dbName, IString collectionName) {
+		MongoDatabase db = getMongoDB(polystoreId, dbName);
 		db.createCollection(collectionName.getValue());
 	}
 	
-	public void drop(IString dbName, IString collectionName) {
-		MongoDatabase db = getMongoDB(dbName);
+	public void drop(IString polystoreId, IString dbName, IString collectionName) {
+		MongoDatabase db = getMongoDB(polystoreId, dbName);
 		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
 		coll.drop();
 	}
 	
-	public IList find(IString dbName, IString collectionName, IMap pattern) {
-		MongoDatabase db = getMongoDB(dbName);
+	public IList find(IString polystoreId, IString dbName, IString collectionName, IMap pattern) {
+		MongoDatabase db = getMongoDB(polystoreId, dbName);
 		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
 		IListWriter result = vf.listWriter();
 		for (Document doc: coll.find((Document)value2doc(pattern))) {
@@ -114,29 +113,29 @@ public class Bridge {
 		return result.done();
 	}
 
-	public void deleteOne(IString dbName, IString collectionName, IMap doc) {
-		MongoDatabase db = getMongoDB(dbName);
+	public void deleteOne(IString polystoreId, IString dbName, IString collectionName, IMap doc) {
+		MongoDatabase db = getMongoDB(polystoreId, dbName);
 		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
 		coll.deleteOne((Document) value2doc(doc));
 	}
 
-	public void insertOne(IString dbName, IString collectionName, IMap doc) {
-		MongoDatabase db = getMongoDB(dbName);
+	public void insertOne(IString polystoreId, IString dbName, IString collectionName, IMap doc) {
+		MongoDatabase db = getMongoDB(polystoreId, dbName);
 		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
 		coll.insertOne((Document) value2doc(doc));
 	}
 	
 	
-	public ITuple updateOne(IString dbName, IString collectionName, IMap pattern, IMap update) {
-		MongoDatabase db = getMongoDB(dbName);
+	public ITuple updateOne(IString polystoreId,IString dbName, IString collectionName, IMap pattern, IMap update) {
+		MongoDatabase db = getMongoDB(polystoreId, dbName);
 		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
 		UpdateResult result = coll.updateOne((Document)value2doc(pattern), (Document)value2doc(update));
 		return vf.tuple(vf.integer(result.getMatchedCount()), vf.integer(result.getModifiedCount()));
 	}
 
 	
-	public ITuple updateMany(IString dbName, IString collectionName, IMap pattern, IMap update) {
-		MongoDatabase db = getMongoDB(dbName);
+	public ITuple updateMany(IString polystoreId, IString dbName, IString collectionName, IMap pattern, IMap update) {
+		MongoDatabase db = getMongoDB(polystoreId, dbName);
 		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
 		UpdateResult result = coll.updateMany((Document)value2doc(pattern), (Document)value2doc(update));
 		return vf.tuple(vf.integer(result.getMatchedCount()), vf.integer(result.getModifiedCount()));
