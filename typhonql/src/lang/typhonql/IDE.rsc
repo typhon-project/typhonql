@@ -142,25 +142,41 @@ void setupIDE() {
         }
       }),
       action("Reload schema from polystore",  void (Tree tree, loc selection) {
-        sch = schema({}, {});
-        sch = checkSchema(sch, tree@\loc);  
+      	try {
+        	sch = schema({}, {});
+        	sch = checkSchema(sch, tree@\loc);
+        } catch e: {
+        	alert("Error: <e> ");
+        }  
       }),
       action("Dump schema",  void (Tree tree, loc selection) {
-      	sch = checkSchema(sch, tree@\loc);
-        dumpSchema(sch);
-        text(sch);
+      	try {
+      		sch = checkSchema(sch, tree@\loc);
+        	dumpSchema(sch);
+        	text(sch);
+        } catch e: {
+        	alert("Error: <e> ");
+        } 
       }),
       action("Dump database",  void (Tree tree, loc selection) {
-      	sch = checkSchema(sch, tree@\loc);
-      	loc polystoreUri = buildPolystoreUri(tree@\loc);
-      	text(dumpDB(polystoreUri.uri, sch));
+      	try {
+      		sch = checkSchema(sch, tree@\loc);
+      		loc polystoreUri = buildPolystoreUri(tree@\loc);
+      		text(dumpDB(polystoreUri.uri, sch));
+      	} catch e: {
+        	alert("Error: <e> ");
+        } 
       }),
       action("Reset database...", void (Tree tree, loc selection) {
       	str yes = prompt("Are you sure to reset the polystore? (type \'yes\' to confirm)");
         if (yes == "yes") {
-          sch = checkSchema(sch, tree@\loc);
-          loc polystoreUri = buildPolystoreUri(tree@\loc);
-          runSchema(polystoreUri.uri, sch);
+        	try {
+          		sch = checkSchema(sch, tree@\loc);
+          		loc polystoreUri = buildPolystoreUri(tree@\loc);
+          		runSchema(polystoreUri.uri, sch);
+          	} catch e: {
+        		alert("Error: <e> ");
+        	} 
         }
       })
       
