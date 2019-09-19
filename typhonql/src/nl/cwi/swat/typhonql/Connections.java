@@ -48,6 +48,8 @@ public class Connections {
 	}
 
 	private void addConnection(ConnectionInfo info) {
+		if (info.getDbType() == null)
+			throw new RuntimeException("Database type not known");
 		switch (info.getDbType()) {
 		case relationaldb: {
 			addRelationalConnection(info.getPolystoreId(), info.getHost(), info.getPort(), info.getDbName(), 

@@ -79,10 +79,6 @@ public class TyphonQL {
 	
 	public void bootConnections(ISourceLocation path, IString user, IString password) {
 		// TODO eliminate this code as soon as we have extended REST API
-		Map<String, DBType> dbTypes = new HashMap<>();
-		dbTypes.put("MongoDb", DBType.documentdb);
-		dbTypes.put("MariaDB", DBType.relationaldb);
-		// end todo
 		URI uri = buildUri(path.getURI(), "/api/databases");
 		String json = readHttp(uri, user.getValue(), password.getValue());
 		BsonArray array = BsonArray.parse(json);
@@ -90,12 +86,16 @@ public class TyphonQL {
 		for (BsonValue v : array.getValues()) {
 			BsonDocument d = v.asDocument();
 			try {
+				String engineType = d.getString("engineType").getValue().toLowerCase() + "db";
+				DBType dbType = DBType.valueOf(engineType);
+				if (dbType == null)
+					throw new RuntimeException("Engine type " + d.getString("engineType").getValue() + " not known");
 				ConnectionInfo info = new ConnectionInfo(
 					path.getURI().toString(),
 					d.getString("host").getValue(), 
 					d.getNumber("port").intValue(), 
 					d.getString("name").getValue(), 
-					dbTypes.get(d.getString("dbType").getValue()),
+					dbType,
 					d.getString("dbType").getValue(),
 					d.getString("username").getValue(),
 					d.getString("password").getValue());
