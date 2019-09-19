@@ -106,8 +106,6 @@ public class TyphonQL {
 		}
 		// TODO remove this workaround because the MariaDB info in the endpoint is incorrect
 		// and let Rascal code parse the json
-		infos.add(new ConnectionInfo(path.getURI().toString(), "localhost", 3306, "RelationalDatabase", DBType.relationaldb, 
-				"MariaDB", "root", "example"));
 		Connections.boot(infos.toArray(new ConnectionInfo[0]));
 	}
 	
