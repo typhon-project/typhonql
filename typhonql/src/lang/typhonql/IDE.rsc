@@ -211,7 +211,6 @@ node scriptOutliner(start[Script] script) {
      }
    }
    sections = [
-     ""(""()[@label="<script.top.model>"])[@label="Model"][@\loc=script.top.model@\loc],
      ""([
        ""(selects)[@label="Selects"],
        ""(inserts)[@label="Inserts"],
