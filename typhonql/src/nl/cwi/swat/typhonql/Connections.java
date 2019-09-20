@@ -16,6 +16,9 @@ public class Connections {
 // should be configured from the polystore API
 
 	private final Map<String, Map<String, Object>> connections;
+	
+	// TODO This is a temporary workaround. Think of a better way of keeping JDBC connections alive
+	private final Map<String, Map<String, Runnable>> relationalClosures;
 
 	private static Connections instance;
 
@@ -30,14 +33,40 @@ public class Connections {
 
 	public Object getConnection(String polystoreId, String dbName) {
 		Map<String, Object> perPolystore = connections.get(polystoreId);
-		if (perPolystore != null)
-			return perPolystore.get(dbName);
+		if (perPolystore != null) {
+			Object conn = perPolystore.get(dbName);
+			if (conn instanceof Connection)
+				conn = checkConnectionAlive((Connection) conn, polystoreId, dbName);
+			return conn;
+		}
 		else
 			return null;
 	}
 
+	private Object checkConnectionAlive(Connection con, String polystoreId, String dbName) {
+		try {
+			if (con.isValid(0)) {
+				return con;
+			}
+			else {
+				return refreshRelationalConnection(polystoreId, dbName);
+			}
+		} catch (SQLException e) {
+			return refreshRelationalConnection(polystoreId, dbName);
+		}
+	}
+
+	private Object refreshRelationalConnection(String polystoreId, String dbName) {
+		Map<String, Runnable> perPolystore = relationalClosures.get(polystoreId);
+		Runnable r = perPolystore.get(dbName);
+		r.run();
+		Object con = connections.getOrDefault(polystoreId, new HashMap<>()).getOrDefault(dbName, null);
+		return con;
+	}
+
 	private Connections() {
 		this.connections = new HashMap<>();
+		this.relationalClosures = new HashMap<>();
 	}
 	
 	public static void boot(ConnectionInfo[] infos) {
@@ -52,8 +81,13 @@ public class Connections {
 			throw new RuntimeException("Database type not known");
 		switch (info.getDbType()) {
 		case relationaldb: {
-			addRelationalConnection(info.getPolystoreId(), info.getHost(), info.getPort(), info.getDbName(), 
+			Runnable r = () ->
+				addRelationalConnection(info.getPolystoreId(), info.getHost(), info.getPort(), info.getDbName(), 
 					info.getDbms(), info.getUser(), info.getPassword());
+			relationalClosures.putIfAbsent(info.getPolystoreId(), new HashMap<String, Runnable>());
+			relationalClosures.get(info.getPolystoreId()).put(info.getDbName(), r);
+			addRelationalConnection(info.getPolystoreId(), info.getHost(), info.getPort(), info.getDbName(), 
+						info.getDbms(), info.getUser(), info.getPassword());
 			break;
 		}
 		case documentdb: {
@@ -70,7 +104,7 @@ public class Connections {
 		String connString = ms.getConnectionString(host, port, dbName, user, password);
 		MongoClient mongoClient = MongoClients.create(connString);
 		MongoDatabase db = mongoClient.getDatabase(dbName);
-		put(polystoreId, dbName, db);
+		put(polystoreId, dbName, db); 
 	}
 
 	private void put(String polystoreId, String dbName, Object db) {
@@ -126,4 +160,5 @@ public class Connections {
 			
 		}
 	}
+
 }
