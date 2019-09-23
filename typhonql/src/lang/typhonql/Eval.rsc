@@ -60,6 +60,9 @@ value eval((Expr)`<VId x>`, map[str, Entity] env, WorkingSet scope)
 value eval((Expr)`<Int n>`, map[str, Entity] env, WorkingSet scope) 
   = toInt("<n>");
   
+value eval((Expr)`<Real r>`, map[str, Entity] env, WorkingSet scope) 
+  = toReal("<r>");
+  
 value eval((Expr)`<Bool b>`, map[str, Entity] env, WorkingSet scope) 
   = ((Bool)`true` := b);
   

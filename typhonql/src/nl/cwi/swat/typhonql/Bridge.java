@@ -1,10 +1,12 @@
 package nl.cwi.swat.typhonql;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +20,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.UpdateResult;
 
 import io.usethesource.vallang.IBool;
+import io.usethesource.vallang.IDateTime;
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IListWriter;
@@ -54,7 +57,11 @@ public class Bridge {
 		}
 		return db;
 	}
-	
+
+	public IList executeQuery(IString polystoreId, IString dbName, IString sql, IList arguments) {
+		throw new AssertionError("not yet implemented");
+	}
+
 	
 	public IList executeQuery(IString polystoreId, IString dbName, IString sql) {
 		Connection con = getJDBCConnection(polystoreId, dbName);
@@ -205,7 +212,7 @@ public class Bridge {
 		if (t.isReal()) {
 			return ((IReal)value).doubleValue();
 		}
-
+		
 		throw RuntimeExceptionFactory.illegalArgument(value, null, null, 
 				"Cannot convert Rascal value to Java object");
 	}
@@ -226,9 +233,13 @@ public class Bridge {
 		if (obj instanceof Double) {
 			return vf.real(((Double)obj).doubleValue());
 		}
+		if (obj instanceof Float) {
+			return vf.real(((Float)obj).doubleValue());
+		}
 		if (obj instanceof ObjectId) {
 			return vf.string(((ObjectId)obj).toHexString());
 		}
+		
 		throw RuntimeExceptionFactory.illegalArgument(vf.string(obj.getClass().getName()), null, null, 
 				"Cannot convert Java object to Rascal value");
 	}

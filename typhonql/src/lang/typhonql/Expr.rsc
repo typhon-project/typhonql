@@ -10,6 +10,7 @@ syntax Expr
   | key: VId "." "@id"
   | @category="Number" \int: Int
   | @category="Constant" \str: Str
+  | @category="Number" \real: Real
   | \bool: Bool
   | uuid: UUID
   | bracket "(" Expr arg ")"
@@ -76,4 +77,8 @@ lexical Int
   = [1-9][0-9]* !>> [0-9]
   | [0]
   ;
+  
+lexical Real
+  = Int "." [0]* !>> "0" Int
+  | Int "." [0]* !>> "0" Int [eE] [\-]? Int;
   

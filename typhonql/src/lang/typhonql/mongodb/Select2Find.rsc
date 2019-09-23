@@ -122,6 +122,8 @@ DBObject expr2obj((Expr)`?`) = placeholder();
 
 DBObject expr2obj((Expr)`<Int i>`) = \value(toInt("<i>"));
 
+DBObject expr2obj((Expr)`<Real r>`) = \value(toReal("<r>"));
+
 // todo: unescaping
 DBObject expr2obj((Expr)`<Str s>`) = \value("<s>"[1..-1]);
 

@@ -40,6 +40,10 @@ ColumnType typhonType2SQL("Date") = date();
 
 ColumnType typhonType2SQL("String") = text();
 
+ColumnType typhonType2SQL("Real") = float();
+
 ColumnType typhonType2SQL("int") = integer();
+
+ColumnType typhonType2SQL("Int") = integer();
 
 default ColumnType typhonType2SQL(str t) { throw "Unsupported Typhon type <t>"; }

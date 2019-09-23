@@ -50,6 +50,8 @@ DBObject obj2dbObj((Expr)`<Bool b>`, str from, str fld, map[str, Obj] env, Schem
 
 DBObject obj2dbObj((Expr)`<Int n>`,  str from, str fld, map[str, Obj] env, Schema s) = \value(toInt("<n>"));
 
+DBObject obj2dbObj((Expr)`<Real r>`,  str from, str fld, map[str, Obj] env, Schema s) = \value(toReal("<r>"));
+
 // todo: unescaping
 DBObject obj2dbObj((Expr)`<Str x>`, str from, str fld, map[str, Obj] env, Schema s) = \value("<x>"[1..-1]);
 

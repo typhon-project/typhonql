@@ -275,6 +275,8 @@ value eval2value((Expr)`<Str s>`) = "<s>"[1..-1];
 
 value eval2value((Expr)`<Int n>`) = toInt("<n>");
 
+value eval2value((Expr)`<Real r>`) = toReal("<r>");
+
 
 default value eval2value(Expr e) {
   throw "Unsupported expression for conversion to value: <e>";
