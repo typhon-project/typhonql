@@ -129,7 +129,7 @@ public class Connections {
 			put(polystoreId, dbName, connection);
 		} catch (SQLException e) {
 			try {
-				Connection conn = DriverManager.getConnection(ms.getConnectionString("localhost", 3306, "", "root", "example"));
+				Connection conn = DriverManager.getConnection(ms.getConnectionString(host, port, "", user, password));
 				Statement stmt = conn.createStatement();
 				int result = stmt.executeUpdate("CREATE DATABASE " + dbName);
 				addRelationalConnection(polystoreId, host, port, dbName, dbms, user, password);
@@ -142,10 +142,11 @@ public class Connections {
 
 	public static void main(String[] args) {
 		//"jdbc:mariadb://localhost:3306/RelationalDatabase?user=root&password=example"
+		//DBMS ms = DBType.relationaldb.getDBMS("MySqlDB");
 		DBMS ms = DBType.relationaldb.getDBMS("MariaDB");
 		
 		try {
-			Connection conn = DriverManager.getConnection(ms.getConnectionString("localhost", 3306, "RelationalDatabase", "root", "example"));
+			Connection conn = DriverManager.getConnection(ms.getConnectionString("localhost", 3306, "MariaDB", "root", "example"));
 			System.out.println("conn created");
 		} catch (SQLException e) {
 			// Maybe database has not been created, try to create it
