@@ -142,7 +142,7 @@ public class Connections {
 
 	public static void main(String[] args) {
 		//"jdbc:mariadb://localhost:3306/RelationalDatabase?user=root&password=example"
-		DBMS ms = DBType.relationaldb.getDBMS("MariaDB");
+		DBMS ms = DBType.relationaldb.getDBMS("MySqlDB");
 		
 		try {
 			Connection conn = DriverManager.getConnection(ms.getConnectionString("localhost", 3306, "RelationalDatabase", "root", "example"));

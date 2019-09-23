@@ -3,7 +3,7 @@ package nl.cwi.swat.typhonql;
 public enum DBType {
 	relationaldb() {
 		@Override 
-		DBMS[] getPossibleDBMSs() { return new DBMS[] { new MariaDB() }; }
+		DBMS[] getPossibleDBMSs() { return new DBMS[] { new MariaDB(), new MySQL() }; }
 	},
 	
 	documentdb() {
