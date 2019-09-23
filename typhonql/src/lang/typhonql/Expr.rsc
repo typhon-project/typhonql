@@ -79,6 +79,6 @@ lexical Int
   ;
   
 lexical Real
-  = Int "." [0]* !>> "0" Int
-  | Int "." [0]* !>> "0" Int [eE] [\-]? Int;
+  = Int "." [0]* !>> "0" Int?
+  | Int "." [0]* !>> "0" Int? [eE] [\-]? Int;
   
