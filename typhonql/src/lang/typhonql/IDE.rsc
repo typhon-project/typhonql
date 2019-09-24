@@ -14,6 +14,7 @@ import util::ValueUI;
 import ParseTree;
 import IO;
 import String;
+import Message;
 
 import util::Reflective;
 import lang::manifest::IO;
@@ -74,11 +75,18 @@ Schema checkSchema(Schema sch, loc projectLoc) {
 		str password = typhonConf.PolystorePassword;
 		str modelStr = readHttpModel(polystoreUri, user, password);
 		Schema newSch = loadTyphonMLSchema(polystoreUri, modelStr);
+		
+		set[Message] msgs = schemaSanity(newSch, projectLoc);
+	    if (msgs != {}) {
+	      throw msgs;
+	    }
+		
 		bootConnections(polystoreUri, user, password);
-		return newSch;
+		sch = newSch;
 	}
-	else
-		return sch;
+	
+    return sch;
+	
 	/*
 		}
 		else {

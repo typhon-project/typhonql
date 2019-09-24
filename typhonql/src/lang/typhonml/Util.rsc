@@ -14,6 +14,7 @@ import Set;
 import List;
 import String;
 import Node;
+import Message;
 
 /*
  Consistency checks (for TyphonML)
@@ -62,6 +63,9 @@ str card2str(zero_one()) = "?";
 str card2str(\one()) = "";
 
 
+
+
+
 Schema loadSchema(loc l) = model2schema(m)
   when Model m := load(#Model, l);
   
@@ -69,14 +73,23 @@ Schema loadTyphonMLSchema(loc l, str s) = model2schema(m)
   when Model m := loadTyphon(#Model, s, l);
 
 Schema myDbSchema() {
-  Schema s = loadSchema(|project://typhonql/src/lang/typhonml/mydb4.xmi|);
+  Schema s = loadSchema(|project://typhonql/src/newmydb4.xmi|);
   
   return s;
 }
 
-Rels myDbToRels() = model2rels(load(#Model, |project://typhonql/src/lang/typhonml/mydb4.xmi|));
+Rels myDbToRels() = model2rels(load(#Model, |project://typhonql/src/lang/newmydb4.xmi|));
 
 set[str] entities(Schema s) = s.rels<0> + s.attrs<0>;
+
+set[Message] schemaSanity(Schema s, loc src) {
+  set[Message] msgs = {};
+  
+  msgs += { error("Not all entities assigned to backend in TyphonML model", src) | !(entities(s) <= s.placement<entity>) }; 
+  // todo: maybe more  
+  
+  return msgs;
+}
 
 Placement model2placement(Model m) 
   = ( {} | it + place(db, m) | Database db <- m.databases );  
@@ -226,3 +239,5 @@ void printOutPossibleRelations() {
   println("Size: <size(combs)>");
   iprintln(sort(toList(combs)));     
 }
+
+
