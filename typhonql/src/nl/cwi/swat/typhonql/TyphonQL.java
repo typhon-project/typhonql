@@ -104,8 +104,6 @@ public class TyphonQL {
 				// TODO not do anything if row of connection information is unparsable
 			}
 		}
-		// TODO remove this workaround because the MariaDB info in the endpoint is incorrect
-		// and let Rascal code parse the json
 		Connections.boot(infos.toArray(new ConnectionInfo[0]));
 	}
 	
@@ -159,42 +157,6 @@ public class TyphonQL {
 			} catch (IOException e) {
 				e.printStackTrace();
 				throw RuntimeExceptionFactory.io(vf.string("Problem closing HTTP resource"), null, null);
-			}
-		}
-	}
-	
-	public static void main(String[] args) throws IOException {
-		CloseableHttpClient httpclient = HttpClients.createDefault();
-		HttpGet httpGet = new HttpGet("http://pablo:antonio@localhost:8080/api/models/ml");
-		CloseableHttpResponse response1;
-		try {
-			response1 = httpclient.execute(httpGet);
-		} catch (ClientProtocolException e1) {
-			e1.printStackTrace();
-			throw e1;
-		} catch (IOException e1) {
-			e1.printStackTrace();
-			throw e1;
-		}
-		try {
-		    HttpEntity entity1 = response1.getEntity();
-		    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		    entity1.writeTo(baos);
-			String json = new String(baos.toByteArray());
-			System.out.println(json);
-			BsonArray array = BsonArray.parse(json);
-			String s = array.get(0).asDocument().getString("contents").getValue();
-			System.out.println(s);
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw e;
-		} finally {
-		    try {
-				response1.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-				throw e;
 			}
 		}
 	}
