@@ -78,7 +78,7 @@ Schema checkSchema(Schema sch, loc projectLoc) {
 		
 		set[Message] msgs = schemaSanity(newSch, projectLoc);
 	    if (msgs != {}) {
-	      throw msgs;
+	      throw "Not all entities assigned to backend in the model in polystore. Please upload a consistent model before continuing.";
 	    }
 		
 		bootConnections(polystoreUri, user, password);
@@ -137,22 +137,26 @@ void setupIDE() {
     popup(menu("TyphonQL", [
       action("Execute",  void (Tree tree, loc selection) {
         if (treeFound(Request req) := treeAt(#Request, selection, tree)) {
-          sch = checkSchema(sch, tree@\loc);
-      	  loc polystoreUri = buildPolystoreUri(tree@\loc);
-      	  
-          value result = run(req, polystoreUri.uri, sch);
-          if (WorkingSet ws := result) {
-            text(ws);
-          }
-          else {
-            println(result);
-          }
-        }
+	          try {
+	          	sch = checkSchema(sch, tree@\loc);
+	      	  	loc polystoreUri = buildPolystoreUri(tree@\loc);
+	      	  	value result = run(req, polystoreUri.uri, sch);
+	          	if (WorkingSet ws := result) {
+	            	text(ws);
+	          	}
+	          	else {
+	            	alert("Operation succesfully executed");
+	          	}
+	        } catch e: {
+        		alert("Error: <e> ");
+          	}
+       }   
       }),
       action("Reload schema from polystore",  void (Tree tree, loc selection) {
       	try {
         	sch = schema({}, {});
         	sch = checkSchema(sch, tree@\loc);
+        	alert("Schema successfully reloaded from polystore");
         } catch e: {
         	alert("Error: <e> ");
         }  
@@ -182,6 +186,7 @@ void setupIDE() {
           		sch = checkSchema(sch, tree@\loc);
           		loc polystoreUri = buildPolystoreUri(tree@\loc);
           		runSchema(polystoreUri.uri, sch);
+          		alert("Polystore successfully reset");
           	} catch e: {
         		alert("Error: <e> ");
         	} 
