@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
@@ -78,7 +79,6 @@ public class TyphonQL {
 	}
 	
 	public void bootConnections(ISourceLocation path, IString user, IString password) {
-		// TODO eliminate this code as soon as we have extended REST API
 		URI uri = buildUri(path.getURI(), "/api/databases");
 		String json = readHttp(uri, user.getValue(), password.getValue());
 		BsonArray array = BsonArray.parse(json);
@@ -141,6 +141,13 @@ public class TyphonQL {
 			e1.printStackTrace();
 			throw RuntimeExceptionFactory.io(vf.string("Problem executing HTTP request"), null, null);
 		}
+		
+		if (response1.getStatusLine() != null) {
+			if (response1.getStatusLine().getStatusCode() != HttpStatus.SC_OK)
+				throw RuntimeExceptionFactory.io(
+						vf.string("Problem with the HTTP connection to the polystore: Status was " + response1.getStatusLine().getStatusCode()), null, null);
+		}
+		
 		try {
 			HttpEntity entity1 = response1.getEntity();
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
