@@ -191,10 +191,10 @@ public class Bridge {
 			return lst;
 		}
 		
-		return value2prim(value);
+		return value2prim(value, false);
 	}
 	
-	private Object value2prim(IValue value) {
+	private Object value2prim(IValue value, boolean sql) {
 		Type t = value.getType();
 		
 		if (t.isString()) {
@@ -213,8 +213,12 @@ public class Bridge {
 			return ((IReal)value).doubleValue();
 		}
 		
-		if (t.isDateTime()) {
+		if (t.isDateTime() && sql) {
 			return java.util.Date.from(Instant.ofEpochMilli(((IDateTime)value).getInstant()));
+		}
+
+		if (t.isDateTime() && !sql) {
+			return new org.bson.BsonDateTime(((IDateTime)value).getInstant());
 		}
 		
 		throw RuntimeExceptionFactory.illegalArgument(value, null, null, 
@@ -245,6 +249,9 @@ public class Bridge {
 		}
 		if (obj instanceof java.sql.Date) {
 			return vf.datetime(((java.sql.Date)obj).getTime());
+		}
+		if (obj instanceof org.bson.BsonDateTime) {
+			return vf.datetime(((org.bson.BsonDateTime)obj).getValue());
 		}
 		
 		throw RuntimeExceptionFactory.illegalArgument(vf.string(obj.getClass().getName()), null, null, 
