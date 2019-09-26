@@ -11,13 +11,22 @@ import Type;
 
 void smokeTest() {
   str xmi = readFile(|project://typhonql/src/newmydb4.xmi|);
-  node n = readXML(xmi);
-  m = xmiNode2Model(n);
+  Model m = xmiString2Model(xmi);
   iprintln(m);
   iprintln(model2schema(m));
 }
 
+Model xmiString2Model(str s) = xmiNode2Model(readXML(s));
 
+
+@doc{
+Convert a node representation of the XMI serialization of a TyphonML model
+to a `lang::typhoml::TyphonML::Model` value.
+
+Omissions for now:
+ - evolution operators
+ - database types other than document and relation
+}
 Model xmiNode2Model(node n) {  
   Realm realm = newRealm();
   
@@ -30,22 +39,25 @@ Model xmiNode2Model(node n) {
   map[str, DataType] typeMap = ();
   map[str, Relation] relMap = ();
   
-  void ensureEntity(str path) {
+  DataType ensureEntity(str path) {
     if (path notin typeMap) {
       typeMap[path] = DataType(realm.new(#Entity, Entity("", [], [], [])));
     }
+    return typeMap[path];
   }
   
-  void ensurePrimitive(str path) {
+  DataType ensurePrimitive(str path) {
     if (path notin typeMap) {
       typeMap[path] = DataType(realm.new(#PrimitiveDataType, PrimitiveDataType("")));
     }
+    return typeMap[path];
   }
   
-  void ensureRel(str path) {
+  Relation ensureRel(str path) {
     if (path notin relMap) {
       relMap[path] = realm.new(#Relation, Relation("", zero_one()));
     }
+    return relMap[path];
   }
   
   if ("Model"(list[node] kids) := n) {
@@ -57,8 +69,7 @@ Model xmiNode2Model(node n) {
           for (xtbl:"tables"(_) <- xelts) {
             tbl = realm.new(#Table, Table(get(xtbl, "name")));
             ep = get(xtbl, "entity");
-            ensureEntity(ep);
-            tbl.entity = referTo(#Entity, typeMap[ep].entity);
+            tbl.entity = referTo(#Entity, ensureEntity(ep).entity);
             tbls += [tbl];
           }
           
@@ -70,8 +81,7 @@ Model xmiNode2Model(node n) {
           for (xcoll:"collections"(_) <- xelts) {
             coll = realm.new(#Collection, Collection(get(xcoll, "name")));
             ep = get(xcoll, "entity");
-            ensureEntity(ep);
-            coll.entity = referTo(#Entity, typeMap[ep].entity);
+            coll.entity = referTo(#Entity, ensureEntity(ep).entity);
             colls += [coll];
           }
           
@@ -90,8 +100,7 @@ Model xmiNode2Model(node n) {
            
        switch (get(xdt, "type")) {
          case "typhonml:PrimitiveDataType": {
-           ensurePrimitive(dtPath);
-           pr = typeMap[dtPath].primitiveDataType;
+           pr = ensurePrimitive(dtPath).primitiveDataType;
            pr.name = get(xdt, "name");
            dts += [DataType(pr)];
          }
@@ -101,8 +110,7 @@ Model xmiNode2Model(node n) {
            for (xattr:"attributes"(_) <- xelts) {
              attr = realm.new(#Attribute, Attribute(get(xattr, "name")));
              aPath = get(xattr, "type");
-             ensurePrimitive(aPath);
-             attr.\type = referTo(#DataType, typeMap[aPath]);
+             attr.\type = referTo(#DataType, ensurePrimitive(aPath));
              attrs += [attr]; 
            }  
          
@@ -116,13 +124,11 @@ Model xmiNode2Model(node n) {
              myrel.cardinality = make(#Cardinality, get(xrel, "cardinality"), []);
              
              ePath = get(xrel, "type");
-             ensureEntity(ePath);
-             myrel.\type = referTo(#Entity, typeMap[ePath].entity);
+             myrel.\type = referTo(#Entity, ensureEntity(ePath).entity);
              
              if ("opposite" in getKeywordParameters(xrel)) {
                oppPath = get(xrel, "opposite");
-               ensureRel(oppPath);
-               myrel.opposite = referTo(#Relation, relMap[oppPath]);
+               myrel.opposite = referTo(#Relation, ensureRel(oppPath));
              }
              
              if ("isContainment" in getKeywordParameters(xrel)) {
@@ -134,9 +140,7 @@ Model xmiNode2Model(node n) {
              relPos += 1;
            }
 
-           ensureEntity(dtPath);
-            
-           entity = typeMap[dtPath].entity;
+           entity = ensureEntity(dtPath).entity;
            entity.name = get(xdt, "name");
            entity.attributes = attrs;
            entity.fretextAttributes = []; // todo;
@@ -152,7 +156,7 @@ Model xmiNode2Model(node n) {
     return  realm.new(#Model, Model(dbs, dts, [] /* todo */));
   }
   else {
-    throw "Invalid XMI node <n>";
+    throw "Invalid Typhon ML XMI node <n>";
   }
   
   
