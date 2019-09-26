@@ -246,6 +246,8 @@ Value evalExpr((Expr)`<Bool b>`) = boolean("<b>" == true);
 
 Value evalExpr((Expr)`<Real r>`) = decimal(toReal("<r>"));
 
+Value evalExpr((Exrp)`<DateTime d>`) = dateTime(readTextValueString(#datetime, "<d>"));
+
 // should only happen for @id field (because refs should be done via keys etc.)
 Value evalExpr((Expr)`<UUID u>`) = text("<u>"[1..]);
 

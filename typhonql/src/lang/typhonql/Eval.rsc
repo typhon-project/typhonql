@@ -35,7 +35,7 @@ Entity evalResult((Expr)`<VId x>`, map[str, Entity] env, WorkingSet scope)
 
 
 default Entity evalResult(Expr e, map[str, Entity] env, WorkingSet scope)
-  = <"anonymous", makeUUID(), ("value": toWsValue(v))>;
+  = <"anonymous", makeUUID(), ("value": eval(e, env, scope))>;
 
 /*
  * Eval in where clauses
@@ -69,15 +69,17 @@ value eval((Expr)`<Bool b>`, map[str, Entity] env, WorkingSet scope)
 value eval((Expr)`<Str s>`, map[str, Entity] env, WorkingSet scope) 
   = "<s>"[1..-1];
   
+value eval((Expr)`<DateTime d>`, map[str, Entity] env, WorkingSet scope) 
+  = readTextValueString(#datetime, "<d>");
+  
 value eval((Expr)`<UUID u>`, map[str, Entity] env, WorkingSet scope) 
   = uuid("<u>"[1..]);
   
 value eval((Expr)`(<Expr e>)`, map[str, Entity] env, WorkingSet scope) 
   = eval(e, env, scope);
   
-// ??? error in concrete syntax (?)
-//value eval((Expr)`null`, map[str, Entity] env, WorkingSet scope) 
-//  = null();
+value eval((Expr)`null`, map[str, Entity] env, WorkingSet scope) 
+  = null();
   
 value eval((Expr)`+<Expr e>`, map[str, Entity] env, WorkingSet scope) 
   = n

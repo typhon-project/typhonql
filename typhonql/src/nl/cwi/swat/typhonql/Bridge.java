@@ -213,6 +213,10 @@ public class Bridge {
 			return ((IReal)value).doubleValue();
 		}
 		
+		if (t.isDateTime()) {
+			return java.util.Date.from(Instant.ofEpochMilli(((IDateTime)value).getInstant()));
+		}
+		
 		throw RuntimeExceptionFactory.illegalArgument(value, null, null, 
 				"Cannot convert Rascal value to Java object");
 	}
@@ -238,6 +242,9 @@ public class Bridge {
 		}
 		if (obj instanceof ObjectId) {
 			return vf.string(((ObjectId)obj).toHexString());
+		}
+		if (obj instanceof java.sql.Date) {
+			return vf.datetime(((java.sql.Date)obj).getTime());
 		}
 		
 		throw RuntimeExceptionFactory.illegalArgument(vf.string(obj.getClass().getName()), null, null, 

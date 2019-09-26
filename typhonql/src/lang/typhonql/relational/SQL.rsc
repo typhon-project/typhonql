@@ -101,6 +101,7 @@ data Value
   | decimal(real realVal)
   | integer(int intVal)
   | boolean(bool boolVal)
+  | dateTime(datetime dateTimeVal)
   | null()
   ;
 
