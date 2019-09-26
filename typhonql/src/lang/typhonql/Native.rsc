@@ -277,6 +277,8 @@ value eval2value((Expr)`<Int n>`) = toInt("<n>");
 
 value eval2value((Expr)`<Real r>`) = toReal("<r>");
 
+value eval2value((Expr)`<DateTime d>`) = readTextValueString(#datetime, "<d>");
+
 
 default value eval2value(Expr e) {
   throw "Unsupported expression for conversion to value: <e>";

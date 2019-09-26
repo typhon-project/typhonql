@@ -8,6 +8,7 @@ import lang::typhonml::Util; // Schema
 import lang::typhonml::TyphonML;
 
 import ParseTree;
+import ValueIO;
 import Set;
 import IO;
 import String;
@@ -268,6 +269,8 @@ SQLExpr expr2sql((Expr)`<Int i>`, PathMap paths) = lit(integer(toInt("<i>")));
 SQLExpr expr2sql((Expr)`<Real r>`, PathMap paths) = lit(decimal(toReal("<r>")));
 
 SQLExpr expr2sql((Expr)`<Str s>`, PathMap paths) = lit(text("<s>"[1..-1]));
+
+SQLExpr expr2sql((Expr)`<DateTime d>`, PathMap paths) = lit(dateTime(readTextValueString(#datetime, "<d>")));
 
 SQLExpr expr2sql((Expr)`true`, PathMap paths) = lit(boolean(true));
 

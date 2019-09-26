@@ -125,6 +125,8 @@ str pp(integer(int x)) = "<x>";
 
 str pp(boolean(bool b)) = "<b>";
 
+str pp(dateTime(datetime d)) = printDate(d, "\'YYYY-MM-dd HH:mm:ss\'");
+
 str pp(null()) = "null";
 
 // TableConstraint

@@ -11,6 +11,7 @@ syntax Expr
   | @category="Number" \int: Int
   | @category="Constant" \str: Str
   | @category="Number" \real: Real
+  | @category="Constant" \dt: DateTime
   | \bool: Bool
   | uuid: UUID
   | bracket "(" Expr arg ")"
@@ -82,3 +83,36 @@ lexical Real
   = Int "." [0]* !>> "0" Int?
   | Int "." [0]* !>> "0" Int? [eE] [\-]? Int;
   
+syntax DateTime
+	= JustDate  
+	| JustTime  
+	| DateAndTime ;
+
+lexical JustDate
+	= "$" DatePart "$";
+	
+lexical DatePart
+	= [0-9] [0-9] [0-9] [0-9] "-" [0-1] [0-9] "-" [0-3] [0-9] 
+	| [0-9] [0-9] [0-9] [0-9] [0-1] [0-9] [0-3] [0-9] ;
+	
+	
+lexical JustTime
+	= "$T" TimePartNoTZ !>> [+\-] "$"
+	| "$T" TimePartNoTZ TimeZonePart "$"
+	;
+	
+lexical DateAndTime
+	= "$" DatePart "T" TimePartNoTZ !>> [+\-] "$"
+	| "$" DatePart "T" TimePartNoTZ TimeZonePart "$";
+
+lexical TimeZonePart
+	= [+ \-] [0-1] [0-9] ":" [0-5] [0-9] 
+	| "Z" 
+	| [+ \-] [0-1] [0-9] 
+	| [+ \-] [0-1] [0-9] [0-5] [0-9] 
+	;
+
+lexical TimePartNoTZ
+	= [0-2] [0-9] [0-5] [0-9] [0-5] [0-9] ([, .] [0-9] ([0-9] [0-9]?)?)? 
+	| [0-2] [0-9] ":" [0-5] [0-9] ":" [0-5] [0-9] ([, .] [0-9] ([0-9] [0-9]?)?)? 
+	;
