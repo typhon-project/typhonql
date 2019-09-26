@@ -50,14 +50,14 @@ value run((Request)`delete <EId e> <VId x>`, str polystoreId, Schema s, Log log 
 
 
 value run((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`, str polystoreId, Schema s, Log log = noLog) {
-  if (WorkingSet ws := run((Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ es>`, s, log = log)) {
+  if (WorkingSet ws := run((Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ es>`, polystoreId, s, log = log)) {
     assert size(ws<0>) == 1: "multiple or zero entity types returned from select implied by delete: <ws>";
   
     if (str entity <- ws, <Place p, entity> <- s.placement) {
       list[Entity] entities = ws[entity];
       for (<entity, str uuid, _> <- ws[entity]) {
         log("[RUN-delete] Deleting <entity> with id <uuid> from <p>");
-        runDeleteById(polystoreId, p, entity, uuid);
+        runDeleteById(p, polystoreId, entity, uuid);
       }
     }
   } 
@@ -97,7 +97,7 @@ value run((Request)`update <EId eid> <VId vid> where <{Expr ","}+ es> set {<{Key
     throw "Nested objects in update statements are unsupported";
   }  
   
-  if (WorkingSet ws := run((Request)`from <EId eid> <VId vid> select <VId vid>.@id where <{Expr ","}+ es>`, s, log = log)) {
+  if (WorkingSet ws := run((Request)`from <EId eid> <VId vid> select <VId vid>.@id where <{Expr ","}+ es>`, polystoreId, s, log = log)) {
     assert size(ws<0>) == 1: "multiple or zero entity types returned from select implied by update";
   
 
@@ -106,7 +106,7 @@ value run((Request)`update <EId eid> <VId vid> where <{Expr ","}+ es> set {<{Key
       list[Entity] entities = ws[entity];
       for (<entity, str uuid, _> <- ws[entity]) {
         log("[RUN-update] Updating <entity> with id <uuid> from <p> with <kvs>");
-        affected += runUpdateById(polystoreId, p, entity, uuid, kvs);
+        affected += runUpdateById(p, polystoreId, entity, uuid, kvs);
       }
     } 
     return affected;
