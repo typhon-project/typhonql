@@ -15,6 +15,7 @@
 
     <modules>
         <module>typhonql</module>
+        <module>typhonql-ide</module>
         <module>typhonql-feature</module>
         <module>typhonql-update-site</module>
     </modules>

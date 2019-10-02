@@ -5,7 +5,7 @@
    </feature>
    <category-def name="Typhon" label="Typhon">
       <description>
-          Typhon DSLs
+         Typhon DSLs
       </description>
    </category-def>
 </site>

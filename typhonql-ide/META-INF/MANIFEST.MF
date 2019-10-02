@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: typhonql-ide
+Bundle-SymbolicName: typhonql-ide;singleton:=true
+Bundle-Version: 0.1.0.qualifier
+Require-Bundle: rascal_eclipse,
+ typhonql
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
