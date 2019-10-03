@@ -1,4 +1,0 @@
-Machine Foo {
-  states: []
-  initial: null
-}

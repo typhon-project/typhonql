@@ -3,6 +3,7 @@ module lang::typhonql::IDE
 
 import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
+import lang::typhonml::XMIReader;
 
 import lang::typhonql::TDBC;
 import lang::typhonql::WorkingSet;
@@ -19,14 +20,12 @@ import Message;
 import util::Reflective;
 import lang::manifest::IO;
 
+
 // TODO do the parsing of JSon containing meta information in Rascal
 alias ConnectionInfo = tuple[str dbType, str host, int port, str dbName, str user, str password];
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
-java Model bootTyphonQL(type[Model] model, loc pathToTML);
-
-@javaClass{nl.cwi.swat.typhonql.TyphonQL}
-java Model bootConnections(loc polystoreUri, str user, str password);
+java void bootConnections(loc polystoreUri, str user, str password);
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java str readHttpModel(loc polystoreUri, str user, str password);
@@ -74,7 +73,7 @@ Schema checkSchema(Schema sch, loc projectLoc) {
 		str user = typhonConf.PolystoreUser;
 		str password = typhonConf.PolystorePassword;
 		str modelStr = readHttpModel(polystoreUri, user, password);
-		Schema newSch = loadTyphonMLSchema(polystoreUri, modelStr);
+		Schema newSch = loadSchemaFromXMI(modelStr);
 		
 		set[Message] msgs = schemaSanity(newSch, projectLoc);
 	    if (msgs != {}) {

@@ -1,7 +1,0 @@
-Machine Doors {
-  states: [State closed {
-    transitions: []
-    final: false
-  }]
-  initial: null
-}

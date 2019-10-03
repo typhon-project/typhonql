@@ -2,9 +2,6 @@ module lang::ecore::IO
 
 import lang::ecore::Ecore;
 import lang::ecore::Refs;
-
-import lang::ecore::diff::Diff;
-
 import util::Maybe;
 
 @doc{Load a model resource `uri` and "parse" it according to `meta`.}
