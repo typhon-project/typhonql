@@ -3,7 +3,6 @@ module lang::ecore::Ecore2ADT
 import lang::ecore::Ecore;
 import lang::ecore::EcoreUtil;
 import lang::ecore::Refs;
-import lang::ecore::IO;
 
 import IO;
 import ValueIO;

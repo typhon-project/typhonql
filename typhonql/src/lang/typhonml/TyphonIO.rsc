@@ -3,8 +3,6 @@ module lang::typhonml::TyphonIO
 import lang::ecore::Ecore;
 import lang::ecore::Refs;
 
-import lang::ecore::diff::Diff;
-
 import util::Maybe;
 
 @doc{Load a model resource from input `input` and "parse" it according to `meta` .

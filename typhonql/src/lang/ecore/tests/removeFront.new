@@ -1,4 +1,0 @@
-machine Doors
-init <initial:Id>
-state opened end
-end
