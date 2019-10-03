@@ -3,7 +3,3 @@ Main-Function: main
 Courses: courses
 Main-Module: Plugin
 Source: src
-PolystoreHost: localhost
-PolystorePort: 8080
-PolystoreUser: pablo
-PolystorePassword: antonio
