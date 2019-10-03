@@ -1,6 +1,6 @@
 node {
     try{
-    notifySlack()
+    notifyBuild()
 	properties([
         parameters(
             [string(defaultValue: '/var/site/typhon-ql', name: 'UPDATE_SITE_PATH')]
