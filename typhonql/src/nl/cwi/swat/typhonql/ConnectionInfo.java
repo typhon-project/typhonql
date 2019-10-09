@@ -1,58 +1,29 @@
 package nl.cwi.swat.typhonql;
 
+import nl.cwi.swat.typhonql.client.DatabaseInfo;
+
 public class ConnectionInfo {
 	private String polystoreId;
-	private String host; 
-	private int port; 
-	private String dbName; 
-	private DBType dbType; 
-	private String dbms; 
-	private String user; 
-	private String password;
+	private DatabaseInfo databaseInfo;
 	
 	public ConnectionInfo(String polystoreId, String host, int port, String dbName, DBType dbType, String dbms, String user,
 			String password) {
 		super();
 		this.polystoreId = polystoreId;
-		this.host = host;
-		this.port = port;
-		this.dbName = dbName;
-		this.dbType = dbType;
-		this.dbms = dbms;
-		this.user = user;
-		this.password = password;
+		this.databaseInfo = new DatabaseInfo(host, port, dbName, dbType, dbms, user, password);
+	}
+	
+	public ConnectionInfo(String polystoreId, DatabaseInfo databaseInfo) {
+		super();
+		this.polystoreId = polystoreId;
+		this.databaseInfo = databaseInfo;
 	}
 	
 	public String getPolystoreId() {
 		return polystoreId;
 	}
-	
-	public String getHost() {
-		return host;
-	}
-	
-	public int getPort() {
-		return port;
-	}
-	
-	public String getDbName() {
-		return dbName;
-	}
-	
-	public DBType getDbType() {
-		return dbType;
-	}
-	
-	public String getDbms() {
-		return dbms;
-	}
-	
-	public String getUser() {
-		return user;
-	}
-	
-	public String getPassword() {
-		return password;
-	}
-	
+
+	public DatabaseInfo getDatabaseInfo() {
+		return databaseInfo;
+	}	
 }

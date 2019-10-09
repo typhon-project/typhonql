@@ -11,6 +11,8 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 
+import nl.cwi.swat.typhonql.client.DatabaseInfo;
+
 public class Connections {
 // singleton to provide connections to the Bridge
 // should be configured from the polystore API
@@ -75,23 +77,24 @@ public class Connections {
 			instance.addConnection(info);
 		booted = true;
 	}
-
-	private void addConnection(ConnectionInfo info) {
+	
+	private void addConnection(ConnectionInfo connInfo) {
+		DatabaseInfo info = connInfo.getDatabaseInfo();
 		if (info.getDbType() == null)
 			throw new RuntimeException("Database type not known");
 		switch (info.getDbType()) {
 		case relationaldb: {
 			Runnable r = () ->
-				addRelationalConnection(info.getPolystoreId(), info.getHost(), info.getPort(), info.getDbName(), 
+				addRelationalConnection(connInfo.getPolystoreId(), info.getHost(), info.getPort(), info.getDbName(), 
 					info.getDbms(), info.getUser(), info.getPassword());
-			relationalClosures.putIfAbsent(info.getPolystoreId(), new HashMap<String, Runnable>());
-			relationalClosures.get(info.getPolystoreId()).put(info.getDbName(), r);
-			addRelationalConnection(info.getPolystoreId(), info.getHost(), info.getPort(), info.getDbName(), 
+			relationalClosures.putIfAbsent(connInfo.getPolystoreId(), new HashMap<String, Runnable>());
+			relationalClosures.get(connInfo.getPolystoreId()).put(info.getDbName(), r);
+			addRelationalConnection(connInfo.getPolystoreId(), info.getHost(), info.getPort(), info.getDbName(), 
 						info.getDbms(), info.getUser(), info.getPassword());
 			break;
 		}
 		case documentdb: {
-			addDocumentConnection(info.getPolystoreId(), info.getHost(), info.getPort(), info.getDbName(),
+			addDocumentConnection(connInfo.getPolystoreId(), info.getHost(), info.getPort(), info.getDbName(),
 					info.getDbms(), info.getUser(), info.getPassword());
 			break;
 		}
