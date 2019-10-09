@@ -231,7 +231,7 @@ str navigateTo({Id "."}+ xs, str from, Schema s) {
     if (<cur, fld, _> <- s.attrs) {
       return cur;
     }
-    if (<cur, _, fld, _, _, _, str to, _> <- schema.rels) {
+    if (<cur, _, fld, _, _, str to, _> <- schema.rels) {
       cur = to;
     }
   }
