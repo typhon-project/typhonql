@@ -177,15 +177,15 @@ WorkingSet runGetEntities(<mongodb(), str db>, str entity, str polystoreId, Sche
 Doc dbObject2doc(object(list[Prop] props))
   = ( p.name: dbObject2val(p.val) | Prop p <- props );
 
-Doc dbObject2doc(array(list[DBObject] values))
-  = [ dbObject2val(v) | DBObject v <- values ];
- 
 
-value dbObject2val(\value(value v)) = v;
+value dbObject2val(\value(/^#<rest:.*>$/)) = rest;
+
+default value dbObject2val(\value(value v)) = v;
 
 value dbObject2val(obj:object(_)) = dbObject2doc(obj);
 
-value dbObject2val(arr:array(_)) = dbObject2doc(arr);
+value dbObject2val(arr:array(list[DBObject] vs)) 
+  = [ dbObject2val(v) | DBObject v <- vs ];
   
 
 // assumes flattening, so no nested docs in d
@@ -203,9 +203,14 @@ lrel[str, Doc] unnestRec(Doc doc, str entity, Schema s) {
   for (<entity, _, str fld, _, _, str to, true> <- s.rels) {
     if (fld in doc, Doc d := doc[fld]) {
       doc[fld] = d["_id"];
-      result += unnest(d, to, s);
+      result += unnestRec(d, to, s);
     }
   }
+  //for (<entity, _, str fld, _, _, str to, false> <- s.rels) {
+  //  if (fld in doc, /^#<rest:.*>$/ := doc[fld]) {
+  //    doc[fld] = \value(uuid(rest));
+  //  }
+  //}
   result += [<entity, doc>];
   return result;
 }

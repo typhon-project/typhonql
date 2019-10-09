@@ -29,23 +29,6 @@ value toWsValue(str s) = uuid(s)
     
 default value toWsValue(value v) = v;
     
-    
-
-WorkingSet exampleWorkingSet() =
- ( 
-   "Product": [
-      <"Product", "#abcd", ("name": "TV", "count": 10)>,
-      <"Product", "#defg", ("name": "CD Player", "count": 120)>
-   ],
-   "Person": [
-      <"Person", "#hijk", ("name": "Jurgen", "age": 42)>,
-      <"Person", "#lmno", ("name": "Thijs", "age": 41)>,
-      <"Person", "#pqrs", ("name": "Paul", "age": 67)>
-   ],
-   "Empty": []
- );
-
-
 list[map[str, Entity]] toBindings(lrel[str, str] env, list[value] product) 
   = [ toMap(env, tuple2list(v)) | value v <- product ];  
 
