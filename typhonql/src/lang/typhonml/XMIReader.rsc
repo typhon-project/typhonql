@@ -41,6 +41,7 @@ Model xmiNode2Model(node n) {
   map[str, DataType] typeMap = ();
   map[str, Relation] relMap = ();
   
+  
   DataType ensureEntity(str path) {
     if (path notin typeMap) {
       typeMap[path] = DataType(realm.new(#Entity, Entity("", [], [], [])));
@@ -120,8 +121,7 @@ Model xmiNode2Model(node n) {
            relPos = 0;
            for (xrel:"relations"(_) <- xelts) {
              relPath = "<dtPath>/@relations.<relPos>";
-             ensureRel(relPath);
-             myrel = relMap[relPath];
+             myrel = ensureRel(relPath);
              myrel.name = get(xrel, "name");
              myrel.cardinality = make(#Cardinality, get(xrel, "cardinality"), []);
              
