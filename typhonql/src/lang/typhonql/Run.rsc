@@ -2,6 +2,7 @@ module lang::typhonql::Run
 
 
 import lang::typhonml::Util;
+import lang::typhonml::TyphonML;
 
 import lang::typhonql::WorkingSet;
 import lang::typhonql::Native;
@@ -17,6 +18,65 @@ import lang::typhonql::util::Log;
 import IO;
 import Set;
 import List;
+
+/*
+	data Schema
+	  = schema(Rels rels, Attrs attrs, Placement placement = {}, map[str, value] config = ());
+
+
+	alias Rel = tuple[str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool containment];
+	alias Rels = set[Rel];
+	alias Attrs = rel[str from, str name, str \type];
+	
+	data Cardinality
+  		= one_many()
+  		| zero_many()
+  		| zero_one()
+  		| \one()
+  		;
+  		
+  	data DB = mongodb() | sql() | hyperj() | recombine() | unknown() | typhon();
+
+	alias Place = tuple[DB db, str name];
+
+	alias Placement = rel[Place place, str entity];
+	
+	*/
+	
+alias JavaFriendlySchema = tuple[rel[str from, str fromCard, str fromRole, str toRole, str toCard, str to, bool containment] rels, 
+	rel[str from, str name, str \type] attrs, rel[str dbEngineType, str dbName, str entity] placement];
+
+Rel toSchemaRel(<str from, str fromCard, str fromRole, str toRole, str toCard, str to, bool containment>)
+	= <from, toCardinality(fromCard), fromRole, toRole, toCardinality(toCard), to, containment>;
+	
+Cardinality toCardinality("ONE_MANY") = one_many();
+Cardinality toCardinality("ZERO_MANY") = zero_many();
+Cardinality toCardinality("ZERO_ONE") = zero_one();
+Cardinality toCardinality("ONE") = \one();
+default Cardinality toCardinality(str card) {
+	throw "Unknown cardinality: <card>";
+} 	
+	
+DB toDB("documentdb") = mongodb();
+DB toDB("relationaldb") = sql();
+default DB toDB(str db) {
+	throw "Unknown database type: <db>";
+} 	
+	
+tuple[Place, str] toSchemaPlacementItem(<str dbEngineType, str dbName, str entity>) 
+	= <<toDB(dbEngineType), dbName>, entity>;
+
+Schema toSchema(JavaFriendlySchema sch)
+	= schema(rels, sch.attrs, placement = placement)
+	when rels:= {toSchemaRel(r) | r <- sch.rels},
+		 placement := {toSchemaPlacementItem(p) | p <- sch.placement};
+		
+
+value run(str src, str polystoreId, JavaFriendlySchema s) {
+	Request req = [Request]src;
+	Schema sch = toSchema(s);
+ 	return run(req, polystoreId, sch, log = noLog);
+}
 
 value run(str src, str polystoreId, Schema s, Log log = noLog) {
   Request req = [Request]src;
