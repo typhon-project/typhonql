@@ -19,11 +19,6 @@
 			<artifactId>mongodb-driver</artifactId>
 			<version>3.11.0</version>
 		</dependency>
-		<dependency>
-			<groupId>org.xerial</groupId>
-			<artifactId>sqlite-jdbc</artifactId>
-			<version>3.28.0</version>
-		</dependency>
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
