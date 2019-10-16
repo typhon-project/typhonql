@@ -36,10 +36,11 @@ public class PolystoreConnection {
 
 	private static final PrintWriter ERROR_WRITER = new PrintWriter(System.err);
 	private static final StandardTextWriter VALUE_PRINTER = new StandardTextWriter(true, 2);
-	private static String LOCALHOST = "localhost";
+	private static final String LOCALHOST = "localhost";
+	private static final IValueFactory VF = ValueFactory.getInstance();
+
 	private final PolystoreSchema schema;
 	private final ConcurrentSoftReferenceObjectPool<Evaluator> evaluators;
-	private static final IValueFactory VF = ValueFactory.getInstance();
 
 	public PolystoreConnection(PolystoreSchema schema, List<DatabaseInfo> infos) throws IOException {
 		this.schema = schema;
