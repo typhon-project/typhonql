@@ -65,7 +65,7 @@ public class TyphonQLClientTest {
 				new DatabaseInfo("localhost", 3306, "RelationalDatabase", DBType.relationaldb, new MariaDB().getName(),
 						"root", "example") };
 	
-		PolystoreConnection conn = new PolystoreConnection(schema, Arrays.asList(infos), false);
+		PolystoreConnection conn = new PolystoreConnection(schema, Arrays.asList(infos), true);
 		IValue iv = conn.executeQuery("from User u select u");
 		System.out.println(iv);
 	

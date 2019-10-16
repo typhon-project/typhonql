@@ -1,9 +1,0 @@
-Manifest-Version: 1.0
-Bundle-ManifestVersion: 2
-Bundle-Name: typhonql-p2-dependencies-repackaged
-Bundle-SymbolicName: typhonql-p2-dependencies-repackaged
-Bundle-Version: 0.6.0.qualifier
-Require-Bundle: 
- rascal_eclipse,
- typhonql
-Bundle-Vendor: typhonql-p2-dependencies-repackaged

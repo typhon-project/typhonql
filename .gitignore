@@ -1,5 +1,7 @@
 # eclipse stuff:
+.project
 .metadata
+.classpath
 bin/
 tmp/
 *.tmp
@@ -26,6 +28,12 @@ Thumbs.db
 # maven stuff
 target/
 
+dependency-reduced-pom.xml
 *.swp
 
-/.project
+
+
+# eclispe stuff:
+.settings
+
+
