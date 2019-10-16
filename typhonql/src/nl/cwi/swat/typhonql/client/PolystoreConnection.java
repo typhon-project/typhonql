@@ -41,6 +41,14 @@ public class PolystoreConnection {
 
 	private final PolystoreSchema schema;
 	private final ConcurrentSoftReferenceObjectPool<Evaluator> evaluators;
+	
+	private static int calculateMaxEvaluators() {
+        int numberOfEvaluators = Math.min(4, Runtime.getRuntime().availableProcessors() - 2);
+        if (numberOfEvaluators > 1) {
+            numberOfEvaluators = Math.min(numberOfEvaluators, (int)(Runtime.getRuntime().maxMemory()/ (1024*1024*300L))); // give at least 300MB per evaluator.
+        }
+        return Math.max(1, numberOfEvaluators);
+	}
 
 	public PolystoreConnection(PolystoreSchema schema, List<DatabaseInfo> infos) throws IOException {
 		this.schema = schema;
@@ -69,7 +77,7 @@ public class PolystoreConnection {
 		PathConfig pcfg = PathConfig.fromSourceProjectRascalManifest(URIUtil.correctLocation("project", "typhonql", null));
 		ClassLoader cl = new SourceLocationClassLoader(pcfg.getClassloaders(), PolystoreConnection.class.getClassLoader());
 		
-		evaluators = new ConcurrentSoftReferenceObjectPool<>(10, TimeUnit.MINUTES, 2, () -> {
+		evaluators = new ConcurrentSoftReferenceObjectPool<>(10, TimeUnit.MINUTES, 1, calculateMaxEvaluators(), () -> {
 			// we construct a new evaluator for every concurrent call
 			GlobalEnvironment  heap = new GlobalEnvironment();
 			Evaluator result = new Evaluator(ValueFactoryFactory.getValueFactory(), 
