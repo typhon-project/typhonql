@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>engineering.swat.typhon</groupId>
     <artifactId>bundle-typhoneql-dependencies</artifactId>
-    <version>0.6.0</version>
+    <version>0.7.0</version>
     <packaging>bundle</packaging>
     
 	<dependencies>
@@ -39,11 +39,7 @@
 		    <artifactId>httpclient</artifactId>
 		    <version>4.5.9</version>
 		</dependency>
-		<dependency>
-		    <groupId>org.apache.httpcomponents</groupId>
-		    <artifactId>httpclient</artifactId>
-		    <version>4.5.9</version>
-		</dependency>	
+
 		<!-- This is needed only to make Java functions callable from IDE in Rascal code  -->
 		<dependency>
     		<groupId>commons-codec</groupId>
@@ -70,7 +66,7 @@
                 <configuration>
                     <instructions>
                         <Export-Package>*</Export-Package>
-                        <Embed-Dependency>*;scope=compile|runtime;inline=false</Embed-Dependency>
+                        <Embed-Dependency>*;scope=compile|runtime;inline=true</Embed-Dependency>
                         <Embed-StripGroup>true</Embed-StripGroup>
                         <Embed-Transitive>true</Embed-Transitive>
                         <Import-Package></Import-Package>
