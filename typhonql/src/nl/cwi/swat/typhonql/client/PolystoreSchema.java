@@ -51,4 +51,23 @@ public class PolystoreSchema {
 		return placement.get(p).stream().map(entity -> vf.tuple(vf.string(p.getDBType().name()), vf.string(p.getName()), vf.string(entity)));
 	}
 
+
+
+	public List<Relation> getRels() {
+		return rels;
+	}
+
+
+
+	public List<Attribute> getAttrs() {
+		return attrs;
+	}
+
+
+
+	public Map<Place, List<String>> getPlacement() {
+		return placement;
+	}
+
+	
 }
