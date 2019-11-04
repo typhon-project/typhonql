@@ -1,4 +1,4 @@
-package engineering.swat.typhonql.client;
+package engineering.swat.typhonql.client.test;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IValue;
 import nl.cwi.swat.typhonql.DBType;
 import nl.cwi.swat.typhonql.MariaDB;
@@ -21,7 +20,7 @@ import nl.cwi.swat.typhonql.client.Relation;
 
 public class TyphonQLClientTest {
 	public static void main(String[] args) throws IOException {
-	
+
 		Relation[] rels = new Relation[] {
 				new Relation("Order", Cardinality.ZERO_MANY, "products", "orders", Cardinality.ZERO_MANY, "Product",
 						false),
@@ -39,7 +38,7 @@ public class TyphonQLClientTest {
 				new Relation("Order", Cardinality.ONE, "users", "orders", Cardinality.ZERO_MANY, "User", false),
 				new Relation("User", Cardinality.ZERO_MANY, "paymentsDetails", "paymentsDetails^", Cardinality.ZERO_ONE,
 						"CreditCard", true) };
-	
+
 		Attribute[] attrs = new Attribute[] { new Attribute("CreditCard", "expiryDate", "Date"),
 				new Attribute("Review", "id", "String"), new Attribute("Comment", "content", "String"),
 				new Attribute("Order", "totalAmount", "int"), new Attribute("User", "id", "String"),
@@ -48,27 +47,26 @@ public class TyphonQLClientTest {
 				new Attribute("Comment", "id", "String"), new Attribute("Product", "description", "String"),
 				new Attribute("User", "name", "String"), new Attribute("CreditCard", "id", "String"),
 				new Attribute("CreditCard", "number", "String")
-	
+
 		};
-	
+
 		Map<Place, List<String>> placement = new HashMap<Place, List<String>>();
-	
+
 		placement.put(new Place(DBType.documentdb, "DocumentDatabase"), Arrays.asList("Review", "Comment"));
 		placement.put(new Place(DBType.relationaldb, "RelationalDatabase"),
 				Arrays.asList("CreditCard", "User", "Order", "Product"));
-	
+
 		PolystoreSchema schema = new PolystoreSchema(Arrays.asList(rels), Arrays.asList(attrs), placement);
-	
+
 		DatabaseInfo[] infos = new DatabaseInfo[] {
 				new DatabaseInfo("localhost", 27017, "DocumentDatabase", DBType.documentdb, new MongoDB().getName(),
 						"admin", "admin"),
 				new DatabaseInfo("localhost", 3306, "RelationalDatabase", DBType.relationaldb, new MariaDB().getName(),
 						"root", "example") };
-	
+
 		PolystoreConnection conn = new PolystoreConnection(schema, Arrays.asList(infos));
 		IValue iv = conn.executeQuery("from User u select u");
 		System.out.println(iv);
-	
+
 	}
 }
-

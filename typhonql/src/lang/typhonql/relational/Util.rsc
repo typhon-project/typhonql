@@ -7,6 +7,8 @@ str tableName(str entity) = "<entity>";
 
 str columnName(str attr, str entity) = "<entity>.<attr>";
 
+str columnName(str attr, str entity, str custom, str element) = "<entity>.<attr>.<custom>.<element>";
+
 str typhonId(str entity) = columnName("@id", entity); 
 
 // we sort here to canonicalize the junction table name

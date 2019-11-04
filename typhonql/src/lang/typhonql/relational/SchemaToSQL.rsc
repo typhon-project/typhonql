@@ -36,8 +36,15 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
   schema.rels = symmetricReduction(schema.rels);
  
   SQLStat attrs2create(str e, rel[str, str] attrs) {
+  	println([column(columnName(attr, e), typhonType2SQL(typ), []) | <str attr, str typ> <- attrs, 
+      		typ notin schema.elements<0>]
+      + [column(columnName(attr, e, typ, element), typhonType2SQL(elementType), []) | <str attr, str typ> <- attrs,
+      	typ in schema.elements<0>, <str typ, str element, str elementType> <- schema.elements]);
     return create(tableName(e), [typhonIdColumn(e)]
-      + [column(columnName(attr, e), typhonType2SQL(typ), []) | <str attr, str typ> <- attrs ]
+      + [column(columnName(attr, e), typhonType2SQL(typ), []) | <str attr, str typ> <- attrs, 
+      		typ notin schema.elements<0>]
+      + [column(columnName(attr, e, typ, element), typhonType2SQL(elementType), []) | <str attr, str typ> <- attrs,
+      	 typ in schema.elements<0>, <str typ, str element, str elementType> <- schema.elements]
       , [primaryKey(typhonId(e))]);
   }
  
