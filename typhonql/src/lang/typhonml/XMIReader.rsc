@@ -16,6 +16,15 @@ void smokeTest() {
   iprintln(model2schema(m));
 }
 
+void smokeTest2() {
+  str xmi = readFile(|project://typhonql/src/lang/typhonml/customdatatypes.xmi|);
+  Model m = xmiString2Model(xmi);
+  Schema s = model2schema(m);
+  //iprintln(m);
+  iprintln(s);
+}
+
+
 Model xmiString2Model(str s) = xmiNode2Model(readXML(s));
 
 Schema loadSchemaFromXMI(str s) = model2schema(m)
@@ -53,8 +62,24 @@ Model xmiNode2Model(node n) {
     if (path notin typeMap) {
       typeMap[path] = DataType(realm.new(#PrimitiveDataType, PrimitiveDataType("")));
     }
+    else {
+      typeMap[path] = DataType(realm.new(#PrimitiveDataType, PrimitiveDataType(""), id = typeMap[path].uid));
+    }
     return typeMap[path];
   }
+  
+  DataType ensureCustom(str path) {
+    if (path notin typeMap) {
+      typeMap[path] = DataType(realm.new(#CustomDataType, CustomDataType("", [])));
+    }
+    else {
+      typeMap[path] = DataType(realm.new(#CustomDataType, CustomDataType("", []), id = typeMap[path].uid));
+    }
+    
+    return typeMap[path];
+  }
+  
+  
   
   Relation ensureRel(str path) {
     if (path notin relMap) {
@@ -102,10 +127,25 @@ Model xmiNode2Model(node n) {
        dtPath = "//@dataTypes.<dtPos>";
            
        switch (get(xdt, "type")) {
-         case "typhonml:PrimitiveDataType": {
+       	 case "typhonml:PrimitiveDataType": {
            pr = ensurePrimitive(dtPath).primitiveDataType;
            pr.name = get(xdt, "name");
            dts += [DataType(pr)];
+         }
+         
+         case "typhonml:CustomDataType": {
+           list[DataTypeItem] elements = [];
+           for (xattr:"elements"(_) <- xelts) {
+             el = realm.new(#DataTypeItem, DataTypeItem(get(xattr, "name"), DataTypeImplementationPackage()));
+             aPath = get(xattr, "type");
+             el.\type = referTo(#DataType, ensurePrimitive(aPath));
+             elements += [el]; 
+           }
+           custom = ensureCustom(dtPath).customDataType;
+           custom.name = get(xdt, "name");
+           custom.elements = elements;   
+           dt = DataType(custom);  
+           dts+= [dt];
          }
          
          case "typhonml:Entity": {
