@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="ASCII"?>
+<typhonml:Model xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:typhonml="http://org.typhon.dsls.typhonml.sirius">
+  <databases xsi:type="typhonml:RelationalDB" name="Inventory">
+    <tables name="UserDB" entity="//@dataTypes.5"/>
+    <tables name="ProductDB" entity="//@dataTypes.4"/>
+  </databases>
+  <databases xsi:type="typhonml:DocumentDB" name="Reviews">
+    <collections name="ReviewsDB" entity="//@dataTypes.3"/>
+  </databases>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="String"/>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="int"/>
+  <dataTypes xsi:type="typhonml:CustomDataType" name="Address">
+    <elements name="street" type="//@dataTypes.0"/>
+    <elements name="number" type="//@dataTypes.1"/>
+    <elements name="city" type="//@dataTypes.0"/>
+  </dataTypes>
+  <dataTypes xsi:type="typhonml:Entity" name="Review">
+    <attributes name="contents" type="//@dataTypes.0"/>
+    <relations name="product" type="//@dataTypes.4" cardinality="one" opposite="//@dataTypes.4/@relations.0"/>
+    <relations name="user" type="//@dataTypes.5" cardinality="one" opposite="//@dataTypes.5/@relations.0"/>
+  </dataTypes>
+  <dataTypes xsi:type="typhonml:Entity" name="Product">
+    <attributes name="name" type="//@dataTypes.0"/>
+    <attributes name="description" type="//@dataTypes.0"/>
+    <attributes name="price" type="//@dataTypes.1"/>
+    <relations name="reviews" type="//@dataTypes.3" cardinality="zero_many" opposite="//@dataTypes.3/@relations.0" isContainment="true"/>
+  </dataTypes>
+  <dataTypes xsi:type="typhonml:Entity" name="User">
+    <attributes name="name" type="//@dataTypes.0"/>
+    <attributes name="address" type="//@dataTypes.2"/>
+    <relations name="reviews" type="//@dataTypes.3" cardinality="zero_many" opposite="//@dataTypes.3/@relations.1" isContainment="true"/>
+  </dataTypes>
+</typhonml:Model>
