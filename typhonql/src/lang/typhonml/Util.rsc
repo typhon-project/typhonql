@@ -24,7 +24,7 @@ import Message;
 
 // abstraction over TyphonML, to be extended with back-end specific info in the generic map
 data Schema
-  = schema(Rels rels, Attrs attrs, Placement placement = {}, map[str, value] config = ());
+  = schema(Rels rels, Attrs attrs, Placement placement = {}, Attrs elements = {}, map[str, value] config = ());
 
 
 alias Rel = tuple[str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool containment];
@@ -108,7 +108,7 @@ default Placement place(Database db, Model m) {
 
 
 Schema model2schema(Model m)
-  = schema(model2rels(m), model2attrs(m), placement=model2placement(m));
+  = schema(model2rels(m), model2attrs(m), elements = model2elements(m), placement=model2placement(m));
 
 
 
@@ -117,8 +117,22 @@ Attrs model2attrs(Model m) {
   for (DataType(Entity(str from, list[Attribute] attrs, _, _)) <- m.dataTypes) {
     for (Attribute a <- attrs) {
       DataType dt = lookup(m, #DataType, a.\type);
-      assert DataType(PrimitiveDataType(_)) := dt : "Only built-in primitives allowed for attributes (for now).";
+      assert (DataType(PrimitiveDataType(_)) := dt || DataType(CustomDataType(_,_)) := dt) :
+      	 "Only built-in and custom primitives allowed for attributes (for now).";
       result += {<from, a.name, dt.name>};
+    }
+  }
+  return result;
+}
+
+Attrs model2elements(Model m) {
+  Attrs result = {};
+  for (DataType(CustomDataType(str from, list[DataTypeItem] elements)) <- m.dataTypes) {
+  	for (DataTypeItem e <- elements) {
+      DataType dt = lookup(m, #DataType, e.\type);
+      assert (DataType(PrimitiveDataType(_)) := dt || DataType(CustomDataType, _(_)) := dt) :
+      	 "Only built-in and custom primitives allowed for elements (for now).";
+      result += {<from, e.name, dt.name>};
     }
   }
   return result;
@@ -162,6 +176,7 @@ Rels model2rels(Model m) {
       result += {<from, fromCard, fromRole, toRole, toCard, to, r.isContainment>};  
     }
   }
+  
   return result;
 }
 
