@@ -13,16 +13,51 @@ import String;
 import List;
 
 
+/*
+
+General (naive) compilation scheme:
+
+Assume a Java map contains the results per entity of the back-end evaluations
+ (either converted to uniform format, or natively)
+ 
+Alternatively: they could be actual java variables of the native back-end type;
+so a Resultset representing the set of entities returned from the SQL part.
+The generated loop code could then iterate directly.
+
+General: for each #dynamic binding E x, generate nested for loops
+  for (Entity x: map.get("E")) {
+    ...
+       
+       
+Then in the innermost loop body:
+ 
+SQL:
+  generate java code to create a prepared statement, replacing refs to the #dynamic bindings
+  with (named?) "?" marks and interpolate the arguments using the loop vars
+  
+  the sql in the prepared statement ignores the #ignored bindings and the #needed/#delayed
+  expressions, but adds the local field refs in #needed expressions to the result set.
+  
+MongoDB
+  generate Java code that creates the template BSON document, directly
+  inserting the loop variables in designated places
+
+
+*/
+
+
 
 syntax Binding
-  = "#dynamic" "(" Binding ")"
-  | "#ignored" "(" Binding ")"
+  = "#dynamic" "(" Binding ")" // entity binding comes from previous round
+  | "#ignored" "(" Binding ")" // entity results are produced later
+      // if a binding is #ignored, all refs in expressions to it should be #delayed or #needed
   ;
 
 syntax Expr
-  = "#done" "(" Expr ")" // evaluated in previous round
+  = "#done" "(" Expr ")" // has been already evaluated in previous round
   | "#needed" "(" Expr ")" // evaluated later, but need result from this round
   | "#delayed" "(" Expr ")" // evaluated later completely
+  // unannotated means: evaluate in current round
   ;
   
 
@@ -57,17 +92,22 @@ bool isAfter(str entity, Place p, list[Place] order, Schema s)
   = indexOf(p2) > indexOf(p, order)
   when <Place p2, entity> <- s.placement;
 
+@doc{Restricting a query to a specific db places consists of 
+annotating the query's bindings (`Entity x`) and the result/where 
+expressions. The annotations indicate if expression evaluation 
+should be delayed or not to later phases, and whether entity sets
+are only available dynamically.}
 Request restrict(req:(Request)`<Query q>`, Place p, list[Place] order, Schema s) {
   Env env = queryEnv(q);
   
-  /*
-   * add result exprs for expressions from the current that are used in where clauses that are later
-   */
+  RelativeOrder entityOrder(str e) = compare(e, p, order, s);
   
+  set[RelativeOrder] orders(Expr e) = { entityOrder(env["<x>"]) | /VId x := e }; 
   
-  set[RelativeOrder] orders(Expr e) = { compare(env["<x>"], p, order, s) | /VId x := e }; 
   bool allBefore(Expr e) = orders(e) == {before()};
+  
   bool allAfter(Expr e) = orders(e) == {after()};
+  
   bool someAfter(Expr e) = after() in orders(e);
   
   Expr orderExpr(Expr e) {
@@ -80,21 +120,21 @@ Request restrict(req:(Request)`<Query q>`, Place p, list[Place] order, Schema s)
     if (allBefore(e)) {
       return (Expr)`#done(<Expr e>)`;
     }
-    return e; // all local/same
+    return e; // all local to this round
   }
   
   req = top-down-break visit (req) {
     case (Binding)`<EId e> <VId x>` => (Binding)`#dynamic(<EId e> <VId x>)`
-      when compare("<e>", p, order, s) == before()
+      when entityOrder("<e>") == before()
 
     case (Binding)`<EId e> <VId x>` => (Binding)`#ignored(<EId e> <VId x>)`
-      when compare("<e>", p, order, s) == after()
+      when entityOrder("<e>") == after()
       
     case (Result)`<Expr e>` => (Result)`<Expr e2>`
       when Expr e2 := orderExpr(e)  
       
     case Where wh: { 
-      // complicated way to map over the expressions
+      // map over the expressions
       insert top-down-break visit (wh) {
         case Expr e => orderExpr(e)
       }
