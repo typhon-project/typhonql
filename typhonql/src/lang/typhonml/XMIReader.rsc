@@ -1,13 +1,15 @@
 module lang::typhonml::XMIReader
 
 import lang::xml::IO;
-import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
 import lang::ecore::Refs;
 
 import IO;
 import Node;
 import Type;
+
+import util::ValueUI;
+
 
 void smokeTest() {
   str xmi = readFile(|project://typhonql/src/newmydb4.xmi|);
@@ -16,10 +18,10 @@ void smokeTest() {
   iprintln(model2schema(m));
 }
 
+Model loadTyphonML(loc l) = xmiString2Model(readFile(l));
+
 Model xmiString2Model(str s) = xmiNode2Model(readXML(s));
 
-Schema loadSchemaFromXMI(str s) = model2schema(m)
-	when Model m := xmiString2Model(s);
 
 @doc{
 Convert a node representation of the XMI serialization of a TyphonML model

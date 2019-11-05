@@ -2,7 +2,6 @@ module lang::typhonql::Expr
 
 extend lang::std::Layout;
 extend lang::std::Id;
-extend lang::std::Id;
 
 syntax Expr
   = attr: VId var "." {Id "."}+  attrs

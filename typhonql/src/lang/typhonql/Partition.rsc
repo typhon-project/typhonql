@@ -36,6 +36,10 @@ lrel[Place place, value] where the value is the back-end specific query
 
 void partitionSmokeTest() {
   s = myDbSchema();
+
+  q = (Request)`from Product p, Review r select r.id where r.product == p`;
+  println("PARTITIONING: <q>");
+  println(partition2text(partition(q, s)));
   
   q = (Request)`from Product p select p.review where p.name != "", p.review.id != ""`;
   println("PARTITIONING: <q>");
@@ -217,8 +221,9 @@ Partitioning partition(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}
     //  println("  <b>");
     //}
     
-    // kick out results that are not on the current db
-    newResults = [ r | r:(Result)`<Expr re>` <- rs, isLocalTo(re, p, env, s) ];
+    // kick out results that are not touched by the current db
+    // (IOW: only retain those that go through the current db)
+    newResults = [ r | r:(Result)`<Expr re>` <- rs, goesThrough(re, p, env, s) ];
     
     // need to add results for bindings that are local, but not in the result
     // TODO: this needs to be refined, it adds too many results in some cases... 
@@ -258,15 +263,6 @@ Partitioning partition(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}
     Query newQ = buildQuery(newBindings, newResults, newWheres);
     result += [<p,(Request)`<Query newQ>`>];
   }
-  
-  // Recombination query
-  
-  //if (size(result) > 1) {
-  //  newWheres = [ e | Expr e <- es, !isLocal(e, env, s) ];
-  //
-  //  Query recomb = buildQuery([ b | Binding b <- bs ], [ r | Result r <- rs ], newWheres); 
-  //  result += [<<recombine(), "">, (Request)`<Query recomb>`>];
-  //}
 
   return result;
 }
@@ -306,6 +302,7 @@ alias DBPath = lrel[Place place, str entity];
 
 bool goesThrough(Expr e, Place p, map[str, str] env, Schema s) 
   = p in dbPlaces(e, env, s);
+
 
 bool isLocalTo(Expr e, Place p, map[str, str] env, Schema s)
   = dbPlaces(e, env, s) == {p};
