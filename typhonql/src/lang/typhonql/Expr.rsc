@@ -2,7 +2,6 @@ module lang::typhonql::Expr
 
 extend lang::std::Layout;
 extend lang::std::Id;
-extend lang::std::Id;
 
 syntax Expr
   = attr: VId var "." {Id "."}+  attrs
@@ -16,7 +15,6 @@ syntax Expr
   | uuid: UUID
   | bracket "(" Expr arg ")"
   | obj: Obj // for use in insert and allow nesting of objects
-  | custom: Custom // for use in insert and allow nesting of custom data types
   | lst: "[" {Obj ","}* "]" // NB: only objects! TODO: we might want Object refs as well.
   | null: "null"
   | pos: "+" Expr arg
@@ -59,8 +57,6 @@ syntax VId =  Id \ "true" \ "false" \ "null";
 syntax Bool = "true" | False: "false";
 
 syntax Obj = Label? labelOpt EId entity "{" {KeyVal ","}* keyVals "}";
-
-syntax Custom = EId typ "(" {KeyVal ","}* keyVals ")";
   
 syntax Label = "@" VId label;
   
