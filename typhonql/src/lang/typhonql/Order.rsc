@@ -2,7 +2,7 @@ module lang::typhonql::Order
 
 import lang::typhonml::Util;
 import lang::typhonql::TDBC;
-import lang::typhonql::util::Objects;
+import lang::typhonql::Normalize;
 
 import lang::typhonml::TyphonML;
 
@@ -182,19 +182,26 @@ int filterWeight(Expr e, Place p, map[str, str] env, Schema s)
   
 void tests() {
 
-  s = schema({
+ s = schema({
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
-    <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>
+    <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
+    <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
+    <"Comment", zero_many(), "replies", "owner", \zero_many(), "Comment", true>
   }, {
     <"Person", "name", "String">,
-    <"Review", "text", "String">
+    <"Person", "age", "int">,
+    <"Review", "text", "String">,
+    <"Comment", "contents", "String">,
+    <"Reply", "reply", "String">
   },
   placement = {
     <<sql(), "Inventory">, "Person">,
-    <<mongodb(), "Reviews">, "Review">
+    <<mongodb(), "Reviews">, "Review">,
+    <<mongodb(), "Reviews">, "Comment">
   } 
   );
-
+  
+  
   println("\n\n#####");
   println("## ordered weights");
   q = (Request)`from Person p, Review r select r.text where p.name == "Pablo", r.user == p`;  
@@ -219,6 +226,24 @@ void tests() {
     println("weight for <p>: <filterWeight(q, p, s)>"); 
     println("restrict:\n\t\t <restrict(q, p, order, s)>\n\n");
   }
+  
+  
+  
+  println("\n\n#####");
+  println("## after normalization");
+  q = (Request)`from Person p, Review r select r.comment.replies.reply where r.user.age \> 10, r.user.name == "Pablo"`;
+  println("ORIGINAL: <q>");
+  q = expandNavigation(q, s);
+  println("NORMALIZED: <q>");
+    
+  println("Ordering <q>");
+  order = orderPlaces(q, s);
+  println("ORDER = <order>");
+  for (Place p <- order) {
+    println("weight for <p>: <filterWeight(q, p, s)>"); 
+    println("restrict:\n\t\t <restrict(q, p, order, s)>\n\n");
+  } 
+  
   
   
 }
