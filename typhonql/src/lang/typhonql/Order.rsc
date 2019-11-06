@@ -61,7 +61,6 @@ syntax Expr
   ;
   
 
-alias Env = map[str var, str entity];
 
 alias WPlace = tuple[Place place, int weight];
 
@@ -179,8 +178,6 @@ int filterWeight((Request)`<Query q>`, Place p, Schema s) {
 int filterWeight(Expr e, Place p, map[str, str] env, Schema s)
   = ( 0 | it + 1 | /VId x := e, <p, env["<x>"]> in s.placement ); 
   
-
-Env queryEnv(Query q) = ("<x>": "<e>" | (Binding)`<EId e> <VId x>` <- q.bindings );
 
   
 void tests() {

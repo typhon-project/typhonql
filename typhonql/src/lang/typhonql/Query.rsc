@@ -20,3 +20,10 @@ syntax Having = "having" {Expr ","}+ clauses;
 
 syntax OrderBy = "order" {VId ","}+ vars;
   
+alias Env = map[str var, str entity];
+
+Env queryEnv(Query q) = queryEnv(q.bindings);
+
+Env queryEnv({Binding ","}+ bs) = ("<x>": "<e>" | (Binding)`<EId e> <VId x>` <- bs );
+  
+  
