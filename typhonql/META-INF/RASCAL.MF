@@ -1,4 +1,4 @@
 Manifest-Version: 0.0.1
 Main-Function: main
-Project-Name: typhonml
+Project-Name: typhonql
 Source: src
