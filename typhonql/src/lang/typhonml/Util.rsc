@@ -62,8 +62,6 @@ str card2str(zero_many()) = "*";
 str card2str(zero_one()) = "?";
 str card2str(\one()) = "";
 
-
-
 Schema loadSchema(loc l) = model2schema(loadTyphonML(l));
   
 Schema myDbSchema() = loadSchema(|project://typhonql/src/newmydb4.xmi|);

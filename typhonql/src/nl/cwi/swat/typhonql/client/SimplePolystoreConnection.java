@@ -88,7 +88,7 @@ public class SimplePolystoreConnection extends PolystoreConnection {
 					new ModuleEnvironment("$typhonql$", heap), heap);
 			
 			result.addRascalSearchPathContributor(StandardLibraryContributor.getInstance());
-
+			result.addRascalSearchPath(pcfg.getBin());
 			for (IValue path : pcfg.getSrcs()) {
 				result.addRascalSearchPath((ISourceLocation) path); 
 			}

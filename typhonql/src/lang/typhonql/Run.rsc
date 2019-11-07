@@ -11,8 +11,9 @@ import lang::typhonql::TDBC;
 import lang::typhonql::Eval;
 import lang::typhonql::Closure;
 
-
 import lang::typhonql::util::Log;
+
+import lang::typhonml::XMIReader;
 
 
 import IO;
@@ -84,7 +85,7 @@ value run(str src, str polystoreId, Schema s, Log log = noLog) {
 }
 
 value run(str src, str polystoreId, str xmiString, Log log = noLog) {
-  Model m = parse(#start[Model], xmiString);
+  Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   Request req = [Request]src;
   return run(req, polystoreId, s, log = log);
