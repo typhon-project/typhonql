@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.usethesource.vallang.IValue;
 import nl.cwi.swat.typhonql.DBType;
 import nl.cwi.swat.typhonql.MariaDB;
 import nl.cwi.swat.typhonql.MongoDB;
@@ -17,6 +16,8 @@ import nl.cwi.swat.typhonql.client.Place;
 import nl.cwi.swat.typhonql.client.PolystoreConnection;
 import nl.cwi.swat.typhonql.client.PolystoreSchema;
 import nl.cwi.swat.typhonql.client.Relation;
+import nl.cwi.swat.typhonql.client.SimplePolystoreConnection;
+import nl.cwi.swat.typhonql.workingset.WorkingSet;
 
 public class TyphonQLClientTest {
 	public static void main(String[] args) throws IOException {
@@ -64,8 +65,9 @@ public class TyphonQLClientTest {
 				new DatabaseInfo("localhost", 3306, "RelationalDatabase", DBType.relationaldb, new MariaDB().getName(),
 						"root", "example") };
 
-		PolystoreConnection conn = new PolystoreConnection(schema, Arrays.asList(infos));
-		IValue iv = conn.executeQuery("from User u select u");
+		PolystoreConnection conn = new SimplePolystoreConnection(schema, Arrays.asList(infos));
+		WorkingSet iv = conn.executeQuery("from User u select u");
+		
 		System.out.println(iv);
 
 	}
