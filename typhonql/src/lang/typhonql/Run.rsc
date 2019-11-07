@@ -83,6 +83,12 @@ value run(str src, str polystoreId, Schema s, Log log = noLog) {
   return run(req, polystoreId, s, log = log);
 }
 
+value run(str src, str polystoreId, str xmiString, Log log = noLog) {
+  Model m = parse(#start[Model], xmiString);
+  Schema s = model2schema(m);
+  Request req = [Request]src;
+  return run(req, polystoreId, s, log = log);
+}
 
 
 WorkingSet dumpDB(str polystoreId, Schema s) {
