@@ -32,7 +32,7 @@ import io.usethesource.vallang.io.StandardTextWriter;
 import nl.cwi.swat.typhonql.ConnectionInfo;
 import nl.cwi.swat.typhonql.Connections;
 
-public class XMIPolystoreConnection implements PolystoreConnection {
+public class XMIPolystoreConnection extends PolystoreConnection {
 	private static final PrintWriter ERROR_WRITER = new PrintWriter(System.err);
 	private static final StandardTextWriter VALUE_PRINTER = new StandardTextWriter(true, 2);
 	private static final String LOCALHOST = "localhost";
@@ -80,7 +80,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 		}
 
 		PathConfig pcfg = PathConfig
-				.fromSourceProjectRascalManifest(URIUtil.correctLocation("project", "typhonql", null));
+				.fromSourceProjectRascalManifest(URIUtil.correctLocation("lib", "typhonql", null));
 		ClassLoader cl = new SourceLocationClassLoader(pcfg.getClassloaders(),
 				SimplePolystoreConnection.class.getClassLoader());
 
@@ -117,7 +117,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 	 * String)
 	 */
 	@Override
-	public IValue executeQuery(String query) {
+	protected IValue evaluateQuery(String query) {
 		return evaluators.useAndReturn(evaluator -> {
 			try {
 				synchronized (evaluator) {
@@ -137,4 +137,5 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 			}
 		});
 	}
+
 }

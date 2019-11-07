@@ -3,11 +3,13 @@ package nl.cwi.swat.typhonql.client;
 import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.staticErrorMessage;
 import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.throwMessage;
 import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.throwableMessage;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 import org.rascalmpl.interpreter.Evaluator;
 import org.rascalmpl.interpreter.control_exceptions.Throw;
 import org.rascalmpl.interpreter.env.GlobalEnvironment;
@@ -21,6 +23,7 @@ import org.rascalmpl.uri.classloaders.SourceLocationClassLoader;
 import org.rascalmpl.uri.project.ProjectURIResolver;
 import org.rascalmpl.util.ConcurrentSoftReferenceObjectPool;
 import org.rascalmpl.values.ValueFactoryFactory;
+
 import io.usethesource.vallang.ISourceLocation;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
@@ -32,7 +35,7 @@ import nl.cwi.swat.typhonql.Connections;
 /**
  * Thread safe connection to the polystore ql engine, construct this once, and call the executeQuery from as many threads as you like (there is a memory overhead, but it will not interfer with eachother)
  */
-public class SimplePolystoreConnection implements PolystoreConnection {
+public class SimplePolystoreConnection extends PolystoreConnection {
 
 	private static final PrintWriter ERROR_WRITER = new PrintWriter(System.err);
 	private static final StandardTextWriter VALUE_PRINTER = new StandardTextWriter(true, 2);
@@ -74,7 +77,7 @@ public class SimplePolystoreConnection implements PolystoreConnection {
 			// from now on, |project://typhonql/| should work
 		}
 
-		PathConfig pcfg = PathConfig.fromSourceProjectRascalManifest(URIUtil.correctLocation("project", "typhonql", null));
+		PathConfig pcfg = PathConfig.fromSourceProjectRascalManifest(URIUtil.correctLocation("lib", "typhonql", null));
 		ClassLoader cl = new SourceLocationClassLoader(pcfg.getClassloaders(), SimplePolystoreConnection.class.getClassLoader());
 		
 		evaluators = new ConcurrentSoftReferenceObjectPool<>(10, TimeUnit.MINUTES, 1, calculateMaxEvaluators(), () -> {
@@ -102,11 +105,7 @@ public class SimplePolystoreConnection implements PolystoreConnection {
 
 	}
 
-	/* (non-Javadoc)
-	 * @see nl.cwi.swat.typhonql.client.PolystoreConnection#executeQuery(java.lang.String)
-	 */
-	@Override
-	public IValue executeQuery(String query) {
+	protected IValue evaluateQuery(String query) {
 		return evaluators.useAndReturn(evaluator -> {
 			try {
                 synchronized (evaluator) {
