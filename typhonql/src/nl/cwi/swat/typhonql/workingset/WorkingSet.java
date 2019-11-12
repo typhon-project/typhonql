@@ -27,7 +27,7 @@ public class WorkingSet extends HashMap<String, List<Entity>>{
 				List<Entity> entities = new ArrayList<Entity>();
 				while (entryIter.hasNext()) {
 					IValue current = entryIter.next();
-					Entity e = Entity.fromIValue(entry.getValue());
+					Entity e = Entity.fromIValue(current);
 					entities.add(e);
 				}
 				
