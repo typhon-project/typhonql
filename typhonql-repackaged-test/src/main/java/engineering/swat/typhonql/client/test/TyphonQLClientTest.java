@@ -53,20 +53,20 @@ public class TyphonQLClientTest {
 
 		Map<Place, List<String>> placement = new HashMap<Place, List<String>>();
 
-		placement.put(new Place(DBType.documentdb, "DocumentDatabase"), Arrays.asList("Review", "Comment"));
-		placement.put(new Place(DBType.relationaldb, "RelationalDatabase"),
-				Arrays.asList("CreditCard", "User", "Order", "Product"));
+		placement.put(new Place(DBType.documentdb, "Reviews"), Arrays.asList("Review"));
+		placement.put(new Place(DBType.relationaldb, "Inventory"),
+				Arrays.asList("User", "Order", "Product"));
 
 		PolystoreSchema schema = new PolystoreSchema(Arrays.asList(rels), Arrays.asList(attrs), placement);
 
 		DatabaseInfo[] infos = new DatabaseInfo[] {
-				new DatabaseInfo("localhost", 27017, "DocumentDatabase", DBType.documentdb, new MongoDB().getName(),
+				new DatabaseInfo("localhost", 27017, "Reviews", DBType.documentdb, new MongoDB().getName(),
 						"admin", "admin"),
-				new DatabaseInfo("localhost", 3306, "RelationalDatabase", DBType.relationaldb, new MariaDB().getName(),
+				new DatabaseInfo("localhost", 3306, "Inventory", DBType.relationaldb, new MariaDB().getName(),
 						"root", "example") };
 
 		PolystoreConnection conn = new SimplePolystoreConnection(schema, Arrays.asList(infos));
-		WorkingSet iv = conn.executeQuery("from User u select u");
+		WorkingSet iv = conn.executeQuery("from Product p select p");
 		
 		System.out.println(iv);
 
