@@ -73,7 +73,7 @@ Schema toSchema(JavaFriendlySchema sch)
 		 placement := {toSchemaPlacementItem(p) | p <- sch.placement};
 		
 
-value run(str src, str polystoreId, JavaFriendlySchema s) {
+value run(str src, str polystoreId, JavaFriendlySchema s, Log log = noLog) {
 	Request req = [Request]src;
 	Schema sch = toSchema(s);
  	return run(req, polystoreId, sch, log = noLog);
