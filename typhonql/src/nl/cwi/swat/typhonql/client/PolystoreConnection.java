@@ -7,6 +7,8 @@ import nl.cwi.swat.typhonql.workingset.WorkingSet;
 
 public abstract class PolystoreConnection {
 	
+	
+	
 	public WorkingSet executeQuery(String query) {
 		IValue val = evaluateQuery(query);
 		System.out.println(val);
@@ -26,5 +28,6 @@ public abstract class PolystoreConnection {
 	}
 	
 	protected abstract IValue evaluateQuery(String query);
+	
 
 }
