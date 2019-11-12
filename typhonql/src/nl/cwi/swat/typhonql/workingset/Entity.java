@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
+import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
 
 public class Entity {
@@ -48,12 +49,13 @@ public class Entity {
 	}
 
 	public static Entity fromIValue(IValue v) {
-		if (v instanceof IConstructor) {
-			IConstructor con = (IConstructor) v;
-			IString name = (IString) con.get("name");
-			IString uuid = (IString) con.get("uuid");
+		System.out.println(v);
+		if (v instanceof ITuple) {
+			ITuple tuple = (ITuple) v;
+			IString name = (IString) tuple.get(0);
+			IString uuid = (IString) tuple.get(1);
 			Map<String, Object> fields = new HashMap<String, Object>();
-			IMap map = (IMap) con.get("fields");
+			IMap map = (IMap) tuple.get(2);
 			Iterator<Entry<IValue, IValue>> iter = map.entryIterator();
 			while (iter.hasNext()) {
 				Entry<IValue, IValue> entry = iter.next();
