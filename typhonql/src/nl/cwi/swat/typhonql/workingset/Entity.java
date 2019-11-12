@@ -7,7 +7,6 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import io.usethesource.vallang.IConstructor;
-import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValue;
@@ -16,6 +15,10 @@ public class Entity {
 	public String name;
 	public String uuid;
 	public Map<String, Object> fields;
+	
+	public Entity(String name, String uuid) {
+		this(name, uuid, new HashMap<>());
+	}
 
 	public Entity(String name, String uuid, Map<String, Object> fields) {
 		super();
