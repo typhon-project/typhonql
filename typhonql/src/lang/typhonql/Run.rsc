@@ -84,6 +84,7 @@ value run(str src, str polystoreId, Schema s, Log log = noLog) {
   return run(req, polystoreId, s, log = log);
 }
 
+
 value run(str src, str polystoreId, str xmiString, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
@@ -105,11 +106,18 @@ WorkingSet dumpDB(str polystoreId, Schema s) {
   return ws;
 }
 
-void runSchema(str polystoreId, Schema s, Log log = noLog) {
+void runSchema(str polystoreId, str xmiString, Log log = noLog) {
+  Model m = xmiString2Model(xmiString);
+  Schema s = model2schema(m);
   for (Place p <- s.placement<0>) {
     log("[RUN-schema] executing schema for <p>");
     runSchema(p, polystoreId, s, log = log);
   }
+}
+
+
+void runSchema(str polystoreId, Schema s, Log log = noLog) {
+
 }
 
 value run((Request)`delete <EId e> <VId x>`, str polystoreId, Schema s, Log log = noLog) 

@@ -27,6 +27,8 @@ public abstract class PolystoreConnection {
 			throw new RuntimeException("Query was not an update query");
 	}
 	
+	public abstract void resetDatabases(); 
+	
 	protected abstract IValue evaluateQuery(String query);
 	
 

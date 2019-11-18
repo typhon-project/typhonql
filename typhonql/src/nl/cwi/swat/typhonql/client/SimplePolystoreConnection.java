@@ -56,4 +56,10 @@ public class SimplePolystoreConnection extends BasePolystoreConnection {
 			}
 		});
 	}
+
+	@Override
+	public void resetDatabases() {
+		throw new UnsupportedOperationException();
+		
+	}
 }

@@ -63,6 +63,31 @@ public class XMIPolystoreConnection extends BasePolystoreConnection {
 			}
 		});
 	}
+	
+	@Override
+	public void resetDatabases() {
+		evaluators.useAndReturn(evaluator -> {
+			try {
+				synchronized (evaluator) {
+					// str src, str polystoreId, Schema s,
+					return evaluator.call("runSchema", 
+							"lang::typhonql::Run",
+                    		Collections.emptyMap(),
+							ValueFactory.getInstance().string(LOCALHOST),
+							ValueFactory.getInstance().string(xmiModel));
+				}
+			} catch (StaticError e) {
+				staticErrorMessage(ERROR_WRITER, e, VALUE_PRINTER);
+				throw e;
+			} catch (Throw e) {
+				throwMessage(ERROR_WRITER, e, VALUE_PRINTER);
+				throw e;
+			} catch (Throwable e) {
+				throwableMessage(ERROR_WRITER, e, evaluator.getStackTrace(), VALUE_PRINTER);
+				throw e;
+			}
+		});
+	}
 
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		DatabaseInfo[] infos = new DatabaseInfo[] {
@@ -85,4 +110,5 @@ public class XMIPolystoreConnection extends BasePolystoreConnection {
 		System.out.println(iv);
 
 	}
+
 }
