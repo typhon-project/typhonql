@@ -56,7 +56,7 @@
         <dependency>
             <groupId>engineering.swat.typhon</groupId>
             <artifactId>bundle-typhoneql-dependencies</artifactId>
-            <version>0.7.0</version>
+            <version>0.8.0</version>
         </dependency>
 	   <!-- WARNING! maven dependencies need to be added to the bundler, and any change needs an update of the bundler version (and a local mvn install) -->
 	</dependencies>
