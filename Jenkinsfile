@@ -16,7 +16,7 @@ node {
     }
 
     stage('Build typhonql') {
-        sh 'mvn clean package'
+        sh 'mvn clean package deploy'
     }
 
     stage('Deploy update site') {
