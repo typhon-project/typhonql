@@ -54,7 +54,7 @@
 	<distributionManagement>
 	    <repository>
 	      <id>internal</id>
-	      <url>http://http://archiva.clmsuk.com:8090/repository/internal/</url>
+	      <url>http://archiva.clmsuk.com:8090/repository/internal/</url>
 	    </repository>
 	  </distributionManagement>
 	<dependencies>
