@@ -7,7 +7,7 @@ node {
         )
     ])  
     configFileProvider(
-        [configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
+        [configFile(fileId: 'MyGlobalSettings', variable: 'MAVEN_SETTINGS')]) {
         sh 'mvn -s $MAVEN_SETTINGS clean package'
     }
     stage('Clone') {
