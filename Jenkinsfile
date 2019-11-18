@@ -6,7 +6,7 @@ node {
             [string(defaultValue: '/var/site/typhon-ql', name: 'UPDATE_SITE_PATH')]
         )
     ])  
-
+    
     stage('Clone') {
         checkout scm
     }
@@ -16,7 +16,11 @@ node {
     }
 
     stage('Build typhonql') {
-        sh 'mvn clean package'
+	    configFileProvider(
+        	[configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
+        	sh 'mvn -gs $MAVEN_SETTINGS clean package -pl \'!typhonql-update-site\' deploy'
+   	}
+	    
     }
 
     stage('Deploy update site') {
