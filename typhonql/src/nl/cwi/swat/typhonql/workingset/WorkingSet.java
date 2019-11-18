@@ -4,17 +4,29 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValue;
 
-@SuppressWarnings("serial")
-public class WorkingSet extends HashMap<String, List<Entity>>{
+public class WorkingSet {
+
+	private Map<String, List<Entity>> map;
 	
+	public WorkingSet() {
+		map = new HashMap<String, List<Entity>>();
+	}
+
+	public Set<String> getEntityLabels() {
+		return map.keySet();
+	}
+
 	public static WorkingSet fromIValue(IValue v) {
-		//map[str entity, list[Entity] entities];
+		// map[str entity, list[Entity] entities];
 		if (v instanceof IMap) {
 			IMap map = (IMap) v;
 			WorkingSet ws = new WorkingSet();
@@ -30,13 +42,21 @@ public class WorkingSet extends HashMap<String, List<Entity>>{
 					Entity e = Entity.fromIValue(current);
 					entities.add(e);
 				}
-				
+
 				ws.put(key.getValue(), entities);
 			}
 			return ws;
-		}
-		else
+		} else
 			throw new RuntimeException("IValue does not represent a working set");
-		
+
+	}
+
+	public void put(String entityLabel, List<Entity> entities) {
+		map.put(entityLabel, entities);
+
+	}
+
+	public List<Entity> get(String entityLabel) {
+		return map.get(entityLabel);
 	}
 }
