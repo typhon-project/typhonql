@@ -6,7 +6,12 @@
     <artifactId>bundle-typhoneql-dependencies</artifactId>
     <version>0.8.0</version>
     <packaging>bundle</packaging>
-    
+    <distributionManagement>
+	    <repository>
+	      <id>internal</id>
+	      <url>http://archiva.clmsuk.com:8090/repository/internal/</url>
+	    </repository>
+	  </distributionManagement>
 	<dependencies>
         <!-- warning, increase the version of this bundle everytime you change a dependency, SNAPSHOT is not a stable way to get the right version into p2 -->
 		<dependency>
