@@ -63,8 +63,8 @@ public class TyphonQL {
 					throw new RuntimeException("Engine type " + d.getString("engineType").getValue() + " not known");
 				ConnectionInfo info = new ConnectionInfo(
 					path.getURI().toString(),
-					d.getString("host").getValue(), 
-					d.getNumber("port").intValue(), 
+					d.getString("externalHost").getValue(), 
+					d.getNumber("externalPort").intValue(), 
 					d.getString("name").getValue(), 
 					dbType,
 					d.getString("dbType").getValue(),
