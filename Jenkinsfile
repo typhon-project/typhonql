@@ -21,12 +21,13 @@ node {
     stage('Build typhonql') {
 	    configFileProvider(
         	[configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
-        	sh 'mvn -gs $MAVEN_SETTINGS clean package -pl \'!typhonql-update-site\' deploy'
+        	sh 'mvn -gs $MAVEN_SETTINGS clean install -pl \'!typhonql-update-site\' deploy'
    	}
 	    
     }
 
     stage('Deploy update site') {
+	     	sh 'cd typhonql-update-site && mvn clean package'
 		sh "rm -rf ${UPDATE_SITE_PATH}"
 		sh "mkdir ${UPDATE_SITE_PATH}"
         sh "cp -a typhonql-update-site/target/. ${UPDATE_SITE_PATH}/"
