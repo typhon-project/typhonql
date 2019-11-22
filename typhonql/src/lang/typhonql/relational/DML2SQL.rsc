@@ -74,13 +74,19 @@ list[SQLStat] update2sql((Request)`update <EId e> <VId x> where <{Expr ","}+ es>
       q.clauses)];
 }
 
-str columnName((KeyVal)`<Id x>: <Expr _>`, str entity) = columnName("<x>", entity); 
+list[str] columnName((KeyVal)`<Id x>: <EId customType> (<{KeyVal ","}* keyVals>)`, str entity) = [columnName("<x>", entity, "<customType>", "<y>") | (KeyVal)`<Id y>: <Expr e>` <- keyVals];
 
-str columnName((KeyVal)`@id: <Expr _>`, str entity) = typhonId(entity); 
+list[str] columnName((KeyVal)`<Id x>: <Expr e>`, str entity) = [columnName("<x>", entity)]
+	when (Expr) `<Custom c>` !:= e;
 
-Value evalKeyVal((KeyVal)`<Id _>: <Expr e>`) = evalExpr(e);
+list[str] columnName((KeyVal)`@id: <Expr _>`, str entity) = [typhonId(entity)]; 
 
-Value evalKeyVal((KeyVal)`@id: <Expr e>`) = evalExpr(e);
+list[Value] evalKeyVal((KeyVal) `<Id x>: <EId customType> (<{KeyVal ","}* keyVals>)`) = [evalExpr(e) | (KeyVal)`<Id x>: <Expr e>` <- keyVals];
+
+list[Value] evalKeyVal((KeyVal)`<Id _>: <Expr e>`) = [evalExpr(e)]
+	when (Expr) `<Custom c>` !:= e;
+
+list[Value] evalKeyVal((KeyVal)`@id: <Expr e>`) = [evalExpr(e)];
 
 bool isAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) = <e, "<x>", _> <- s.attrs;
 
@@ -96,10 +102,10 @@ list[SQLStat] insert2sql((Request)`insert <{Obj ","}* objs>`, Place p, Schema sc
   // NB: this needs to be wrapped in a transaction  if we're gonna keep all the fk contraints and not null etc.
 
   list[str] aCols({KeyVal ","}* kvs, str entity) 
-    = [ columnName(kv, entity) | KeyVal kv  <- kvs, isAttr(kv, entity, schema) ];
+    = [ *columnName(kv, entity) | KeyVal kv  <- kvs, isAttr(kv, entity, schema)];
   
   list[Value] aVals({KeyVal ","}* kvs, str entity) 
-    = [ evalKeyVal(kv) | KeyVal kv <- kvs, isAttr(kv, entity, schema) ];
+    = [ *evalKeyVal(kv) | KeyVal kv <- kvs, isAttr(kv, entity, schema) ];
 
   result = [ \insert(tableName("<e>"), aCols(kvs, "<e>"), aVals(kvs, "<e>")) | (Obj)`<EId e> {<{KeyVal ","}* kvs>}` <- objs ]; 
   
