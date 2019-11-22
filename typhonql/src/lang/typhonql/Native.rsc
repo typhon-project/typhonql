@@ -40,10 +40,41 @@ For every back-end we should have the following functions:
 
 */
 
+  // ugh...
+void runCreateEntity(p:<sql(), str db>, str polystoreId, str entity, Schema s, Log log = noLog) {
+	SQLStat stat = create(tableName(entity), [typhonIdColumn(entity)], []);
+	executeUpdate(polystoreId, db, pp(stat));     
+}
+
+void runCreateEntity(p:<mongodb(), str db>, str polystoreId, str entity, Schema s, Log log = noLog) {
+	drop(polystoreId, db, entity);
+    createCollection(polystoreId, db, entity);
+}
+
+void runCreateAttribute(p:<sql(), str db>, str polystoreId, str entity, str attribute, str ty, Schema s, Log log = noLog) {
+	SQLStat stat = alterTable(tableName(entity), [addColumn(column(attribute, typhonType2SQL(ty), []))]);
+	println(pp(stat));
+	executeUpdate(polystoreId, db, pp(stat));     
+}
+
+void runCreateAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str attribute, Type t, Schema s, Log log = noLog) {
+}
+
+
+void runDropAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str attribute, Schema s, Log log = noLog) {
+	SQLStat stat = alterTable(tableName(entity), [dropColumn(attribute)]);
+	println(pp(stat));
+	executeUpdate(polystoreId, db, pp(stat));    
+}
+
+void runDropAttribute(p:<sql(), str db>, str polystoreId, str entity, str attribute, Schema s, Log log = noLog) {
+	updateCollection(polystoreId, db, entity, "{$unset: {<attribute>:1}}", "{multi: true}");
+}
+
 /*
  * Booting a schema (NB: this will drop tables/collections if they already exist)
  */
- 
+
 
 void runSchema(p:<sql(), str db>, str polystoreId, Schema s, Log log = noLog) {
   list[SQLStat] stats = schema2sql(s, p, s.placement[p], doForeignKeys = false);

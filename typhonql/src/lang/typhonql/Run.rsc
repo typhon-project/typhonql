@@ -109,15 +109,29 @@ WorkingSet dumpDB(str polystoreId, Schema s) {
 void runSchema(str polystoreId, str xmiString, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
-  for (Place p <- s.placement<0>) {
-    log("[RUN-schema] executing schema for <p>");
-    runSchema(p, polystoreId, s, log = log);
-  }
+  runSchema(polystoreId, s, log = log);
 }
 
 
-void runSchema(str polystoreId, Schema s, Log log = noLog) {
+value run(r:(Request)`create <EId eId> at <Id dbName>`, str polystoreId, Schema s, Log log = noLog) {
+	 for (p:<db, name> <- s.placement<0>, name == "<dbName>") {
+	 	runCreateEntity(p, polystoreId, "<eId>", s, log = log);
+	 }
+	 return 1;
+}
 
+value run(r:(Request)`create <EId eId>.<Id attribute> : <Type ty>`, str polystoreId, Schema s, Log log = noLog) {
+	 for (p:<db, name> <- s.placement<0>, name == "<dbName>") {
+	 	runCreateAttribute(p, polystoreId, "<eId>", "<attribute>", "<ty>", s, log = log);
+	 }
+	 return 1;
+}
+
+void runSchema(str polystoreId, Schema s, Log log = noLog) {
+	for (Place p <- s.placement<0>) {
+    	log("[RUN-schema] executing schema for <p>");
+    	runSchema(p, polystoreId, s, log = log);
+  	}
 }
 
 value run((Request)`delete <EId e> <VId x>`, str polystoreId, Schema s, Log log = noLog) 
