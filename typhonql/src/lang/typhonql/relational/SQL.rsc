@@ -21,7 +21,10 @@ data Set
 
   
 data Alter
-  = addConstraint(TableConstraint constraint);
+  = addConstraint(TableConstraint constraint)
+  | addColumn(Column column)
+  | dropColumn(str columnName)
+  ;
 
   
 data SQLExpr

@@ -56,7 +56,12 @@ str pp(DropOption::cascade()) = "cascade";
 str pp(addConstraint(TableConstraint c))
   = "add constraint 
     '<pp(c)>";
+    
+str pp(addColumn(column(str name, ColumnType \type, list[ColumnConstraint] constraints)))
+  = "add <name> <pp(\type)>";
 
+str pp(dropColumn(str name))
+  = "drop column <name>";
 
 // As
 
