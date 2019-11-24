@@ -76,7 +76,7 @@ str pp(\set(str c, SQLExpr e)) = "<q(c)> = <pp(e)>";
 
 str pp(column(str table, str name)) = "<q(table)>.<q(name)>";
 str pp(lit(Value val)) = pp(val);
-str pp(placeholder()) = "?";
+str pp(placeholder(name = str name)) =  name == "" ? "?" : ":<name>";
 str pp(not(SQLExpr arg)) = "not (<pp(arg)>)";
 str pp(neg(SQLExpr arg)) = "-(<pp(arg)>)"; 
 str pp(pos(SQLExpr arg)) = "+(<pp(arg)>)";
