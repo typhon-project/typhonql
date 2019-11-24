@@ -189,14 +189,14 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
   str role = "<f>"; 
 
   if ("<x>" in ctx.dyns) {
-    str token = "<x>_<ctx.vars()>";
-    ctx.addParam(token, "<x>.@id");
+    str token = "<x>_<f>_<ctx.vars()>";
+    ctx.addParam(token, "<x>.<f>");
     return placeholder(name=token);
   }
 
   
   if (<entity, _, role, str toRole, _, str to, true> <- ctx.schema.rels, placeOf(to, ctx.schema) == ctx.place) {
-    println("# containment ");
+    println("# local containment <entity> -<role>/<toRole>-\> <to>");
     str tbl1 = "<x>";
     str tbl2 = varForTarget(f, ctx.vars()); // introduce a new table alias
     ctx.addFrom(as(tableName(to), tbl2));
@@ -206,28 +206,21 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
     // provided that its parent is the table representing x 
     return column(tbl2, typhonId(to));
   }
-  else if (<str to, _, str toRole, role, _, entity, true> <- ctx.schema.rels, placeOf(to, ctx.schema) == ctx.place) {
-    println("# inverse containment");
-    // it's using an inverse
-    str tbl1 = varForTarget(f, ctx.vars()); // introduce a new table alias
-    str tbl2 = "<x>";
-    ctx.addFrom(as(tableName(to), tbl1));
-    ctx.addWhere(equ(column(tbl1, fkName(entity, to, toRole)), column(tbl2, typhonId(entity))));
-    
-    return column(tbl1, typhonId(entity));
-  }
   else if (<entity, _, role, str toRole, _, str to, _> <- ctx.schema.rels) {
   	println("# xref, or external containment: <entity> -<role>/<toRole>-\> <to>  ");
     tbl = varForJunction(f, ctx.vars());
   	
   	ctx.addFrom(as(junctionTableName(entity, role, to, toRole), tbl));
-  	ctx.addWhere(equ(column(tbl, junctionFkName(entity, role)), column("<x>", typhonId(entity))));
+  	ctx.addWhere(equ(column(tbl, junctionFkName(to, toRole)), column("<x>", typhonId(entity))));
   	println("returning column `<junctionFkName(to, toRole)>` of table <tbl>");
-  	return column(tbl, junctionFkName(to, toRole));
+  	return column(tbl, junctionFkName(entity, role));
   }
-  else { // an attribute
+  else if (<entity, role, _> <- ctx.schema.attrs) { 
     println("# an attribute");
     return column("<x>", columnName(role, entity));
+  }
+  else {
+    throw "Unsupported navigation <entity>.<role>";
   }
 }  
   
@@ -299,9 +292,57 @@ SQLExpr expr2sql((Expr)`<Expr lhs> || <Expr rhs>`, Ctx ctx)
 default SQLExpr expr2sql(Expr e, Ctx _) { throw "Unsupported expression: <e>"; }
 
 
-void smoke2sql() {
 
- s = schema({
+/*
+
+
+from Person p select p.name where p.name == "Pablo"
+select p.`Person.name` from Person as  p where p.`Person.name` = 'Pablo' 
+
+
+// person owns one review locally
+from Person p, Review r select r.text where p.review == r
+
+select r.`Review.text` from Person as `p`, Review `r`
+where `r`.`Review.user` = `p`.`Person.@id` // reversed because SQL
+
+// person owns one review locally, but query uses inverse
+from Person p, Review r select r.text where r.user == p
+
+select r.`Review.text` from Person as `p`, Review `r`
+where `r`.`Review.user` = `p`.`Person.@id`
+
+
+*/
+
+
+
+
+void smoke2sqlWithAllOnSameSQLDB() {
+  s = schema({
+    <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
+    <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
+    <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
+    <"Comment", zero_many(), "replies", "owner", \zero_many(), "Comment", true>
+  }, {
+    <"Person", "name", "String">,
+    <"Person", "age", "int">,
+    <"Review", "text", "String">,
+    <"Comment", "contents", "String">,
+    <"Reply", "reply", "String">
+  },
+  placement = {
+    <<sql(), "Inventory">, "Person">,
+    <<sql(), "Inventory">, "Review">,
+    <<sql(), "Inventory">, "Comment">
+  } 
+  );
+  
+  return smoke2sql(s);
+}
+
+void smoke2sqlWithAllOnDifferentSQLDB() {
+  s = schema({
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
     <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
@@ -320,10 +361,18 @@ void smoke2sql() {
   } 
   );
   
+  return smoke2sql(s);
+}
+
+
+void smoke2sql(Schema s) {
+
+ 
+  
   
   println("\n\n#####");
   println("## ordered weights");
-  Request q = (Request)`from Person p, Review r select r.text where p.name == "Pablo", r.user == p`;  
+  Request q = (Request)`from Person p, Review r select r.text where p.name == "Pablo", p.reviews == r`;  
   println("Ordering <q>");
   order = orderPlaces(q, s);
   println("ORDER = <order>");
@@ -364,7 +413,7 @@ void smoke2sql() {
   //  println("restrict:\n\t\t <restrict(q, p, order, s)>\n\n");
   //  println(pp(compile2sql(restrict(q, p, order, s), s, p)));
   //} 
-  //
+  
   
   
 }
