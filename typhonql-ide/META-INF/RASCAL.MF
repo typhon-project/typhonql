@@ -1,7 +1,8 @@
 Manifest-Version: 0.0.1
 Main-Function: main
-Courses: courses
 Main-Module: Plugin
+Project-Name: typhonide
+Require-Libraries: |lib://typhonql|
 Source: src
 PolystoreHost: localhost
 PolystorePort: 8080

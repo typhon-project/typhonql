@@ -2,4 +2,4 @@ Manifest-Version: 0.0.1
 Main-Function: main
 Project-Name: typhonql-client
 Source: src
-Required-Libraries: typhonql
+Require-Libraries: |lib://typhonql|
