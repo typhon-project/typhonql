@@ -6,15 +6,23 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import io.usethesource.vallang.IConstructor;
+import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
 
 public class Entity {
+	
 	public String name;
 	public String uuid;
+	
+	@JsonSerialize
 	public Map<String, Object> fields;
 	
 	public Entity(String name, String uuid) {
@@ -28,6 +36,7 @@ public class Entity {
 		this.fields = fields;
 	}
 	
+	@JsonProperty("type")
 	public String getName() {
 		return name;
 	}
@@ -61,12 +70,33 @@ public class Entity {
 				Entry<IValue, IValue> entry = iter.next();
 				IString key = (IString) entry.getKey();
 				IValue object =  entry.getValue();
-				fields.put(key.getValue(), object);
+				try {
+					Object javaObject = toJava(object);
+					fields.put(key.getValue(), javaObject);
+				} catch (RuntimeException e) {
+					
+				}
 			}
 			return new Entity(name.getValue(), uuid.getValue(), fields);
 		}
 		else
 			throw new RuntimeException("IValue does not represent an entity");
+	}
+
+	private static Object toJava(IValue object) {
+		if (object instanceof IInteger) {
+			return ((IInteger) object).intValue();
+		}
+		
+		else if (object instanceof IString) {
+			return ((IString) object).getValue();
+		}
+		else if (object instanceof IConstructor) {
+			// TODO do the resolution for entities
+			
+		}
+		
+		throw new RuntimeException("Unknown conversion for Rascal value of type" + object.getClass());
 	}
 	
 	
