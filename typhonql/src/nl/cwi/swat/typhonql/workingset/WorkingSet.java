@@ -8,10 +8,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValue;
+
 
 public class WorkingSet {
 
@@ -21,6 +24,7 @@ public class WorkingSet {
 		map = new HashMap<String, List<Entity>>();
 	}
 
+	@JsonIgnore
 	public Set<String> getEntityLabels() {
 		return map.keySet();
 	}
@@ -58,5 +62,9 @@ public class WorkingSet {
 
 	public List<Entity> get(String entityLabel) {
 		return map.get(entityLabel);
+	}
+	
+	public Map<String, List<Entity>> getMap() {
+		return map;
 	}
 }
