@@ -4,5 +4,5 @@ Bundle-Name: typhonql
 Bundle-SymbolicName: typhonql;singleton:=true
 Bundle-Version: 0.1.0.qualifier
 Require-Bundle: rascal_eclipse,
- engineering.swat.typhon.bundle-typhoneql-dependencies;bundle-version="0.8.0"
+ engineering.swat.typhon.bundle-typhoneql-dependencies;bundle-version="0.9.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8

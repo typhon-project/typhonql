@@ -1,19 +1,21 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>engineering.swat.typhon</groupId>
-    <artifactId>bundle-typhoneql-dependencies</artifactId>
-    <version>0.8.0</version>
-    <packaging>bundle</packaging>
-    <distributionManagement>
-	    <repository>
-	      <id>internal</id>
-	      <url>http://archiva.clmsuk.com:8090/repository/internal/</url>
-	    </repository>
-	  </distributionManagement>
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>engineering.swat.typhon</groupId>
+	<artifactId>bundle-typhoneql-dependencies</artifactId>
+	<version>0.9.0</version>
+	<packaging>bundle</packaging>
+	<distributionManagement>
+		<repository>
+			<id>internal</id>
+			<url>http://archiva.clmsuk.com:8090/repository/internal/</url>
+		</repository>
+	</distributionManagement>
 	<dependencies>
-        <!-- warning, increase the version of this bundle everytime you change a dependency, SNAPSHOT is not a stable way to get the right version into p2 -->
+		<!-- warning, increase the version of this bundle everytime you change 
+			a dependency, SNAPSHOT is not a stable way to get the right version into 
+			p2 -->
 		<dependency>
 			<groupId>org.mongodb</groupId>
 			<artifactId>mongodb-driver-sync</artifactId>
@@ -24,61 +26,74 @@
 			<artifactId>mongodb-driver</artifactId>
 			<version>3.11.0</version>
 		</dependency>
-        <dependency>
-            <groupId>org.mariadb.jdbc</groupId>
-            <artifactId>mariadb-java-client</artifactId>
-            <version>2.4.3</version>
-        </dependency>
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.17</version>
-        </dependency>
 		<dependency>
-		    <groupId>org.apache.httpcomponents</groupId>
-		    <artifactId>httpclient</artifactId>
-		    <version>4.5.9</version>
+			<groupId>org.mariadb.jdbc</groupId>
+			<artifactId>mariadb-java-client</artifactId>
+			<version>2.4.3</version>
 		</dependency>
-		
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.17</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.5.9</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-text</artifactId>
 			<version>1.8</version>
 		</dependency>
 
-		<!-- This is needed only to make Java functions callable from IDE in Rascal code  -->
+		<!-- This is needed only to make Java functions callable from IDE in Rascal 
+			code -->
 		<dependency>
-    		<groupId>commons-codec</groupId>
-    		<artifactId>commons-codec</artifactId>
-    		<version>1.11</version>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.11</version>
 		</dependency>
-		
+
 		<dependency>
-   			<groupId>commons-logging</groupId>
-    		<artifactId>commons-logging</artifactId>
-    		<version>1.2</version>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging</artifactId>
+			<version>1.2</version>
 		</dependency>
-			
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.10.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.module</groupId>
+			<artifactId>jackson-module-jsonSchema</artifactId>
+			<version>2.10.1</version>
+		</dependency>
+
 	</dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <version>4.2.1</version>
-                <extensions>true</extensions>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<version>4.2.1</version>
+				<extensions>true</extensions>
 
-                <configuration>
-                    <instructions>
-                        <Export-Package>*</Export-Package>
-                        <Embed-Dependency>*;scope=compile|runtime;inline=true</Embed-Dependency>
-                        <Embed-StripGroup>true</Embed-StripGroup>
-                        <Embed-Transitive>true</Embed-Transitive>
-                        <Import-Package></Import-Package>
-                    </instructions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+				<configuration>
+					<instructions>
+						<Export-Package>*</Export-Package>
+						<Embed-Dependency>*;scope=compile|runtime;inline=true</Embed-Dependency>
+						<Embed-StripGroup>true</Embed-StripGroup>
+						<Embed-Transitive>true</Embed-Transitive>
+						<Import-Package></Import-Package>
+					</instructions>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>
