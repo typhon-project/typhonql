@@ -23,6 +23,10 @@ public class WorkingSet {
 	public WorkingSet() {
 		map = new HashMap<String, List<Entity>>();
 	}
+	
+	public WorkingSet(Map<String, List<Entity>> map) {
+		this.map = map;
+	}
 
 	@JsonIgnore
 	public Set<String> getEntityLabels() {
