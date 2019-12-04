@@ -114,17 +114,24 @@ void runSchema(str polystoreId, str xmiString, Log log = noLog) {
 
 
 value run(r:(Request)`create <EId eId> at <Id dbName>`, str polystoreId, Schema s, Log log = noLog) {
-	 for (p:<db, name> <- s.placement<0>, name == "<dbName>") {
+	 if (p:<db, name> <- s.placement<0>, name == "<dbName>") {
 	 	runCreateEntity(p, polystoreId, "<eId>", s, log = log);
 	 }
-	 return 1;
+	 return -1;
 }
 
 value run(r:(Request)`create <EId eId>.<Id attribute> : <Type ty>`, str polystoreId, Schema s, Log log = noLog) {
-	 for (p:<db, name> <- s.placement<0>, name == "<dbName>") {
-	 	runCreateAttribute(p, polystoreId, "<eId>", "<attribute>", "<ty>", s, log = log);
+	 if (<p, entity> <- s.placement, entity == "<eId>") {
+	 	return runCreateAttribute(p, polystoreId, "<eId>", "<attribute>", "<ty>", s, log = log);
 	 }
-	 return 1;
+	 return -1;
+}
+
+value run(r:(Request)`drop attribute  <EId eId>.<Id attribute>`, str polystoreId, Schema s, Log log = noLog) {
+	 if (<p, entity> <- s.placement, entity == "<eId>") {
+	 	return runDropAttribute(p, polystoreId, "<eId>", "<attribute>", s, log = log);
+	 }
+	 return -1;
 }
 
 void runSchema(str polystoreId, Schema s, Log log = noLog) {

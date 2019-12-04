@@ -61,7 +61,7 @@ str pp(addColumn(column(str name, ColumnType \type, list[ColumnConstraint] const
   = "add <name> <pp(\type)>";
 
 str pp(dropColumn(str name))
-  = "drop column <name>";
+  = "drop column <q(name)>";
 
 // As
 
