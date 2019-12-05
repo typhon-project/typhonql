@@ -41,35 +41,48 @@ For every back-end we should have the following functions:
 */
 
   // ugh...
-void runCreateEntity(p:<sql(), str db>, str polystoreId, str entity, Schema s, Log log = noLog) {
+int runCreateEntity(p:<sql(), str db>, str polystoreId, str entity, Schema s, Log log = noLog) {
 	SQLStat stat = create(tableName(entity), [typhonIdColumn(entity)], []);
-	executeUpdate(polystoreId, db, pp(stat));     
+	return executeUpdate(polystoreId, db, pp(stat));     
 }
 
-void runCreateEntity(p:<mongodb(), str db>, str polystoreId, str entity, Schema s, Log log = noLog) {
+int runCreateEntity(p:<mongodb(), str db>, str polystoreId, str entity, Schema s, Log log = noLog) {
+	createCollection(polystoreId, db, entity);
+    return -1;
+}
+
+int runDropEntity(p:<sql(), str db>, str polystoreId, str entity, Schema s, Log log = noLog) {
+	SQLStat stat = dropTable([tableName(entity)], true, []);
+	return executeUpdate(polystoreId, db, pp(stat));     
+}
+
+int runDropEntity(p:<mongodb(), str db>, str polystoreId, str entity, Schema s, Log log = noLog) {
 	drop(polystoreId, db, entity);
-    createCollection(polystoreId, db, entity);
+    return -1;
 }
 
-void runCreateAttribute(p:<sql(), str db>, str polystoreId, str entity, str attribute, str ty, Schema s, Log log = noLog) {
-	SQLStat stat = alterTable(tableName(entity), [addColumn(column(attribute, typhonType2SQL(ty), []))]);
+int runCreateAttribute(p:<sql(), str db>, str polystoreId, str entity, str attribute, str ty, Schema s, Log log = noLog) {
+	SQLStat stat = alterTable(tableName(entity), [addColumn(column(columnName(attribute, entity), typhonType2SQL(ty), []))]);
 	println(pp(stat));
-	executeUpdate(polystoreId, db, pp(stat));     
+	return executeUpdate(polystoreId, db, pp(stat));     
 }
 
-void runCreateAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str attribute, Type t, Schema s, Log log = noLog) {
+int runCreateAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str attribute, Type t, Schema s, Log log = noLog) {
+	return 0;
 }
 
 
-void runDropAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str attribute, Schema s, Log log = noLog) {
-	SQLStat stat = alterTable(tableName(entity), [dropColumn(attribute)]);
+int runDropAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str attribute, Schema s, Log log = noLog) {
+	UpdateResult result = updateMany(polystoreId, db, entity, (), ("$unset": ( attribute : 1)));
+	return result.modifiedCount;
+}
+
+int runDropAttribute(p:<sql(), str db>, str polystoreId, str entity, str attribute, Schema s, Log log = noLog) {
+	SQLStat stat = alterTable(tableName(entity), [dropColumn(columnName(attribute, entity))]);
 	println(pp(stat));
-	executeUpdate(polystoreId, db, pp(stat));    
+	return executeUpdate(polystoreId, db, pp(stat));    
 }
 
-void runDropAttribute(p:<sql(), str db>, str polystoreId, str entity, str attribute, Schema s, Log log = noLog) {
-	updateCollection(polystoreId, db, entity, "{$unset: {<attribute>:1}}", "{multi: true}");
-}
 
 /*
  * Booting a schema (NB: this will drop tables/collections if they already exist)

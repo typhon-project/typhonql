@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="ASCII"?>
+<typhonml:Model xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:typhonml="http://org.typhon.dsls.typhonml.sirius">
+  <databases xsi:type="typhonml:RelationalDB" name="MariaDBDWH">
+    <tables name="Employees" entity="//@dataTypes.11"/>
+    <tables name="Customers" entity="//@dataTypes.9"/>
+    <tables name="Customer_Details" entity="//@dataTypes.10"/>
+    <tables name="Products" entity="//@dataTypes.8"/>
+    <tables name="Accounts" entity="//@dataTypes.6"/>
+    <tables name="Account_Details" entity="//@dataTypes.7"/>
+    <tables name="Transactions" entity="//@dataTypes.5"/>
+    <tables name="Non_Financial_Events" entity="//@dataTypes.4"/>
+  </databases>
+  <databases xsi:type="typhonml:RelationalDB" name="MariaDBFinesse">
+    <tables name="Logs" entity="//@dataTypes.3"/>
+  </databases>
+  <databases xsi:type="typhonml:DocumentDB" name="MongoDB">
+    <collections name="Users" entity="//@dataTypes.13"/>
+    <collections name="Logs" entity="//@dataTypes.12"/>
+    <collections name="Subscriptions" entity="//@dataTypes.14"/>
+  </databases>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="String"/>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="int"/>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="Date"/>
+  <dataTypes xsi:type="typhonml:Entity" name="FinesseLog">
+    <attributes name="Log_date" type="//@dataTypes.0"/>
+    <attributes name="Log_Branch" type="//@dataTypes.0"/>
+    <attributes name="LOG_ServerName" type="//@dataTypes.0"/>
+    <attributes name="LOG_BBBMMK" type="//@dataTypes.0"/>
+    <attributes name="Log_aa" type="//@dataTypes.0"/>
+    <attributes name="Log_ComputerName" type="//@dataTypes.0"/>
+    <attributes name="Log_time" type="//@dataTypes.0"/>
+    <attributes name="Log_user" type="//@dataTypes.1"/>
+    <attributes name="Log_RSTflag" type="//@dataTypes.1"/>
+    <attributes name="Log_TUN" type="//@dataTypes.0"/>
+    <attributes name="Log_trancode" type="//@dataTypes.0"/>
+    <attributes name="Log_data" type="//@dataTypes.0"/>
+    <attributes name="Log_BankID" type="//@dataTypes.0"/>
+  </dataTypes>
+  <dataTypes xsi:type="typhonml:Entity" name="NON_FNC_EV">
+    <attributes name="NON_FNC_EV_ID" type="//@dataTypes.1"/>
+    <attributes name="NON_FNC_EV_TUN_CODE" type="//@dataTypes.0"/>
+    <attributes name="NON_FNC_EV_TP_CODE" type="//@dataTypes.0"/>
+    <attributes name="NON_FNC_EV_AC_ID" type="//@dataTypes.1"/>
+    <attributes name="NON_FNC_EV_AC_CODE" type="//@dataTypes.0"/>
+    <attributes name="NON_FNC_EV_ACTN_CODE" type="//@dataTypes.0"/>
+    <attributes name="NON_FNC_EV_ACTN_DSC" type="//@dataTypes.0"/>
+    <attributes name="NON_FNC_EV_DT_TM" type="//@dataTypes.0"/>
+    <attributes name="NON_FNC_EV_CDI_CODE" type="//@dataTypes.0"/>
+    <attributes name="EFF_DT" type="//@dataTypes.2"/>
+    <attributes name="END_DT" type="//@dataTypes.2"/>
+    <relations name="AC" type="//@dataTypes.6" cardinality="zero_many" opposite="//@dataTypes.6/@relations.2"/>
+    <relations name="OBGL" type="//@dataTypes.9" cardinality="zero_many" opposite="//@dataTypes.9/@relations.1"/>
+  </dataTypes>
+  <dataTypes xsi:type="typhonml:Entity" name="FNC_EV">
+    <attributes name="FNC_EV_ID" type="//@dataTypes.1"/>
+    <attributes name="FNC_EV_AC_ID" type="//@dataTypes.1"/>
+    <attributes name="FNC_EV_DT" type="//@dataTypes.2"/>
+    <attributes name="FNC_EV_SIGN_CODE_DSC" type="//@dataTypes.0"/>
+    <attributes name="FNC_EV_SIGN_CODE" type="//@dataTypes.0"/>
+    <attributes name="FNC_EV_AMT" type="//@dataTypes.0"/>
+    <attributes name="FNC_EV_TUN_CODE" type="//@dataTypes.0"/>
+    <attributes name="EFF_DT" type="//@dataTypes.2"/>
+    <attributes name="END_DT" type="//@dataTypes.2"/>
+    <attributes name="MRCH_ID" type="//@dataTypes.0"/>
+    <attributes name="MCG_ID" type="//@dataTypes.1"/>
+    <attributes name="MCG" type="//@dataTypes.0"/>
+    <attributes name="MCG_DSC" type="//@dataTypes.0"/>
+    <attributes name="FNC_EV_TP_CODE" type="//@dataTypes.0"/>
+    <attributes name="FNC_EV_TP_DSC" type="//@dataTypes.0"/>
+    <attributes name="ISRT_TMS" type="//@dataTypes.0"/>
+    <attributes name="FNC_EV_SRC_STM_CODE" type="//@dataTypes.0"/>
+    <relations name="AC" type="//@dataTypes.6" cardinality="one" opposite="//@dataTypes.6/@relations.1"/>
+  </dataTypes>
+  <dataTypes xsi:type="typhonml:Entity" name="AC_GNL">
+    <attributes name="AC_ID" type="//@dataTypes.1"/>
+    <attributes name="AC_CODE" type="//@dataTypes.0"/>
+    <attributes name="AC_SRC_STM_CODE" type="//@dataTypes.0"/>
+    <attributes name="AC_FRST_BENF_ID" type="//@dataTypes.1"/>
+    <attributes name="AC_FRST_BENF_CDI_CODE" type="//@dataTypes.0"/>
+    <attributes name="ISRT_TMS" type="//@dataTypes.0"/>
+    <attributes name="EFF_DT" type="//@dataTypes.2"/>
+    <attributes name="END_DT" type="//@dataTypes.2"/>
+    <relations name="DTL" type="//@dataTypes.7" cardinality="one" isContainment="true"/>
+    <relations name="FNC" type="//@dataTypes.5" cardinality="zero_many"/>
+    <relations name="NON_FNC" type="//@dataTypes.4" cardinality="zero_many"/>
+    <relations name="OBLG" type="//@dataTypes.9" cardinality="one" opposite="//@dataTypes.9/@relations.2"/>
+  </dataTypes>
+  <dataTypes xsi:type="typhonml:Entity" name="AC_FIN_DTL">
+    <attributes name="AC_FIN_DTL_AC_ID" type="//@dataTypes.1"/>
+    <attributes name="AC_FIN_DTL_AC_CODE" type="//@dataTypes.0"/>
+    <attributes name="AC_FIN_DTL_AC_SRC_STM_CODE" type="//@dataTypes.0"/>
+    <attributes name="AC_FIN_DTL_BAL" type="//@dataTypes.0"/>
+    <attributes name="AC_FIN_DTL_AC_BAL_CCY_CODE" type="//@dataTypes.0"/>
+    <attributes name="ISRT_TMS" type="//@dataTypes.0"/>
+    <attributes name="EFF_DT" type="//@dataTypes.2"/>
+    <attributes name="END_DT" type="//@dataTypes.2"/>
+    <relations name="GNL" type="//@dataTypes.6" cardinality="one" opposite="//@dataTypes.6/@relations.0"/>
+  </dataTypes>
+  <dataTypes xsi:type="typhonml:Entity" name="PROD">
+    <attributes name="PROD_ID" type="//@dataTypes.1"/>
+    <attributes name="PROD_LVL_4_CODE" type="//@dataTypes.0"/>
+    <attributes name="PROD_LVL_4_NM" type="//@dataTypes.0"/>
+    <attributes name="PROD_LVL_4_DSC" type="//@dataTypes.0"/>
+    <attributes name="PROD_LVL_3_TP_ID" type="//@dataTypes.1"/>
+    <attributes name="PROD_LVL_3_TP_CODE" type="//@dataTypes.0"/>
+    <attributes name="PROD_LVL_3_TP_SHRT_DSC" type="//@dataTypes.0"/>
+    <attributes name="PROD_LVL_3_TP_int_DSC" type="//@dataTypes.0"/>
+    <attributes name="PROD_LVL_2_TP_ID" type="//@dataTypes.1"/>
+    <attributes name="PROD_LVL_2_TP_CODE" type="//@dataTypes.0"/>
+    <attributes name="PROD_LVL_2_TP_SHRT_DSC" type="//@dataTypes.0"/>
+    <attributes name="PROD_LVL_2_TP_int_DSC" type="//@dataTypes.0"/>
+    <attributes name="PROD_LVL_1_TP_ID" type="//@dataTypes.1"/>
+    <attributes name="PROD_LVL_1_TP_CODE" type="//@dataTypes.0"/>
+    <attributes name="PROD_LVL_1_TP_SHRT_DSC" type="//@dataTypes.0"/>
+    <attributes name="PROD_LVL_1_TP_int_DSC" type="//@dataTypes.0"/>
+    <attributes name="ISRT_TMS" type="//@dataTypes.0"/>
+    <attributes name="EFF_DT" type="//@dataTypes.2"/>
+    <attributes name="END_DT" type="//@dataTypes.2"/>
+    <attributes name="PROD_LVL_4_ID" type="//@dataTypes.1"/>
+    <relations name="AC" type="//@dataTypes.6" cardinality="one"/>
+  </dataTypes>
+  <dataTypes xsi:type="typhonml:Entity" name="OBLG_GNL">
+    <attributes name="OBLG_ID" type="//@dataTypes.1"/>
+    <attributes name="OBLG_CDI_CODE" type="//@dataTypes.0"/>
+    <attributes name="ISRT_TMS" type="//@dataTypes.0"/>
+    <attributes name="EFF_DT" type="//@dataTypes.2"/>
+    <attributes name="END_DT" type="//@dataTypes.2"/>
+    <attributes name="OBLG_CGY_CODE" type="//@dataTypes.0"/>
+    <attributes name="OBLG_CGY_DSC" type="//@dataTypes.0"/>
+    <relations name="DTL" type="//@dataTypes.10" cardinality="one" isContainment="true"/>
+    <relations name="NON_FNC" type="//@dataTypes.4" cardinality="zero_many"/>
+    <relations name="AC" type="//@dataTypes.6" cardinality="zero_many"/>
+    <relations name="AC_Subscriptions" type="//@dataTypes.14" cardinality="one" opposite="//@dataTypes.14/@relations.0"/>
+  </dataTypes>
+  <dataTypes xsi:type="typhonml:Entity" name="OBLG_DTL">
+    <attributes name="OBLG_ID" type="//@dataTypes.1"/>
+    <attributes name="OBLG_DTL_OBLG_CDI_CODE" type="//@dataTypes.0"/>
+    <attributes name="OBLG_BRTH_DT" type="//@dataTypes.2"/>
+    <attributes name="OBLG_PRIM_EMAIL_ADR" type="//@dataTypes.0"/>
+    <attributes name="EFF_DT" type="//@dataTypes.2"/>
+    <attributes name="END_DT" type="//@dataTypes.2"/>
+    <attributes name="ISRT_TMS" type="//@dataTypes.0"/>
+    <relations name="GNL" type="//@dataTypes.9" cardinality="one" opposite="//@dataTypes.9/@relations.0"/>
+  </dataTypes>
+  <dataTypes xsi:type="typhonml:Entity" name="EMPE_GNL">
+    <attributes name="EMPE_ID" type="//@dataTypes.1"/>
+    <attributes name="EMPE_CODE" type="//@dataTypes.0"/>
+    <attributes name="EMPE_CDI_CODE" type="//@dataTypes.0"/>
+    <attributes name="EMPE_RL_CODE" type="//@dataTypes.0"/>
+    <attributes name="EMPE_RL_DSC" type="//@dataTypes.0"/>
+    <attributes name="EMPE_ORG_UNIT_CODE" type="//@dataTypes.0"/>
+    <attributes name="EMPE_ORG_UNIT_TP" type="//@dataTypes.0"/>
+    <attributes name="ISRT_TMS" type="//@dataTypes.0"/>
+    <attributes name="EFF_DT" type="//@dataTypes.2"/>
+    <attributes name="END_DT" type="//@dataTypes.2"/>
+    <attributes name="EMPE_ORG_ORIGINAL_UNIT_CODE" type="//@dataTypes.0"/>
+    <attributes name="STATUS_END_DT" type="//@dataTypes.2"/>
+    <relations name="OBLG" type="//@dataTypes.9" cardinality="one"/>
+  </dataTypes>
+  <dataTypes xsi:type="typhonml:Entity" name="LOG_TABLE">
+    <attributes name="LG_ID" type="//@dataTypes.1"/>
+    <attributes name="LG_SYSTEM" type="//@dataTypes.0"/>
+    <attributes name="LG_SUBSYSTEM" type="//@dataTypes.0"/>
+    <attributes name="LG_GROUP" type="//@dataTypes.0"/>
+    <attributes name="LG_LEVEL" type="//@dataTypes.1"/>
+    <attributes name="LG_DESCRIPTION" type="//@dataTypes.0"/>
+    <attributes name="LG_TIME" type="//@dataTypes.2"/>
+    <attributes name="LG_DATA" type="//@dataTypes.0"/>
+    <attributes name="LG_USERID" type="//@dataTypes.1"/>
+    <attributes name="LG_SESSIONID" type="//@dataTypes.0"/>
+    <attributes name="LG_CONNECTIONID" type="//@dataTypes.0"/>
+    <attributes name="ARCHIVE" type="//@dataTypes.1"/>
+    <attributes name="HashValue" type="//@dataTypes.0"/>
+    <relations name="AC_User" type="//@dataTypes.13" cardinality="zero_many" opposite="//@dataTypes.13/@relations.0"/>
+  </dataTypes>
+  <dataTypes xsi:type="typhonml:Entity" name="AC_User">
+    <attributes name="UserId" type="//@dataTypes.1"/>
+    <attributes name="PersId" type="//@dataTypes.1"/>
+    <attributes name="Active" type="//@dataTypes.1"/>
+    <attributes name="UnsucVerif" type="//@dataTypes.1"/>
+    <attributes name="UserGrpId" type="//@dataTypes.1"/>
+    <attributes name="SubsId" type="//@dataTypes.1"/>
+    <attributes name="UserType" type="//@dataTypes.1"/>
+    <attributes name="MustApprGlProf" type="//@dataTypes.1"/>
+    <attributes name="LastSignOnDateTime" type="//@dataTypes.2"/>
+    <attributes name="LastSignOnChannelId" type="//@dataTypes.1"/>
+    <attributes name="MaxSessionTime" type="//@dataTypes.1"/>
+    <attributes name="MaxInactivityTime" type="//@dataTypes.1"/>
+    <attributes name="HaspData" type="//@dataTypes.0"/>
+    <attributes name="DebitFree" type="//@dataTypes.1"/>
+    <attributes name="CreditFree" type="//@dataTypes.1"/>
+    <attributes name="OwnerQueryFree" type="//@dataTypes.1"/>
+    <attributes name="BlanaceFree" type="//@dataTypes.1"/>
+    <attributes name="SpecialValueFree" type="//@dataTypes.1"/>
+    <attributes name="FullSecurity" type="//@dataTypes.1"/>
+    <attributes name="BlocksFree" type="//@dataTypes.1"/>
+    <attributes name="BMasterOwnerID" type="//@dataTypes.0"/>
+    <attributes name="BMasterBank" type="//@dataTypes.0"/>
+    <attributes name="CreationDate" type="//@dataTypes.2"/>
+    <attributes name="MigratedUser" type="//@dataTypes.1"/>
+    <attributes name="LastAliasDateTime" type="//@dataTypes.2"/>
+    <attributes name="AliasChangedCount" type="//@dataTypes.1"/>
+    <attributes name="LockDateTime" type="//@dataTypes.2"/>
+    <relations name="Logs" type="//@dataTypes.12" cardinality="zero_many"/>
+  </dataTypes>
+  <dataTypes xsi:type="typhonml:Entity" name="AC_Subscription">
+    <attributes name="SubsId" type="//@dataTypes.1"/>
+    <attributes name="SubType" type="//@dataTypes.1"/>
+    <attributes name="Active" type="//@dataTypes.1"/>
+    <attributes name="CompId" type="//@dataTypes.1"/>
+    <attributes name="ContPersId" type="//@dataTypes.1"/>
+    <attributes name="ProductLastChanged" type="//@dataTypes.2"/>
+    <attributes name="LangId" type="//@dataTypes.1"/>
+    <attributes name="ApplicationProvId" type="//@dataTypes.1"/>
+    <attributes name="ApplicationBranch" type="//@dataTypes.0"/>
+    <attributes name="CreationDate" type="//@dataTypes.2"/>
+    <attributes name="SignDate" type="//@dataTypes.2"/>
+    <attributes name="SignProvId" type="//@dataTypes.1"/>
+    <attributes name="SignBranch" type="//@dataTypes.0"/>
+    <attributes name="BasicProdID" type="//@dataTypes.1"/>
+    <attributes name="PersonalCompName" type="//@dataTypes.0"/>
+    <attributes name="PersonalCompTitle" type="//@dataTypes.0"/>
+    <attributes name="DeactivatedTransId" type="//@dataTypes.1"/>
+    <attributes name="MaxApprLevel" type="//@dataTypes.1"/>
+    <attributes name="MaxApprLevelForSubsMaintenance" type="//@dataTypes.1"/>
+    <attributes name="AdminstrationUnit" type="//@dataTypes.0"/>
+    <attributes name="CreatedByChannelId" type="//@dataTypes.1"/>
+    <relations name="OBLG" type="//@dataTypes.9" cardinality="zero_many"/>
+  </dataTypes>
+</typhonml:Model>

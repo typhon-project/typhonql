@@ -58,10 +58,10 @@ str pp(addConstraint(TableConstraint c))
     '<pp(c)>";
     
 str pp(addColumn(column(str name, ColumnType \type, list[ColumnConstraint] constraints)))
-  = "add <name> <pp(\type)>";
+  = "add <q(name)> <pp(\type)>";
 
 str pp(dropColumn(str name))
-  = "drop column <name>";
+  = "drop column <q(name)>";
 
 // As
 
