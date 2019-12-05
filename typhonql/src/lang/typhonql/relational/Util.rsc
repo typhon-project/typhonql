@@ -40,6 +40,8 @@ ColumnType typhonIdType() = char(36); // UUID
 
 ColumnType typhonType2SQL("Date") = dateTime();
 
+ColumnType typhonType2SQL("str") = text();
+
 ColumnType typhonType2SQL("String") = text();
 
 ColumnType typhonType2SQL("Real") = float();

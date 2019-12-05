@@ -53,7 +53,7 @@ int runCreateEntity(p:<mongodb(), str db>, str polystoreId, str entity, Schema s
 }
 
 int runCreateAttribute(p:<sql(), str db>, str polystoreId, str entity, str attribute, str ty, Schema s, Log log = noLog) {
-	SQLStat stat = alterTable(tableName(entity), [addColumn(column(attribute, typhonType2SQL(ty), []))]);
+	SQLStat stat = alterTable(tableName(entity), [addColumn(column(columnName(attribute, entity), typhonType2SQL(ty), []))]);
 	println(pp(stat));
 	return executeUpdate(polystoreId, db, pp(stat));     
 }
@@ -73,6 +73,7 @@ int runDropAttribute(p:<sql(), str db>, str polystoreId, str entity, str attribu
 	println(pp(stat));
 	return executeUpdate(polystoreId, db, pp(stat));    
 }
+
 
 /*
  * Booting a schema (NB: this will drop tables/collections if they already exist)
