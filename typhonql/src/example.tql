@@ -1,7 +1,17 @@
 
-insert Order {totalAmount: 32, products: [Product { name: "TV" } ]}
+insert Order {
+	totalAmount: 32, 
+	products: [Product { name: "TV" } ]
+}
 
 from User u, Comment c select u, c where u.name == "test"
+
+from Review r select r
+
+
+create Country at Inventory
+
+create Comment at Reviews
 
 delete from User
 
@@ -9,10 +19,9 @@ from Comment c select c
 
 from Order o select o
 
-update Comment c set {id: "Geor"}
+update Comment c set {id: "Geor" }
 
-
-insert FinesseLog {
+insert FinesseLog { 
 	Log_date: "x", 
 	Log_Branch: "x", 
 	LOG_ServerName: "x",
@@ -27,3 +36,10 @@ insert FinesseLog {
 	Log_data: "x",
 	Log_BankID: "x"
 }
+
+from FinesseLog f select f
+
+delete FinesseLog f
+
+update FinesseLog f set { Log_data: "y" }
+

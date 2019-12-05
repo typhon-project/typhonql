@@ -1,0 +1,91 @@
+
+insert Order {
+	totalAmount: 32, 
+	products: [Product { name: "TV" } ]
+}
+
+from User u, Comment c select u, c where u.name == "test"
+
+
+insert Review { 
+	contents: "Bad!",
+	user: #1a9f0968-ffd4-41f7-a90b-ca050ca86ee8,
+	product: #2375314f-6949-4fb6-8c9b-a1df69bd0289
+}
+
+
+from Review r select r
+
+delete from User
+
+from Comment c select c 
+
+from Order o select o
+
+update Comment c set {id: "Geor" }
+
+insert FinesseLog { 
+	Log_date: "x", 
+	Log_Branch: "x", 
+	LOG_ServerName: "x",
+	LOG_BBBMMK: "x",
+	Log_aa: 0.3,
+	Log_ComputerName: "x",
+	Log_time: "x",
+	Log_user: 3,
+	Log_RSTflag: 3,
+	Log_TUN: "x",
+	Log_trancode: "x",
+	Log_data: "x",
+	Log_BankID: "x"
+}
+
+from FinesseLog f select f
+
+delete FinesseLog f
+
+update FinesseLog f set { Log_data: "y" }
+
+insert User { name: "Claudio", 
+	address: Address (street: "Carolina", number: 200,  city: "Amsterdam")
+
+}
+
+insert 
+	@pablo User { name: "Pablo", reviews: badradio },
+	@radio Product {name: "Radio", description: "Wireless", reviews: badradio },
+	@badradio Review { contents: "Bad radio",product: radio,user: pablo}
+	
+insert 
+	@pablo User { name: "Claudio", reviews: badradio },
+	@radio Product {name: "TV", description: "Flat", reviews: badradio },
+	@badradio Review { contents: "Good TV",product: radio,user: pablo}	
+
+
+insert Product {
+	name: "TV",
+	description: "Black and white",
+	price: 300
+}
+
+
+
+create Country at Inventory
+
+drop attribute Product.description
+
+drop attribute Review.user
+
+create Product.description: str
+
+from Product p select p
+
+drop User
+
+drop Review
+
+
+insert OBLG_GNL{OBLG_ID:315159,OBLG_CDI_CODE : "4973949", OBLG_CGY_CODE : "06", OBLG_CGY_DSC : "test"}
+
+insert AC_Subscription{SubsId:156,SubType:3,Active:0,CompId:47390,ContPersId:798146,LangId:0,ApplicationProvId:1,ApplicationBranch : "0107", SignProvId:1,SignBranch : "0107", BasicProdId:433,PersonalCompName : "", PersonalCompTitle : "", DeactivatedTransId:0,AdministrationUnit : "NULL"}
+
