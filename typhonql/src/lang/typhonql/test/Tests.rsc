@@ -4,11 +4,9 @@ import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
 import lang::typhonql::Run;
 import lang::typhonql::IDE;
+import lang::typhonml::XMIReader;
 
 import IO;
-
-@javaClass{nl.cwi.swat.typhonql.TyphonQL}
-java Model bootTyphonQL(type[Model] model, loc pathToTML);
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java Model bootConnections(loc polystoreUri, str user, str password);
@@ -31,9 +29,17 @@ void test2() {
 	println(r);
 }
 
+void printSchema() {
+	bootConnections(|http://localhost:8080|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
+	Schema sch = loadSchemaFromXMI(modelStr);
+	iprintln(sch);
+}
 
 
 void resetDatabase() {
-	Schema sch = getSchema(|http://localhost:8080|, "pablo", "antonio");
+	bootConnections(|http://localhost:8080|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
+	Schema sch = loadSchemaFromXMI(modelStr);
 	runSchema("http://localhost:8080", sch);
 }
