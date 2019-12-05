@@ -47,8 +47,17 @@ int runCreateEntity(p:<sql(), str db>, str polystoreId, str entity, Schema s, Lo
 }
 
 int runCreateEntity(p:<mongodb(), str db>, str polystoreId, str entity, Schema s, Log log = noLog) {
+	createCollection(polystoreId, db, entity);
+    return -1;
+}
+
+int runDropEntity(p:<sql(), str db>, str polystoreId, str entity, Schema s, Log log = noLog) {
+	SQLStat stat = dropTable([tableName(entity)], true, []);
+	return executeUpdate(polystoreId, db, pp(stat));     
+}
+
+int runDropEntity(p:<mongodb(), str db>, str polystoreId, str entity, Schema s, Log log = noLog) {
 	drop(polystoreId, db, entity);
-    createCollection(polystoreId, db, entity);
     return -1;
 }
 

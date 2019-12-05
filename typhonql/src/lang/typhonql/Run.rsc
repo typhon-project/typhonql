@@ -127,6 +127,12 @@ value run(r:(Request)`create <EId eId>.<Id attribute> : <Type ty>`, str polystor
 	 return -1;
 }
 
+value run(r:(Request)`drop <EId eId>`, str polystoreId, Schema s, Log log = noLog) {
+	 if (<p, entity> <- s.placement, entity == "<eId>") {
+	 	return runDropEntity(p, polystoreId, "<eId>", s, log = log);
+	 }
+	 return -1;
+}
 value run(r:(Request)`drop attribute  <EId eId>.<Id attribute>`, str polystoreId, Schema s, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
 	 	return runDropAttribute(p, polystoreId, "<eId>", "<attribute>", s, log = log);
