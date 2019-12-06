@@ -24,12 +24,14 @@ import Message;
 
 // abstraction over TyphonML, to be extended with back-end specific info in the generic map
 data Schema
-  = schema(Rels rels, Attrs attrs, Placement placement = {}, Attrs elements = {}, map[str, value] config = ());
+  = schema(Rels rels, Attrs attrs, Placement placement = {}, Attrs elements = {}, ChangeOps changeOperators = {}, map[str, value] config = ());
 
 
 alias Rel = tuple[str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool containment];
 alias Rels = set[Rel];
 alias Attrs = rel[str from, str name, str \type];
+alias ChangeOps = list[ChangeOp];
+alias ChangeOp = tuple[str name, list[str] properties];
 
 data DB = mongodb() | sql() | hyperj() | recombine() | unknown() | typhon();
 
@@ -96,9 +98,16 @@ default Placement place(Database db, Model m) {
 
 
 Schema model2schema(Model m)
-  = schema(model2rels(m), model2attrs(m), elements = model2elements(m), placement=model2placement(m));
+  = schema(model2rels(m), model2attrs(m), elements = model2elements(m), placement=model2placement(m), changeOperators = model2changeOperators(m));
 
 
+ChangeOps model2changeOperators(Model m) {
+  ChangeOps result = [];
+  for (ChangeOperator(RenameEntity(entityToRename = toRename, newEntityName = newName)) <- m.changeOperators) {
+    result += <"renameEntity", [lookup(m, #Entity, toRename).name, newName]>;
+  }
+  return result;
+}
 
 Attrs model2attrs(Model m) {
   Attrs result = {};

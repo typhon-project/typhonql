@@ -49,6 +49,7 @@ Model xmiNode2Model(node n) {
   
   list[Database] dbs = [];
   list[DataType] dts = [];
+  list[ChangeOperator] chos = [];
   
   str get(node n, str name) = x 
     when str x := getKeywordParameters(n)[name];
@@ -128,6 +129,28 @@ Model xmiNode2Model(node n) {
       
     }
     
+    for (xcho:"changeOperators"(list[node] xelts) <- kids) {
+      switch (get(xcho, "type")) {
+        case "typhonml:RemoveEntity": {
+        	e = get(xcho, "entityToRemove");
+        	toRemove = referTo(#Entity, ensureEntity(e).entity);
+        	re = realm.new(#RemoveEntity, RemoveEntity(toRemove));
+          	chos += [ ChangeOperator(re)];
+        } // ChangeOperator(RemoveEntity \removeEntity, lang::ecore::Refs::Ref[Entity] \entityToRemove = \removeEntity.\entityToRemove, lang::ecore::Refs::Id uid = \removeEntity.uid, bool _inject = true) ];
+        
+         case "typhonml:RenameEntity": {
+        	e = get(xcho, "entityToRename");
+        	newName = get(xcho, "newEntityName");
+        	toRename = referTo(#Entity, ensureEntity(e).entity);
+        	re = realm.new(#RenameEntity, RenameEntity(\entityToRename = toRename, \newEntityName = newName));
+          	chos += [ ChangeOperator(re)];
+        }
+        default:
+          throw "Non implemented change operator: <get(xcho, "type")>";
+      }
+      
+    }
+    
     int dtPos = 0;
     for (xdt:"dataTypes"(list[node] xelts) <- kids) {
        dtPath = "//@dataTypes.<dtPos>";
@@ -201,7 +224,7 @@ Model xmiNode2Model(node n) {
        dtPos += 1;
     }
     
-    return  realm.new(#Model, Model(dbs, dts, [] /* todo */));
+    return  realm.new(#Model, Model(dbs, dts, chos));
   }
   else {
     throw "Invalid Typhon ML XMI node <n>";
