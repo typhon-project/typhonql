@@ -71,6 +71,18 @@ int runCreateAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str a
 	return 0;
 }
 
+int runCreateRelation(p:<sql(), str db>, str polystoreId, str entity, str relation, str targetEntity, str fromCard, str toCard, bool containment, Schema s, Log log = noLog) {
+  
+}
+
+int runCreateRelation(p:<mongodb(), str db>, str polystoreId, str entity, str relation, str targetEntity, str fromCard, str toCard, bool containment, Schema s, Log log = noLog) {
+  	return 0;
+}
+
+
+int runCreateAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str attribute, Type t, Schema s, Log log = noLog) {
+	return 0;
+}
 
 int runDropAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str attribute, Schema s, Log log = noLog) {
 	UpdateResult result = updateMany(polystoreId, db, entity, (), ("$unset": ( attribute : 1)));
@@ -83,6 +95,13 @@ int runDropAttribute(p:<sql(), str db>, str polystoreId, str entity, str attribu
 	return executeUpdate(polystoreId, db, pp(stat));    
 }
 
+int runDropRelation(p:<mongodb(), str db>, str polystoreId, str entity, str relation, Schema s, Log log = noLog) {
+
+}
+
+int runDropRelation(p:<sql(), str db>, str polystoreId, str entity, str relation, Schema s, Log log = noLog) {
+ 
+}
 
 /*
  * Booting a schema (NB: this will drop tables/collections if they already exist)

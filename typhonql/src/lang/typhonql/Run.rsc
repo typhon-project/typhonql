@@ -127,6 +127,13 @@ value run(r:(Request)`create <EId eId>.<Id attribute> : <Type ty>`, str polystor
 	 return -1;
 }
 
+value run(r:(Request)`create <EId eId>.<Id relation> <Arrow arrow> <EId targetId> [ <Cardinality fromCard> .. <Cardinality toCard>]`, str polystoreId, Schema s, Log log = noLog) {
+	 if (<p, entity> <- s.placement, entity == "<eId>") {
+	 	return runCreateRelation(p, polystoreId, "<eId>", "<relation>", "<targetId>", "<fromCard>", "<toCard>", (Arrow) `=\>x` := arrow, log = log);
+	 }
+	 return -1;
+}
+
 value run(r:(Request)`drop <EId eId>`, str polystoreId, Schema s, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
 	 	return runDropEntity(p, polystoreId, "<eId>", s, log = log);
@@ -139,6 +146,14 @@ value run(r:(Request)`drop attribute  <EId eId>.<Id attribute>`, str polystoreId
 	 }
 	 return -1;
 }
+
+value run(r:(Request)`drop relation  <EId eId>.<Id relation>`, str polystoreId, Schema s, Log log = noLog) {
+	 if (<p, entity> <- s.placement, entity == "<eId>") {
+	 	return runDropRelation(p, polystoreId, "<eId>", "<relation>", s, log = log);
+	 }
+	 return -1;
+}
+
 
 void runSchema(str polystoreId, Schema s, Log log = noLog) {
 	for (Place p <- s.placement<0>) {
