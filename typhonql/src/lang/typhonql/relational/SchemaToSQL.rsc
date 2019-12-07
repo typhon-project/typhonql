@@ -95,7 +95,11 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
   for (r:<str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain> <- schema.rels
         // first do all the local ones
          , from in placedEntities, to in placedEntities) { 
-     switch (<fromCard, toCard, contain>) {
+     	processRelation(from, fromCard, fromRole, toRole, toCard, to, contain);
+  }
+  
+  void processRelation(str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain) {
+  	switch (<fromCard, toCard, contain>) {
        case <one_many(), one_many(), true>: illegal(r);
        case <one_many(), zero_many(), true>: illegal(r);
        case <one_many(), zero_one(), true>: illegal(r);
@@ -122,7 +126,7 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
        case <_, _, false>: addJunctionTable(from, fromRole, to, toRole);
        
      }
-  } 
+  }
   
   void addJunctionTableOutside(str from, str fromRole, str to, str toRole) {
     str left = junctionFkName(from, fromRole);

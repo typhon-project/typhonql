@@ -71,8 +71,12 @@ int runCreateAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str a
 	return 0;
 }
 
-int runCreateRelation(p:<sql(), str db>, str polystoreId, str entity, str relation, str targetEntity, str fromCard, str toCard, bool containment, Schema s, Log log = noLog) {
-  
+int runCreateRelation(p:<sql(), str db>, str polystoreId, str entity, str relation, str targetEntity, Cardinality fromCard, Cardinality toCard, bool containment, Schema s, Log log = noLog) {
+ 	// where to get the roles? apparently they are in the ML model but not in the DDL create relation operation
+ 	// we designed
+ 	
+ 	//processRelation(entity, fromCard, fromRole, toRole, toCard, targetEntity, containment);
+ 	
 }
 
 int runCreateRelation(p:<mongodb(), str db>, str polystoreId, str entity, str relation, str targetEntity, str fromCard, str toCard, bool containment, Schema s, Log log = noLog) {
