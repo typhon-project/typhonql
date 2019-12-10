@@ -78,6 +78,8 @@ drop attribute Review.user
 
 create Product.description: str
 
+create Product.designer -> User [0 .. 1] 
+
 from Product p select p
 
 drop User
