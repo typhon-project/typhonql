@@ -5,16 +5,17 @@ extend lang::typhonql::Expr;
 syntax Statement
   = \createEntity: "create" EId eId "at" Id db
   | \createAttribute: "create" EId eId "." Id name ":" Type typ
-  | \createRelation: "create" EId eId "." Id relation Arrow EId target "[" Cardinality fromCard ".." Cardinality toCard "]"
+  | \createRelation: "create" EId eId "." Id relation Inverse? inverse Arrow EId target "[" CardinalityEnd lower ".." CardinalityEnd upper "]"
   | \dropEntity: "drop" EId eId
   | \dropAttribute: "drop" "attribute" EId eId "." Id name
   | \dropRelation: "drop" "relation" EId eId "." Id name
   ;
   
+syntax Inverse = "(" Id inverse ")";
 
 lexical Type
   = "int" | "str" | "bool" | "text" | "float" | "blob" | "freetext" ;
 
 lexical Arrow = "-\>" | ":-\>";
 
-lexical Cardinality = [0-1] | "*";
+lexical CardinalityEnd = [0-1] | "*";
