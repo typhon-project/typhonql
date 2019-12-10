@@ -19,6 +19,7 @@ import lang::typhonml::XMIReader;
 import IO;
 import Set;
 import List;
+import util::Maybe;
 
 /*
 	data Schema
@@ -127,12 +128,30 @@ value run(r:(Request)`create <EId eId>.<Id attribute> : <Type ty>`, str polystor
 	 return -1;
 }
 
-value run(r:(Request)`create <EId eId>.<Id relation> <Arrow arrow> <EId targetId> [ <Cardinality fromCard> .. <Cardinality toCard>]`, str polystoreId, Schema s, Log log = noLog) {
+value run(r:(Request)`create <EId eId>.<Id relation> ( <Id inverse> ) <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, str polystoreId, Schema s, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
-	 	return runCreateRelation(p, polystoreId, "<eId>", "<relation>", "<targetId>", "<fromCard>", "<toCard>", (Arrow) `=\>x` := arrow, log = log);
+	 	return runCreateRelation(p, polystoreId, "<eId>", "<relation>", "<targetId>", toCardinality("<lower>", "<upper>"), (Arrow) `-\>` := arrow, just("<inverse>"), s, log = log);
 	 }
 	 return -1;
 }
+
+value run(r:(Request)`create <EId eId>.<Id relation> <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, str polystoreId, Schema s, Log log = noLog) {
+	 if (<p, entity> <- s.placement, entity == "<eId>") {
+	 	return runCreateRelation(p, polystoreId, "<eId>", "<relation>", "<targetId>", toCardinality("<lower>", "<upper>"), (Arrow) `-\>` := arrow, nothing(), s, log = log);
+	 }
+	 return -1;
+}
+
+Cardinality toCardinality(str from, str to) {
+ 	switch (<from, to>) {
+ 		case <"1", "1">: return \one();
+ 		case <"1", "*">: return one_many();
+ 		case <"0", "*">: return zero_many();
+ 		case <"0", "1">: return zero_one();
+ 		default: throw "Wrong cardinality";
+ 	}
+}
+
 
 value run(r:(Request)`drop <EId eId>`, str polystoreId, Schema s, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {

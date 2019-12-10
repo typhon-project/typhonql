@@ -23,7 +23,7 @@ import lang::typhonql::mongodb::Select2Find;
 import String;
 import List;
 import IO;
-
+import util::Maybe;
 
 
 
@@ -71,15 +71,25 @@ int runCreateAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str a
 	return 0;
 }
 
-int runCreateRelation(p:<sql(), str db>, str polystoreId, str entity, str relation, str targetEntity, Cardinality fromCard, Cardinality toCard, bool containment, Schema s, Log log = noLog) {
+int runCreateRelation(p:<sql(), str db>, str polystoreId, str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
  	// where to get the roles? apparently they are in the ML model but not in the DDL create relation operation
  	// we designed
  	
  	//processRelation(entity, fromCard, fromRole, toRole, toCard, targetEntity, containment);
  	
+ 	if (just(iname) := inverse) {
+ 		if (r:<targetEntity, Cardinality toCard, iname, _, _, _, _> <- schema.rels) 
+        	processRelation(entity, fromCard, relation, iname, toCard, targetEntity, containment);
+        else
+        	throw "Referred inverse does not exist";
+ 	}
+ 	else {
+ 		Cardinality toCard = zero_one(); // check: is this the default?
+ 		processRelation(entity, fromCard, relation, "<relation>^", toCard, targetEntity, containment);
+ 	}
 }
 
-int runCreateRelation(p:<mongodb(), str db>, str polystoreId, str entity, str relation, str targetEntity, str fromCard, str toCard, bool containment, Schema s, Log log = noLog) {
+int runCreateRelation(p:<mongodb(), str db>, str polystoreId, str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse,  Schema s, Log log = noLog) {
   	return 0;
 }
 
