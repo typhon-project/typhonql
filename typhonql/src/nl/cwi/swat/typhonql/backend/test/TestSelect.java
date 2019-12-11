@@ -1,4 +1,4 @@
-package lang.typhonql.backend.test;
+package nl.cwi.swat.typhonql.backend.test;
 
 import java.util.HashMap;
 import java.util.Map;
