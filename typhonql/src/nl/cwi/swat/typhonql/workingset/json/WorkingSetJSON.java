@@ -1,4 +1,4 @@
-package engineering.swat.typhonql.client.test;
+package nl.cwi.swat.typhonql.workingset.json;
 
 import java.io.IOException;
 import java.io.InputStream;
