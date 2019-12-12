@@ -55,11 +55,11 @@ public class ResultStore {
 	private Entity createEntity(ResultIterator iter, EntityModel model) {
 		Map<String, Object> fields = new HashMap<String, Object>();
 		for (String attributeName : model.getAttributes().keySet()) {
-			Object obj = iter.getCurrentField(attributeName);
+			Object obj = iter.getCurrentField(model.getEntityName(), attributeName);
 			fields.put(attributeName, obj);
 		}
 
-		Entity e = new Entity(model.getEntityName(), iter.getCurrentId(), fields);
+		Entity e = new Entity(model.getEntityName(), iter.getCurrentId(model.getEntityName()), fields);
 
 		return e;
 	}

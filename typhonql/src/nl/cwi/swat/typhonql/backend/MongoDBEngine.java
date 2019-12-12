@@ -26,7 +26,7 @@ public class MongoDBEngine extends Engine {
 	}
 
 	@Override
-	protected ResultIterator performSelect(String resultType, String query) {
+	protected ResultIterator performSelect(String query) {
 		String connString = getConnectionString(host, port, dbName, user, password);
 		MongoClient mongoClient = MongoClients.create(connString);
 		MongoDatabase db = mongoClient.getDatabase(dbName);
@@ -36,7 +36,7 @@ public class MongoDBEngine extends Engine {
 				IntStream.range(1, strings.length).mapToObj(i -> strings[i]).toArray(String[]::new));
 		MongoCollection<Document> coll = db.getCollection(collectionName);
 		Document pattern = Document.parse(json);
-		return new MongoDBIterator(resultType, coll.find(pattern));
+		return new MongoDBIterator(coll.find(pattern));
 	}
 
 	private String getConnectionString(String host, int port, String dbName, String user, String password) {

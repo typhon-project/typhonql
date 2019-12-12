@@ -27,13 +27,13 @@ public abstract class SQLEngine extends Engine {
 	protected abstract void initializeDriver();
 
 	@Override
-	protected ResultIterator performSelect(String resultType, String query) {
+	protected ResultIterator performSelect(String query) {
 		try {
 			Connection connection = DriverManager
 					.getConnection(getConnectionString(host, port, dbName, user, password));
 			Statement stmt = connection.createStatement();
 			ResultSet rs = stmt.executeQuery(query);
-			return new SQLResultIterator(resultType, rs);
+			return new SQLResultIterator(rs);
 
 		} catch (SQLException e1) {
 			throw new RuntimeException(e1);

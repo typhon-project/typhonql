@@ -6,14 +6,11 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoIterable;
 
 public class MongoDBIterator implements ResultIterator {
-
-	private String type;
 	private MongoIterable<Document> results;
 	private MongoCursor<Document> cursor = null;
 	private Document current = null;
 
-	public MongoDBIterator(String type, MongoIterable<Document> results) {
-		this.type = type;
+	public MongoDBIterator(MongoIterable<Document> results) {
 		this.results = results;
 		this.cursor = results.cursor();
 	}
@@ -29,23 +26,20 @@ public class MongoDBIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentId() {
+	public String getCurrentId(String type) {
 		return current.getString("_id");
 	}
 
 	@Override
-	public Object getCurrentField(String name) {
+	public Object getCurrentField(String type, String name) {
+		// TODO TEMPORARY!!!!!
+		//return current.get(type + "." + name);
 		return current.get(name);
 	}
 
 	@Override
 	public void beforeFirst() {
 		cursor = results.cursor();
-	}
-
-	@Override
-	public String getType() {
-		return type;
 	}
 
 }

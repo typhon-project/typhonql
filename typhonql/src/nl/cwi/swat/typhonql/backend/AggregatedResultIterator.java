@@ -4,12 +4,10 @@ import java.util.List;
 
 public class AggregatedResultIterator implements ResultIterator {
 	
-	private String type;
 	private List<ResultIterator> results;
 	private int index = -1;
 
-	public AggregatedResultIterator(String type, List<ResultIterator> lst) {
-		this.type = type;
+	public AggregatedResultIterator(List<ResultIterator> lst) {
 		this.results = lst;
 		beforeFirst();
 	}
@@ -43,13 +41,13 @@ public class AggregatedResultIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentId() {
-		return results.get(index).getCurrentId();
+	public String getCurrentId(String type) {
+		return results.get(index).getCurrentId(type);
 	}
 
 	@Override
-	public Object getCurrentField(String name) {
-		return results.get(index).getCurrentField(name);
+	public Object getCurrentField(String type, String name) {
+		return results.get(index).getCurrentField(type, name);
 	}
 
 	@Override
@@ -61,11 +59,5 @@ public class AggregatedResultIterator implements ResultIterator {
 
 	}
 
-
-
-	@Override
-	public String getType() {
-		return this.type;
-	}
 
 }

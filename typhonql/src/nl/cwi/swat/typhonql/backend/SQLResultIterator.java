@@ -5,11 +5,9 @@ import java.sql.SQLException;
 
 public class SQLResultIterator implements ResultIterator {
 
-	private String type;
 	private ResultSet rs;
 
-	public SQLResultIterator(String type, ResultSet rs) {
-		this.type = type;
+	public SQLResultIterator(ResultSet rs) {
 		this.rs = rs;
 	}
 
@@ -33,7 +31,7 @@ public class SQLResultIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentId() {
+	public String getCurrentId(String type) {
 		try {
 			return rs.getString(type + ".@id");
 		} catch (SQLException e) {
@@ -42,7 +40,7 @@ public class SQLResultIterator implements ResultIterator {
 	}
 
 	@Override
-	public Object getCurrentField(String name) {
+	public Object getCurrentField(String type, String name) {
 		try {
 			return rs.getObject(type + "." + name);
 		} catch (SQLException e) {
@@ -57,12 +55,6 @@ public class SQLResultIterator implements ResultIterator {
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	@Override
-	public String getType() {
-		// TODO Auto-generated method stub
-		return type;
 	}
 
 }

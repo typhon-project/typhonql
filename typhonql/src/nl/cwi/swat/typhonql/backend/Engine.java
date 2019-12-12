@@ -14,45 +14,49 @@ public abstract class Engine {
 		this.store = store;
 
 	}
+
+	private ResultIterator executeSelect(String[] resultTypes, String query,
+			Map<String, Binding> bindings) {
+		if (bindings.isEmpty()) {
+			return performSelect(query); 
+		}
+		else {
+			List<ResultIterator> lst = new ArrayList<>();
+			String var = bindings.keySet().iterator().next();
+			Binding binding = bindings.get(var);
+			bindings.remove(var);
+			ResultIterator results =  store.getResults(binding.getReference());
+			results.beforeFirst();
+			while (results.hasNextResult()) {
+				results.nextResult();
+				String value = (binding.getAttribute().equals("@id"))? results.getCurrentId(binding.getType()) : (String) results.getCurrentField(binding.getType(), binding.getAttribute());
+				Map<String, String> toReplace = new HashMap<String, String>();
+				toReplace.put(var, value);
+				StringSubstitutor sub = new StringSubstitutor(toReplace);
+				String resolvedQuery = sub.replace(query);
+				lst.add(executeSelect(resultTypes, resolvedQuery, bindings));
+			}
+			return new AggregatedResultIterator(lst);
+		}
+	}
 	
-	public ResultIterator executeSelect(String resultId, String resultType, String query) {
-		ResultIterator result = performSelect(resultType, query);
-		store.put(resultId, result);
-		return result;
+	public ResultIterator executeSelect(String resultId, String[] resultTypes, String query) {
+		return executeSelect(resultId, resultTypes, query, new HashMap<String, Binding>());
+	}
+	
+	public ResultIterator executeSelect(String resultId, String[] resultTypes, String query,
+			Map<String, Binding> bindings) {
+		ResultIterator results = executeSelect(resultTypes,query, bindings);
+		store.put(resultId, results);
+		return results;
 	}
 
-	public ResultIterator executeSelect(String resultId, String resultType, String query, Binding binding) {
-		List<ResultIterator> lst = new ArrayList<>();
-		ResultIterator results = store.getResults(binding.getReference());
-		// TODO think about concurrency
-		results.beforeFirst();
-		while (results.hasNextResult()) {
-			results.nextResult();
-			
-			if (!binding.getAttribute().isPresent()) {
-				String uuid =results.getCurrentId();
-				lst.add(performSelect(resultType, query, new Binding(binding.getId(), uuid)));
-			}
-			else {
-				// TODO Assuming attributes are string is wrong
-				Object field = results.getCurrentField(binding.getAttribute().get());
-				lst.add(performSelect(resultType, query, new Binding(binding.getId(), (String) field)));
-			}
-		} 
-		ResultIterator result = new AggregatedResultIterator(resultType, lst);
-		store.put(resultId, result);
-		return result ;
-	}
- 
-
-	protected ResultIterator performSelect(String resultType, String query, Binding binding) {
-		Map<String, String> map = new HashMap<String, String>();
-		map.put(binding.getId(), binding.getReference());
-		StringSubstitutor sub = new StringSubstitutor(map);
+	protected ResultIterator performSelect(String query, Map<String, String> bindings) {
+		StringSubstitutor sub = new StringSubstitutor(bindings);
 		String resolvedQuery = sub.replace(query);
 
-		return performSelect(resultType, resolvedQuery);
+		return performSelect(resolvedQuery);
 	}
 
-	protected abstract ResultIterator performSelect(String resultType, String query);
+	protected abstract ResultIterator performSelect(String query);
 }

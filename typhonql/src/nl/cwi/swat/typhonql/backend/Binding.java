@@ -1,34 +1,32 @@
 package nl.cwi.swat.typhonql.backend;
 
-import java.util.Optional;
-
 public class Binding {
-	private String id;
 	private String reference;
-	private Optional<String> attribute;
+	private String type;
+	private String attribute;
 	
-	public Binding(String id, String reference) {
+	public Binding(String reference, String type) {
 		super();
-		this.id = id;
+		this.type = type;
 		this.reference = reference;
-		this.attribute = Optional.empty();
+		this.attribute = "@id";
 	}
 	
-	public Binding(String id, String reference, String attribute) {
+	public Binding(String reference, String type, String attribute) {
 		super();
-		this.id = id;
+		this.type = type;
 		this.reference = reference;
-		this.attribute = Optional.of(attribute);
+		this.attribute = attribute;
 	}
-	public String getId() {
-		return id;
+	public String getType() {
+		return type;
 	}
 	
 	public String getReference() {
 		return reference;
 	}
 	
-	public Optional<String> getAttribute() {
+	public String getAttribute() {
 		return attribute;
 	}
 }
