@@ -118,13 +118,18 @@ public class TestSelect {
 		ResultStore store = new ResultStore();
 		
 		Engine e1 = new MariaDBEngine(store, "localhost", 3306, "Inventory", "root", "example");
-		Engine e2 = new MongoDBEngine(store, "localhost", 27017, "Reviews", "admin", "admin");
+		Engine e2 = new MongoDBEngine(store, "localhost", 27018, "Reviews", "admin", "admin");
 		
-		e1.executeSelect("user", "User", "select * from User where `User.name` = \"Pablo\"");
-		e2.executeSelect("review", "Review", "Review\n{ user: \"${user_id}\" }", new Binding("user_id",  "user"));
+		e1.executeSelect("user", new String[] {}, "select * from User where `User.name` = \"Pablo\"");
+		Map<String, Binding> map1 = new HashMap<String, Binding>();
+		map1.put("user_id", new Binding("user", "User"));
+		e2.executeSelect("review", new String[] {}, "Review\n{ user: \"${user_id}\" }", map1);
 		
 		// Binding needs an extra argument `attribute` for inspecting attributes in the entities that conform the stored results
-		e1.executeSelect("result", "Product", "select `Product.@id` as p_id, Product.* from Product where `Product.@id` = \"${product_id}\"", new Binding("product_id", "review", "product"));
+		Map<String, Binding> map2 = new HashMap<String, Binding>();
+		map2.put("product_id", new Binding("review", "Review", "product"));
+		
+		e1.executeSelect("result",new String[] {}, "select `Product.@id` as p_id, Product.* from Product where `Product.@id` = \"${product_id}\"", map2);
 		
 		//List<Entity> result = buildResult("result", );
 		
