@@ -64,4 +64,8 @@ public class ResultStore {
 		return e;
 	}
 
+	public void clear() {
+		store.clear();
+	}
+
 }
