@@ -76,17 +76,21 @@ int runCreateRelation(p:<sql(), str db>, str polystoreId, str entity, str relati
  	// we designed
  	
  	//processRelation(entity, fromCard, fromRole, toRole, toCard, targetEntity, containment);
- 	
+ 	Cardinality toCard = zero_one();
+ 	str inverseName = "<relation>^";
  	if (just(iname) := inverse) {
- 		if (r:<targetEntity, Cardinality toCard, iname, _, _, _, _> <- schema.rels) 
-        	processRelation(entity, fromCard, relation, iname, toCard, targetEntity, containment);
+ 		if (r:<targetEntity, Cardinality c, iname, _, _, _, _> <- schema.rels) { 
+        	toCard = c;
+	    	inverseName = iname;    
+	    }
         else
         	throw "Referred inverse does not exist";
  	}
- 	else {
- 		Cardinality toCard = zero_one(); // check: is this the default?
- 		processRelation(entity, fromCard, relation, "<relation>^", toCard, targetEntity, containment);
- 	}
+ 	list[SQLStat] stats = processRelation(entity, fromCard, relation, "<relation>^", toCard, targetEntity, containment);
+ 	for (SQLStat stat <- stats) {
+    	log("[RUN-create-relation/sql/<db>] executing <pp(stat)>");
+    	executeUpdate(polystoreId, db, pp(stat));
+    }   
 }
 
 int runCreateRelation(p:<mongodb(), str db>, str polystoreId, str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse,  Schema s, Log log = noLog) {
