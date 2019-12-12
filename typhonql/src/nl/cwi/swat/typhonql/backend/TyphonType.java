@@ -1,5 +1,5 @@
 package nl.cwi.swat.typhonql.backend;
 
-public interface TyphonType {
-
-}
+public enum TyphonType {
+	STRING, INTEGER
+}	
