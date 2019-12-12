@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EntityModel {
+
 	private String entityName;
 	private Map<String, TyphonType> attributes;
 	private Map<String, EntityModel> entities;
@@ -38,4 +39,17 @@ public class EntityModel {
 		return entities;
 	}
 
+	public void setEntityName(String entityName) {
+		this.entityName = entityName;
+	}
+
+	public void setAttributes(Map<String, TyphonType> attributes) {
+		this.attributes = attributes;
+	}
+
+	public void setEntities(Map<String, EntityModel> entities) {
+		this.entities = entities;
+	}
+
+	
 }
