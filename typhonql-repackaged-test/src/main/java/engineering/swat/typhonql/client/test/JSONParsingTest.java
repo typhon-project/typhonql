@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 import nl.cwi.swat.typhonql.workingset.WorkingSet;
+import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
 
 public class JSONParsingTest {
 	public static void main(String[] args) throws IOException, URISyntaxException {

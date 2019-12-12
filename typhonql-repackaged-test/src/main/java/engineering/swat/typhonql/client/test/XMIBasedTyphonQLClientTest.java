@@ -15,6 +15,7 @@ import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.PolystoreConnection;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 import nl.cwi.swat.typhonql.workingset.WorkingSet;
+import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
 
 public class XMIBasedTyphonQLClientTest {
 	public static void main(String[] args) throws IOException, URISyntaxException {

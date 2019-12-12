@@ -12,6 +12,7 @@ import java.util.Map;
 import nl.cwi.swat.typhonql.workingset.Entity;
 import nl.cwi.swat.typhonql.workingset.EntityRef;
 import nl.cwi.swat.typhonql.workingset.WorkingSet;
+import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
 
 public class JSONSerializingTest {
 	public static void main(String[] args) throws IOException, URISyntaxException {
