@@ -15,8 +15,7 @@ public abstract class Engine {
 
 	}
 
-	private ResultIterator executeSelect(String[] resultTypes, String query,
-			Map<String, Binding> bindings) {
+	private ResultIterator executeSelect(String query, Map<String, Binding> bindings) {
 		if (bindings.isEmpty()) {
 			return performSelect(query); 
 		}
@@ -34,19 +33,19 @@ public abstract class Engine {
 				toReplace.put(var, value);
 				StringSubstitutor sub = new StringSubstitutor(toReplace);
 				String resolvedQuery = sub.replace(query);
-				lst.add(executeSelect(resultTypes, resolvedQuery, bindings));
+				lst.add(executeSelect(resolvedQuery, bindings));
 			}
 			return new AggregatedResultIterator(lst);
 		}
 	}
 	
-	public ResultIterator executeSelect(String resultId, String[] resultTypes, String query) {
-		return executeSelect(resultId, resultTypes, query, new HashMap<String, Binding>());
+	public ResultIterator executeSelect(String resultId, String query) {
+		return executeSelect(resultId, query, new HashMap<String, Binding>());
 	}
 	
-	public ResultIterator executeSelect(String resultId, String[] resultTypes, String query,
+	public ResultIterator executeSelect(String resultId, String query,
 			Map<String, Binding> bindings) {
-		ResultIterator results = executeSelect(resultTypes,query, bindings);
+		ResultIterator results = executeSelect(query, bindings);
 		store.put(resultId, results);
 		return results;
 	}
