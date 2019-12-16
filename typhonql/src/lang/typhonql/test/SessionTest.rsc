@@ -5,7 +5,8 @@ module lang::typhonql::\test::SessionTest
  
  void main() {
  	rel[str, str, str, int, str, str] dbs = 
- 			{<"Reviews", "MongoDB", "localhost", 27018, "admin", "admin">,
+ 		   {
+ 		    <"Reviews", "MongoDB", "localhost", 27018, "admin", "admin">,
  			<"Inventory", "MariaDB", "localhost", 3306, "root", "example"> };
  	Session session = newSession(dbs);
  	 	
@@ -16,9 +17,9 @@ module lang::typhonql::\test::SessionTest
  	//str (str result, rel[str name, str \type] entities, EntityModels models) read,
  	//alias EntityModels = rel[str name, rel[str name, str \type] attributes, rel[str name, str entity] relations];
  	
- 	EntityModels models = {<"product", { <"description", "STRING">, <"name", "STRING">}, {}>};
+ 	EntityModels models = {<"Product", { <"description", "STRING">, <"name", "STRING">}, {}>};
  	
- 	str result = session.read("read", {<"product", "Product">}, models);
+ 	str result = session.read("result", {<"product", "Product">}, models);
  	
  	println(result);
  }
