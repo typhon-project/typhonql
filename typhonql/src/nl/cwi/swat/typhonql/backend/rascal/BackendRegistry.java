@@ -1,5 +1,6 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import nl.cwi.swat.typhonql.backend.Engine;
@@ -7,7 +8,7 @@ import nl.cwi.swat.typhonql.backend.EngineFactory;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 
 public class BackendRegistry {
-	private static Map<String, EngineFactory> factories;
+	private static Map<String, EngineFactory> factories = new HashMap<String, EngineFactory>();
 	
 	public static void addEngineFactory(String engineType, EngineFactory factory) {
 		factories.put(engineType.toUpperCase(), factory);
