@@ -15,7 +15,7 @@ import nl.cwi.swat.typhonql.backend.EntityModel;
 import nl.cwi.swat.typhonql.backend.TyphonType;
 
 public class EntityModelReader {
-	public static List<EntityModel> fromRascalRelation(List<String> types, IRelation<ISet> rel) {
+	public static List<EntityModel> fromRascalRelation(List<String> types, ISet rel) {
 
 		Iterator<IValue> relIter = rel.iterator();
 
@@ -24,7 +24,7 @@ public class EntityModelReader {
 		while (relIter.hasNext()) {
 			ITuple tuple = (ITuple) relIter.next();
 			IString name = (IString) tuple.get(0);
-			IRelation<ISet> attributes = (IRelation<ISet>) tuple.get(1);
+			ISet attributes = (ISet) tuple.get(1);
 			Map<String, TyphonType> attributesMap = new HashMap<String, TyphonType>();
 
 			Iterator<IValue> attIter = attributes.iterator();
@@ -45,7 +45,7 @@ public class EntityModelReader {
 			ITuple tuple = (ITuple) relIter.next();
 			
 			IString name = (IString) tuple.get(0);
-			IRelation<ISet> relations = (IRelation<ISet>) tuple.get(2);
+			ISet relations = (ISet) tuple.get(2);
 			
 			Map<String, EntityModel> relationsMap = new HashMap<String, EntityModel>();
 
@@ -58,7 +58,7 @@ public class EntityModelReader {
 				relationsMap.put(relName, models.get(relEntitName));
 			}
 			
-			relationsMap.get(name.getValue()).setEntities(relationsMap);
+			models.get(name.getValue()).setEntities(relationsMap);
 		}
 		
 		List<EntityModel> result = new ArrayList<EntityModel>();

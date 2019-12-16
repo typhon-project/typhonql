@@ -2,6 +2,7 @@ package nl.cwi.swat.typhonql.backend.rascal;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -12,20 +13,27 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Function;
 
+import org.rascalmpl.interpreter.Evaluator;
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.control_exceptions.MatchFailed;
 import org.rascalmpl.interpreter.env.Environment;
+import org.rascalmpl.interpreter.env.GlobalEnvironment;
 import org.rascalmpl.interpreter.env.ModuleEnvironment;
+import org.rascalmpl.interpreter.load.StandardLibraryContributor;
 import org.rascalmpl.interpreter.result.AbstractFunction;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.Result;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
+import org.rascalmpl.library.util.PathConfig;
+import org.rascalmpl.uri.URIUtil;
+import org.rascalmpl.uri.classloaders.SourceLocationClassLoader;
+import org.rascalmpl.values.ValueFactoryFactory;
 
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IMap;
-import io.usethesource.vallang.IRelation;
 import io.usethesource.vallang.ISet;
+import io.usethesource.vallang.ISourceLocation;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
@@ -39,6 +47,7 @@ import nl.cwi.swat.typhonql.backend.EntityModel;
 import nl.cwi.swat.typhonql.backend.MariaDBEngineFactory;
 import nl.cwi.swat.typhonql.backend.MongoDBEngineFactory;
 import nl.cwi.swat.typhonql.backend.ResultStore;
+import nl.cwi.swat.typhonql.client.SimplePolystoreConnection;
 import nl.cwi.swat.typhonql.workingset.WorkingSet;
 import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
 
@@ -46,18 +55,15 @@ public class TyphonSession {
 	private static final TypeFactory TF = TypeFactory.getInstance();
 	private final IValueFactory vf;
 	
-	static {
+	public TyphonSession(IValueFactory vf) {
+		this.vf = vf;
 		BackendRegistry.addEngineFactory("MariaDB", new MariaDBEngineFactory());
 		BackendRegistry.addEngineFactory("MongoDB", new MongoDBEngineFactory());
 	}
 
-	public TyphonSession(IValueFactory vf) {
-		this.vf = vf;
-	}
-
-	public ITuple newSession(IEvaluatorContext ctx, IRelation<ISet> databases) {
+	public ITuple newSession(ISet databases, IEvaluatorContext ctx) {
 		// borrow the type store from the module, so we don't have to build the function type ourself
-        ModuleEnvironment aliasModule = ctx.getHeap().getModule("lang::typhonql::attic::SessionExample");
+        ModuleEnvironment aliasModule = ctx.getHeap().getModule("lang::typhonql::Session");
         if (aliasModule == null) {
         	throw new IllegalArgumentException("Missing my own module");
         }
@@ -71,7 +77,7 @@ public class TyphonSession {
 		// get the function types
 		FunctionType executeType = (FunctionType)aliasedTuple.getFieldType("executeQuery");
 		FunctionType readType = (FunctionType)aliasedTuple.getFieldType("read");
-		FunctionType closeType = (FunctionType)aliasedTuple.getFieldType("close");
+		FunctionType closeType = (FunctionType)aliasedTuple.getFieldType("done");
 
 		// construct the session tuple
 		ResultStore store = new ResultStore();
@@ -113,8 +119,8 @@ public class TyphonSession {
 			List<String> labels = new ArrayList<>();
 			List<String> types = new ArrayList<>();
 			
-			IRelation<ISet> nameTypeRel = (IRelation<ISet>) args[1];
-			IRelation<ISet> modelsRel = (IRelation<ISet>) args[2];
+			ISet nameTypeRel = (ISet) args[1];
+			ISet modelsRel = (ISet) args[2];
 			Iterator<IValue> iter = nameTypeRel.iterator();
 			
 			while (iter.hasNext()) {
@@ -197,6 +203,7 @@ public class TyphonSession {
 		};
 		
 	}
+
 
 
 }
