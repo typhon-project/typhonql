@@ -86,7 +86,7 @@ int runCreateRelation(p:<sql(), str db>, str polystoreId, str entity, str relati
         else
         	throw "Referred inverse does not exist";
  	}
- 	list[SQLStat] stats = processRelation(entity, fromCard, relation, "<relation>^", toCard, targetEntity, containment);
+ 	list[SQLStat] stats = createRelation(entity, fromCard, relation, "<relation>^", toCard, targetEntity, containment);
  	for (SQLStat stat <- stats) {
     	log("[RUN-create-relation/sql/<db>] executing <pp(stat)>");
     	executeUpdate(polystoreId, db, pp(stat));

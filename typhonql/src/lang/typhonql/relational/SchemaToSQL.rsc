@@ -176,5 +176,64 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
   return  stats.get();
 }
 
+	// DDL operations
 
+  list[SQLStat] createRelation(str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain, bool doForeignKeys = true) {
+    Rel r = <from, fromCard, fromRole, toRole, toCard, to, contain>;
+  	switch (<fromCard, toCard, contain>) {
+       case <one_many(), one_many(), true>: illegal(r);
+       case <one_many(), zero_many(), true>: illegal(r);
+       case <one_many(), zero_one(), true>: illegal(r);
+       case <one_many(), \one(), true>: return addOnlyCascadingForeignKey(from, fromRole, to, toRole, [], doForeignKeys); // ??? how to enforce one_many?
+       
+       
+       case <zero_many(), one_many(), true>: illegal(r);
+       case <zero_many(), zero_many(), true>: illegal(r);
+       case <zero_many(), zero_one(), true>: addOnlyCascadingForeignKey(from, fromRole, to, toRole, [], doForeignKeys);
+       
+       case <zero_many(), \one(), true>: return addOnlyCascadingForeignKey(from, fromRole, to, toRole, [notNull()], doForeignKeys);
+
+       case <zero_one(), one_many(), true>: illegal(r);
+       case <zero_one(), zero_many(), true>: illegal(r);
+       case <zero_one(), zero_one(), true>: illegal(r);
+       case <zero_one(), \one(), true>: addOnlyCascadingForeignKey(from, fromRole, to, toRole, [unique(), notNull()], doForeignKeys);
+       
+       case <\one(), one_many(), true>: illegal(r);
+       case <\one(), zero_many(), true>: illegal(r);
+       case <\one(), zero_one(), true>: return addOnlyCascadingForeignKey(from, fromRole, to, toRole, [], doForeignKeys);
+       case <\one(), \one(), true>: return addOnlyCascadingForeignKey(from, fromRole, to, toRole, [unique(), notNull()], doForeignKeys);
+       
+       // we realize all cross refs using a junction table.
+       case <_, _, false>: return addOnlyJunctionTable(from, fromRole, to, toRole, doForeignKeys);
+       
+     }
+     illegal(r);
+  }
+  
+  list[SQLStat] addOnlyCascadingForeignKey(str from, str fromRole, str to, str toRole, list[ColumnConstraint] cs, bool doForeignKeys) {
+  	list[SQLStat] stats = [];
+    fk = fkName(from, to, toRole == "" ? fromRole : toRole);
+    stats += alterTable(tableName(to), [addColumn(column(fk, typhonIdType(), cs))]);
+	if (doForeignKeys)
+    	stats += alterTable(tableName(to), [addConstraint(foreignKey(fk, tableName(from), typhonId(from), cascade()))]);
+    return stats; 
+  }
+
+  // should we make both fk's the combined primary key, if so, when?
+  list[SQLStat] addOnlyJunctionTable(str from, str fromRole, str to, str toRole, bool doForeignKeys) {
+    list[SQLStat] stats = [];
+    str left = junctionFkName(from, fromRole);
+    str right = junctionFkName(to, toRole);
+    str tbl = junctionTableName(from, fromRole, to, toRole);
+    SQLStat stat = create(tbl, [
+      column(left, typhonIdType(), [notNull()]),
+      column(right, typhonIdType(), [notNull()])      
+    ], [
+      foreignKey(left, tableName(from), typhonId(from), cascade()),
+      foreignKey(right, tableName(to), typhonId(to), cascade()) 
+        | doForeignKeys ]);
+    stats += dropTable([tbl], true, []);
+    stats += stat;
+    return stats;
+  }
 
