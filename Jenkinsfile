@@ -21,7 +21,7 @@ node {
     stage('Build typhonql') {
 	    configFileProvider(
         	[configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
-        	sh 'mvn -B -gs $MAVEN_SETTINGS clean install -pl \'!typhonql-update-site\' deploy'
+        	sh 'mvn -U -B -gs $MAVEN_SETTINGS clean install -pl \'!typhonql-update-site\' deploy'
    	}
 	    
     }
