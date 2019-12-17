@@ -13,8 +13,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
-import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
+//import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
+//import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
 
 import nl.cwi.swat.typhonql.workingset.Entity;
 import nl.cwi.swat.typhonql.workingset.EntityRef;
@@ -54,6 +54,7 @@ public class WorkingSetJSON {
 		}
 	}
 	
+	/*
 	public static String getSchema() {
 		ObjectMapper mapper = new ObjectMapper();
 		// configure mapper, if necessary, then create schema generator
@@ -70,5 +71,5 @@ public class WorkingSetJSON {
 			throw new RuntimeException(e);
 		}
 		
-	}
+	}*/
 }

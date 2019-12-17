@@ -50,9 +50,9 @@ public class XMIBasedTyphonQLClientTest {
 		WorkingSetJSON.toJSON(iv, System.out);
 		System.out.println("END JSON");
 		
-		System.out.println("JSON Schema");
-		System.out.println(WorkingSetJSON.getSchema());
-		System.out.println("END JSON Schema");
+		//System.out.println("JSON Schema");
+		//System.out.println(WorkingSetJSON.getSchema());
+		//System.out.println("END JSON Schema");
 		
 		String json = "{\"Product\":[{\"uuid\":\"48c5bfe5-04ab-4a62-9106-90d21007ee29\",\"fields\":{\"name\":\"Radio\",\"description\":\"Wireless\"},\"type\":\"Product\"}]}";
 		
