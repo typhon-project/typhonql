@@ -1,7 +1,6 @@
 package nl.cwi.swat.typhonql;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -27,6 +26,7 @@ import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IMapWriter;
 import io.usethesource.vallang.IReal;
+import io.usethesource.vallang.ISet;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
@@ -219,6 +219,11 @@ public class Bridge {
 
 		if (t.isDateTime() && !sql) {
 			return new org.bson.BsonDateTime(((IDateTime)value).getInstant());
+		}
+		
+		// empty set signals null
+		if (t.isSet() && ((ISet) value).isEmpty()) {
+			return new org.bson.BsonNull();
 		}
 		
 		throw RuntimeExceptionFactory.illegalArgument(value, null, null, 
