@@ -117,9 +117,10 @@ int runDropAttribute(p:<sql(), str db>, str polystoreId, str entity, str attribu
 
 int runDropRelation(p:<mongodb(), str db>, str polystoreId, str entity, str relation, bool containment, Schema s, Log log = noLog) {
 	if (containment) {
-	
+		;
 	} else {
-	
+		UpdateResult result = updateMany(polystoreId, db, entity, (), ("$unset": ( relation : 1)));
+		return result.modifiedCount;
 	}
 }
 
