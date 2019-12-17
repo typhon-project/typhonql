@@ -68,7 +68,8 @@ int runCreateAttribute(p:<sql(), str db>, str polystoreId, str entity, str attri
 }
 
 int runCreateAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str attribute, Type t, Schema s, Log log = noLog) {
-	return 0;
+	UpdateResult result = updateMany(polystoreId, db, entity, (), ("$set": ( attribute : {})));
+	return result.modifiedCount;
 }
 
 int runCreateRelation(p:<sql(), str db>, str polystoreId, str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
@@ -94,7 +95,8 @@ int runCreateRelation(p:<sql(), str db>, str polystoreId, str entity, str relati
 }
 
 int runCreateRelation(p:<mongodb(), str db>, str polystoreId, str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse,  Schema s, Log log = noLog) {
-  	return 0;
+  	UpdateResult result = updateMany(polystoreId, db, entity, (), ("$set": ( relation : {})));
+	return result.modifiedCount;
 }
 
 
@@ -113,11 +115,11 @@ int runDropAttribute(p:<sql(), str db>, str polystoreId, str entity, str attribu
 	return executeUpdate(polystoreId, db, pp(stat));    
 }
 
-int runDropRelation(p:<mongodb(), str db>, str polystoreId, str entity, str relation, Schema s, Log log = noLog) {
-
+int runDropRelation(p:<mongodb(), str db>, str polystoreId, str entity, str relation, bool containment, Schema s, Log log = noLog) {
+	
 }
 
-int runDropRelation(p:<sql(), str db>, str polystoreId, str entity, str relation, Schema s, Log log = noLog) {
+int runDropRelation(p:<sql(), str db>, str polystoreId, str entity, str relation, bool containment, Schema s, Log log = noLog) {
  
 }
 
