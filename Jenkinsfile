@@ -14,7 +14,7 @@ node {
     stage('Build bundle') {
 	    configFileProvider(
         	[configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
-        sh 'cd typhonql-bundler && mvn -B -gs $MAVEN_SETTINGS clean install deploy'
+        sh 'cd typhonql-bundler && mvn -U -B -gs $MAVEN_SETTINGS clean install deploy'
 	    }
     }
 
