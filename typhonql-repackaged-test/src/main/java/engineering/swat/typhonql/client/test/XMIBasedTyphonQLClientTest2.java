@@ -40,8 +40,9 @@ public class XMIBasedTyphonQLClientTest2 {
 		iv = conn.executeQuery("from Product p select p");
 		System.out.println(iv);*/
 		
-		conn.executeQuery("insert AC_Subscription{SubsId:156,SubType:3,Active:0,CompId:47390,ContPersId:798146,LangId:0,ApplicationProvId:1,ApplicationBranch : \"0107\", SignProvId:1,SignBranch : \"0107\", BasicProdId:433,PersonalCompName : \"\", PersonalCompTitle : \"\", DeactivatedTransId:0,AdministrationUnit : \"NULL\"}");
-		
+		//conn.executeQuery("insert AC_Subscription{SubsId:156,SubType:3,Active:0,CompId:47390,ContPersId:798146,LangId:0,ApplicationProvId:1,ApplicationBranch : \"0107\", SignProvId:1,SignBranch : \"0107\", BasicProdId:433,PersonalCompName : \"\", PersonalCompTitle : \"\", DeactivatedTransId:0,AdministrationUnit : \"NULL\"}");
+		conn.executeUpdate("insert AC_GNL{AC_ID:7542938,AC_CODE : \"1631780\", AC_SRC_STM_CODE : \"LMS\", AC_FRST_BENF_ID:18966036,AC_FRST_BENF_CDI_CODE : \"9999999999\"}");
+		conn.executeQuery("from AC_GNL u select u");
 
 	}
 }
