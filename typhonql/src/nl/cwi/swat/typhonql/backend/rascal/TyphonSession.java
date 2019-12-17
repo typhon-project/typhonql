@@ -75,7 +75,8 @@ public class TyphonSession {
 
 
 		// get the function types
-		FunctionType executeType = (FunctionType)aliasedTuple.getFieldType("executeQuery");
+		FunctionType executeQueryType = (FunctionType)aliasedTuple.getFieldType("executeQuery");
+		FunctionType executeUpdateType = (FunctionType)aliasedTuple.getFieldType("executeUpdate");
 		FunctionType readType = (FunctionType)aliasedTuple.getFieldType("read");
 		FunctionType closeType = (FunctionType)aliasedTuple.getFieldType("done");
 
@@ -99,7 +100,8 @@ public class TyphonSession {
 		}
 		
 		return vf.tuple(
-            makeExecuteQuery(store, dbs, executeType, ctx),
+            makeExecuteQuery(store, dbs, executeQueryType, ctx),
+            makeExecuteUpdate(store, dbs, executeUpdateType, ctx),
             makeRead(store, dbs, readType, ctx),
             makeClose(store, dbs, closeType, ctx)
 		);
@@ -170,6 +172,33 @@ public class TyphonSession {
 			}
 			
 			dbs.get(dbName.getValue()).executeSelect(resultId.getValue(), query.getValue(), bindingsMap);
+			
+			//sessionData.put(resultName, query);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
+		});
+	}
+	
+	private ICallableValue makeExecuteUpdate(ResultStore store, Map<String, Engine> dbs, FunctionType executeType, IEvaluatorContext ctx) {
+		return makeFunction(ctx, executeType, args -> {
+			IString resultId = (IString) args[0];
+			IString dbName = (IString) args[1];
+			IString query = (IString) args[2];
+			IMap bindings =  (IMap) args[3];
+			
+			Iterator<Entry<IValue, IValue>> iter = bindings.entryIterator();
+			
+			Map<String, Binding> bindingsMap = new HashMap<>();
+			
+			while (iter.hasNext()) {
+				Entry<IValue, IValue> kv = iter.next();
+				IString param = (IString) kv.getKey();
+				ITuple field = (ITuple) kv.getValue();
+				Binding b = new Binding(((IString) field.get(0)).getValue() ,
+						((IString) field.get(1)).getValue(), ((IString) field.get(2)).getValue());
+				bindingsMap.put(param.getValue(), b);
+			}
+			
+			// TODO dbs.get(dbName.getValue()).executeSelect(resultId.getValue(), query.getValue(), bindingsMap);
 			
 			//sessionData.put(resultName, query);
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
