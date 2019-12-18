@@ -168,8 +168,8 @@ value run(r:(Request)`drop attribute  <EId eId>.<Id attribute>`, str polystoreId
 
 value run(r:(Request)`drop relation  <EId eId>.<Id relation>`, str polystoreId, Schema s, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
-	 	if (<eId, _, relation, _, _, _, bool containment> <- s.rels) {
-	 		return runDropRelation(p, polystoreId, "<eId>", "<relation>", containment, s, log = log);
+	 	if (<eId, _, relation, str toRole, _, str to, bool containment> <- s.rels) {
+	 		return runDropRelation(p, polystoreId, "<eId>", "<relation>", to, toRole, containment, s, log = log);
 	 	}
 	 }
 	 return -1;

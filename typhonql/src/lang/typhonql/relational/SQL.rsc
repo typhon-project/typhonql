@@ -22,6 +22,7 @@ data Set
   
 data Alter
   = addConstraint(TableConstraint constraint)
+  | dropConstraint(str constraintName)
   | addColumn(Column column)
   | dropColumn(str columnName)
   ;

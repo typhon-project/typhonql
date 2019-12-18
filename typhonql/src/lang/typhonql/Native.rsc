@@ -52,6 +52,9 @@ int runCreateEntity(p:<mongodb(), str db>, str polystoreId, str entity, Schema s
 }
 
 int runDropEntity(p:<sql(), str db>, str polystoreId, str entity, Schema s, Log log = noLog) {
+	for (<entity, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool containment> <- s.rels) {
+		runDropRelation(p, polystoreId, entity, fromRole, to, toRole, containment, s, log = log);
+	}
 	SQLStat stat = dropTable([tableName(entity)], true, []);
 	return executeUpdate(polystoreId, db, pp(stat));     
 }
@@ -92,16 +95,12 @@ int runCreateRelation(p:<sql(), str db>, str polystoreId, str entity, str relati
     	log("[RUN-create-relation/sql/<db>] executing <pp(stat)>");
     	executeUpdate(polystoreId, db, pp(stat));
     }   
+    return -1;
 }
 
 int runCreateRelation(p:<mongodb(), str db>, str polystoreId, str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse,  Schema s, Log log = noLog) {
   	UpdateResult result = updateMany(polystoreId, db, entity, (), ("$set": ( relation : {})));
 	return result.modifiedCount;
-}
-
-
-int runCreateAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str attribute, Type t, Schema s, Log log = noLog) {
-	return 0;
 }
 
 int runDropAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str attribute, Schema s, Log log = noLog) {
@@ -115,17 +114,36 @@ int runDropAttribute(p:<sql(), str db>, str polystoreId, str entity, str attribu
 	return executeUpdate(polystoreId, db, pp(stat));    
 }
 
-int runDropRelation(p:<mongodb(), str db>, str polystoreId, str entity, str relation, bool containment, Schema s, Log log = noLog) {
+int runDropRelation(p:<mongodb(), str db>, str polystoreId, str from, str fromRole, str to, str toRole,  bool containment, Schema s, Log log = noLog) {
 	if (containment) {
+		return -1;
 		;
 	} else {
-		UpdateResult result = updateMany(polystoreId, db, entity, (), ("$unset": ( relation : 1)));
+		UpdateResult result = updateMany(polystoreId, db, entity, (), ("$unset": ( fromRole : 1)));
 		return result.modifiedCount;
 	}
 }
 
-int runDropRelation(p:<sql(), str db>, str polystoreId, str entity, str relation, bool containment, Schema s, Log log = noLog) {
- 
+int runDropRelation(p:<sql(), str db>, str polystoreId, str from, str fromRole, str to, str toRole, bool containment, Schema s, Log log = noLog) {
+ 	doForeignKeys = true;
+ 	if (containment) {
+ 		list[SQLStat] stats = [];
+		str fk = fkName(from, to, toRole);
+    	if (doForeignKeys)
+    		stats += alterTable(tableName(to), [dropConstraint(fk)]);
+    	stats += alterTable(tableName(to), [dropColumn(fk)]);	
+    		
+    	for (SQLStat stat <- stats) {
+    		println(pp(stat));
+    		executeUpdate(polystoreId, db, pp(stat));
+    	}  
+    	return -1;
+	} else {
+		str tbl = junctionTableName(from, fromRole, to, toRole);
+		SQLStat stat = dropTable([tbl], true, []);
+		println(pp(stat));
+		return executeUpdate(polystoreId, db, pp(stat));	
+	}
 }
 
 /*

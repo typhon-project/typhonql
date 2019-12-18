@@ -57,6 +57,9 @@ str pp(addConstraint(TableConstraint c))
   = "add constraint 
     '<pp(c)>";
     
+str pp(dropConstraint(str name))
+  = "drop constraint <q(name)>";
+    
 str pp(addColumn(column(str name, ColumnType \type, list[ColumnConstraint] constraints)))
   = "add <q(name)> <pp(\type)>";
 
