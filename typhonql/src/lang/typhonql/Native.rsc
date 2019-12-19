@@ -121,7 +121,7 @@ int runRenameAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str n
 
 int runRenameAttribute(p:<sql(), str db>, str polystoreId, str entity, str name, str newName, Schema s, Log log = noLog) {
 	if (<entity, name, str ty> <- s.attrs) {
-		SQLStat stat = alterTable(tableName(entity), [changeColumn(column(columnName(name, entity), typhonType2SQL(ty), []), columnName(newName, entity))]);
+		SQLStat stat = alterTable(tableName(entity), [renameColumn(column(columnName(name, entity), typhonType2SQL(ty), []), columnName(newName, entity))]);
 		println(pp(stat));
 		return executeUpdate(polystoreId, db, pp(stat));
 	}
