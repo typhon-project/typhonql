@@ -175,6 +175,19 @@ value run(r:(Request)`drop relation  <EId eId>.<Id relation>`, str polystoreId, 
 	 return -1;
 }
 
+value run(r:(Request)`rename attribute  <EId eId>.<Id name> to <Id newName>`, str polystoreId, Schema s, Log log = noLog) {
+	 if (<p, entity> <- s.placement, entity == "<eId>") {
+	 	return runRenameAttribute(p, polystoreId, "<eId>", "<name>", "<newName>". s, log = log);
+	 }
+	 return -1;
+
+value run(r:(Request)`rename relation <EId eId>.<Id name> to <Id newName>`, str polystoreId, Schema s, Log log = noLog) {
+	 if (<p, entity> <- s.placement, entity == "<eId>") {
+	 	return runRenameRelation(p, polystoreId, "<eId>", "<name>", "<newName>". s, log = log);
+	 }
+	 return -1;
+}
+
 
 void runSchema(str polystoreId, Schema s, Log log = noLog) {
 	for (Place p <- s.placement<0>) {

@@ -25,6 +25,7 @@ data Alter
   | dropConstraint(str constraintName)
   | addColumn(Column column)
   | dropColumn(str columnName)
+  | renameColumn(Column column, str newName)
   ;
 
   

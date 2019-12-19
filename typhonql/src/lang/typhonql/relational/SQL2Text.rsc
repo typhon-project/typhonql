@@ -65,6 +65,10 @@ str pp(addColumn(column(str name, ColumnType \type, list[ColumnConstraint] const
 
 str pp(dropColumn(str name))
   = "drop column <q(name)>";
+  
+
+str pp(renameColumn(column(str name, ColumnType \type, list[ColumnConstraint] _), str newName))
+  = "change column <q(name)> <q(newName)> <pp(\type)>";  
 
 // As
 

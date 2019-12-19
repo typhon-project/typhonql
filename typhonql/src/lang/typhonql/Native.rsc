@@ -114,6 +114,28 @@ int runDropAttribute(p:<sql(), str db>, str polystoreId, str entity, str attribu
 	return executeUpdate(polystoreId, db, pp(stat));    
 }
 
+int runRenameAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str name, str newName, Schema s, Log log = noLog) {
+	UpdateResult result = updateMany(polystoreId, db, entity, (), ("rename": ( name : newName)));
+	return result.modifiedCount;
+}
+
+int runRenameAttribute(p:<sql(), str db>, str polystoreId, str entity, str name, str newName, Schema s, Log log = noLog) {
+	if (<entity, name, str ty> <- s.attrs) {
+		SQLStat stat = alterTable(tableName(entity), [changeColumn(column(columnName(name, entity), typhonType2SQL(ty), []), columnName(newName, entity))]);
+		println(pp(stat));
+		return executeUpdate(polystoreId, db, pp(stat));
+	}
+	return -1;;    
+}
+
+int runRenameRelation(p:<mongodb(), str db>, str polystoreId, str entity, str name, str newName, Schema s, Log log = noLog) {
+	return -1;
+}
+
+int runRenameRelation(p:<sql(), str db>, str polystoreId, str entity, str name, str newName, Schema s, Log log = noLog) {
+	return -1;
+}
+
 int runDropRelation(p:<mongodb(), str db>, str polystoreId, str from, str fromRole, str to, str toRole,  bool containment, Schema s, Log log = noLog) {
 	if (containment) {
 		return -1;
