@@ -62,6 +62,15 @@ insert
 	@badradio Review { contents: "Good TV",product: radio,user: pablo}	
 
 
+insert 
+	@mauricio User {name: "Mauricio"},
+	@pablo User { name: "Cristian", reviews: badradio },
+	@radio Product {name: "Car", description: "Fast", reviews: badradio },
+	@badradio Review { contents: "Good Car",product: radio,user: pablo,
+		reviews: [ @really Review {contents: "Really?", product: radio, user: pablo},
+				   @nested2 Review {contents: "Indeed!", product: radio, user: pablo}]}	
+
+
 insert Product {
 	name: "TV",
 	description: "Black and white",
@@ -78,7 +87,12 @@ drop attribute Review.user
 
 create Product.description: str
 
-create Product.designer -> User [1 .. 1] 
+create Product.designer :-> User [1 .. 1]
+
+create Review.responses :-> Review [0 .. *]
+
+rename attribute Product.description to explanation
+
 
 from Product p select p
 
