@@ -55,10 +55,13 @@ public class TyphonSession {
 	private static final TypeFactory TF = TypeFactory.getInstance();
 	private final IValueFactory vf;
 	
-	public TyphonSession(IValueFactory vf) {
-		this.vf = vf;
+	static { 
 		BackendRegistry.addEngineFactory("MariaDB", new MariaDBEngineFactory());
 		BackendRegistry.addEngineFactory("MongoDB", new MongoDBEngineFactory());
+	}
+	
+	public TyphonSession(IValueFactory vf) {
+		this.vf = vf;
 	}
 
 	public ITuple newSession(ISet databases, IEvaluatorContext ctx) {
