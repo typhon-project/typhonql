@@ -47,8 +47,7 @@ data TyphonQLManifest
       str PolystoreHost = "localhost",
       str PolystorePort = "8080",
       str PolystoreUser = "",
-      str PolystorePassword = "",
-      str DevMode = "false"
+      str PolystorePassword = ""
     );        
  
 private loc configFile(loc file) =  project(file) + "META-INF" + "RASCAL.MF"; 
@@ -111,7 +110,7 @@ Schema checkSchema(Schema sch, loc projectLoc) {
 	}*/
 }
 
-void setupIDE() {
+void setupIDE(boolean isDevMode = false) {
   Schema sch = schema({}, {});
   
   // TODO remove this
@@ -119,8 +118,6 @@ void setupIDE() {
   
   TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
   
-  bool isDevMode = fromString(typhonConf.DevMode);
-
   registerLanguage(TYPHONQL, "tql", start[Script](str src, loc org) {
     return parse(#start[Script], src, org);
   });
@@ -287,6 +284,6 @@ node scriptOutliner(start[Script] script) {
     
 }
 
-void main() {
-  setupIDE();
+void main(bool isDevMode = false) {
+  setupIDE(isDevMode);
 }
