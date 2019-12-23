@@ -10,12 +10,12 @@ alias WorkingSet
 alias Entity
   = tuple[str name, str uuid, map[str, value] fields];
 
+alias Ref = tuple[bool isPresent, str uuid];
 
-data Ref
-  = null()
-  | uuid(str id)
-  ;
+Ref null() = <false, "">;
+Ref uuid(str id) = <true, id>;
 
+bool isNull(Ref r) = !r.isPresent;
   
 Entity toEntity(Entity e) = e;
 

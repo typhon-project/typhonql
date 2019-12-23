@@ -17,7 +17,7 @@ across references to evaluate path expressions.
 */
 
 
-Entity evalResult((Expr)`<VId x>.<{Id "."}+ xs>`, map[str, Entity] env, WorkingSet scope) 
+value evalResult((Expr)`<VId x>.<{Id "."}+ xs>`, map[str, Entity] env, WorkingSet scope) 
   = navigateEntity(xs, e, scope)
   when
     Entity e := env["<x>"];
@@ -193,14 +193,14 @@ value navigate({Id "."}+ xs, Entity e, WorkingSet scope) {
        return null();
     }
     cur = curEntity.fields[fld];
-    if (uuid(str u) := cur) {
+    if (<true, str u> := cur) {
       cur = lookupEntity(u, scope);
     }
   }
   return cur;
 }
 
-Entity navigateEntity({Id "."}+ xs, Entity e, WorkingSet scope) {
+value navigateEntity({Id "."}+ xs, Entity e, WorkingSet scope) {
   Entity cur = e;
   
   for (Id x <- xs) {
@@ -212,7 +212,7 @@ Entity navigateEntity({Id "."}+ xs, Entity e, WorkingSet scope) {
     if (Entity to := cur.fields[fld]) {
       cur = to;
     } 
-    else if (uuid(str u) := cur.fields[fld]) {
+    else if (<true, str u> := cur.fields[fld]) {
       cur = lookupEntity(u, scope);
     }
     else {
