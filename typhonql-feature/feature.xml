@@ -31,7 +31,7 @@
          search-location="both"/>
 
    <plugin
-         id="engineering.swat.typhon.bundle-typhoneql-dependencies"
+         id="engineering.swat.typhon.bundle-typhonql-dependencies"
          download-size="0"
          install-size="0"
          version="0.0.0"

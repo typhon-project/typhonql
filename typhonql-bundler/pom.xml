@@ -3,8 +3,8 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>engineering.swat.typhon</groupId>
-	<artifactId>bundle-typhoneql-dependencies</artifactId>
-	<version>0.10.0</version>
+	<artifactId>bundle-typhonql-dependencies</artifactId>
+	<version>0.11.0</version>
 	<packaging>bundle</packaging>
 	<distributionManagement>
 		<repository>
@@ -19,12 +19,7 @@
 		<dependency>
 			<groupId>org.mongodb</groupId>
 			<artifactId>mongodb-driver-sync</artifactId>
-			<version>3.11.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.mongodb</groupId>
-			<artifactId>mongodb-driver</artifactId>
-			<version>3.11.0</version>
+			<version>3.12.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.mariadb.jdbc</groupId>
