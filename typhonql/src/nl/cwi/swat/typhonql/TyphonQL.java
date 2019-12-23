@@ -22,12 +22,15 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.bson.BSONObject;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInvalidOperationException;
 import org.bson.BsonValue;
+import org.bson.Document;
 import org.rascalmpl.interpreter.TypeReifier;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
+import org.rascalmpl.values.ValueFactoryFactory;
 
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.ISourceLocation;
@@ -93,9 +96,14 @@ public class TyphonQL {
 	public IMap executeQuery(ISourceLocation path, IString user, IString password, IString query) {
 		URI uri = buildUri(path.getURI(), "/api/query");
 		String json = doPost(uri, user.getValue(), password.getValue(), query.getValue());
+		//Document doc = Document.parse(json);
+		//String contents = doc.getString("response");
+		// TODO this is a workaround
+		// The response object does not escape quotes, then it is not parseable
+		String contents = json.substring(15,  json.length()-3);
 		WorkingSet ws;
 		try {
-			ws = WorkingSetJSON.fromJSON(new ByteArrayInputStream(json.getBytes()));
+			ws = WorkingSetJSON.fromJSON(new ByteArrayInputStream(contents.getBytes()));
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw RuntimeExceptionFactory.io(vf.string("Problem parsing HTTP response"), null, null);
@@ -203,5 +211,12 @@ public class TyphonQL {
 				throw RuntimeExceptionFactory.io(vf.string("Problem closing HTTP resource"), null, null);
 			}
 		}
+	}
+	
+	public static void main(String[] args) {
+		IValueFactory vf = ValueFactoryFactory.getValueFactory();
+		TyphonQL ql = new TyphonQL(vf);
+		IMap ws = ql.executeQuery(vf.sourceLocation(URI.create("http://localhost:8080")), vf.string("pablo"), vf.string("antonio"), vf.string("from Product p select p"));
+		System.out.println(ws);
 	}
 }
