@@ -16,6 +16,7 @@ import ParseTree;
 import IO;
 import String;
 import Message;
+import Boolean;
 
 import util::Reflective;
 import lang::manifest::IO;
@@ -30,6 +31,14 @@ java void bootConnections(loc polystoreUri, str user, str password);
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java str readHttpModel(loc polystoreUri, str user, str password);
 
+@javaClass{nl.cwi.swat.typhonql.TyphonQL}
+java void executeResetDatabases(loc polystoreUri, str user, str password);
+
+@javaClass{nl.cwi.swat.typhonql.TyphonQL}
+java WorkingSet executeQuery(loc polystoreUri, str user, str password, str query);
+
+@javaClass{nl.cwi.swat.typhonql.TyphonQL}
+java void executeUpdate(loc polystoreUri, str user, str password, str query);
 
 private str TYPHONQL = "TyphonQL";
 
@@ -38,7 +47,8 @@ data TyphonQLManifest
       str PolystoreHost = "localhost",
       str PolystorePort = "8080",
       str PolystoreUser = "",
-      str PolystorePassword = ""
+      str PolystorePassword = "",
+      str DevMode = "false"
     );        
  
 private loc configFile(loc file) =  project(file) + "META-INF" + "RASCAL.MF"; 
@@ -103,6 +113,13 @@ Schema checkSchema(Schema sch, loc projectLoc) {
 
 void setupIDE() {
   Schema sch = schema({}, {});
+  
+  // TODO remove this
+  loc projectLoc = |project://typhonql-ide|;
+  
+  TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
+  
+  bool isDevMode = fromString(typhonConf.DevMode);
 
   registerLanguage(TYPHONQL, "tql", start[Script](str src, loc org) {
     return parse(#start[Script], src, org);
@@ -118,27 +135,13 @@ void setupIDE() {
   //iprintln(m);
   // todo: assert loaded on all actions (now an initial save is needed)
   
-  
-  registerContributions(TYPHONQL, {
-    builder(set[Message] (start[Script] s) {
-      //try {
-      	//Model m = bootTyphonQL(#Model, |tmp:///|);
-      	//loc polystoreUri = buildPolystoreUri(tree@\loc);
-      	//bootConnections(polystoreUri, typhonConf.PolystoreUser, typhonConf.PolystorePassword);
-        //sch = getSchema(polystoreUri, typhonConf.PolystoreUser, typhonConf.PolystorePassword);
-      /*}
-      catch value v: {
-        return {error("Error loading schema: <v>", s@\loc)};
-      }*/
-      return {};
-    }),
-    outliner(scriptOutliner),
-    popup(menu("TyphonQL", [
+  actions = [
       action("Execute",  void (Tree tree, loc selection) {
         if (treeFound(Request req) := treeAt(#Request, selection, tree)) {
+        	loc polystoreUri = buildPolystoreUri(tree@\loc);
+        	if (isDevMode) {
 	          try {
 	          	sch = checkSchema(sch, tree@\loc);
-	      	  	loc polystoreUri = buildPolystoreUri(tree@\loc);
 	      	  	value result = run(req, polystoreUri.uri, sch);
 	          	if (WorkingSet ws := result) {
 	            	text(ws);
@@ -146,8 +149,28 @@ void setupIDE() {
 	          	else {
 	            	alert("Operation succesfully executed");
 	          	}
-	        } catch e: {
+	          } catch e: {
         		alert("Error: <e> ");
+          	  }
+          	} else {
+          	  // not dev mode
+          	  try {
+          		sch = checkSchema(sch, tree@\loc);
+          		TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
+          		str user = typhonConf.PolystoreUser;
+				str password = typhonConf.PolystorePassword;
+          		if (req is query) {
+	      	  		WorkingSet ws = executeQuery(polystoreUri, user, password, "<req>");
+	          		text(ws);
+	          	}
+	          	else {
+	          	    executeUpdate(polystoreUri, user, password, "<req>");
+	            	alert("Operation succesfully executed");
+	          	}
+	          } catch e: {
+        		alert("Error: <e> ");
+          	  }
+          		
           	}
        }   
       }),
@@ -169,7 +192,34 @@ void setupIDE() {
         	alert("Error: <e> ");
         } 
       }),
-      action("Dump database",  void (Tree tree, loc selection) {
+      action("Reset database...", void (Tree tree, loc selection) {
+      	str yes = prompt("Are you sure to reset the polystore? (type \'yes\' to confirm)");
+      	if (yes == "yes") {
+        	if (isDevMode) {
+        		loc polystoreUri = buildPolystoreUri(tree@\loc);
+        		try {
+          			sch = checkSchema(sch, tree@\loc);
+          			runSchema(polystoreUri.uri, sch);
+          			alert("Polystore successfully reset");
+          		} catch e: {
+	        		alert("Error: <e> ");
+    	    	}
+    	    } else {
+    	    	// non dev mode 
+    	    	TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
+    	    	str user = typhonConf.PolystoreUser;
+				str password = typhonConf.PolystorePassword;
+          		executeResetDatabases(polystoreUri, user, password);
+	          	alert("Polystore successfully reset");
+    	    }
+    	      
+        }
+      })
+      
+    ];
+  
+  if (isDevMode) {
+  	actions += action("Dump database",  void (Tree tree, loc selection) {
       	try {
       		sch = checkSchema(sch, tree@\loc);
       		loc polystoreUri = buildPolystoreUri(tree@\loc);
@@ -177,22 +227,25 @@ void setupIDE() {
       	} catch e: {
         	alert("Error: <e> ");
         } 
-      }),
-      action("Reset database...", void (Tree tree, loc selection) {
-      	str yes = prompt("Are you sure to reset the polystore? (type \'yes\' to confirm)");
-        if (yes == "yes") {
-        	try {
-          		sch = checkSchema(sch, tree@\loc);
-          		loc polystoreUri = buildPolystoreUri(tree@\loc);
-          		runSchema(polystoreUri.uri, sch);
-          		alert("Polystore successfully reset");
-          	} catch e: {
-        		alert("Error: <e> ");
-        	} 
-        }
-      })
+      });
       
-    ]))
+  }
+  
+  registerContributions(TYPHONQL, {
+    builder(set[Message] (start[Script] s) {
+      //try {
+      	//Model m = bootTyphonQL(#Model, |tmp:///|);
+      	//loc polystoreUri = buildPolystoreUri(tree@\loc);
+      	//bootConnections(polystoreUri, typhonConf.PolystoreUser, typhonConf.PolystorePassword);
+        //sch = getSchema(polystoreUri, typhonConf.PolystoreUser, typhonConf.PolystorePassword);
+      /*}
+      catch value v: {
+        return {error("Error loading schema: <v>", s@\loc)};
+      }*/
+      return {};
+    }),
+    outliner(scriptOutliner),
+    popup(menu("TyphonQL", actions))
   }); 
   
   
@@ -234,3 +287,6 @@ node scriptOutliner(start[Script] script) {
     
 }
 
+void main() {
+  setupIDE();
+}
