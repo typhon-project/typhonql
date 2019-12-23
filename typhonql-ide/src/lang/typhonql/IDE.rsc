@@ -110,7 +110,7 @@ Schema checkSchema(Schema sch, loc projectLoc) {
 	}*/
 }
 
-void setupIDE(boolean isDevMode = false) {
+void setupIDE(bool isDevMode = false) {
   Schema sch = schema({}, {});
   
   // TODO remove this
