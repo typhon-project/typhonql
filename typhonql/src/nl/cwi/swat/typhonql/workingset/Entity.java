@@ -8,16 +8,21 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import org.rascalmpl.values.ValueFactoryFactory;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-import io.usethesource.vallang.IConstructor;
+import io.usethesource.vallang.IBool;
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
+import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.IMap;
+import io.usethesource.vallang.IMapWriter;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
+import io.usethesource.vallang.IValueFactory;
 
 public class Entity {
 	
@@ -89,6 +94,42 @@ public class Entity {
 		else
 			throw new RuntimeException("IValue does not represent an entity");
 	}
+	
+	public ITuple toIValue() {
+		IValueFactory vf = ValueFactoryFactory.getValueFactory();
+		IMapWriter mw = vf.mapWriter();
+		for (Entry<String, Object> entry : fields.entrySet()) {
+			String name = entry.getKey();
+			Object v = entry.getValue();
+			IValue iv = toIValue(vf, v);
+			mw.put(vf.string(name), iv);
+		}
+		return vf.tuple(vf.string(this.name), vf.string(this.uuid), mw.done());
+	}
+
+	private static IValue toIValue(IValueFactory vf, Object v) {
+		if (v == null) {
+			return vf.tuple(vf.bool(false), vf.string(""));
+		}
+		
+		if (v instanceof Integer) {
+			return vf.integer((Integer) v);
+		}
+		else if (v instanceof String) {
+			return vf.string((String) v);
+		}
+		else if (v instanceof List) {
+			IListWriter lw = vf.listWriter();
+			List<Object> os = (List<Object>) v;
+			lw.appendAll(os.stream().map(o -> toIValue(vf, o)).collect(Collectors.toList()));
+			return lw.done();
+		}
+		else if (v instanceof EntityRef) {
+			// TODO what about null() ?
+			return vf.tuple(vf.bool(true), vf.string(((EntityRef) v).getUuid()));
+		}
+		throw new RuntimeException("Unknown conversion for Java type " + v.getClass());
+	}
 
 	private static Object toJava(IValue object) {
 		if (object instanceof IInteger) {
@@ -107,17 +148,20 @@ public class Entity {
 			}
 			return lst;
 		}
-		else if (object instanceof IConstructor) {
+		else if (object instanceof ITuple) {
 			// TODO do the resolution for entities
-			IConstructor con = (IConstructor) object;
-			if (con.getName().equals("uuid")) {
-				IString uuid = (IString) con.getChildren().iterator().next();
+			ITuple tuple = (ITuple) object;
+			IBool isNotNull = (IBool) tuple.get(0);
+			if (isNotNull.getValue()) {
+				IString uuid = (IString) tuple.get(1);
 				return new EntityRef(uuid.getValue());
+			} else {
+				return null;
 			}
 			
 		}
 		
-		throw new RuntimeException("Unknown conversion for Rascal value of type" + object.getClass());
+		throw new RuntimeException("Unknown conversion for Rascal value of type " + object.getClass());
 	}
 	
 	

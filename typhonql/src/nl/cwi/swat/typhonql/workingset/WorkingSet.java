@@ -7,13 +7,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.rascalmpl.values.ValueFactoryFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.usethesource.vallang.IList;
+import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.IMap;
+import io.usethesource.vallang.IMapWriter;
 import io.usethesource.vallang.IString;
+import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
+import io.usethesource.vallang.IValueFactory;
 
 
 public class WorkingSet {
@@ -71,4 +78,19 @@ public class WorkingSet {
 	public Map<String, List<Entity>> getMap() {
 		return map;
 	}
+
+	public IMap toIValue() {
+		IValueFactory vf = ValueFactoryFactory.getValueFactory();
+		IMapWriter mw = vf.mapWriter();
+		for (Entry<String, List<Entity>> entry : map.entrySet()) {
+			String label = entry.getKey();
+			List<Entity> entities = entry.getValue();
+			List<ITuple> tuples = entities.stream().map(Entity::toIValue).collect(Collectors.toList());
+			IListWriter lw = vf.listWriter();
+			lw.appendAll(tuples);
+			mw.put(vf.string(label), lw.done());
+		}
+		return mw.done();
+	}
+
 }
