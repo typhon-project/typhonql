@@ -9,4 +9,11 @@
     </parent>
     <artifactId>typhonql-update-site</artifactId>
     <packaging>eclipse-repository</packaging>
+    <dependencies>
+		<dependency>
+			<groupId>engineering.swat.typhon</groupId>
+			<artifactId>bundle-typhonql-dependencies</artifactId>
+            <version>${dependency-bundle-version}</version>
+		</dependency>
+    </dependencies>
 </project>

@@ -27,8 +27,8 @@
 	<dependencies>
 		<dependency>
 			<groupId>engineering.swat.typhon</groupId>
-			<artifactId>bundle-typhoneql-dependencies</artifactId>
-			<version>0.10.0</version>
+			<artifactId>bundle-typhonql-dependencies</artifactId>
+            <version>${dependency-bundle-version}</version>
 		</dependency>
 		<!-- WARNING! maven dependencies need to be added to the bundler, and any 
 			change needs an update of the bundler version (and a local mvn install) -->
@@ -38,11 +38,6 @@
 		<dependency>
 			<groupId>org.mongodb</groupId>
 			<artifactId>mongodb-driver-sync</artifactId>
-			<version>3.11.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.mongodb</groupId>
-			<artifactId>mongodb-driver</artifactId>
 			<version>3.11.0</version>
 		</dependency>
 		<dependency>

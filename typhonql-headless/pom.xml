@@ -42,6 +42,12 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>engineering.swat.typhon:bundle-typhonql-dependencies</exclude>
+                                </excludes>
+                            </artifactSet>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
