@@ -8,11 +8,11 @@ module lang::typhonql::\test::SessionTest
  		   {
  		    <"Reviews", "MongoDB", "localhost", 27018, "admin", "admin">,
  			<"Inventory", "MariaDB", "localhost", 3306, "root", "example"> };
- 	Session session = newSession(dbs);
+ 	Session session = newSession();
  	 	
- 	session.executeQuery("user", "Inventory", "select * from User where `User.name` = \"Pablo\"", ());
- 	session.executeQuery("review", "Reviews", "Review\n{ user: \"${user_id}\" }", ("user_id" : <"user", "User", "@id">));
- 	session.executeQuery("result", "Inventory", "select `Product.@id` as p_id, Product.* from Product where `Product.@id` = \"${product_id}\"", ("product_id" : <"review", "Review", "product">));
+ 	session.sql.executeQuery("user", "localhost", 3306, "root", "example", "Inventory", "select * from User where `User.name` = \"Pablo\"", ());
+ 	session.mongo.find("review", "localhost", 27018, "admin", "admin", "Reviews", "Review\n{ user: \"${user_id}\" }", ("user_id" : <"user", "User", "@id">));
+ 	session.sql.executeQuery("result", "localhost", 3306, "root", "example", "Inventory", "select `Product.@id` as p_id, Product.* from Product where `Product.@id` = \"${product_id}\"", ("product_id" : <"review", "Review", "product">));
  	
  	//str (str result, rel[str name, str \type] entities, EntityModels models) read,
  	//alias EntityModels = rel[str name, rel[str name, str \type] attributes, rel[str name, str entity] relations];
