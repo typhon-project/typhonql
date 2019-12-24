@@ -192,8 +192,8 @@ void setupIDE(bool isDevMode = false) {
       action("Reset database...", void (Tree tree, loc selection) {
       	str yes = prompt("Are you sure to reset the polystore? (type \'yes\' to confirm)");
       	if (yes == "yes") {
-        	if (isDevMode) {
-        		loc polystoreUri = buildPolystoreUri(tree@\loc);
+      		loc polystoreUri = buildPolystoreUri(tree@\loc);
+        	if (isDevMode) {        		
         		try {
           			sch = checkSchema(sch, tree@\loc);
           			runSchema(polystoreUri.uri, sch);

@@ -22,12 +22,10 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.bson.BSONObject;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInvalidOperationException;
 import org.bson.BsonValue;
-import org.bson.Document;
 import org.rascalmpl.interpreter.TypeReifier;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 import org.rascalmpl.values.ValueFactoryFactory;
@@ -89,7 +87,7 @@ public class TyphonQL {
 	}
 	
 	public void executeResetDatabases(ISourceLocation path, IString user, IString password) {
-		URI uri = buildUri(path.getURI(), "/api/resetDatabases");
+		URI uri = buildUri(path.getURI(), "/api/resetdatabases");
 		doGet(uri, user.getValue(), password.getValue());
 	}
 	
