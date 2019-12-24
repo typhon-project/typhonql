@@ -125,7 +125,6 @@ public class Entity {
 			return lw.done();
 		}
 		else if (v instanceof EntityRef) {
-			// TODO what about null() ?
 			return vf.tuple(vf.bool(true), vf.string(((EntityRef) v).getUuid()));
 		}
 		throw new RuntimeException("Unknown conversion for Java type " + v.getClass());
