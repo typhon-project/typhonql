@@ -31,6 +31,26 @@ void test2() {
 	println(r);
 }
 
+void test3() {
+	str cmd = "insert User {name: \"Pablo\" }";
+	bootConnections(|http://localhost:8080|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
+	Schema sch = loadSchemaFromXMI(modelStr);
+	run(cmd, "http://localhost:8080", sch);
+}
+
+
+void test4() {
+	str cmd = "insert 
+			  '@pablo User { name: \"Claudio\", reviews: badradio },
+			  '@radio Product {name: \"TV\", description: \"Flat\", reviews: badradio },
+			  '@badradio Review { contents: \"Good TV\",product: radio,user: pablo}";
+	bootConnections(|http://localhost:8080|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
+	Schema sch = loadSchemaFromXMI(modelStr);
+	run(cmd, "http://localhost:8080", sch);
+}
+
 void printSchema() {
 	bootConnections(|http://localhost:8080|, "pablo", "antonio");
 	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
