@@ -1,10 +1,9 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Objects;
+import java.util.LinkedHashMap;
 import java.util.Map.Entry;
+import java.util.Objects;
 
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.result.ICallableValue;
@@ -38,7 +37,7 @@ public class MariaDBOperations implements Operations {
 			
 			Iterator<Entry<IValue, IValue>> iter = bindings.entryIterator();
 			
-			Map<String, Binding> bindingsMap = new HashMap<>();
+			LinkedHashMap<String, Binding> bindingsMap = new LinkedHashMap<>();
 			
 			while (iter.hasNext()) {
 				Entry<IValue, IValue> kv = iter.next();
