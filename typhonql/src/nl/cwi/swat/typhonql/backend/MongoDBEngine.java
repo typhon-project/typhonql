@@ -20,7 +20,7 @@ public class MongoDBEngine extends Engine {
 
 	@Override
 	protected QueryExecutor getExecutor(String resultId, String query, LinkedHashMap<String, Binding> bindings) {
-		return new MongoQueryExecutor(getConnectionString(host, port, user, password), dbName, query, bindings, store);
+		return new MongoQueryExecutor(store, query, bindings, getConnectionString(host, port, user, password), dbName);
 	}
 	
 	private String getConnectionString(String host, int port, String user, String password) {

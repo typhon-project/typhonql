@@ -35,7 +35,7 @@ public class MariaDBEngine extends Engine {
 
 	@Override
 	protected QueryExecutor getExecutor(String resultId, String query, LinkedHashMap<String, Binding> bindings) {
-		return new MariaDBQueryExecutor(getConnectionString(host, port, dbName, user, password), query, bindings, store);
+		return new MariaDBQueryExecutor(store, query, bindings, getConnectionString(host, port, dbName, user, password));
 	}
 
 }

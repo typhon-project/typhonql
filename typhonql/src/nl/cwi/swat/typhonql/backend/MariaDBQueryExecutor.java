@@ -14,7 +14,7 @@ public class MariaDBQueryExecutor extends QueryExecutor {
 	
 	private PreparedStatement pstmt;
 	
-	public MariaDBQueryExecutor(String connectionString, String query, LinkedHashMap<String, Binding> bindings, ResultStore store) {
+	public MariaDBQueryExecutor(ResultStore store,  String query, LinkedHashMap<String, Binding> bindings, String connectionString) {
 		super(store, query, bindings);
 		try {
 			Connection connection = DriverManager

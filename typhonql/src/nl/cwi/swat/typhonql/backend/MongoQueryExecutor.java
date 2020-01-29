@@ -18,8 +18,8 @@ public class MongoQueryExecutor extends QueryExecutor {
 	private String connectionString;
 	private String dbName;
 
-	public MongoQueryExecutor(String connectionString, String dbName, String query,
-			LinkedHashMap<String, Binding> bindings, ResultStore store) {
+	public MongoQueryExecutor(ResultStore store, String query,
+			LinkedHashMap<String, Binding> bindings, String connectionString, String dbName) {
 		super(store, query, bindings);
 		this.dbName = dbName;
 		this.connectionString = connectionString;
