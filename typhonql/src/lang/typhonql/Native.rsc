@@ -67,7 +67,7 @@ int runCreateAttribute(p:<sql(), str db>, str polystoreId, str entity, str attri
 	return executeUpdate(polystoreId, db, pp(stat));     
 }
 
-int runCreateAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str attribute, Type t, Schema s, Log log = noLog) {
+int runCreateAttribute(p:<mongodb(), str db>, str polystoreId, str entity, str attribute, str ty, Schema s, Log log = noLog) {
 	UpdateResult result = updateMany(polystoreId, db, entity, (), ("$set": ( attribute : {})));
 	return result.modifiedCount;
 }
