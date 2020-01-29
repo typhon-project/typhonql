@@ -1,0 +1,19 @@
+create Country at Inventory
+
+drop attribute Product.description
+
+drop attribute Review.user
+
+create Product.description: str
+
+create Product.designer -> User [1 .. 1] 
+
+from Product p select p
+
+from User u select u
+
+drop User
+
+drop Review
+
+create Review.country : str
