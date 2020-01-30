@@ -17,16 +17,38 @@ java str readHttpModel(loc polystoreUri, str user, str password);
 void test1() {
 	str cmd = "insert Order {totalAmount: 32, products: [Product { name: \"TV\" } ]}";
 	bootConnections(|http://localhost:8080|, "pablo", "antonio");
-	Schema sch = getSchema(|http://localhost:8080|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
+	Schema sch = loadSchemaFromXMI(modelStr);
 	run(cmd, "http://localhost:8080", sch);
 }
 
 void test2() {
-	str cmd = "from Order o select o";
+	str cmd = "from Product p select p";
 	bootConnections(|http://localhost:8080|, "pablo", "antonio");
-	Schema sch = getSchema(|http://localhost:8080|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
+	Schema sch = loadSchemaFromXMI(modelStr);
 	r = run(cmd, "http://localhost:8080", sch);
 	println(r);
+}
+
+void test3() {
+	str cmd = "insert User {name: \"Pablo\" }";
+	bootConnections(|http://localhost:8080|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
+	Schema sch = loadSchemaFromXMI(modelStr);
+	run(cmd, "http://localhost:8080", sch);
+}
+
+
+void test4() {
+	str cmd = "insert 
+			  '@pablo User { name: \"Claudio\", reviews: badradio },
+			  '@radio Product {name: \"TV\", description: \"Flat\", reviews: badradio },
+			  '@badradio Review { contents: \"Good TV\",product: radio,user: pablo}";
+	bootConnections(|http://localhost:8080|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
+	Schema sch = loadSchemaFromXMI(modelStr);
+	run(cmd, "http://localhost:8080", sch);
 }
 
 void printSchema() {

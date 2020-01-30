@@ -79,28 +79,7 @@ insert Product {
 
 
 
-create Country at Inventory
 
-drop attribute Product.description
-
-drop attribute Review.user
-
-create Product.description: str
-
-create Product.designer :-> User [1 .. 1]
-
-create Review.responses :-> Review [0 .. *]
-
-rename attribute Product.description to explanation
-
-
-from Product p select p
-
-from User u select u
-
-drop User
-
-drop Review
 
 
 from OBLG_GNL u select u

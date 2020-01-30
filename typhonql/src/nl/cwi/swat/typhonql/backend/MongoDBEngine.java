@@ -1,13 +1,6 @@
 package nl.cwi.swat.typhonql.backend;
 
-import java.util.stream.IntStream;
-
-import org.bson.Document;
-
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
+import java.util.LinkedHashMap;
 
 public class MongoDBEngine extends Engine {
 	private String host;
@@ -26,21 +19,14 @@ public class MongoDBEngine extends Engine {
 	}
 
 	@Override
-	protected ResultIterator performSelect(String query) {
-		String connString = getConnectionString(host, port, dbName, user, password);
-		MongoClient mongoClient = MongoClients.create(connString);
-		MongoDatabase db = mongoClient.getDatabase(dbName);
-		String[] strings = query.split("\n");
-		String collectionName = strings[0];
-		String json = String.join("\n", 
-				IntStream.range(1, strings.length).mapToObj(i -> strings[i]).toArray(String[]::new));
-		MongoCollection<Document> coll = db.getCollection(collectionName);
-		Document pattern = Document.parse(json);
-		return new MongoDBIterator(coll.find(pattern));
+	protected QueryExecutor getExecutor(String resultId, String query, LinkedHashMap<String, Binding> bindings) {
+		return new MongoQueryExecutor(store, query, bindings, getConnectionString(host, port, user, password), dbName);
 	}
-
-	private String getConnectionString(String host, int port, String dbName, String user, String password) {
+	
+	private String getConnectionString(String host, int port, String user, String password) {
 		return "mongodb://" + user + ":" + password + "@" + host + ":" + port;
 	}
+
+
 
 }

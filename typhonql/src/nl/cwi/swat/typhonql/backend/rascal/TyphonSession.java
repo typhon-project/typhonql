@@ -2,38 +2,18 @@ package nl.cwi.swat.typhonql.backend.rascal;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.function.Function;
 
-import org.rascalmpl.interpreter.Evaluator;
 import org.rascalmpl.interpreter.IEvaluatorContext;
-import org.rascalmpl.interpreter.control_exceptions.MatchFailed;
-import org.rascalmpl.interpreter.env.Environment;
-import org.rascalmpl.interpreter.env.GlobalEnvironment;
 import org.rascalmpl.interpreter.env.ModuleEnvironment;
-import org.rascalmpl.interpreter.load.StandardLibraryContributor;
-import org.rascalmpl.interpreter.result.AbstractFunction;
 import org.rascalmpl.interpreter.result.ICallableValue;
-import org.rascalmpl.interpreter.result.Result;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
-import org.rascalmpl.library.util.PathConfig;
-import org.rascalmpl.uri.URIUtil;
-import org.rascalmpl.uri.classloaders.SourceLocationClassLoader;
-import org.rascalmpl.values.ValueFactoryFactory;
 
-import io.usethesource.vallang.IInteger;
-import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.ISet;
-import io.usethesource.vallang.ISourceLocation;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
@@ -41,30 +21,24 @@ import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import io.usethesource.vallang.type.TypeStore;
-import nl.cwi.swat.typhonql.backend.Binding;
-import nl.cwi.swat.typhonql.backend.Engine;
 import nl.cwi.swat.typhonql.backend.EntityModel;
-import nl.cwi.swat.typhonql.backend.MariaDBEngineFactory;
-import nl.cwi.swat.typhonql.backend.MongoDBEngineFactory;
 import nl.cwi.swat.typhonql.backend.ResultStore;
-import nl.cwi.swat.typhonql.client.SimplePolystoreConnection;
 import nl.cwi.swat.typhonql.workingset.WorkingSet;
 import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
 
-public class TyphonSession {
+public class TyphonSession implements Operations {
 	private static final TypeFactory TF = TypeFactory.getInstance();
 	private final IValueFactory vf;
 	
-	static { 
-		BackendRegistry.addEngineFactory("MariaDB", new MariaDBEngineFactory());
-		BackendRegistry.addEngineFactory("MongoDB", new MongoDBEngineFactory());
+	public TyphonSession(IValueFactory vf) {
+		this.vf = vf;
 	}
 	
 	public TyphonSession(IValueFactory vf) {
 		this.vf = vf;
 	}
 
-	public ITuple newSession(ISet databases, IEvaluatorContext ctx) {
+	public ITuple newSession(IEvaluatorContext ctx) {
 		// borrow the type store from the module, so we don't have to build the function type ourself
         ModuleEnvironment aliasModule = ctx.getHeap().getModule("lang::typhonql::Session");
         if (aliasModule == null) {
@@ -78,47 +52,28 @@ public class TyphonSession {
 
 
 		// get the function types
-		FunctionType executeQueryType = (FunctionType)aliasedTuple.getFieldType("executeQuery");
-		FunctionType executeUpdateType = (FunctionType)aliasedTuple.getFieldType("executeUpdate");
 		FunctionType readType = (FunctionType)aliasedTuple.getFieldType("read");
 		FunctionType closeType = (FunctionType)aliasedTuple.getFieldType("done");
 
 		// construct the session tuple
 		ResultStore store = new ResultStore();
-		
-		Map<String, Engine> dbs = new HashMap<String, Engine>();
-		
-		Iterator<IValue> iter = databases.iterator();
-		while (iter.hasNext()) {
-			ITuple tuple = (ITuple) iter.next();
-			IString dbName = (IString) tuple.get(0);
-			IString dbType = (IString) tuple.get(1);
-			IString host = (IString) tuple.get(2);
-			IInteger port = (IInteger) tuple.get(3);
-			IString user = (IString) tuple.get(4);
-			IString password = (IString) tuple.get(5);
-			Engine engine = BackendRegistry.createEngine(dbType.getValue(), store, host.getValue(), 
-					port.intValue(), dbName.getValue(), user.getValue(), password.getValue());
-			dbs.put(dbName.getValue(), engine);
-		}
-		
 		return vf.tuple(
-            makeExecuteQuery(store, dbs, executeQueryType, ctx),
-            makeExecuteUpdate(store, dbs, executeUpdateType, ctx),
-            makeRead(store, dbs, readType, ctx),
-            makeClose(store, dbs, closeType, ctx)
+			makeRead(store, readType, ctx),
+            makeClose(store, closeType, ctx),
+            new MariaDBOperations().newSQLOperations(store, ctx, vf, TF),
+            new MongoOperations().newMongoOperations(store, ctx, vf, TF)
 		);
 	}
 	
 
-	private ICallableValue makeClose(ResultStore store, Map<String, Engine> dbs, FunctionType closeType, IEvaluatorContext ctx) {
+	private ICallableValue makeClose(ResultStore store, FunctionType closeType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, closeType, args -> {
 			store.clear();
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 
-	private ICallableValue makeRead(ResultStore store, Map<String, Engine> dbs,  FunctionType readType, IEvaluatorContext ctx) {
+	private ICallableValue makeRead(ResultStore store, FunctionType readType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, readType, args -> {
 			String resultName = ((IString) args[0]).getValue();
 			List<String> labels = new ArrayList<>();
@@ -153,89 +108,5 @@ public class TyphonSession {
  			return ResultFactory.makeResult(TF.stringType(), vf.string(json), ctx);
 		});
 	}
-
-	private ICallableValue makeExecuteQuery(ResultStore store, Map<String, Engine> dbs, FunctionType executeType, IEvaluatorContext ctx) {
-		return makeFunction(ctx, executeType, args -> {
-			IString resultId = (IString) args[0];
-			IString dbName = (IString) args[1];
-			IString query = (IString) args[2];
-			IMap bindings =  (IMap) args[3];
-			
-			Iterator<Entry<IValue, IValue>> iter = bindings.entryIterator();
-			
-			Map<String, Binding> bindingsMap = new HashMap<>();
-			
-			while (iter.hasNext()) {
-				Entry<IValue, IValue> kv = iter.next();
-				IString param = (IString) kv.getKey();
-				ITuple field = (ITuple) kv.getValue();
-				Binding b = new Binding(((IString) field.get(0)).getValue() ,
-						((IString) field.get(1)).getValue(), ((IString) field.get(2)).getValue());
-				bindingsMap.put(param.getValue(), b);
-			}
-			
-			dbs.get(dbName.getValue()).executeSelect(resultId.getValue(), query.getValue(), bindingsMap);
-			
-			//sessionData.put(resultName, query);
-			return ResultFactory.makeResult(TF.voidType(), null, ctx);
-		});
-	}
-	
-	private ICallableValue makeExecuteUpdate(ResultStore store, Map<String, Engine> dbs, FunctionType executeType, IEvaluatorContext ctx) {
-		return makeFunction(ctx, executeType, args -> {
-			IString resultId = (IString) args[0];
-			IString dbName = (IString) args[1];
-			IString query = (IString) args[2];
-			IMap bindings =  (IMap) args[3];
-			
-			Iterator<Entry<IValue, IValue>> iter = bindings.entryIterator();
-			
-			Map<String, Binding> bindingsMap = new HashMap<>();
-			
-			while (iter.hasNext()) {
-				Entry<IValue, IValue> kv = iter.next();
-				IString param = (IString) kv.getKey();
-				ITuple field = (ITuple) kv.getValue();
-				Binding b = new Binding(((IString) field.get(0)).getValue() ,
-						((IString) field.get(1)).getValue(), ((IString) field.get(2)).getValue());
-				bindingsMap.put(param.getValue(), b);
-			}
-			
-			// TODO dbs.get(dbName.getValue()).executeSelect(resultId.getValue(), query.getValue(), bindingsMap);
-			
-			//sessionData.put(resultName, query);
-			return ResultFactory.makeResult(TF.voidType(), null, ctx);
-		});
-	}
-	
-	// no support for kw params yet 
-	private ICallableValue makeFunction(IEvaluatorContext ctx, FunctionType typ, Function<IValue[], Result<IValue>> body) {
-		return new AbstractFunction(ctx.getCurrentAST(), ctx.getEvaluator(), typ, Collections.emptyList(), false, ctx.getCurrentEnvt()) {
-			
-			@Override
-			public boolean isStatic() {
-				return false;
-			}
-			
-			@Override
-			public ICallableValue cloneInto(Environment env) {
-				// should not happen, we are not part of an environment
-				return null;
-			}
-			
-			@Override
-			public boolean isDefault() {
-				return false;
-			}
-			
-			@Override
-			public Result<IValue> call(Type[] argTypes, IValue[] argValues, Map<String, IValue> keyArgValues) throws MatchFailed {
-				return body.apply(argValues);
-			}
-		};
-		
-	}
-
-
 
 }

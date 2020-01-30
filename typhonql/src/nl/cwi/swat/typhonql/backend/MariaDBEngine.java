@@ -1,12 +1,26 @@
 package nl.cwi.swat.typhonql.backend;
 
-public class MariaDBEngine extends SQLEngine {
+import java.util.LinkedHashMap;
+
+public class MariaDBEngine extends Engine {
+
+	private String host;
+	private int port;
+	private String dbName;
+	private String user;
+	private String password;
 
 	public MariaDBEngine(ResultStore store, String host, int port, String dbName, String user, String password) {
-		super(store, host, port, dbName, user, password);
+		super(store);
+		this.host = host;
+		this.port = port;
+		this.dbName = dbName;
+		this.user = user;
+		this.password = password;
+		initializeDriver();
 	}
 
-	@Override
+
 	protected void initializeDriver() {
 		try {
 			Class.forName("org.mariadb.jdbc.Driver");
@@ -15,9 +29,13 @@ public class MariaDBEngine extends SQLEngine {
 		}		
 	}
 	
-	@Override
-	public String getConnectionString(String host, int port, String dbName, String user, String password) {
+	private String getConnectionString(String host, int port, String dbName, String user, String password) {
 		return "jdbc:mariadb://" + host + ":" + port + "/" + dbName + "?user=" + user + "&password=" + password;
+	}
+
+	@Override
+	protected QueryExecutor getExecutor(String resultId, String query, LinkedHashMap<String, Binding> bindings) {
+		return new MariaDBQueryExecutor(store, query, bindings, getConnectionString(host, port, dbName, user, password));
 	}
 
 }
