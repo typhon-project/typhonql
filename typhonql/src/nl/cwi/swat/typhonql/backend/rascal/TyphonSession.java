@@ -33,10 +33,6 @@ public class TyphonSession implements Operations {
 	public TyphonSession(IValueFactory vf) {
 		this.vf = vf;
 	}
-	
-	public TyphonSession(IValueFactory vf) {
-		this.vf = vf;
-	}
 
 	public ITuple newSession(IEvaluatorContext ctx) {
 		// borrow the type store from the module, so we don't have to build the function type ourself
