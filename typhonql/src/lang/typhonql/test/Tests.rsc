@@ -48,7 +48,8 @@ void test4() {
 	bootConnections(|http://localhost:8080|, "pablo", "antonio");
 	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
 	Schema sch = loadSchemaFromXMI(modelStr);
-	run(cmd, "http://localhost:8080", sch);
+	value v = run(cmd, "http://localhost:8080", sch);
+	println(v);
 }
 
 void printSchema() {

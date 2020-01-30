@@ -11,6 +11,7 @@ import java.util.Arrays;
 import nl.cwi.swat.typhonql.DBType;
 import nl.cwi.swat.typhonql.MariaDB;
 import nl.cwi.swat.typhonql.MongoDB;
+import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.PolystoreConnection;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
@@ -39,10 +40,14 @@ public class XMIBasedTyphonQLClientTest {
 		
 		conn.resetDatabases();
 		
-		conn.executeUpdate("insert \n" + 
+		CommandResult cr = conn.executeUpdate("insert \n" + 
 				"	@pablo User { name: \"Pablo\", reviews: badradio },\n" + 
 				"	@radio Product {name: \"Radio\", description: \"Wireless\", reviews: badradio },\n" + 
 				"	@badradio Review { contents: \"Bad radio\",product: radio,user: pablo}");
+		
+		for (String objLabel : cr.getCreatedUuids().keySet()) {
+			System.out.println(objLabel + " -> " + cr.getCreatedUuids().get(objLabel));
+		}
 		
 		//WorkingSet iv = conn.executeQuery("from Product p select p");
 		WorkingSet iv = conn.executeQuery("from Product p select p");
