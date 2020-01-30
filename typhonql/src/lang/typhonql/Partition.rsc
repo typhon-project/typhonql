@@ -130,9 +130,9 @@ UUID lookup(VId vid, IdMap ids) {
   }
   throw "No uuid for <vid>";
 }
-  
 
-Partitioning partition(r:(Request)`insert <{Obj ","}* objs>`, Schema s) { 
+
+tuple[Partitioning, map[str, str]] partitionForInsert(r:(Request)`insert <{Obj ","}* objs>`, Schema s) { 
   // script: insert+
   // flatten but only according to cross links
   // but for now, we completely flatten, and join things per database in a single insert
@@ -183,7 +183,7 @@ Partitioning partition(r:(Request)`insert <{Obj ","}* objs>`, Schema s) {
     println("PP: <p> :: <insPerPlace[p]>");
   }
   
-  return [ <p, insPerPlace[p]> | Place p <- insPerPlace, (Request)`insert` !:= insPerPlace[p] ];
+  return <[ <p, insPerPlace[p]> | Place p <- insPerPlace, (Request)`insert` !:= insPerPlace[p] ], (() | it + ("<vid>":"<uuid>") | <vid, _, uuid> <- ids)>;
 }
 
 

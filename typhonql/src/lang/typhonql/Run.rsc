@@ -225,12 +225,13 @@ value run((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`, str polystor
 
 value run(r:(Request)`insert <{Obj ","}* objs>`, str polystoreId, Schema s, Log log = noLog) {
   // NB: partitioning flattens the object list; and back-ends assume this
-  Partitioning part = partition(r, s);
+  tuple[Partitioning, map[str, str]] partAndIds = partitionForInsert(r, s);
+  <part, ids> = partAndIds;
   int affected = 0;
   for (<Place p, Request q> <- part) {
     affected += runInsert(p, q, polystoreId, s);
   }
-  return affected;
+  return <affected, ids>;
 }
 
 
