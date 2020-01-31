@@ -49,6 +49,11 @@ public class XMIBasedTyphonQLClientTest {
 			System.out.println(objLabel + " -> " + cr.getCreatedUuids().get(objLabel));
 		}
 		
+		System.out.println("COMMAND RESULT");
+		WorkingSetJSON.toJSON(cr, System.out);
+		System.out.println("END COMMAND RESULT");
+		
+		
 		//WorkingSet iv = conn.executeQuery("from Product p select p");
 		WorkingSet iv = conn.executeQuery("from Product p select p");
 		System.out.println("JSON");

@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 //import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 //import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
 
+import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.workingset.Entity;
 import nl.cwi.swat.typhonql.workingset.EntityRef;
 import nl.cwi.swat.typhonql.workingset.WorkingSet;
@@ -49,6 +50,14 @@ public class WorkingSetJSON {
 	public static void toJSON(WorkingSet ws, OutputStream os) throws IOException {
 		try {
 			mapper.writeValue(os, ws.getMap());
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public static void toJSON(CommandResult cr, OutputStream os) throws IOException {
+		try {
+			mapper.writeValue(os, cr);
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
