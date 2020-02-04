@@ -4,6 +4,7 @@ import lang::typhonql::relational::SQL;
 import lang::typhonml::Util;
 import List;
 import String;
+import DateTime;
 
 // NB: we use ` to escape identifiers, however, this is not ANSI SQL, but works in MySQL
 str q(str x) = "`<x>`";
@@ -137,7 +138,7 @@ str pp(integer(int x)) = "<x>";
 
 str pp(boolean(bool b)) = "<b>";
 
-str pp(dateTime(datetime d)) = printDate(d, "\'YYYY-MM-dd HH:mm:ss\'");
+str pp(dateTime(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
 
 str pp(null()) = "null";
 

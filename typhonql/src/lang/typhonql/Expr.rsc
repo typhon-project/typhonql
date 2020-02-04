@@ -50,7 +50,7 @@ syntax Expr
 syntax EId = Id \ Primitives;
   
 keyword Primitives
-  = "int" | "str" | "bool" | "text" | "float" | "blob" | "freetext" ;
+  = "int" | "str" | "bool" | "text" | "float" | "blob" | "freetext" | "date" ;
   
 
 // Variable Ids

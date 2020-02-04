@@ -16,7 +16,8 @@ syntax Statement
 syntax Inverse = "(" Id inverse ")";
 
 lexical Type
-  = "int" | "str" | "bool" | "text" | "float" | "blob" | "freetext" ;
+  = "int" | "str" | "bool" | "text" | "float" | "blob" | "freetext" | "date" 
+  ;
 
 lexical Arrow = "-\>" | ":-\>";
 
