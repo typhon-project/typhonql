@@ -76,6 +76,13 @@ insert Product {
 	price: 300
 }
 
+insert Product {
+	name: "TV",
+	description: "Black and white",
+	price: 300,
+	date: $2019-03-25$
+}
+
 from OBLG_GNL u select u
 
 from AC_GNL u select u

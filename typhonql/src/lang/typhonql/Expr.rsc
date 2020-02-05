@@ -49,7 +49,7 @@ syntax Expr
 lexical EId = Id entityName \ Primitives;
   
 keyword Primitives
-  = "int" | "str" | "bool" | "text" | "float" | "blob" | "freetext" ;
+  = "int" | "str" | "bool" | "text" | "float" | "blob" | "freetext" | "date" ;
   
 
 // Variable Ids
