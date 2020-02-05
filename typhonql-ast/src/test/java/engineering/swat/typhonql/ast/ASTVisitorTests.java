@@ -1,17 +1,21 @@
 package engineering.swat.typhonql.ast;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
 import engineering.swat.typhonql.ast.Expr.Lst;
 import engineering.swat.typhonql.ast.Obj.Literal;
 import engineering.swat.typhonql.ast.Statement.Insert;
 
-public class Example {
-	public static void main(String[] args) throws ASTConversionException {
-		System.err.println("Parsing query");
-		Request ast = TyphonQLASTParser.parseTyphonQLRequest(("insert Order { "
-				+ "totalAmount: 32, "
-				+  "products: [Product { name: \"TV\" } ]"
-				+ " }").toCharArray());
-		System.err.println("Visiting query");
+public class ASTVisitorTests {
+	
+	@Test
+	public void testRegularVisitor() throws Exception {
+		Request ast = parseAST();
 		String productName = ast.getStm().accept(new NullASTVisitor<String>() {
 			@Override
 			public String visitStatementInsert(Insert x) {
@@ -48,15 +52,19 @@ public class Example {
 				return null;
 			}
 		});
-		System.out.println("Found product name: " + productName);
-		System.out.flush();
-		
-		System.err.println("Or using default top-down visitor");
+		assertEquals("\"TV\"", productName);
+	}
+	
+	@Test
+	void testName() throws Exception {
+		Request ast = parseAST();
+		Set<String> ints = new HashSet<>();
+		List<Integer> listSize = new ArrayList<>();
+
 		ast.accept(new TopDownASTVisitor() {
 			@Override
 			public Void visitExprLst(Lst x) {
-				System.out.println("Got a list: " + x.getEntries().size());
-				System.out.flush();
+				listSize.add(x.getEntries().size());
 				// call super method to continue visiting entries of this list
 				// else return null
 				return super.visitExprLst(x);
@@ -64,13 +72,22 @@ public class Example {
 			
 			@Override
 			public Void visitIntLexical(engineering.swat.typhonql.ast.Int.Lexical x) {
-				System.out.println("found int: " + x.getString());
-				System.out.flush();
-				return super.visitIntLexical(x);
+				ints.add(x.toString());
+				return null;
 			}
 			
 		});
-		
+		assertEquals(Collections.singleton("32"), ints);
+		assertEquals(Collections.singletonList(1), listSize);
+	}
+	
+	
+
+	private Request parseAST() throws ASTConversionException {
+		return TyphonQLASTParser.parseTyphonQLRequest(("insert Order { "
+				+ "totalAmount: 32, "
+				+ "products: [Product { name: \"TV\" } ]"
+				+ "}").toCharArray());
 	}
 
 }

@@ -14,17 +14,6 @@ import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.IValue;
 
 public class ASTBuilder {
-
-
-	/*
-	@SuppressWarnings("unchecked")
-	public static <T extends AbstractAST> T make(String sort, String cons, ISourceLocation src, Object... args) {
-		Object[] newArgs = new Object[args.length + 2];
-		System.arraycopy(args, 0, newArgs, 2, args.length);
-		newArgs[0] = src;
-		return (T) callMakerMethod(sort, cons, newArgs, null);
-	}
-	*/
 	
 	public static Request buildRequest(org.rascalmpl.values.uptr.ITree tree) throws ASTConversionException {
 		if (TreeAdapter.isAppl(tree)) {
