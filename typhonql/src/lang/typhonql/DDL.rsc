@@ -13,7 +13,7 @@ syntax Statement
   | \renameRelation: "rename relation" EId eId  "." Id name "to" Id newName  
   ;
   
-syntax Inverse = "(" Id inverse ")";
+syntax Inverse = inverseId: "(" Id inverse ")";
 
 lexical Type
   = "int" | "str" | "bool" | "text" | "float" | "blob" | "freetext" ;
