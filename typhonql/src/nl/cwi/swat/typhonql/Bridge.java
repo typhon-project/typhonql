@@ -255,6 +255,12 @@ public class Bridge {
 		if (obj instanceof java.sql.Date) {
 			return vf.datetime(((java.sql.Date)obj).getTime());
 		}
+		if (obj instanceof java.sql.Time) {
+			return vf.datetime(((java.sql.Time)obj).getTime());
+		}
+		if (obj instanceof java.sql.Timestamp) {
+			return vf.datetime(((java.sql.Timestamp)obj).getTime());
+		}
 		if (obj instanceof org.bson.BsonDateTime) {
 			return vf.datetime(((org.bson.BsonDateTime)obj).getValue());
 		}

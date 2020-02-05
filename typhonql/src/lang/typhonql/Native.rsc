@@ -202,7 +202,9 @@ WorkingSet runGetEntities(<sql(), str db>, str entity, str polystoreId, Schema s
      + [ column("x", columnName(fld, entity)) | <entity, str fld, _> <- s.attrs ]
     , [as(tbl, "x")], []);
     
-  ResultSet rs = executeQuery(polystoreId, db, pp(q));
+  str qStr = pp(q);
+  
+  ResultSet rs = executeQuery(polystoreId, db, qStr);
   
   map[str, str] col2fld = 
     ( columnName(fld, entity): fld | <entity, str fld, _> <- s.attrs );
