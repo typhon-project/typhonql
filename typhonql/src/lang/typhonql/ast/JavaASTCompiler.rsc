@@ -14,7 +14,7 @@ import ValueIO;
 import Grammar;
 
 void main(loc target = |project://typhonql-ast/target/generated-source/|, str namespace = "engineering.swat.typhonql.ast") {
-  gr = grammar(#Request);
+  gr = grammar(#start[Request]);
   println("Generating parser");
   generateParser(gr, target, namespace);
   println("Generating ASTs");

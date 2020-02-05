@@ -61,6 +61,7 @@ public void grammarToJavaAPI(loc outdir, str pkg, Grammar g) {
   arbSeed(42);
   model = grammarToASTModel(pkg, g);
   grammarToVisitor(outdir, pkg, model);
+  grammarToTopDownVisitor(outdir, pkg, model);
   grammarToASTClasses(outdir, pkg, model);
 }
 
@@ -96,6 +97,24 @@ public void grammarToVisitor(loc outdir, str pkg, set[AST] asts, str licenseHead
    loggedWriteFile(outdir + "/NullASTVisitor.java", nullVisit, licenseHeader);
 }
 
+public void grammarToTopDownVisitor(loc outdir, str pkg, set[AST] asts, str licenseHeader = header) {
+  ivisit = "package <pkg>;
+           '
+           'public class TopDownASTVisitor extends NullASTVisitor\<Void\> {
+           '<for (ast(sn, sigs) <- sort(asts), sig(cn, args) <- sort(sigs)) {>
+           '  @Override 
+           '  public Void visit<sn><cn>(<sn>.<cn> x) {<for (a:arg(typ, lab, isOptional=isopt) <- sort(args)) { clabel = capitalize(lab);> <if (/java.util.List/ := typ) { >
+           '    for (AbstractAST e : x.get<clabel>()) e.accept(this); <} else {>
+           '    <if (isopt) {> if (x.has<clabel>()) <}> x.get<clabel>().accept(this);
+           '  <}> <}>
+           '    return null;
+           '  }
+           '<}>
+           '}";
+
+  loggedWriteFile(outdir + "/TopDownASTVisitor.java", ivisit, licenseHeader);
+}
+
 public void grammarToASTClasses(loc outdir, str pkg, set[AST] asts, str licenseHeader = header) {
   for (a <- sort(asts)) {
      class = classForSort(pkg, ["io.usethesource.vallang.IConstructor", "io.usethesource.vallang.ISourceLocation"], a);
@@ -125,7 +144,8 @@ public str classForSort(str pkg, list[str] imports, AST ast) {
          '    throw new UnsupportedOperationException();
          '  }<}>
          '
-         '  <if (leaf(_) := ast) {><lexicalClass(ast.name)><}>
+         '  <if (leaf(_) := ast) {>public abstract java.lang.String getString();
+         '  <lexicalClass(ast.name)><}>
          '
          '  <for (ast is ast, Sig sig <- sort(ast.sigs)) { >
          '  public boolean is<sig.name>() {
@@ -199,6 +219,7 @@ public str lexicalClass(str name) {
          '    super(src, node);
          '    this.string = string;
          '  }
+         '  @Override
          '  public java.lang.String getString() {
          '    return string;
          '  }
