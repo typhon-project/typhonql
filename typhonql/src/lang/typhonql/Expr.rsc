@@ -64,7 +64,7 @@ syntax Custom = literal: EId typ "(" {KeyVal ","}* keyVals ")";
 lexical Label = "@" VId label;
   
 syntax KeyVal 
-  = keyValue: Id feature ":" Expr value
+  = keyValue: Id key ":" Expr value
   // needed for insert/update from workingset so that uuids can be used as identities
   | storedKey: "@id" ":" Expr value 
   ;
@@ -86,9 +86,9 @@ lexical Real
   | Int "." [0]* !>> "0" Int? [eE] [\-]? Int;
   
 syntax DateTime
-	= date: JustDate  
-	| time: JustTime  
-	| full: DateAndTime ;
+	= date: JustDate date
+	| time: JustTime  time
+	| full: DateAndTime dateTime ;
 
 lexical JustDate
 	= "$" DatePart "$";
