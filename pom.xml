@@ -11,6 +11,7 @@
     <modules>
         <module>typhonql</module>
         <module>typhonql-headless</module>
+        <module>typhonql-ast</module>
         <module>typhonql-ide</module>
         <module>typhonql-feature</module>
         <module>typhonql-update-site</module>
