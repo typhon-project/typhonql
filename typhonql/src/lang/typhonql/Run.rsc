@@ -292,12 +292,13 @@ value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <
     bool yes = ( true | it && truthy(eval(e, binding, ws)) | Expr e <- es ); 
 
     for (yes, (Result)`<Expr re>` <- rs) {
-      Entity r = evalResult(re, binding, ws);
-      log("[RUN-query] Adding <r> to final result for <re>");
-      if (r.name notin result) {
-        result[r.name] = [];
+      if (Entity r := evalResult(re, binding, ws)) {
+      	log("[RUN-query] Adding <r> to final result for <re>");
+      	if (r.name notin result) {
+        	result[r.name] = [];
+      	}
+      	result[r.name] += [r];
       }
-      result[r.name] += [r];
     }
   }
 
