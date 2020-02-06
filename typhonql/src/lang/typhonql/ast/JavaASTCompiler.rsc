@@ -13,7 +13,7 @@ import String;
 import ValueIO;  
 import Grammar;
 
-void main(loc target = |project://typhonql-ast/target/generated-source/|, str namespace = "engineering.swat.typhonql.ast") {
+void main(loc target = |project://typhonql-ast/src/generated/java/|, str namespace = "engineering.swat.typhonql.ast") {
   gr = grammar(#start[Request]);
   println("Generating parser");
   generateParser(gr, target, namespace);
