@@ -20,7 +20,7 @@ public class TyphonQLASTParser {
 		
 	}
 	public static Request parseTyphonQLRequest(char[] query) throws ASTConversionException {
-		ITree tree = new TyphonQLParser().parse("start__Request", BASE_URI,  query, new DefaultNodeFlattener<IConstructor, ITree, ISourceLocation>(), new UPTRNodeFactory(true));
+		ITree tree = new TyphonQLParser().parse("start__Request", BASE_URI,  query, new DefaultNodeFlattener<IConstructor, ITree, ISourceLocation>(), new UPTRNodeFactory(false));
 		return ASTBuilder.buildRequest(tree);
 	}
 	
