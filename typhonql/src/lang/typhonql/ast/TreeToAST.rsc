@@ -132,7 +132,7 @@ public str classForSort(str pkg, list[str] imports, AST ast) {
          '@SuppressWarnings(value = {\"unused\"})
          'public abstract class <ast.name> extends AbstractAST {
          '  public <ast.name>(ISourceLocation src, IConstructor node) {
-         '    super(src /* we forget node on purpose */);
+         '    super(node);
          '  }
          '
          '  <for (a:arg(typ, lab) <- sort(allArgs)) { clabel = capitalize(lab); >

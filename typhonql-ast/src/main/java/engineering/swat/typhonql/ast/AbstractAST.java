@@ -1,5 +1,7 @@
 package engineering.swat.typhonql.ast;
 
+import java.io.IOException;
+import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -20,6 +22,8 @@ import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.staticErrors.UnsupportedPattern;
 import org.rascalmpl.interpreter.types.RascalTypeFactory;
 import org.rascalmpl.values.uptr.IRascalValueFactory;
+import org.rascalmpl.values.uptr.ITree;
+import org.rascalmpl.values.uptr.TreeAdapter;
 import io.usethesource.vallang.IBool;
 import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.ISourceLocation;
@@ -31,12 +35,20 @@ public abstract class AbstractAST {
 	protected static final TypeFactory TF = TypeFactory.getInstance();
 	protected static final RascalTypeFactory RTF = RascalTypeFactory.getInstance();
 	protected static final IRascalValueFactory VF = IRascalValueFactory.getInstance();
-	protected ISourceLocation src;
+	private final IConstructor subTree;
 	
-	AbstractAST(ISourceLocation src) {
-		this.src = src;
+	AbstractAST(IConstructor subTree) {
+		this.subTree = subTree;
 	}
 	
+	
+	public String yieldTree() {
+		return TreeAdapter.yield(subTree);
+	}
+	
+	public void yieldTree(Writer w) throws IOException {
+		TreeAdapter.unparse(subTree, w);
+	}
 	
 	/**
 	 * Used in clone and AST Builder
@@ -53,23 +65,11 @@ public abstract class AbstractAST {
     	}
     }
 	
-	public AbstractAST findNode(int offset) {
-		if (src.getOffset() <= offset
-				&& offset < src.getOffset() + src.getLength()) {
-			return this;
-		}
-		
-		return null;
-	}
-	
 
 	public <T> T accept(IASTVisitor<T> v) {
 		return null;
 	}
 
-	public ISourceLocation getLocation() {
-		return src;
-	}
 
 	@Override
 	public boolean equals(Object obj) {
@@ -87,6 +87,6 @@ public abstract class AbstractAST {
 	 * @deprecated YOU SHOULD NOT USE THIS METHOD for user information. Use {@link Names}.
 	 */
 	public String toString() {
-		return "AST debug info: " + getClass().getName() + " at " + src;
+		return "AST debug info: " + getClass().getName();
 	}
 }
