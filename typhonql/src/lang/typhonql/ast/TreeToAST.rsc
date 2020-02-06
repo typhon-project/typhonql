@@ -315,7 +315,7 @@ public str construct(Sig sig) {
 }
 
 private void loggedWriteFile(loc file, str src, str licenseHeader) {
-  println("Writing <file>");
+  //println("Writing <file>");
   writeFile(file, "<licenseHeader>
                   '<src>");
 }
