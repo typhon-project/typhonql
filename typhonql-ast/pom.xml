@@ -46,7 +46,7 @@
                 <executions>
                     <execution>
                         <id>convert-to-uri-path</id>
-                        <phase>compile</phase>
+                        <phase>initialize</phase>
                         <goals>
                             <goal>execute</goal>
                         </goals>
@@ -59,7 +59,8 @@
                                 </element>
                             </classpath>
                             <source>
-                                project.properties.buildDirURI = project.build.directory;
+                                //project.properties.buildDirURI = project.build.directory;
+                                project.properties.buildDirURI = project.basedir.absolutePath;
                                 if (org.apache.commons.lang.SystemUtils.IS_OS_WINDOWS) {
                                     project.properties.buildDirURI = project.properties.buildDirURI.replace('\\','/');
                                 }
@@ -74,26 +75,77 @@
 				<version>1.6.0</version>
 				<executions>
 					<execution>
+                        <id>generate-ast</id>
+                        <phase>generate-sources</phase>
 						<goals>
 							<goal>exec</goal>
 						</goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <workingDirectory>${typhonql.basedir}/src/</workingDirectory>
+                            <arguments>
+                                <argument>-Xmx1G</argument>
+                                <argument>-Dfile.encoding=UTF-8</argument>
+                                <argument>-cp</argument>
+                                <classpath />
+                                <argument>org.rascalmpl.shell.RascalShell</argument>
+                                <argument>lang::typhonql::ast::JavaASTCompiler</argument>
+                                <arguments>-target</arguments>
+                                <arguments>|file:///${buildDirURI}/src/generated/java/|</arguments>
+                            </arguments>
+                        </configuration>
 					</execution>
 				</executions>
-				<configuration>
-					<executable>java</executable>
-					<workingDirectory>${typhonql.basedir}/src/</workingDirectory>
-					<arguments>
-                        <argument>-Xmx1G</argument>
-                        <argument>-Dfile.encoding=UTF-8</argument>
-                        <argument>-cp</argument>
-                        <classpath />
-                        <argument>org.rascalmpl.shell.RascalShell</argument>
-                        <argument>lang::typhonql::ast::JavaASTCompiler</argument>
-                        <arguments>-target</arguments>
-                        <arguments>|file:///${buildDirURI}/generated-source/|</arguments>
-					</arguments>
-				</configuration>
 			</plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <!--  <source>${project.build.directory}/generated-sources/java/</source>-->
+                                <source>${project.basedir}/src/generated/java/</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!--  
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                  <execution>
+                    <id>default-compile</id>
+                    <phase>process-sources</phase>
+                    <configuration>
+                        <source>${project.build.directory}/generated-sources/java/</source>
+                        <excludes>
+                            <exclude>**/engineering/swat/typhonql/ast/AbstractAST.java</exclude>
+                            <exclude>**/engineering/swat/typhonql/ast/ASTBuilder.java</exclude>
+                            <exclude>**/engineering/swat/typhonql/ast/TyphonQLASTParser.java</exclude>
+                        </excludes>
+                    </configuration>
+                  </execution>
+                  <execution>
+                    <id>build-generated-code</id>
+                    <phase>compile</phase>
+                    <goals>
+                      <goal>compile</goal>
+                    </goals>
+                    <configuration>
+                      <generatedSourcesDirectory>${project.build.directory}/generated-sources/java</generatedSourcesDirectory>
+                    </configuration>
+                  </execution>
+                </executions>
+              </plugin>
+              -->
 		</plugins>
 	</build>
   
