@@ -111,15 +111,15 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
     top-down-break visit (e) {
       case x:(Expr)`<VId y>`:
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
-           addResult(named(expr2sql(x, ctx), "<y>.@id"));
+           addResult(named(expr2sql(x, ctx), "<y>.<ent>.@id"));
          }
       case x:(Expr)`<VId y>.@id`:
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
-           addResult(named(expr2sql(x, ctx), "<y>.@id"));
+           addResult(named(expr2sql(x, ctx), "<y>.<ent>.@id"));
          }
       case x:(Expr)`<VId y>.<Id f>`:
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
-           addResult(named(expr2sql(x, ctx), "<y>.<f>"));
+           addResult(named(expr2sql(x, ctx), "<y>.<ent>.<f>"));
          }
     }
   }
