@@ -41,13 +41,13 @@ public class AggregatedResultIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentId(String type) {
-		return results.get(index).getCurrentId(type);
+	public String getCurrentId(String label, String type) {
+		return results.get(index).getCurrentId(label, type);
 	}
 
 	@Override
-	public Object getCurrentField(String type, String name) {
-		return results.get(index).getCurrentField(type, name);
+	public Object getCurrentField(String label, String type, String name) {
+		return results.get(index).getCurrentField(label, type, name);
 	}
 
 	@Override

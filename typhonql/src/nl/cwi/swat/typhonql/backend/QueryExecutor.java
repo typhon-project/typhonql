@@ -36,7 +36,7 @@ public abstract class QueryExecutor {
 			results.beforeFirst();
 			while (results.hasNextResult()) {
 				results.nextResult();
-				String value = (binding.getAttribute().equals("@id"))? results.getCurrentId(binding.getType()) : (String) results.getCurrentField(binding.getType(), binding.getAttribute());
+				String value = (binding.getAttribute().equals("@id"))? results.getCurrentId(binding.getLabel(), binding.getType()) : (String) results.getCurrentField(binding.getLabel(), binding.getType(), binding.getAttribute());
 				values.put(var, value);
 				lst.add(executeSelect(values));
 			}
