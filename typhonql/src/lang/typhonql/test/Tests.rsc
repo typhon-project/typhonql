@@ -53,11 +53,12 @@ void test4() {
 }
 
 void test5() {
-	str cmd = "insert User { name: ?? }";
+	str cmd = "insert Product { name: ??, description: ?? }";
 	bootConnections(|http://localhost:8080|, "pablo", "antonio");
 	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
 	Schema sch = loadSchemaFromXMI(modelStr);
-	rs = runPrepared(cmd, "http://localhost:8080", [["\"Tijs\""]], modelStr);
+	rs = runPrepared(cmd, "http://localhost:8080", [["\"IPhone\"", "\"Cool but expensive\""],
+													["\"Samsung S10\"", "\"Less cool and still expensive\""]], modelStr);
 	println(rs);
 }
 

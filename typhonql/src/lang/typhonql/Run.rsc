@@ -93,11 +93,10 @@ value run(str src, str polystoreId, str xmiString, Log log = noLog) {
   return run(req, polystoreId, s, log = log);
 }
 
-Expr toExprLiteral(list[str] vs, tuple[int] i) {
-	str v = vs[i[0]];
+tuple[int, Expr] toExprLiteral(list[str] vs, int i) {
+	str v = vs[i];
 	Expr expr = [Expr] v;
-	i[0] = i[0] + 1;	
-	return expr;
+	return <i + 1, expr>;
 }
 
 lrel[int, map[str, str]] runPrepared(str src, str polystoreId, list[list[str]] values, str xmiString, Log log = noLog) {
@@ -106,9 +105,12 @@ lrel[int, map[str, str]] runPrepared(str src, str polystoreId, list[list[str]] v
   lrel[int, map[str, str]] rs = [];
   for (list[str] vs <- values) {
   	Request req = [Request]src;
-  	tuple[int] i = <0>;
+  	int i = 0;
   	Request req_ = visit(req) {
-  		case (Expr) `<PlaceHolder ph>` => toExprLiteral(vs, i)
+  		case (Expr) `<PlaceHolder ph>`: {
+  			<i, e> = toExprLiteral(vs, i); 
+  			insert e;
+  		}
   	};
   	println(req_);
   	if (<int n, map[str, str] uuids> := run(req_, polystoreId, s, log = log))
