@@ -17,6 +17,12 @@ alias MongoOperations = tuple[
 	void (str resultId, str host, int port, str user, str password, str dbName, str query, map[str param, tuple[str resultSet, str \type, str fieldName] field] bindings) find
 ];
 
+
+data Connection
+ = sqlConnection(str host, int port, str user, str password)
+ | mongoConnection(str host, int port, str user, str password)
+ ;
+
 @reflect
 @javaClass{nl.cwi.swat.typhonql.backend.rascal.TyphonSession}
-java Session newSession();
+java Session newSession(map[str, Connection] config);
