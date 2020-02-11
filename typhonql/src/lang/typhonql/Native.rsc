@@ -383,7 +383,7 @@ int runInsert(<mongodb(), str db>, Request ins, str polystoreId, Schema s, Log l
 int runUpdateById(<sql(), str db>, str polystoreId, str entity, str uuid, {KeyVal ","}* kvs) {
   str tbl = tableName(entity);
   SQLStat upd = update(tbl,
-      [ \set(columnName("<kv.feature>", entity), lit(evalExpr(kv.\value))) | KeyVal kv <- kvs ],
+      [ \set(columnName("<kv.key>", entity), lit(evalExpr(kv.\value))) | KeyVal kv <- kvs ],
       [where([equ(column(tbl, typhonId(entity)), lit(text(uuid)))])]);
   return executeUpdate(polystoreId, db, pp(upd)); 
 }
