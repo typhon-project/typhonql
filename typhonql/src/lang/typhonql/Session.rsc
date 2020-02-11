@@ -23,6 +23,7 @@ alias MongoOperations = tuple[
 
 
 data Connection
+ // for now they are the same, but they might be different
  = sqlConnection(str host, int port, str user, str password)
  | mongoConnection(str host, int port, str user, str password)
  ;

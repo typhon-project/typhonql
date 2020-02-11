@@ -16,9 +16,9 @@ syntax Expr
   | \bool: Bool
   | uuid: UUID
   | bracket "(" Expr arg ")"
-  | obj: Obj // for use in insert and allow nesting of objects
+//  | obj: Obj // for use in insert and allow nesting of objects
   | custom: Custom // for use in insert and allow nesting of custom data types
-  | lst: "[" {Obj ","}* "]" // NB: only objects! TODO: we might want Object refs as well.
+//  | lst: "[" {Obj ","}* "]" // NB: only objects! TODO: we might want Object refs as well.
   | null: "null"
   | pos: "+" Expr arg
   | neg: "-" Expr arg
@@ -59,16 +59,14 @@ syntax VId =  Id \ "true" \ "false" \ "null";
 
 syntax Bool = "true" | False: "false";
 
-syntax Obj = Label? labelOpt EId entity "{" {KeyVal ","}* keyVals "}";
+//syntax Obj = Label? labelOpt EId entity "{" {KeyVal ","}* keyVals "}";
 
 syntax Custom = EId typ "(" {KeyVal ","}* keyVals ")";
   
-syntax Label = "@" VId label;
+//syntax Label = "@" VId label;
   
 syntax KeyVal 
   = Id feature ":" Expr value
-  // needed for insert/update from workingset so that uuids can be used as identities
-  | "@id" ":" Expr value 
   ;
 
 lexical PlaceHolder = "??";
