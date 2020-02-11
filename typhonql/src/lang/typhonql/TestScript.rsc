@@ -4,6 +4,8 @@ import lang::typhonql::TDBC;
 import lang::typhonql::Session;
 import lang::typhonql::Script;
 import lang::typhonql::Request2Script;
+import lang::typhonml::Util;
+import lang::typhonml::TyphonML;
 
 void smokeRun() {
  s = schema(
