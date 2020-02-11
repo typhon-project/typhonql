@@ -17,6 +17,7 @@ public class Binding {
 	public Binding(String reference, String label, String type, String attribute) {
 		super();
 		this.type = type;
+		this.label = label;
 		this.reference = reference;
 		this.attribute = attribute;
 	}

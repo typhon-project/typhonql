@@ -3,8 +3,11 @@ package nl.cwi.swat.typhonql.backend.rascal;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 
 import org.rascalmpl.interpreter.IEvaluatorContext;
@@ -13,6 +16,9 @@ import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
 
+import io.usethesource.vallang.IConstructor;
+import io.usethesource.vallang.IInteger;
+import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.ISet;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
@@ -21,6 +27,7 @@ import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import io.usethesource.vallang.type.TypeStore;
+import nl.cwi.swat.typhonql.ConnectionInfo;
 import nl.cwi.swat.typhonql.backend.EntityModel;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.workingset.WorkingSet;
@@ -34,7 +41,7 @@ public class TyphonSession implements Operations {
 		this.vf = vf;
 	}
 
-	public ITuple newSession(IEvaluatorContext ctx) {
+	public ITuple newSession(IMap connections, IEvaluatorContext ctx) {
 		// borrow the type store from the module, so we don't have to build the function type ourself
         ModuleEnvironment aliasModule = ctx.getHeap().getModule("lang::typhonql::Session");
         if (aliasModule == null) {
@@ -50,14 +57,34 @@ public class TyphonSession implements Operations {
 		// get the function types
 		FunctionType readType = (FunctionType)aliasedTuple.getFieldType("read");
 		FunctionType closeType = (FunctionType)aliasedTuple.getFieldType("done");
-
+		
+		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
+		Map<String, ConnectionData> mongoConnections = new HashMap<>();
+		
+		Iterator<Entry<IValue, IValue>> connIter = connections.entryIterator();
+		
+		while (connIter.hasNext()) {
+			Entry<IValue, IValue> entry = connIter.next();
+			String dbName = ((IString) entry.getKey()).getValue();
+			IConstructor cons = (IConstructor) entry.getValue();
+			String host = ((IString) cons.get("host")).getValue();
+			int port = ((IInteger) cons.get("port")).intValue();
+			String user = ((IString) cons.get("user")).getValue();
+			String password = ((IString) cons.get("password")).getValue();
+			ConnectionData data = new ConnectionData(host, port, user, password);
+			if (cons.getName().equals("sqlConnection"))
+				mariaDbConnections.put(dbName, data);
+			else if (cons.getName().equals("mongoConnection"))
+				mongoConnections.put(dbName, data);
+				
+		}
 		// construct the session tuple
 		ResultStore store = new ResultStore();
 		return vf.tuple(
 			makeRead(store, readType, ctx),
             makeClose(store, closeType, ctx),
-            new MariaDBOperations().newSQLOperations(store, ctx, vf, TF),
-            new MongoOperations().newMongoOperations(store, ctx, vf, TF)
+            new MariaDBOperations(mariaDbConnections).newSQLOperations(store, ctx, vf, TF),
+            new MongoOperations(mongoConnections).newMongoOperations(store, ctx, vf, TF)
 		);
 	}
 	

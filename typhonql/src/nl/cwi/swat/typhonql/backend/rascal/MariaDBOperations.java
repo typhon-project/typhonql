@@ -2,6 +2,7 @@ package nl.cwi.swat.typhonql.backend.rascal;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 
@@ -24,16 +25,18 @@ import nl.cwi.swat.typhonql.backend.ResultStore;
 
 public class MariaDBOperations implements Operations {
 	
+	Map<String, ConnectionData> connections;
+	
+	public MariaDBOperations(Map<String, ConnectionData> connections) {
+		this.connections = connections;
+	}
+
 	private ICallableValue makeExecuteQuery(ResultStore store, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
 		return makeFunction(ctx, executeType, args -> {
 			String resultId = ((IString) args[0]).getValue();
-			String host = ((IString) args[1]).getValue();
-			int port = ((IInteger) args[2]).intValue();
-			String user = ((IString) args[3]).getValue();
-			String password = ((IString) args[4]).getValue();
-			String dbName = ((IString) args[5]).getValue();
-			String query = ((IString) args[6]).getValue();
-			IMap bindings = (IMap) args[7];
+			String dbName = ((IString) args[1]).getValue();
+			String query = ((IString) args[2]).getValue();
+			IMap bindings = (IMap) args[3];
 			
 			Iterator<Entry<IValue, IValue>> iter = bindings.entryIterator();
 			
@@ -44,11 +47,12 @@ public class MariaDBOperations implements Operations {
 				IString param = (IString) kv.getKey();
 				ITuple field = (ITuple) kv.getValue();
 				Binding b = new Binding(((IString) field.get(0)).getValue() ,
-						((IString) field.get(1)).getValue(), ((IString) field.get(2)).getValue());
+						((IString) field.get(1)).getValue(), ((IString) field.get(2)).getValue(), ((IString) field.get(3)).getValue());
 				bindingsMap.put(param.getValue(), b);
 			}
 			
-			new MariaDBEngine(store, host, port, dbName, user, password).executeSelect(resultId, query, bindingsMap);
+			ConnectionData data = connections.get(dbName);
+			new MariaDBEngine(store, data.getHost(), data.getPort(), dbName, data.getUser(), data.getPassword()).executeSelect(resultId, query, bindingsMap);
 			
 			//sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);

@@ -4,17 +4,18 @@ module lang::typhonql::\test::SessionTest
  import IO;
  
  void main() {
- 	rel[str, str, str, int, str, str] dbs = {
-			<"Reviews", "MongoDB", "localhost", 27018, "admin", "admin">,
- 			<"Inventory", "MariaDB", "localhost", 3306, "root", "example">
- 	};
+ 	map[str, Connection] connections = (
+			"Reviews" : mongoConnection("localhost", 27018, "admin", "admin"),
+ 			"Inventory" : sqlConnection("localhost", 3306, "root", "example")
+ 	);
  			
- 	Session session = newSession();
+ 	Session session = newSession(connections);
  	 	
- 	session.sql.executeQuery("user", "localhost", 3306, "root", "example", "Inventory", "select * from User where `User.name` = \"Claudio\"", ());
- 	session.mongo.find("review", "localhost", 27018, "admin", "admin", "Reviews", "Review\n{ user: \"${user_id}\" }", ("user_id" : <"user", "User", "@id">));
- 	session.sql.executeQuery("result", "localhost", 3306, "root", "example", "Inventory", "select `Product.@id` as p_id, Product.* from Product where `Product.@id` = ?",
- 		("product_id" : <"review", "Review", "product">));
+ 	session.sql.executeQuery("user", "Inventory",
+ 		"select u.`User.@id` as `u.User.@id`,  u.`User.name` as `u.User.name` from User u where u.`User.name` = \"Claudio\"", ());
+ 	session.mongo.find("review", "Reviews", "Review", "{ user: \"${user_id}\" }", ("user_id" : <"user", "u", "User", "@id">));
+ 	session.sql.executeQuery("result", "Inventory", "select p.`Product.@id` as `p.Product.@id`, p.`Product.name` as `p.Product.name`, p.`Product.description` as `p.Product.description` from Product p where p.`Product.@id` = ?",
+ 		("product_id" : <"review", "dummy", "Review", "product">));
  	
  	//str (str result, rel[str name, str \type] entities, EntityModels models) read,
  	//alias EntityModels = rel[str name, rel[str name, str \type] attributes, rel[str name, str entity] relations];

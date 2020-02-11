@@ -9,12 +9,16 @@ alias Session = tuple[
    	MongoOperations mongo
 ];
 
+alias Field = tuple[str resultSet, str label, str \type, str fieldName];
+
+alias Bindings = map[str, Field];
+
 alias SQLOperations = tuple[
-	void (str resultId, str host, int port, str user, str password, str dbName, str query, map[str param, tuple[str resultSet, str \type, str fieldName] field] bindings) executeQuery
+	void (str resultId, str dbName, str query, Bindings bindings) executeQuery
 ];
 
 alias MongoOperations = tuple[
-	void (str resultId, str host, int port, str user, str password, str dbName, str query, map[str param, tuple[str resultSet, str \type, str fieldName] field] bindings) find
+	void (str resultId, str dbName, str collection, str query, Bindings bindings) find
 ];
 
 
