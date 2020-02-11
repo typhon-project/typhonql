@@ -11,6 +11,7 @@
     <modules>
         <module>typhonql</module>
         <module>typhonql-headless</module>
+        <module>typhonql-ast</module>
         <module>typhonql-ide</module>
         <module>typhonql-feature</module>
         <module>typhonql-update-site</module>
@@ -41,6 +42,15 @@
 					<resolver>p2</resolver>
 					<pomDependencies>consider</pomDependencies>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>1.6.0</version>
+                <configuration>
+                    <skip>true</skip>
+                    <executable>java</executable>
+                </configuration>
 			</plugin>
 		</plugins>
 	</build>
