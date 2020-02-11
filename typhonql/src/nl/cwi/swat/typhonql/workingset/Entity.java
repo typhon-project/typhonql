@@ -1,5 +1,6 @@
 package nl.cwi.swat.typhonql.workingset;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -107,7 +108,7 @@ public class Entity {
 		return vf.tuple(vf.string(this.name), vf.string(this.uuid), mw.done());
 	}
 
-	private static IValue toIValue(IValueFactory vf, Object v) {
+	public static IValue toIValue(IValueFactory vf, Object v) {
 		if (v == null) {
 			return vf.tuple(vf.bool(false), vf.string(""));
 		}
@@ -117,6 +118,9 @@ public class Entity {
 		}
 		else if (v instanceof String) {
 			return vf.string((String) v);
+		}
+		else if (v instanceof Timestamp) {
+			return vf.datetime(((Timestamp) v).getTime());
 		}
 		else if (v instanceof List) {
 			IListWriter lw = vf.listWriter();
@@ -130,7 +134,7 @@ public class Entity {
 		throw new RuntimeException("Unknown conversion for Java type " + v.getClass());
 	}
 
-	private static Object toJava(IValue object) {
+	public static Object toJava(IValue object) {
 		if (object instanceof IInteger) {
 			return ((IInteger) object).intValue();
 		}

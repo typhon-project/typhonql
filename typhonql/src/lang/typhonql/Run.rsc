@@ -93,6 +93,29 @@ value run(str src, str polystoreId, str xmiString, Log log = noLog) {
   return run(req, polystoreId, s, log = log);
 }
 
+Expr toExprLiteral(list[str] vs, tuple[int] i) {
+	str v = vs[i[0]];
+	Expr expr = [Expr] v;
+	i[0] = i[0] + 1;	
+	return expr;
+}
+
+lrel[int, map[str, str]] runPrepared(str src, str polystoreId, list[list[str]] values, str xmiString, Log log = noLog) {
+  Model m = xmiString2Model(xmiString);
+  Schema s = model2schema(m);
+  lrel[int, map[str, str]] rs = [];
+  for (list[str] vs <- values) {
+  	Request req = [Request]src;
+  	tuple[int] i = <0>;
+  	Request req_ = visit(req) {
+  		case (Expr) `<PlaceHolder ph>` => toExprLiteral(vs, i)
+  	};
+  	println(req_);
+  	if (<int n, map[str, str] uuids> := run(req_, polystoreId, s, log = log))
+  		rs += <n, uuids>;
+  }
+  return rs;
+}
 
 WorkingSet dumpDB(str polystoreId, Schema s) {
   //WorkingSet ws = ( e : [] | <_, str e> <- s.placement );

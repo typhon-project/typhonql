@@ -13,16 +13,19 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.rascalmpl.interpreter.control_exceptions.Throw;
 import org.rascalmpl.interpreter.staticErrors.StaticError;
 
+import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.impl.persistent.ValueFactory;
 import io.usethesource.vallang.io.StandardTextWriter;
 import nl.cwi.swat.typhonql.DBType;
 import nl.cwi.swat.typhonql.MariaDB;
 import nl.cwi.swat.typhonql.MongoDB;
+import nl.cwi.swat.typhonql.workingset.Entity;
 import nl.cwi.swat.typhonql.workingset.WorkingSet;
 
 public class XMIPolystoreConnection extends BasePolystoreConnection {
@@ -36,9 +39,7 @@ public class XMIPolystoreConnection extends BasePolystoreConnection {
 		super(infos);
 		this.xmiModel = xmiModel;
 	}
-
-
-
+	
 	protected IValue evaluateQuery(String query) {
 		return evaluators.useAndReturn(evaluator -> {
 			try {
@@ -48,6 +49,42 @@ public class XMIPolystoreConnection extends BasePolystoreConnection {
 							"lang::typhonql::Run",
                     		Collections.emptyMap(),
 							ValueFactory.getInstance().string(query),
+							ValueFactory.getInstance().string(LOCALHOST),
+							ValueFactory.getInstance().string(xmiModel));
+				}
+			} catch (StaticError e) {
+				staticErrorMessage(ERROR_WRITER, e, VALUE_PRINTER);
+				throw e;
+			} catch (Throw e) {
+				throwMessage(ERROR_WRITER, e, VALUE_PRINTER);
+				throw e;
+			} catch (Throwable e) {
+				throwableMessage(ERROR_WRITER, e, evaluator.getStackTrace(), VALUE_PRINTER);
+				throw e;
+			}
+		});
+	}
+	
+
+	@Override
+	protected IValue evaluatePreparedStatementQuery(String preparedStatement, Object[][] matrix) {
+		IListWriter lw = ValueFactory.getInstance().listWriter();
+		for (Object[] row : matrix) {
+			List<IValue> vs = Arrays.asList(row).stream().map(
+					obj -> Entity.toIValue(ValueFactory.getInstance(), obj)).collect(Collectors.toList());
+			IListWriter lw1 = ValueFactory.getInstance().listWriter();
+			lw1.appendAll(vs);
+			lw1.append(lw1.done());
+		}
+		return evaluators.useAndReturn(evaluator -> {
+			try {
+				synchronized (evaluator) {
+					// str src, str polystoreId, Schema s,
+					return evaluator.call("runPrepared", 
+							"lang::typhonql::Run",
+                    		Collections.emptyMap(),
+							ValueFactory.getInstance().string(preparedStatement),
+							lw.done(),
 							ValueFactory.getInstance().string(LOCALHOST),
 							ValueFactory.getInstance().string(xmiModel));
 				}

@@ -7,6 +7,7 @@ extend lang::std::Id;
 syntax Expr
   = attr: VId var "." {Id "."}+  attrs
   | var: VId 
+  | placeHolder: PlaceHolder
   | key: VId "." "@id"
   | @category="Number" \int: Int
   | @category="Constant" \str: Str
@@ -69,7 +70,8 @@ syntax KeyVal
   // needed for insert/update from workingset so that uuids can be used as identities
   | "@id" ":" Expr value 
   ;
-  
+
+lexical PlaceHolder = "??";
 
 // textual encoding of reference
 lexical UUID = "#"[\-a-zA-Z0-9]+ !>> [\-a-zA-Z0-9];
@@ -89,7 +91,7 @@ lexical Real
 syntax DateTime
 	= JustDate  
 	| JustTime  
-	| DateAndTime ;
+	| DateAndTime ; 
 
 lexical JustDate
 	= "$" DatePart "$";

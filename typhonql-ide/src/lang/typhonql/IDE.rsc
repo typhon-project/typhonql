@@ -287,3 +287,4 @@ node scriptOutliner(start[Script] script) {
 void main(bool isDevMode = false) {
   setupIDE(isDevMode = isDevMode);
 }
+

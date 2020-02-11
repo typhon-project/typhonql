@@ -52,6 +52,15 @@ void test4() {
 	println(v);
 }
 
+void test5() {
+	str cmd = "insert User { name: ?? }";
+	bootConnections(|http://localhost:8080|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
+	Schema sch = loadSchemaFromXMI(modelStr);
+	rs = runPrepared(cmd, "http://localhost:8080", [["\"Tijs\""]], modelStr);
+	println(rs);
+}
+
 void printSchema() {
 	bootConnections(|http://localhost:8080|, "pablo", "antonio");
 	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");

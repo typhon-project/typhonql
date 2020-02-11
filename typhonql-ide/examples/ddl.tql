@@ -19,3 +19,5 @@ drop Review
 create Review.country : str
 
 create Product.date : date
+
+create Product.directors -> User [0 .. *]
