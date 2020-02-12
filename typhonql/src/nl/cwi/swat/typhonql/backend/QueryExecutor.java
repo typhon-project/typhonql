@@ -9,12 +9,10 @@ import java.util.Map;
 public abstract class QueryExecutor {
 	
 	private ResultStore store;
-	protected String query;
 	private LinkedHashMap<String, Binding> bindings;
 
 	public QueryExecutor(ResultStore store, String query, LinkedHashMap<String, Binding> bindings) {
 		this.store = store;
-		this.query = query;
 		this.bindings = bindings;
 	}
 	

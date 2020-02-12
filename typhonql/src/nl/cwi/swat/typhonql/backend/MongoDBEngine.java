@@ -17,16 +17,14 @@ public class MongoDBEngine extends Engine {
 		this.user = user;
 		this.password = password;
 	}
-
-	@Override
-	protected QueryExecutor getExecutor(String resultId, String query, LinkedHashMap<String, Binding> bindings) {
-		return new MongoQueryExecutor(store, query, bindings, getConnectionString(host, port, user, password), dbName);
-	}
 	
 	private String getConnectionString(String host, int port, String user, String password) {
 		return "mongodb://" + user + ":" + password + "@" + host + ":" + port;
 	}
 
-
+	public void executeFind(String resultId, String collectionName, String query, LinkedHashMap<String, Binding> bindings) {
+		ResultIterator results = new MongoQueryExecutor(store, collectionName, query, bindings, getConnectionString(host, port, user, password), dbName).executeSelect();
+		storeResults(resultId, results);
+	}
 
 }

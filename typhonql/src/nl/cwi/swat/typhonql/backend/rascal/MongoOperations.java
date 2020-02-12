@@ -52,7 +52,7 @@ public class MongoOperations implements Operations {
 			}
 			
 			ConnectionData data = connections.get(dbName);
-			new MongoDBEngine(store, data.getHost(), data.getPort(), dbName, data.getUser(), data.getPassword()).executeSelect(resultId, collection + "\n" + query, bindingsMap);
+			new MongoDBEngine(store, data.getHost(), data.getPort(), dbName, data.getUser(), data.getPassword()).executeFind(resultId, collection, query, bindingsMap);
 			
 			//sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);

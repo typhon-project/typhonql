@@ -25,7 +25,7 @@ public class TestSelect2 {
 		e1.executeSelect("user", "select u.`User.@id` as `u.User.@id` from User u where u.`User.name` = \"Claudio\"");
 		LinkedHashMap<String, Binding> map1 = new LinkedHashMap<String, Binding>();
 		map1.put("user_id", new Binding("user", "u", "User"));
-		e2.executeSelect("review", "Review\n{ user: \"${user_id}\" }", map1);
+		e2.executeFind("review", "Review", "{ user: \"${user_id}\" }", map1);
 		
 		// Binding needs an extra argument `attribute` for inspecting attributes in the entities that conform the stored results
 		LinkedHashMap<String, Binding> map2 = new LinkedHashMap<String, Binding>();
