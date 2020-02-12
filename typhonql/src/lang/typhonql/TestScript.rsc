@@ -6,6 +6,7 @@ import lang::typhonql::Script;
 import lang::typhonql::Request2Script;
 import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
+import IO;
 
 void smokeRun() {
  s = schema(
@@ -47,11 +48,14 @@ void smokeRun() {
  			
   Session session = newSession(connections);
   
+  iprintln(scr);
+  
   runScript(scr, session, s);
   
-  EntityModels models = schema2entityModels(s);
+  //EntityModels models = schema2entityModels(s);
   
+  EntityModels models = {<"User", { <"name", "STRING">}, {}>};
   str result = session.read("Inventory", {<"u", "User">}, models); 
-  
+  println(result);
   
 }  
