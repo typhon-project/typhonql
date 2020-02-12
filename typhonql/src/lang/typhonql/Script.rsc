@@ -27,17 +27,17 @@ data MongoCall
   ;
   
 EntityModels schema2entityModels(Schema s) 
-  = { <e, { <a, t> | <e, str a, str t> <- schema.attrs }
-          , { <r, e2> | <e, _, str r, _, _, str e2, _> <- schema.rels } >
-           | str e <- entities(schema) };
+  = { <e, { <a, t> | <e, str a, str t> <- s.attrs }
+          , { <r, e2> | <e, _, str r, _, _, str e2, _> <- s.rels } >
+           | str e <- entities(s) };
   
 void runScript(Script scr, Session session, Schema schema) {
   for (Step s <- scr.steps) {
     switch (s) {
-      case step(str r, sql(executeQuery(str db, str q)), Params ps):
+      case step(str r, sql(executeQuery(str db, str q)), Bindings ps):
         session.sql.executeQuery(r, db, q, ps);
 
-      case step(str r, mongo(find(str db, str coll, str json)), Params ps):
+      case step(str r, mongo(find(str db, str coll, str json)), Bindings ps):
         session.mongo.find(r, db, coll, json, ps);
         
       default: throw "Unsupported call: <s.call>";
