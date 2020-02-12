@@ -70,7 +70,7 @@ syntax KeyVal
   | storedKey: "@id" ":" Expr value 
   ;
 
-lexical PlaceHolder = "??";
+lexical PlaceHolder = "??" Id name;
 
 // textual encoding of reference
 lexical UUID = "#"[\-a-zA-Z0-9]+ !>> [\-a-zA-Z0-9];
