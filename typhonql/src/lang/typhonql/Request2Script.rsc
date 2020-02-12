@@ -19,7 +19,8 @@ Script request2script(r:(Request)`<Query q>`, Schema s) {
   
   Script scr = script([]); 
   
-  for (Place p <- order) {
+  // TODO change
+  for (Place p <- order, p.db is sql) {
     Request r = restrict(r, p, order, s);
     scr.steps += compile(r, p, s);
   }
