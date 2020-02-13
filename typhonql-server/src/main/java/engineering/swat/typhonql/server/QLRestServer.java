@@ -41,11 +41,15 @@ public class QLRestServer {
 	}
 
 	public static void main(String[] args) throws Exception {
+		if (args.length != 1) {
+			System.err.println("Missing port to run the reset server on, pass it as the first argument");
+			return;
+		}
         QueryEngine engine = new QueryEngine();
         Server server = new Server();
         ServerConnector http = new ServerConnector(server);
         http.setHost("localhost");
-        http.setPort(7000);
+        http.setPort(Integer.parseInt(args[0]));
         http.setIdleTimeout(30000);
         server.addConnector(http);
 
