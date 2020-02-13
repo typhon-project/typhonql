@@ -22,9 +22,16 @@ node {
 	    configFileProvider(
         	[configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
         	sh 'mvn -U -B -gs $MAVEN_SETTINGS clean install -pl \'!typhonql-update-site\' deploy'
-   	}
-	    
+        }
     }
+
+    stage('Build typhonql-server') {
+	    configFileProvider(
+        	[configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
+        	sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile'
+        }
+    }
+
 
     stage('Deploy update site') {
         if (env.BRANCH_NAME == "master") {
@@ -32,6 +39,15 @@ node {
             sh "rm -rf ${UPDATE_SITE_PATH}"
             sh "mkdir ${UPDATE_SITE_PATH}"
             sh "cp -a typhonql-update-site/target/. ${UPDATE_SITE_PATH}/"
+        }
+    }
+
+    stage('Deploy typhonql-server') {
+        if (env.BRANCH_NAME == "master") {
+            configFileProvider(
+                [configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
+                sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile jib:dockerBuild'
+            }
         }
     }
     }catch (e){
