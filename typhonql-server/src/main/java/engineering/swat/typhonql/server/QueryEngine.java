@@ -35,7 +35,6 @@ public class QueryEngine {
 
 	public JsonSerializableResult initialize(String xmi, List<DatabaseInfo> databaseInfo) throws IOException {
 		XMIPolystoreConnection newBackend = new XMIPolystoreConnection(xmi, databaseInfo);
-		newBackend.prepareEvaluatorsInBackground(1);
 		backend = newBackend;
 		return RESULT_OK;
 	}

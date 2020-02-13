@@ -114,8 +114,4 @@ public abstract class BasePolystoreConnection extends PolystoreConnection {
 					return result;
 				});
 	}
-	
-	public void prepareEvaluatorsInBackground(int howMany) {
-		evaluators.prepare(howMany);
-	}
 }
