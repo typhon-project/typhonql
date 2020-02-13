@@ -22,11 +22,11 @@ import nl.cwi.swat.typhonql.workingset.EntityRef;
 import nl.cwi.swat.typhonql.workingset.WorkingSet;
 
 public class WorkingSetJSON {
-	private static final ObjectMapper mapper = new ObjectMapper();
+	private static final ObjectMapper mapper;
 	
 	static {
 		//mapper.configure(DeserializationFeature.
-		mapper.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
 		mapper.canDeserialize(mapper.getTypeFactory().constructSimpleType(EntityRef.class, new JavaType[0]));
 		mapper.canSerialize(EntityRef.class);
 		/*SimpleModule module = new SimpleModule();

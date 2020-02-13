@@ -48,4 +48,8 @@ public class QueryEngine {
 		return RESULT_OK;
 	}
 
+	public CommandResult[] executeCommand(String command, String[] parameterNames, String[][] boundRows) throws IOException {
+		return getBackend().executePreparedUpdate(command, parameterNames, boundRows);
+	}
+
 }

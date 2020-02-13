@@ -57,7 +57,8 @@ public class QLRestServer {
         context.setContextPath("/");
         context.setMaxFormContentSize(100*1024*1024); // 100MB should be max for parameters
         context.addServlet(jsonGetHandler(r -> handleQuery(engine, r)), "/query");
-        context.addServlet(jsonPostHandler(r -> handleCommand(engine, r)), "/command");
+        context.addServlet(jsonPostHandler(r -> handleCommand(engine, r)), "/update");
+        context.addServlet(jsonPostHandler(r -> handlePreparedCommand(engine, r)), "/preparedUpdate");
         context.addServlet(jsonPostHandler(r -> handleInitialize(engine, r)), "/initialize");
         context.addServlet(jsonPostHandler(r -> handleReset(engine, r)), "/reset");
         context.addServlet(jsonPostHandler(r -> handleChangeModel(engine, r)), "/changeModel");
@@ -68,6 +69,8 @@ public class QLRestServer {
 	}
 	
 	
+
+
 	private static JsonSerializableResult handleReset(QueryEngine engine, HttpServletRequest r) throws IOException {
 		return engine.resetDatabase();
 	}
@@ -108,10 +111,32 @@ public class QLRestServer {
 			throw new IOException("Failure to parse args", e);
 		}
 		logger.trace("Running command: {}", args);
-		if (args.parameterNames == null || args.parameterNames.length == 0) {
-			return engine.executeCommand(args.command);
+        return engine.executeCommand(args.command);
+	}
+
+	private static JsonSerializableResult handlePreparedCommand(QueryEngine engine, HttpServletRequest r) throws IOException {
+		CommandArgs args;
+		try {
+			args = CommandArgs.fromJSON(r.getReader());
+		} catch (IOException e) {
+			throw new IOException("Failure to parse args", e);
 		}
-		throw new IOException("Args not supported yet");
+		if (args.parameterNames == null || args.parameterNames.length == 0 || args.boundRows == null || args.boundRows.length == 0) {
+			throw new IOException("Missing arguments to the command");
+		}
+		CommandResult[] result = engine.executeCommand(args.command, args.parameterNames, args.boundRows);
+		return target -> {
+			target.write('[');
+			boolean first = true;
+			for (CommandResult r1 : result) {
+				if (!first) {
+					target.write(',');
+				}
+				r1.serializeJSON(target);
+				first = false;
+			}
+			target.write(']');
+		}; 
 	}
 	
 	private static class InitializeArgs {
