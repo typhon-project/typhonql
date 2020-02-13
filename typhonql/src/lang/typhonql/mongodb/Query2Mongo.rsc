@@ -8,6 +8,7 @@ import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
 import lang::typhonql::mongodb::DBCollection;
 
+import List;
 import IO;
 
 ////////
@@ -197,16 +198,35 @@ void smokeQuery2Mongo() {
     <<mongodb(), "Reviews">, "Comment">
   });
   
+  str pp(find(DBObject query, DBObject projection))
+    = "find(<pp(query)>, <pp(projection)>)";  	
+  
+  
   println("\n\n#####");
-  println("## ordered weights");
-  Request q = (Request)`from Person p, Review r select r.text where p.name == "Pablo", p.reviews == r`;  
-  println("Ordering <q>");
+  Request q = (Request)`from Person p, Review r select r.text where p.name == "Pablo", p.reviews == r`;
+  println("QUERY = <q>");  
   order = orderPlaces(q, s);
-  println("ORDER = <order>");
   for (Place p <- order, p.db == mongodb()) {
     println("\n\t#### Translation of <restrict(q, p, order, s)>");
     result = select2mongo(restrict(q, p, order, s), s, p); 
     iprintln(result);
+    for (str coll <- result[0]) {
+      println("db.<coll>.<pp(result[0][coll])>");
+    }
+  }
+  
+  
+  println("\n\n#####");
+  q = (Request)`from Comment c select c.contents where c.contents == "Pablo"`;  
+  println("QUERY = <q>");  
+  order = orderPlaces(q, s);
+  for (Place p <- order, p.db == mongodb()) {
+    println("\n\t#### Translation of <restrict(q, p, order, s)>");
+    result = select2mongo(restrict(q, p, order, s), s, p); 
+    iprintln(result);
+    for (str coll <- result[0]) {
+      println("db.<coll>.<pp(result[0][coll])>");
+    }
   }
    
 }
@@ -292,7 +312,8 @@ DBObject expr2obj((Expr)`?`, Ctx _) = placeholder();
 
 DBObject expr2obj((Expr)`<UUID id>`, Ctx _) = \value("<id>"[1..]);
 
-DBObject expr2obj((Expr)`<DateTime d>`, Ctx _) = \value(readTextValueString(#datetime, "<d>"));
+DBObject expr2obj((Expr)`<DateTime d>`, Ctx _) 
+  = object([<"$date", \value(readTextValueString(#datetime, "<d>"))>]);
 
 DBObject expr2obj((Expr)`<Int i>`, Ctx _) = \value(toInt("<i>"));
 
