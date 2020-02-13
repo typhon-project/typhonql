@@ -2,23 +2,22 @@ module lang::typhonql::Expr
 
 extend lang::std::Layout;
 extend lang::std::Id;
-extend lang::std::Id;
 
 syntax Expr
   = attr: VId var "." {Id "."}+  attrs
-  | var: VId 
+  | var: VId var
   | placeHolder: PlaceHolder
-  | key: VId "." "@id"
-  | @category="Number" \int: Int
-  | @category="Constant" \str: Str
-  | @category="Number" \real: Real
-  | @category="Constant" \dt: DateTime
-  | \bool: Bool
-  | uuid: UUID
+  | key: VId var "." "@id"
+  | @category="Number" \int: Int intValue
+  | @category="Constant" \str: Str strValue
+  | @category="Number" \real: Real realValue
+  | @category="Constant" \dt: DateTime dtValue
+  | \bool: Bool boolValue
+  | uuid: UUID uuidValue
   | bracket "(" Expr arg ")"
-//  | obj: Obj // for use in insert and allow nesting of objects
-  | custom: Custom // for use in insert and allow nesting of custom data types
-//  | lst: "[" {Obj ","}* "]" // NB: only objects! TODO: we might want Object refs as well.
+  | obj: Obj objValue // for use in insert and allow nesting of objects
+  | custom: Custom customValue // for use in insert and allow nesting of custom data types
+  | lst: "[" {Obj ","}* entries "]" // NB: only objects! TODO: we might want Object refs as well.
   | null: "null"
   | pos: "+" Expr arg
   | neg: "-" Expr arg
@@ -48,28 +47,30 @@ syntax Expr
   
 
 // Entity Ids  
-syntax EId = Id \ Primitives;
+lexical EId = Id entityName \ Primitives;
   
 keyword Primitives
   = "int" | "str" | "bool" | "text" | "float" | "blob" | "freetext" | "date" ;
   
 
 // Variable Ids
-syntax VId =  Id \ "true" \ "false" \ "null";
+lexical VId = Id variableName \ "true" \ "false" \ "null";
 
-syntax Bool = "true" | False: "false";
+lexical Bool = "true" | "false";
 
-//syntax Obj = Label? labelOpt EId entity "{" {KeyVal ","}* keyVals "}";
+syntax Obj = literal: Label? labelOpt EId entity "{" {KeyVal ","}* keyVals "}";
 
-syntax Custom = EId typ "(" {KeyVal ","}* keyVals ")";
+syntax Custom = literal: EId typ "(" {KeyVal ","}* keyVals ")";
   
-//syntax Label = "@" VId label;
+lexical Label = "@" VId label;
   
 syntax KeyVal 
-  = Id feature ":" Expr value
+  = keyValue: Id key ":" Expr value
+  // needed for insert/update from workingset so that uuids can be used as identities
+  | storedKey: "@id" ":" Expr value 
   ;
 
-lexical PlaceHolder = "??";
+lexical PlaceHolder = "??" Id name;
 
 // textual encoding of reference
 lexical UUID = "#"[\-a-zA-Z0-9]+ !>> [\-a-zA-Z0-9];
@@ -87,9 +88,9 @@ lexical Real
   | Int "." [0]* !>> "0" Int? [eE] [\-]? Int;
   
 syntax DateTime
-	= JustDate  
-	| JustTime  
-	| DateAndTime ; 
+	= date: JustDate date
+	| time: JustTime  time
+	| full: DateAndTime dateTime ;
 
 lexical JustDate
 	= "$" DatePart "$";

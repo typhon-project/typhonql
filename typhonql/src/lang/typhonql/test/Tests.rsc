@@ -39,6 +39,13 @@ void test3() {
 	run(cmd, "http://localhost:8080", sch);
 }
 
+void test3b() {
+	str cmd = "insert Product {name: \"TV\", description: \"Flat\" }";
+	bootConnections(|http://localhost:8080|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
+	Schema sch = loadSchemaFromXMI(modelStr);
+	run(cmd, "http://localhost:8080", sch);
+}
 
 void test4() {
 	str cmd = "insert 
