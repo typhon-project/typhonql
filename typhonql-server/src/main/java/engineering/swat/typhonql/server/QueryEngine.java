@@ -34,8 +34,7 @@ public class QueryEngine {
 	}
 
 	public JsonSerializableResult initialize(String xmi, List<DatabaseInfo> databaseInfo) throws IOException {
-		XMIPolystoreConnection newBackend = new XMIPolystoreConnection(xmi, databaseInfo);
-		backend = newBackend;
+		backend = new XMIPolystoreConnection(xmi, databaseInfo);
 		return RESULT_OK;
 	}
 

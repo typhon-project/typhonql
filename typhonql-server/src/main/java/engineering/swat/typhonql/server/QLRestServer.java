@@ -48,7 +48,7 @@ public class QLRestServer {
         QueryEngine engine = new QueryEngine();
         Server server = new Server();
         ServerConnector http = new ServerConnector(server);
-        http.setHost("localhost");
+        http.setHost("0.0.0.0");
         http.setPort(Integer.parseInt(args[0]));
         http.setIdleTimeout(30000);
         server.addConnector(http);
