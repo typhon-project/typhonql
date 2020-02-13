@@ -27,8 +27,6 @@ import nl.cwi.swat.typhonql.Connections;
  * Thread safe connection to the polystore ql engine, construct this once, and call the executeQuery from as many threads as you like (there is a memory overhead, but it will not interfer with eachother)
  */
 public abstract class BasePolystoreConnection extends PolystoreConnection {
-	
-	private static final String RASCAL_MF = "META-INF/RASCAL.MF";
 	protected static final String LOCALHOST = "localhost";
 	protected final ConcurrentSoftReferenceObjectPool<Evaluator> evaluators;
 	
@@ -116,5 +114,8 @@ public abstract class BasePolystoreConnection extends PolystoreConnection {
 					return result;
 				});
 	}
-
+	
+	public void prepareEvaluatorsInBackground(int howMany) {
+		evaluators.prepare(howMany);
+	}
 }
