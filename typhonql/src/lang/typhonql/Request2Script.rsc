@@ -11,16 +11,18 @@ import lang::typhonql::Normalize;
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::SQL2Text;
 
+import lang::typhonql::mongodb::Query2Mongo;
+import lang::typhonql::mongodb::DBCollection;
+
 import IO;
 
 Script request2script(r:(Request)`<Query q>`, Schema s) {
-  r = expandNavigation(addWhereIfAbsent(r), s);
   list[Place] order = orderPlaces(r, s);
   
   Script scr = script([]); 
   
   // TODO change
-  for (Place p <- order, p.db is sql) {
+  for (Place p <- order) {
     Request r = restrict(r, p, order, s);
     scr.steps += compile(r, p, s);
   }
@@ -28,9 +30,21 @@ Script request2script(r:(Request)`<Query q>`, Schema s) {
 }
 
 list[Step] compile(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s) {
+  r = expandNavigation(addWhereIfAbsent(r), s);
   <sqlStat, params> = compile2sql(r, s, p);
   return [step(dbName, sql(executeQuery(dbName, pp(sqlStat))), params)];
 }
+
+list[Step] compile(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s) {
+  <methods, params> = compile2mongo(r, s, p);
+  for (str coll <- methods) {
+    // TODO: signal if multiple!
+    // todo: add projections
+    println("COLLECTION: <coll>, <methods[coll]>");
+    return [step(dbName, mongo(find(dbName, pp(methods[coll].query), pp(methods[coll].projection))), params)];
+  }
+}
+
 
 void smokeScript() {
   s = schema({
@@ -47,8 +61,8 @@ void smokeScript() {
   },
   placement = {
     <<sql(), "Inventory">, "Person">,
-    <<sql(), "Reviews">, "Review">,
-    <<sql(), "Reviews">, "Comment">
+    <<mongodb(), "Reviews">, "Review">,
+    <<mongodb(), "Reviews">, "Comment">
   } 
   );
   

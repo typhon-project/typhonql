@@ -29,6 +29,9 @@ from E x select x.a.b.c, x.f.b.c where
 
 */
 
+tuple[map[str, CollMethod], Bindings] compile2mongo(r:(Request)`<Query q>`, Schema s, Place p)
+  = select2mongo(r, s, p);
+
 
 @doc{Find the (unique [we assume]) path to `entity` by following ownership links down from roots}
 tuple[str, list[str]] localPathToEntity(str entity, Schema s, Place p) {
@@ -69,6 +72,10 @@ alias Ctx = tuple[
     set[str] dyns,
     int() vars,
     Place place];
+    
+
+tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s, Place p) 
+  = select2mongo((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, p); 
     
 tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s, Place p) {
   

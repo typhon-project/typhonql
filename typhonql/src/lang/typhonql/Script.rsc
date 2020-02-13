@@ -23,13 +23,17 @@ data SQLCall
   ;
   
 data MongoCall
-  = find(str dbName, str coll, str json)
+  = find(str dbName, str coll, str query)
+  | find(str dbName, str coll, str query, str proj)
   ;
   
 EntityModels schema2entityModels(Schema s) 
   = { <e, { <a, t> | <e, str a, str t> <- s.attrs }
           , { <r, e2> | <e, _, str r, _, _, str e2, _> <- s.rels } >
            | str e <- entities(s) };
+  
+
+  
   
 void runScript(Script scr, Session session, Schema schema) {
   for (Step s <- scr.steps) {
