@@ -45,8 +45,8 @@ public abstract class PolystoreConnection {
 			throw new RuntimeException("Query was not an update query");
 	}
 
-	public CommandResult[] executePreparedUpdate(String preparedStatement, Object[][] matrix) {
-		IValue v = evaluatePreparedStatementQuery(preparedStatement, matrix);
+	public CommandResult[] executePreparedUpdate(String preparedStatement, String[] columnNames, String[][] values) {
+		IValue v = evaluatePreparedStatementQuery(preparedStatement, columnNames, values);
 		if (v instanceof IList) {
 			Iterator<IValue> iter0 = ((IList) v).iterator();
 			List<CommandResult> results = new ArrayList<CommandResult>();
@@ -71,7 +71,7 @@ public abstract class PolystoreConnection {
 			throw new RuntimeException("The result must be a list");
 	}
 
-	protected abstract IValue evaluatePreparedStatementQuery(String preparedStatement, Object[][] matrix);
+	protected abstract IValue evaluatePreparedStatementQuery(String preparedStatement, String[] columnNames, String[][] matrix);
 
 	public abstract void resetDatabases();
 

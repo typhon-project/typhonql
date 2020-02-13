@@ -19,7 +19,7 @@ import org.rascalmpl.values.ValueFactoryFactory;
 import io.usethesource.vallang.ISourceLocation;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
-import nl.cwi.swat.typhonql.client.SimplePolystoreConnection;
+import nl.cwi.swat.typhonql.client.PolystoreConnection;
 
 public class SessionTest {
 	
@@ -44,7 +44,7 @@ public class SessionTest {
 		if (!hasRascalMF(root)) {
 			// we are not inside eclipse/OSGI, so we are in the headless version, so we have to help the registry in finding 
             try {
-                root = URIUtil.createFileLocation(SimplePolystoreConnection.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+                root = URIUtil.createFileLocation(PolystoreConnection.class.getProtectionDomain().getCodeSource().getLocation().getPath());
                 if (root.getPath().endsWith(".jar")) {
                     root = URIUtil.changePath(URIUtil.changeScheme(root, "jar+" + root.getScheme()), root.getPath() + "!/");
                 }

@@ -55,7 +55,7 @@ public class XMIPolystoreConnection extends BasePolystoreConnection {
 					return evaluator.call("run", 
 							"lang::typhonql::Run",
                     		Collections.emptyMap(),
-							ValueFactory.getInstance().string(query), 
+							VF.string(query), 
 							LOCALHOST, xmiModel);
 				}
 			} catch (StaticError e) {
@@ -73,15 +73,17 @@ public class XMIPolystoreConnection extends BasePolystoreConnection {
 	
 
 	@Override
-	protected IValue evaluatePreparedStatementQuery(String preparedStatement, Object[][] matrix) {
+	protected IValue evaluatePreparedStatementQuery(String preparedStatement, String[] columnNames, String[][] matrix) {
 		IListWriter lw = VF.listWriter();
 		for (Object[] row : matrix) {
 			List<IValue> vs = Arrays.asList(row).stream().map(
-					obj -> Entity.toIValue(ValueFactory.getInstance(), obj)).collect(Collectors.toList());
-			IListWriter lw1 = ValueFactory.getInstance().listWriter();
+					obj -> Entity.toIValue(VF, obj)).collect(Collectors.toList());
+			IListWriter lw1 = VF.listWriter();
 			lw1.appendAll(vs);
-			lw1.append(lw1.done());
+			lw.append(lw1.done());
 		}
+		IListWriter columnsWriter = VF.listWriter();
+		columnsWriter.appendAll(Arrays.asList(columnNames).stream().map(columnName -> VF.string(columnName)).collect(Collectors.toList()));
 		return evaluators.useAndReturn(evaluator -> {
 			try {
 				synchronized (evaluator) {
@@ -89,9 +91,11 @@ public class XMIPolystoreConnection extends BasePolystoreConnection {
 					return evaluator.call("runPrepared", 
 							"lang::typhonql::Run",
                     		Collections.emptyMap(),
-							ValueFactory.getInstance().string(preparedStatement),
+							VF.string(preparedStatement),
+							LOCALHOST,
+							columnsWriter.done(),
 							lw.done(),
-							LOCALHOST, xmiModel);
+							xmiModel);
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);

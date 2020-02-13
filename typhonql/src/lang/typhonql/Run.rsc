@@ -93,22 +93,19 @@ value run(str src, str polystoreId, str xmiString, Log log = noLog) {
   return run(req, polystoreId, s, log = log);
 }
 
-tuple[int, Expr] toExprLiteral(list[str] vs, int i) {
-	str v = vs[i];
-	Expr expr = [Expr] v;
-	return <i + 1, expr>;
-}
-
-lrel[int, map[str, str]] runPrepared(str src, str polystoreId, list[list[str]] values, str xmiString, Log log = noLog) {
+lrel[int, map[str, str]] runPrepared(str src, str polystoreId, list[str] columnNames, list[list[str]] values, str xmiString, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   lrel[int, map[str, str]] rs = [];
+  int numberOfVars = size(columnNames);
   for (list[str] vs <- values) {
+  	map[str, str] labeled = (() | it + (columnNames[i] : vs[i]) | i <-[0 .. numberOfVars]);
   	Request req = [Request]src;
   	int i = 0;
   	Request req_ = visit(req) {
   		case (Expr) `<PlaceHolder ph>`: {
-  			<i, e> = toExprLiteral(vs, i); 
+  			valStr = labeled["<ph.name>"];
+  			e = [Expr] valStr; 
   			insert e;
   		}
   	};
