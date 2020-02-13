@@ -1,5 +1,7 @@
 package nl.cwi.swat.typhonql.workingset;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -12,7 +14,8 @@ import java.util.stream.Collectors;
 import org.rascalmpl.values.ValueFactoryFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.IMap;
@@ -21,9 +24,10 @@ import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
+import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
 
 
-public class WorkingSet {
+public class WorkingSet implements JsonSerializableResult {
 
 	private Map<String, List<Entity>> map;
 	
@@ -91,6 +95,11 @@ public class WorkingSet {
 			mw.put(vf.string(label), lw.done());
 		}
 		return mw.done();
+	}
+
+	@Override
+	public void serializeJSON(OutputStream target) throws IOException {
+		WorkingSetJSON.getMapper().writeValue(target, map);
 	}
 
 }

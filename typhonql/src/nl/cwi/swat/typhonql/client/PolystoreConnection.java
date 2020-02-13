@@ -75,6 +75,6 @@ public abstract class PolystoreConnection {
 
 	public abstract void resetDatabases();
 
-	protected abstract IValue evaluateQuery(String query);
 
+	protected abstract IValue evaluateQuery(String query);
 }
