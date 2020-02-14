@@ -108,7 +108,7 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
 
   
   void recordResults(Expr e) {
-    top-down-break visit (e) {
+    visit (e) {
       case x:(Expr)`<VId y>`:
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
            addResult(named(expr2sql(x, ctx), "<y>.<ent>.@id"));
@@ -136,6 +136,7 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
       case (Expr)`#needed(<Expr x>)`: 
         recordResults(x);
       default:
+        // todo: allow arbitrary expressions if they have "as"
         recordResults(e);
         //addResult(expr2sql(e, ctx));
     }
