@@ -27,4 +27,11 @@ public class MongoDBEngine extends Engine {
 		storeResults(resultId, results);
 	}
 
+	public void executeFindWithProjection(String resultId, String collectionName, String query, String projection,
+			LinkedHashMap<String, Binding> bindings) {
+		ResultIterator results = new MongoQueryWithProjectionExecutor(store, collectionName, query, projection, bindings, getConnectionString(host, port, user, password), dbName).executeSelect();
+		storeResults(resultId, results);
+		
+	}
+
 }
