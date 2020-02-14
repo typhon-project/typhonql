@@ -40,6 +40,7 @@ Script request2script(Request r, Schema s) {
       }
     }
   
+<<<<<<< Updated upstream
     case (Request)`insert <EId e> { <{KeyVal ","}* kvs> } into <UUID owner>.<Id field>`: {
       Place p = placeOf("<e>", s);
       if (<str parent, _, str fromRole, str toRole, _, str to, _> <- s.rels, fromRole == "<field>", to == "<e>") {
@@ -94,6 +95,13 @@ Script request2script(Request r, Schema s) {
     default: 
       throw "Unsupported request: `<r>`";
     
+=======
+  // TODO change
+  for (Place p <- order) {
+    Request r = restrict(r, p, order, s);
+    println("RESTRICT for <p>: <r>");
+    scr.steps += compile(r, p, s);
+>>>>>>> Stashed changes
   }
 }
 
@@ -141,6 +149,7 @@ void smokeScript() {
   
   Request q = (Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`;  
   iprintln(request2script(q, s));
+<<<<<<< Updated upstream
 
   q = (Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`;  
   iprintln(request2script(q, s));
@@ -150,4 +159,12 @@ void smokeScript() {
   
   //iprintln(request2script((Request)`insert Review {text: "Bad"} into #pablo.reviews`));
 
+=======
+  
+  
+  q = (Request)`from User u, Review r select r where r.user == u, u.name == "Pablo"`;
+  iprintln(request2script(q, s));
+  
+  
+>>>>>>> Stashed changes
 }  
