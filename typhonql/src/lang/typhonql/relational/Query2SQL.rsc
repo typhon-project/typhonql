@@ -112,6 +112,7 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
       case x:(Expr)`<VId y>`:
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
            addResult(named(expr2sql(x, ctx), "<y>.<ent>.@id"));
+           
          }
       case x:(Expr)`<VId y>.@id`:
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
