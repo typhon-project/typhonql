@@ -68,4 +68,10 @@ void smokeScript() {
   
   Request q = (Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`;  
   iprintln(request2script(q, s));
+
+  q = (Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`;  
+  iprintln(request2script(q, s));
+
+  q = (Request)`from Person p, Review r select r.text, p where p.name == "Pablo", p.reviews == r`;  
+  iprintln(request2script(q, s));
 }  
