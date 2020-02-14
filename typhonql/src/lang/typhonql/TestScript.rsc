@@ -38,7 +38,7 @@ Schema s = schema(
   
 void smokeRunSingle() {
 
-  Request req = (Request)`from User u select u.name where u.name == "Pablo"`;
+  Request req = (Request)`from User u select u.name where u.name == "Claudio"`;
   
   Script scr = request2script(req, s);
   
@@ -63,7 +63,7 @@ void smokeRunSingle() {
 
 void smokeRunTwoBackends() {
 
-  Request req = (Request)`from User u, Review r select r where r.user == u, u.name == "Pablo"`;
+  Request req = (Request)`from User u, Review r select r where r.user == u, u.name == "Claudio"`;
   
   Script scr = request2script(req, s);
   
@@ -80,8 +80,8 @@ void smokeRunTwoBackends() {
   
   //EntityModels models = schema2entityModels(s);
   
-  EntityModels models = {<"User", { <"name", "STRING">}, {}>};
-  str result = session.read("Inventory", {<"u", "User">}, models); 
+  EntityModels models = {<"Review", { <"contents", "STRING">}, {}>};
+  str result = session.read("Reviews", {<"r", "Review">}, models); 
   println(result);
   
 }  
