@@ -40,7 +40,6 @@ Script request2script(Request r, Schema s) {
       }
     }
   
-<<<<<<< Updated upstream
     case (Request)`insert <EId e> { <{KeyVal ","}* kvs> } into <UUID owner>.<Id field>`: {
       Place p = placeOf("<e>", s);
       if (<str parent, _, str fromRole, str toRole, _, str to, _> <- s.rels, fromRole == "<field>", to == "<e>") {
@@ -94,15 +93,7 @@ Script request2script(Request r, Schema s) {
     
     default: 
       throw "Unsupported request: `<r>`";
-    
-=======
-  // TODO change
-  for (Place p <- order) {
-    Request r = restrict(r, p, order, s);
-    println("RESTRICT for <p>: <r>");
-    scr.steps += compile(r, p, s);
->>>>>>> Stashed changes
-  }
+  }    
 }
 
 list[Step] compile(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s) {
@@ -115,17 +106,10 @@ list[Step] compile(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s) 
   <methods, params> = compile2mongo(r, s, p);
   for (str coll <- methods) {
     // TODO: signal if multiple!
-    // todo: add projections
     println("COLLECTION: <coll>, <methods[coll]>");
     return [step(dbName, mongo(find(dbName, pp(methods[coll].query), pp(methods[coll].projection))), params)];
   }
 }
-
-//list[Step] compile((Request)`insert <EId e> { <{KeyVal ","}* kvs> } into <UUID owner>.<Id field>`, p:<sql(), str dbName>, Schema s) {
-//  str fk = fkName(parent, to, toRole == "" ? fromRole : toRole);
-//  <stats, params> = insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p, parent = <fk, "<owner>">);
-//  
-//}
 
 void smokeScript() {
   s = schema({
@@ -149,7 +133,6 @@ void smokeScript() {
   
   Request q = (Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`;  
   iprintln(request2script(q, s));
-<<<<<<< Updated upstream
 
   q = (Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`;  
   iprintln(request2script(q, s));
@@ -157,14 +140,11 @@ void smokeScript() {
   iprintln(request2script((Request)`insert Person {name: "Pablo", age: 23}`, s));
   iprintln(request2script((Request)`insert Person {name: "Pablo", age: 23, reviews: #abc, reviews: #cdef}`, s));
   
-  //iprintln(request2script((Request)`insert Review {text: "Bad"} into #pablo.reviews`));
+  iprintln(request2script((Request)`insert Review {text: "Bad"} into #pablo.reviews`));
 
-=======
   
   
   q = (Request)`from User u, Review r select r where r.user == u, u.name == "Pablo"`;
   iprintln(request2script(q, s));
   
-  
->>>>>>> Stashed changes
 }  
