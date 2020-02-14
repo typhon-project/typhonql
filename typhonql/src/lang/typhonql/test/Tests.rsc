@@ -49,7 +49,8 @@ void test3b() {
 
 void test4() {
 	str cmd = "insert 
-			  '@pablo User { name: \"Claudio\", reviews: badradio },
+			  '@pablo User { name: \"Claudio\", reviews: badradio, biography: bio },
+			  '@bio Biography { text: \"Born in Chile\" },
 			  '@radio Product {name: \"TV\", description: \"Flat\", reviews: badradio },
 			  '@badradio Review { contents: \"Good TV\",product: radio,user: pablo}";
 	bootConnections(|http://localhost:8080|, "pablo", "antonio");
