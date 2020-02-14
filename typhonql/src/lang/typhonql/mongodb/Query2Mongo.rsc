@@ -158,8 +158,12 @@ tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}
     
   void recordProjections(Expr e) {
      visit (e) {
-      case x:(Expr)`<VId y>`:
+      case x:(Expr)`<VId y>`: {
+         // TODO: there is a difference between y in result and y in where clauses
+         // --> fix normalization to desguar y in where clauses to y.@id, 
+         // and in result to all attrs.
          addProjection(y, "_id");
+      }
       case x:(Expr)`<VId y>.@id`:
          addProjection(y, "_id");
       case x:(Expr)`<VId y>.<{Id "."}+ fs>`:
