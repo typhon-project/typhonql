@@ -21,8 +21,11 @@ public class MariaDBEngine extends Engine {
 	}
 	
 	private void initializeDriver() {
-		// TODO Auto-generated method stub
-		
+		try {
+			Class.forName("org.mariadb.jdbc.Driver");
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException("MariaDB driver not found", e);
+		}
 	}
 
 	private String getConnectionString(String host, int port, String dbName, String user, String password) {
