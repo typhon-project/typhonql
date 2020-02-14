@@ -119,16 +119,17 @@ public class TestSelect {
 		MariaDBEngine e1 = new MariaDBEngine(store, "localhost", 3306, "Inventory", "root", "example");
 		MongoDBEngine e2 = new MongoDBEngine(store, "localhost", 27018, "Reviews", "admin", "admin");
 		
-		e1.executeSelect("user", "select * from User where `User.name` = \"Pablo\"");
+		e1.executeSelect("user", "select u.`User.name` as `u.User.name`,  u.`User.@id` as `u.User.@id` from User u where u.`User.name` = \"Pablo\"");
 		LinkedHashMap<String, Binding> map1 = new LinkedHashMap<String, Binding>();
-		map1.put("user_id", new Binding("user", "User"));
-		e2.executeSelect("review", "Review\n{ user: \"${user_id}\" }", map1);
+		map1.put("user_id", new Binding("user", "u", "User"));
+		e2.executeFind("review", "Review", "{ user: \"${user_id}\" }", map1);
 		
 		// Binding needs an extra argument `attribute` for inspecting attributes in the entities that conform the stored results
 		LinkedHashMap<String, Binding> map2 = new LinkedHashMap<String, Binding>();
-		map2.put("product_id", new Binding("review", "Review", "product"));
+		map2.put("product_id", new Binding("review", "dummy", "Review", "product"));
 		
-		e1.executeSelect("result", "select `Product.@id` as p_id, Product.* from Product where `Product.@id` = \"${product_id}\"", map2);
+		e1.executeSelect("result", 
+				"select p.`Product.@id` as `p.Product.@id`, p.`Product.name` as `p.Product.name`, p.`Product.description` as `p.Product.description` from Product p where p.`Product.@id` = ?", map2);
 		
 		//List<Entity> result = buildResult("result", );
 		

@@ -71,6 +71,10 @@ data RelativeOrder = before() | same() | after();
 Place placeOf(str entity, Schema s) = p
   when <Place p, entity> <- s.placement;
 
+default Place placeOf(str entity, Schema s) {
+  throw "Could not find placement for <entity> in: <s>";
+}
+
 RelativeOrder compare(str entity, Place p, list[Place] order, Schema s) 
   = compare(placeOf(entity, s), p, order);
   
@@ -91,6 +95,69 @@ bool isAfter(str entity, Place p, list[Place] order, Schema s)
   = indexOf(p2) > indexOf(p, order)
   when <Place p2, entity> <- s.placement;
 
+
+alias DBPath = lrel[Place place, str entity];
+
+bool goesThrough(Expr e, Place p, map[str, str] env, Schema s) 
+  = p in dbPlaces(e, env, s);
+
+
+bool isLocalTo(Expr e, Place p, map[str, str] env, Schema s)
+  = dbPlaces(e, env, s) == {p};
+
+// an expression is "local to a db" when all entities traversed by its paths are within the same DB 
+bool isLocal(Expr e, map[str, str] env, Schema s)
+  = size(dbPlaces(e, env, s)) == 1;
+  
+
+rel[Place, str] dbPlacements(Expr e, map[str, str] env, Schema s)
+  =  { <p, e> | DBPath dp <- dbPaths(e, env, s), <Place p, str e> <- dp };
+
+set[Place] dbPlaces(Expr e, map[str, str] env, Schema s)
+  =  { p | DBPath dp <- dbPaths(e, env, s), <Place p, _> <- dp };
+
+
+set[DBPath] dbPaths(Expr e, map[str, str] env, Schema s) { 
+  set[DBPath] paths = {};
+  visit (e) {
+    case (Expr)`<VId x>.<{Id "."}+ xs>`: 
+       paths += {navigate(env["<x>"], [ "<f>" | Id f <- xs ], s)};
+    case (Expr)`<VId x>` :
+       paths += {navigate(env["<x>"], [], s)};
+    case (Expr)`<VId x>.@id` :
+       paths += {navigate(env["<x>"], [], s)};
+  }
+  return paths;
+}
+
+
+DBPath navigate(str entity, list[str] path, Schema s) {
+  if (<Place myPlace, entity> <- s.placement) {
+    if (path == []) {
+      return [<myPlace, entity>];
+    }
+  
+    str head = path[0];
+    if (<entity, _, head, _, _, str to, _> <- s.rels) {
+      return [<myPlace, entity>] + navigate(to, path[1..], s);
+    }
+    else if (<entity, head, _> <- s.attrs) {
+      return [<myPlace, entity>];
+    }
+    else { 
+      throw "No such field in schema: <head>";
+    }
+  }
+  else {
+    throw "No placement for entity <entity>";
+  } 
+}
+
+set[str] reachableEntities(Expr e, Env env, Schema s) 
+  = { ent | <Place _, str ent> <- dbPlacements(e, env, s) };
+
+
+
 @doc{Restricting a query to a specific db places consists of 
 annotating the query's bindings (`Entity x`) and the result/where 
 expressions. The annotations indicate if expression evaluation 
@@ -101,7 +168,7 @@ Request restrict(req:(Request)`<Query q>`, Place p, list[Place] order, Schema s)
   
   RelativeOrder entityOrder(str e) = compare(e, p, order, s);
   
-  set[RelativeOrder] orders(Expr e) = { entityOrder(env["<x>"]) | /VId x := e }; 
+  set[RelativeOrder] orders(Expr e) = { entityOrder(ent) | str ent <- reachableEntities(e, env, s) }; 
   
   bool allBefore(Expr e) = orders(e) == {before()};
   
@@ -186,7 +253,7 @@ void tests() {
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
     <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
-    <"Comment", zero_many(), "replies", "owner", \zero_many(), "Comment", true>
+    <"Comment", zero_many(), "replies", "owner", \zero_many(), "Reply", true>
   }, {
     <"Person", "name", "String">,
     <"Person", "age", "int">,
@@ -197,6 +264,7 @@ void tests() {
   placement = {
     <<sql(), "Inventory">, "Person">,
     <<mongodb(), "Reviews">, "Review">,
+    <<mongodb(), "Reviews">, "Reply">,
     <<mongodb(), "Reviews">, "Comment">
   } 
   );
@@ -233,8 +301,8 @@ void tests() {
   println("## after normalization");
   q = (Request)`from Person p, Review r select r.comment.replies.reply where r.user.age \> 10, r.user.name == "Pablo"`;
   println("ORIGINAL: <q>");
-  q = expandNavigation(q, s);
-  println("NORMALIZED: <q>");
+  //q = expandNavigation(q, s);
+  //println("NORMALIZED: <q>");
     
   println("Ordering <q>");
   order = orderPlaces(q, s);

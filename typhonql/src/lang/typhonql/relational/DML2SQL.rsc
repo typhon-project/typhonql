@@ -249,7 +249,7 @@ Value evalExpr((Expr)`<Str s>`) = text("<s>"[1..-1]);
 
 Value evalExpr((Expr)`<Int n>`) = integer(toInt("<n>"));
 
-Value evalExpr((Expr)`<Bool b>`) = boolean("<b>" == true);
+Value evalExpr((Expr)`<Bool b>`) = boolean("<b>" == "true");
 
 Value evalExpr((Expr)`<Real r>`) = decimal(toReal("<r>"));
 
