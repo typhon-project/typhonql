@@ -1,5 +1,9 @@
 module lang::typhonql::Session
 
+
+public /*const*/ str ID_PARAM = "TYPHON_ID";
+Field generatedIdField() = <"ID_STORE", "", "", "@id">;
+
 alias EntityModels = rel[str name, rel[str name, str \type] attributes, rel[str name, str entity] relations];
 
 alias Session = tuple[

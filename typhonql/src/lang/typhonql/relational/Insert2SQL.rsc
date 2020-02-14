@@ -20,8 +20,7 @@ import String;
 // no nested objects are allowed, only primitives and refs
 // entity refs may only be the "canonical" ones.
 
-/*const*/ str ID_PARAM = "TYPHON_ID";
-
+// todo: move to schema/Util
 Place placeOf(str entity, Schema s) = p
   when 
     <Place p, entity> <- s.placement;
@@ -35,7 +34,7 @@ alias ParentFK = tuple[str col, str val];
 tuple[list[SQLStat], Bindings] insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s, Place p, ParentFK parent = <"", "">) {
 
   // abusing Field in params to obtain an ID from the Java side.
-  Bindings params = (ID_PARAM: <"ID_STORE", "", "", "@id">);
+  Bindings params = (ID_PARAM: generatedIdField());
   
   list[str] aCols({KeyVal ","}* kvs, str entity) 
     = [ *columnName(kv, entity) | KeyVal kv  <- kvs, isAttr(kv, entity, s)]

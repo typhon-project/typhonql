@@ -44,6 +44,14 @@ str strEscape(str s)
 // where ...varargs become keyword params, List<...> list, and array[] also list
   
 data CollMethod
+  = find(DBObject query)
+  | find(DBObject query, DBObject projection)
+  | insertOne(DBObject doc)
+  ;  
+  
+// Apparently this API below does not correspond to the one we use
+// the above subset is the one we'll use for now.  
+data CollMethod
   = aggregate(DBObject firstOp, list[DBObject] additionalOps = [])
   | aggregate(list[DBObject] pipeline)	
   | count()	

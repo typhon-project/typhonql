@@ -281,6 +281,27 @@ DBObject expr2obj(e:(Expr)`<VId x>.<{Id "."}+ fs>`, Ctx ctx) {
   throw "Only dynamic parameters can be used as expressions in query docs, not <e>";
 }
 
+DBObject expr2obj(e:(Expr)`<VId x>`, Ctx ctx) 
+  = expr2obj((Expr)`<VId x>.@id`, ctx);
+  
+DBObject expr2obj(e:(Expr)`<VId x>.@id`, Ctx ctx) {
+  if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
+    str token = "<x>_@id_<ctx.vars()>";
+    ctx.addParam(token, <p.name, "<x>", ctx.env["<x>"], "@id">);
+    return placeholder(name=token);
+  }
+  throw "Only dynamic parameters can be used as expressions in query docs, not <e>";
+}
+
+DBObject expr2obj(e:(Expr)`<VId x>.<{Id "."}+ fs>`, Ctx ctx) {
+  if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
+    str token = "<x>_<fs>_<ctx.vars()>";
+    ctx.addParam(token, <p.name, "<x>", ctx.env["<x>"], "<fs>">);
+    return placeholder(name=token);
+  }
+  throw "Only dynamic parameters can be used as expressions in query docs, not <e>";
+}
+
 
 
 DBObject expr2obj((Expr)`?`, Ctx _) = placeholder();
