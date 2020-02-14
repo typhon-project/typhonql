@@ -33,38 +33,6 @@ tuple[map[str, CollMethod], Bindings] compile2mongo(r:(Request)`<Query q>`, Sche
   = select2mongo(r, s, p);
 
 
-@doc{Find the (unique [we assume]) path to `entity` by following ownership links down from roots}
-tuple[str, list[str]] localPathToEntity(str entity, Schema s, Place p) {
-  
-  list[str] pathTo(str from, str to) {
-    if (<from, _, str fromRole, _, _, to, true> <- s.rels) {
-      return [fromRole];
-    }
-    for (<str from2, _, str fromRole, _, _, to, true> <- s.rels, <p, from2> <- s.placement) {
-      if (list[str] sub := pathTo(from, from2), sub != []) {
-        return sub + [fromRole];
-      }  
-    }
-    return [];
-  }
-  
-  for (str e <- localRoots(s, p)) {
-    if (list[str] path := pathTo(e, entity), path != []) {
-      return <e, path>;
-    } 
-  }
-  
-  return <entity, []>;
-  
-}
-
-set[str] localRoots(Schema s, Place p) 
-  = { e | str e <- entities(s), <p, e> <- s.placement,  !ownedLocally(e, s, p) };
-  
-bool ownedLocally(str entity, Schema s, Place p) 
-  = any(<str from, _, _, _, _, entity, true> <- s.rels, <p, from> <- s.placement);
-
-
 alias Ctx = tuple[
     void(str,Field) addParam,
     Schema schema,
