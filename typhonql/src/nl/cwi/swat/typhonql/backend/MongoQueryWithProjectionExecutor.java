@@ -1,6 +1,5 @@
 package nl.cwi.swat.typhonql.backend;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.commons.text.StringSubstitutor;
@@ -21,7 +20,7 @@ public class MongoQueryWithProjectionExecutor extends QueryExecutor {
 	private String projection;
 
 	public MongoQueryWithProjectionExecutor(ResultStore store, String collectionName, String query,
-			String projection, LinkedHashMap<String, Binding> bindings, String connectionString, String dbName) {
+			String projection, Map<String, Binding> bindings, String connectionString, String dbName) {
 		super(store, query, bindings);
 		this.dbName = dbName;
 		this.connectionString = connectionString;

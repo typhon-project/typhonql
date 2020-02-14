@@ -1,6 +1,5 @@
 package nl.cwi.swat.typhonql.backend;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.commons.text.StringSubstitutor;
@@ -20,7 +19,7 @@ public class MongoQueryExecutor extends QueryExecutor {
 	private String query;
 
 	public MongoQueryExecutor(ResultStore store, String collectionName, String query,
-			LinkedHashMap<String, Binding> bindings, String connectionString, String dbName) {
+			Map<String, Binding> bindings, String connectionString, String dbName) {
 		super(store, query, bindings);
 		this.dbName = dbName;
 		this.connectionString = connectionString;

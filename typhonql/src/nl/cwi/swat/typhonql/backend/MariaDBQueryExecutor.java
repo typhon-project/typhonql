@@ -6,7 +6,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,7 +13,7 @@ public class MariaDBQueryExecutor extends QueryExecutor {
 	
 	private PreparedStatement pstmt;
 	
-	public MariaDBQueryExecutor(ResultStore store,  String query, LinkedHashMap<String, Binding> bindings, String connectionString) {
+	public MariaDBQueryExecutor(ResultStore store,  String query, Map<String, Binding> bindings, String connectionString) {
 		super(store, query, bindings);
 		try {
 			Connection connection = DriverManager

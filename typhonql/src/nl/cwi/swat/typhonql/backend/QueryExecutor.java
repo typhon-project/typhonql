@@ -2,16 +2,15 @@ package nl.cwi.swat.typhonql.backend;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public abstract class QueryExecutor {
 	
 	private ResultStore store;
-	private LinkedHashMap<String, Binding> bindings;
+	private Map<String, Binding> bindings;
 
-	public QueryExecutor(ResultStore store, String query, LinkedHashMap<String, Binding> bindings) {
+	public QueryExecutor(ResultStore store, String query, Map<String, Binding> bindings) {
 		this.store = store;
 		this.bindings = bindings;
 	}

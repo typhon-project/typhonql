@@ -1,6 +1,7 @@
 package nl.cwi.swat.typhonql.backend;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MariaDBEngine extends Engine {
 
@@ -33,14 +34,14 @@ public class MariaDBEngine extends Engine {
 	}
 
 	public void executeSelect(String resultId, String query) {
-		this.storeResults(resultId, executeSelect(query, new LinkedHashMap<String, Binding>()));
+		this.storeResults(resultId, executeSelect(query, new HashMap<String, Binding>()));
 	}
 	
-	public void executeSelect(String resultId, String query, LinkedHashMap<String, Binding> bindings) {
+	public void executeSelect(String resultId, String query, Map<String, Binding> bindings) {
 		this.storeResults(resultId, executeSelect(query, bindings));
 	}
 	
-	private ResultIterator executeSelect(String query, LinkedHashMap<String, Binding> bindings) {
+	private ResultIterator executeSelect(String query, Map<String, Binding> bindings) {
 		return new MariaDBQueryExecutor(store, query, bindings, getConnectionString(host, port, dbName, user, password)).executeSelect();
 	}
 
