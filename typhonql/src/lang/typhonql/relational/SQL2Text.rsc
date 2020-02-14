@@ -143,6 +143,8 @@ str pp(dateTime(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
 
 str pp(null()) = "null";
 
+str pp(Value::placeholder(name = str name)) = ":<name>";
+
 // TableConstraint
 
 str pp(primaryKey(str c)) = "primary key (<q(c)>)";

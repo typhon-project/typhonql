@@ -108,6 +108,7 @@ data Value
   | integer(int intVal)
   | boolean(bool boolVal)
   | dateTime(datetime dateTimeVal)
+  | placeholder(str name="")
   | null()
   ;
 
