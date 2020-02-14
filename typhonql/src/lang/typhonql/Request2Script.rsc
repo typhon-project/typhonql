@@ -43,6 +43,7 @@ list[Step] compile(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s) 
     println("COLLECTION: <coll>, <methods[coll]>");
     return [step(dbName, mongo(find(dbName, coll, pp(methods[coll].query), pp(methods[coll].projection))), params)];
   }
+  return [];
 }
 
 
