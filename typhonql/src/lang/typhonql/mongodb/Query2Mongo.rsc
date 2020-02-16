@@ -144,8 +144,10 @@ tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}
         recordProjections(x);
 
       default: {
-        <ent, prop> = expr2pattern(e, ctx);
-        addConstraint(ent, prop);   
+        if ((Expr)`true` !:= e) {
+          <ent, prop> = expr2pattern(e, ctx);
+          addConstraint(ent, prop);
+        }   
       }
     }
       
