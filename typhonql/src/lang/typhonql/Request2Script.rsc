@@ -325,11 +325,11 @@ list[Step] removeFromManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, F
           // if single: update me set fld to ref
 		  // if multi: push/addToSet ref to fld on me
 		  //breakCrossLinkInMongo(str dbName, str parent, DBObject kid, str kidParam, Field kidField, str fromRole, str to, str toRole)
-		  return [ *breakCrossLinkInMongo(myDb, ent, DBObject::\value("<ref>[1..]"), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+		  return [ *breakCrossLinkInMongo(myDb, ent, DBObject::\value("<ref>"[1..]), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
         }
 
         case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
-		  return [ *breakCrossLinkInMongo(myDb, ent, DBObject::\value("<ref>[1..]"), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+		  return [ *breakCrossLinkInMongo(myDb, ent, DBObject::\value("<ref>"[1..]), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
         }
       }
     }
@@ -350,15 +350,15 @@ list[Step] removeFromManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, F
 		}
         
         case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
-		  return [ *breakCrossLinkInMongo(myDb, ent, DBObject::\value("<ref>[1..]"), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+		  return [ *breakCrossLinkInMongo(myDb, ent, DBObject::\value("<ref>"[1..]), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
         }
         
         case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
-		  return [ *breakCrossLinkInMongo(myDb, ent, DBObject::\value("<ref>[1..]"), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+		  return [ *breakCrossLinkInMongo(myDb, ent, DBObject::\value("<ref>"[1..]), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
         }
 
         case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
-		  return [ *breakCrossLinkInMongo(myDb, ent, DBObject::\value("<ref>[1..]"), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+		  return [ *breakCrossLinkInMongo(myDb, ent, DBObject::\value("<ref>"[1..]), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
         }
       }
     }
@@ -394,11 +394,11 @@ list[Step] addToManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, Field 
 
         case <<sql(), str myDb>, <sql(), str dbKid>>: {
           //createCrossLinkInSQL(str dbName, str parent, str uuid, str fromRole, str to, str toRole)
-          return [ *createCrossLinkInSQL(myDb, ent, "<ref>[1..]", fromRole, to, toRole) | UUID ref <- refs ];
+          return [ *createCrossLinkInSQL(myDb, ent, "<ref>"[1..], fromRole, to, toRole) | UUID ref <- refs ];
 		}
 
         case <<sql(), str myDb>, <mongodb(), str dbKid>>: {
-          return [ *createCrossLinkInSQL(myDb, ent, "<ref>[1..]", fromRole, to, toRole) | UUID ref <- refs ];
+          return [ *createCrossLinkInSQL(myDb, ent, "<ref>"[1..], fromRole, to, toRole) | UUID ref <- refs ];
 		}
         
         case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
@@ -412,11 +412,11 @@ list[Step] addToManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, Field 
           // if single: update me set fld to ref
 		  // if multi: push/addToSet ref to fld on me
 		  //list[Step] createCrossLinkInMongo(str dbName, str parent, str uuid, str fromRole, Cardinality toCard) {
-		  return [ *createCrossLinkInMongo(myDb, ent, "<ref>[1..]", fromRole, toCard, toBeUpdated) | UUID ref <- refs ];
+		  return [ *createCrossLinkInMongo(myDb, ent, "<ref>"[1..], fromRole, toCard, toBeUpdated) | UUID ref <- refs ];
         }
 
         case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
-		  return [ *createCrossLinkInMongo(myDb, ent, "<ref>[1..]", fromRole, toCard, toBeUpdated) | UUID ref <- refs ];
+		  return [ *createCrossLinkInMongo(myDb, ent, "<ref>"[1..], fromRole, toCard, toBeUpdated) | UUID ref <- refs ];
         }
       }
     }
@@ -425,27 +425,27 @@ list[Step] addToManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, Field 
       Place targetPlace = placeof(to, s);
       switch (<p, targetPlace>) {
         case <<sql(), str myDb>, <sql(), dbName>>: {
-          return [ *createCrossLinkInSQL(myDb, ent, "<ref>[1..]", fromRole, to, toRole) | UUID ref <- refs ];
+          return [ *createCrossLinkInSQL(myDb, ent, "<ref>"[1..], fromRole, to, toRole) | UUID ref <- refs ];
         }
 
         case <<sql(), str myDb>, <sql(), str dbKid>>: {
-          return [ *createCrossLinkInSQL(myDb, ent, "<ref>[1..]", fromRole, to, toRole) | UUID ref <- refs ];
+          return [ *createCrossLinkInSQL(myDb, ent, "<ref>"[1..], fromRole, to, toRole) | UUID ref <- refs ];
 		}
 
         case <<sql(), str myDb>, <mongodb(), str dbKid>>: {
-          return [ *createCrossLinkInSQL(myDb, ent, "<ref>[1..]", fromRole, to, toRole) | UUID ref <- refs ];
+          return [ *createCrossLinkInSQL(myDb, ent, "<ref>"[1..], fromRole, to, toRole) | UUID ref <- refs ];
 		}
         
         case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
-          return [ *createCrossLinkInMongo(myDb, ent, "<ref>[1..]", fromRole, toCard, toBeUpdated) | UUID ref <- refs ];            
+          return [ *createCrossLinkInMongo(myDb, ent, "<ref>"[1..], fromRole, toCard, toBeUpdated) | UUID ref <- refs ];            
         }
         
         case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
-		  return [ *createCrossLinkInMongo(myDb, ent, "<ref>[1..]", fromRole, toCard, toBeUpdated) | UUID ref <- refs ];
+		  return [ *createCrossLinkInMongo(myDb, ent, "<ref>"[1..], fromRole, toCard, toBeUpdated) | UUID ref <- refs ];
         }
 
         case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
-          return [ *createCrossLinkInMongo(myDb, ent, "<ref>[1..]", fromRole, toCard, toBeUpdated) | UUID ref <- refs ];
+          return [ *createCrossLinkInMongo(myDb, ent, "<ref>"[1..], fromRole, toCard, toBeUpdated) | UUID ref <- refs ];
         }
       }
     }
@@ -805,7 +805,9 @@ void smokeScript() {
 
   smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews +: [#abc, #cde]}`);
 
-  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
+  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews +: [#abc, #cde]}`);
+
+  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews: [#abc, #cde]}`);
 
   smokeIt((Request)`update Review r set {text: "bad"}`);
 
