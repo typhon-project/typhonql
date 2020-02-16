@@ -43,7 +43,11 @@ list[Value] evalKeyVal((KeyVal)`@id: <Expr e>`) = [evalExpr(e)];
 
 bool isAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) = <e, "<x>", _> <- s.attrs;
 
-bool isAttr((KeyVal)`@id: <Expr _>`, str _, Schema _) = true;
+bool isAttr((KeyVal)`<Id x> +: <Expr _>`, str e, Schema s) = false;
 
+bool isAttr((KeyVal)`<Id x> -: <Expr _>`, str e, Schema s) = false;
+
+bool isAttr((KeyVal)`@id: <Expr _>`, str _, Schema _) = true;
+  
 
  

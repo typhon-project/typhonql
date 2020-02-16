@@ -115,6 +115,16 @@ tuple[list[SQLStat], Bindings] insert2sql((Request)`insert <EId e> { <{KeyVal ",
   throw "no parent entity at db <p> found owning <e> through field <field>";
 }
 
+// this should be somewhere shared
+bool isAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) = <e, "<x>", _> <- s.attrs;
+
+bool isAttr((KeyVal)`<Id x> +: <Expr _>`, str e, Schema s) = false;
+
+bool isAttr((KeyVal)`<Id x> -: <Expr _>`, str e, Schema s) = false;
+
+bool isAttr((KeyVal)`@id: <Expr _>`, str _, Schema _) = true;
+  
+
 void smokeInsert2SQL() {
   s = schema({
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
@@ -151,9 +161,6 @@ void smokeInsert2SQL() {
 }
 
 
-bool isAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) = <e, "<x>", _> <- s.attrs;
-
-bool isAttr((KeyVal)`@id: <Expr _>`, str _, Schema _) = true;
 
 
 list[str] columnName((KeyVal)`<Id x>: <EId customType> (<{KeyVal ","}* keyVals>)`, str entity) = [columnName("<x>", entity, "<customType>", "<y>") | (KeyVal)`<Id y>: <Expr e>` <- keyVals];

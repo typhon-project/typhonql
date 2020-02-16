@@ -36,122 +36,60 @@ Script request2script(Request r, Schema s) {
     }
     
     case (Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set {<{KeyVal ","}* kvs>}`: {
+
+      str ent = "<e>";
+      Place p = placeOf(ent, s);
+
        // first, find all id's of e things that need to be updated
       Request req = (Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ ws>`;
       
       // NB: no partitioning, compile locally.
       Script scr = script(compile(req, p, s));
-      str ent = "<e>";
-      Place p = placeOf(ent, s);
       
       Field toBeUpdated = <p.name, "<x>", ent, "@id">;
        
       // update the primitivies
       switch (p) {
         case <sql(), str dbName>: {
+          Set bla = \set("bla", lit(text("Pablo")));;
           SQLStat stat = update(tableName(ent),
-            [ \set(columnName(kv, ent), lit(evalExpr(kv.\value))) | KeyVal kv <- kvs, isAttr(kv, ent, s) ],
+            [ Set::\set(columnName("<kv.key>", ent), SQLExpr::lit(evalExpr(kv.\value))) | KeyVal kv <- kvs, isAttr(kv, ent, s), bprintln(kv) ],
               [where([equ(column(tableName(ent), typhonId(ent)), SQLExpr::placeholder(name="TO_UPDATE"))])]);
-          scr.steps += [step(dbName, sql(executeUpdate(dbName, pp(stat))), ("TO_UPDATE": toBeUpdated))];
+          if (stat.sets != []) {
+            scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_UPDATE": toBeUpdated))];
+          }
         }
         
         case <mongodb(), str dbName>: {
           DBObject q = object([<"_id", DBObject::placeholder(name="TO_UPDATE")>]);
           // NB: keyVal2Prop allows @id fields, but they should *never be set in update -> type checker
           DBObject u = object([ keyVal2prop(kv) | KeyVal kv <- kvs, isAttr(kv, ent, s) ]);
-          src.steps += [step(dbName, mongo(findAndUpdateOne(dbName, ent, pp(q), pp(u))), ("TOP_UPDATE": toBeUpdated))];
+          if (u.props != []) {
+            src.steps += [step(dbName, mongo(findAndUpdateOne(dbName, ent, pp(q), pp(u))), ("TOP_UPDATE": toBeUpdated))];
+          }
         }
       
       }
 
 
       for ((KeyVal)`<Id fld>: <UUID ref>` <- kvs) {
-        
-        if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
-          Place targetPlace = placeof(to, s);
-          switch (<p, targetPlace>) {
-            case <<sql(), str dbName>, <sql(), dbName>>: {
-              str fk = fkName(ent, to, toRole == "" ? fromRole : toRole);
-              SQLStat stat = update(tableName(to),
-                  [ \set(columnName(tableName(to), fk), SQLExpr::placeholder(name="TO_UPDATE")) ],
-                  [where([equ(column(tableName(to), typhonId(ent)), lit(evalExpr((Expr)`<UUID ref>`)))])]);
-              scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_UPDATE": toBeUpdated))]; 
-            }
-
-            case <<sql(), str myDb>, <sql(), str dbKid>>: {
-              scr.steps += updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
-			}
-
-            case <<sql(), str myDb>, <mongodb(), str dbKid>>: {
-              scr.steps += updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
-			}
-            
-            case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
-              // Q: how to create nesting here?  --> we somehow need to disallow this (in the type checker?)
-			  // if single: update me set fld to ref
-			  // if multi: push/addToSet ref to fld on me
-			  ;            
-            }
-            
-            case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
-              // if single: update me set fld to ref
-			  // if multi: push/addToSet ref to fld on me
-			  scr.steps += updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
-            }
-
-            case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
-              scr.steps += updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
-            }
-          }
-        }
-        else if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
-          // a crossref.
-          Place targetPlace = placeof(to, s);
-          switch (<p, targetPlace>) {
-            case <<sql(), str myDb>, <sql(), dbName>>: {
-               scr.steps += updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
-            }
-
-            case <<sql(), str myDb>, <sql(), str dbKid>>: {
-              scr.steps += updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
-			}
-
-            case <<sql(), str myDb>, <mongodb(), str dbKid>>: {
-              scr.steps += updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
-			}
-            
-            case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
-              scr.steps += updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);            
-            }
-            
-            case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
-			  scr.steps += updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
-            }
-
-            case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
-              scr.steps += updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
-            }
-          }
-        }
-        else {
-         throw "Could not find field <fld> in schema for <ent>";
-        }
+        scr.steps += updateReference(p, ent, fld, ref, toBeUpdated, s);
       }
-      
 
       for ((KeyVal)`<Id fld>: [<{UUID ","}+ refs>]` <- kvs) {
-        ;
+        scr.steps += updateManyReference(p, ent, fld, refs, toBeUpdated, s);
       }
 
       
       for ((KeyVal)`<Id fld> +: [<{UUID ","}+ refs>]` <- kvs) {
-        ;
+        scr.steps += addToManyReference(p, ent, fld, refs, toBeUpdated, s);
       }
       
       for ((KeyVal)`<Id fld> -: [<{UUID ","}+ refs>]` <- kvs) {
-        ;
+        scr.steps += removeFromManyReference(p, ent, fld, refs, toBeUpdated, s);
       }
       
+      return scr;
     }
     
     case (Request)`delete <EId e> <VId x>`: {
@@ -188,23 +126,23 @@ Script request2script(Request r, Schema s) {
             }
 
             case <<sql(), str dbParent>, <sql(), str dbKid>>: {
-              scr.steps += unlinkSQLParent(dbParent, parent, "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole); 
+              scr.steps += unlinkSQLParent(dbParent, parent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole); 
 			}
 
             case <<sql(), str dbParent>, <mongodb(), str dbKid>>: {
-              scr.steps += unlinkSQLParent(dbParent, parent, "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole); 
+              scr.steps += unlinkSQLParent(dbParent, parent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole); 
 			}
             
             case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
-              scr.steps += unlinkMongoParent(dbName, parent, "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole);
+              scr.steps += unlinkMongoParent(dbName, parent, DBObject::placeholder(name="TO_DELETE"), "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole);
             }
             
             case <<mongodb(), str dbParent>, <mongodb(), str dbKid>>: {
-              scr.steps += unlinkMongoParent(dbParent, parent, "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole);
+              scr.steps += unlinkMongoParent(dbParent, parent, DBObject::placeholder(name="TO_DELETE"), "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole);
             }
 
             case <<mongodb(), str dbParent>, <sql(), str dbKid>>: {
-              scr.steps += unlinkMongoParent(dbParent, parent, "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole);
+              scr.steps += unlinkMongoParent(dbParent, parent, DBObject::placeholder(name="TO_DELETE"), "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole);
             }
         }
       }
@@ -224,7 +162,7 @@ Script request2script(Request r, Schema s) {
             case <<sql(), str dbName>, <sql(), str dbKid>>: {
               // NB this could be done based on the id of the entity to be deleted itself
               // but unlinkSQLParent now deletes based on the kid's id
-              scr.steps += unlinkSQLParent(dbName, ent, "TO_DELETE", <p.name, "<x>", to, fromRole>, fromRole, to, toRole);
+              scr.steps += unlinkSQLParent(dbName, ent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", <p.name, "<x>", to, fromRole>, fromRole, to, toRole);
               SQLStat stat = delete(tableName(to), [
                where([equ(column(tableName(to), typhonId(to)), SQLExpr::placeholder(name="TO_DELETE"))])]);
             
@@ -233,7 +171,7 @@ Script request2script(Request r, Schema s) {
 
             case <<sql(), str dbName>, <mongodb(), str dbKid>>: {
               // on dbName delete from junction table
-              scr.steps += unlinkSQLParent(dbName, ent, "TO_DELETE", <p.name, "<x>", to, fromRole>, fromRole, to, toRole);
+              scr.steps += unlinkSQLParent(dbName, ent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", <p.name, "<x>", to, fromRole>, fromRole, to, toRole);
               
               DBObject q = object([<"_id", DBObject::placeholder(name="TO_DELETE")>]);
               scr.steps += [step(dbKid, mongo(deleteOne(dbKid, to, pp(q))), ("TO_DELETE": <p.name, "<x>", to, fromRole>))];
@@ -348,9 +286,360 @@ Script request2script(Request r, Schema s) {
   }    
 }
 
+list[Step] removeFromManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, Field toBeUpdated, Schema s) {
+   if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, fromRole == "<fld>") {
+      //assert toCard in {zero_many(), one_many()};
+      
+      Place targetPlace = placeOf(to, s);
+      
+      switch (<p, targetPlace>) {
+        case <<sql(), str dbName>, <sql(), dbName>>: {
+        
+          
+          // for each ref in refs, make it point to "me"
+          // (the diff with updateManyReference, is we don't delete existing links)
+          
+          str fk = fkName(ent, to, toRole == "" ? fromRole : toRole);
+          list[SQLStat] stats = 
+            [ update(tableName(to),
+              [ \set(columnName(tableName(to), fk), lit(null())) ],
+              [where([equ(column(tableName(to), typhonId(ent)), lit(evalExpr((Expr)`<UUID ref>`)))])]) | UUID ref <- refs ];
+              
+              
+          return [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_UPDATE": toBeUpdated)) 
+                  | SQLStat stat <- stats ]; 
+        }
+
+        case <<sql(), str myDb>, <sql(), str dbKid>>: {
+          // str dbName, str parent, str kidParam, Field kidField, str fromRole, str to, str toRole
+          return [ *unlinkSQLParent(myDb, ent, lit(text("<ref>"[1..])), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+		}
+
+        case <<sql(), str myDb>, <mongodb(), str dbKid>>: {
+          return [ *unlinkSQLParent(myDb, ent, lit(text("<ref>"[1..])), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+		}
+        
+        case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
+          // Q: how to create nesting here?  --> we somehow need to disallow this (in the type checker?)
+		  // if single: update me set fld to ref
+		  // if multi: push/addToSet ref to fld on me
+		  ;            
+        }
+        
+        case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
+          // if single: update me set fld to ref
+		  // if multi: push/addToSet ref to fld on me
+		  //unlinkMongoParent(str dbName, str parent, DBObject kid, str kidParam, Field kidField, str fromRole, str to, str toRole)
+		  return [ *unlinkMongoParent(myDb, ent, DBObject::\value("<ref>[1..]"), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+        }
+
+        case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
+		  return [ *unlinkMongoParent(myDb, ent, DBObject::\value("<ref>[1..]"), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+        }
+      }
+    }
+    else if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels, fromRole == "<fld>") {
+      // a crossref.
+      Place targetPlace = placeof(to, s);
+      switch (<p, targetPlace>) {
+        case <<sql(), str myDb>, <sql(), dbName>>: {
+          return [ *unlinkSQLParent(myDb, ent, lit(text("<ref>"[1..])), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+        }
+
+        case <<sql(), str myDb>, <sql(), str dbKid>>: {
+          return [ *unlinkSQLParent(myDb, ent, lit(text("<ref>"[1..])), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+		}
+
+        case <<sql(), str myDb>, <mongodb(), str dbKid>>: {
+          return [ *unlinkSQLParent(myDb, ent, lit(text("<ref>"[1..])), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+		}
+        
+        case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
+		  return [ *unlinkMongoParent(myDb, ent, DBObject::\value("<ref>[1..]"), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+        }
+        
+        case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
+		  return [ *unlinkMongoParent(myDb, ent, DBObject::\value("<ref>[1..]"), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+        }
+
+        case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
+		  return [ *unlinkMongoParent(myDb, ent, DBObject::\value("<ref>[1..]"), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
+        }
+      }
+    }
+    else {
+     throw "Could not find field <fld> in schema for <ent>";
+    }
+}
+
+
+list[Step] addToManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, Field toBeUpdated, Schema s) {
+  if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, fromRole == "<fld>") {
+      //assert toCard in {zero_many(), one_many()};
+      
+      Place targetPlace = placeOf(to, s);
+      
+      switch (<p, targetPlace>) {
+        case <<sql(), str dbName>, <sql(), dbName>>: {
+        
+          
+          // for each ref in refs, make it point to "me"
+          // (the diff with updateManyReference, is we don't delete existing links)
+          
+          str fk = fkName(ent, to, toRole == "" ? fromRole : toRole);
+          list[SQLStat] stats = 
+            [ update(tableName(to),
+              [ \set(columnName(tableName(to), fk), SQLExpr::placeholder(name="TO_UPDATE")) ],
+              [where([equ(column(tableName(to), typhonId(ent)), lit(evalExpr((Expr)`<UUID ref>`)))])]) | UUID ref <- refs ];
+              
+              
+          return [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_UPDATE": toBeUpdated)) 
+                  | SQLStat stat <- stats ]; 
+        }
+
+        case <<sql(), str myDb>, <sql(), str dbKid>>: {
+          //linkSQLParent(str dbName, str parent, str uuid, str fromRole, str to, str toRole)
+          return [ *linkSQLParent(myDb, ent, "<ref>[1..]", fromRole, to, toRole) | UUID ref <- refs ];
+		}
+
+        case <<sql(), str myDb>, <mongodb(), str dbKid>>: {
+          return [ *linkSQLParent(myDb, ent, "<ref>[1..]", fromRole, to, toRole) | UUID ref <- refs ];
+		}
+        
+        case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
+          // Q: how to create nesting here?  --> we somehow need to disallow this (in the type checker?)
+		  // if single: update me set fld to ref
+		  // if multi: push/addToSet ref to fld on me
+		  ;            
+        }
+        
+        case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
+          // if single: update me set fld to ref
+		  // if multi: push/addToSet ref to fld on me
+		  //list[Step] linkMongoParent(str dbName, str parent, str uuid, str fromRole, Cardinality toCard) {
+		  return [ *linkMongoParent(myDb, ent, "<ref>[1..]", fromRole, toCard, toBeUpdated) | UUID ref <- refs ];
+        }
+
+        case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
+		  return [ *linkMongoParent(myDb, ent, "<ref>[1..]", fromRole, toCard, toBeUpdated) | UUID ref <- refs ];
+        }
+      }
+    }
+    else if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels, fromRole == "<fld>") {
+      // a crossref.
+      Place targetPlace = placeof(to, s);
+      switch (<p, targetPlace>) {
+        case <<sql(), str myDb>, <sql(), dbName>>: {
+          return [ *linkSQLParent(myDb, ent, "<ref>[1..]", fromRole, to, toRole) | UUID ref <- refs ];
+        }
+
+        case <<sql(), str myDb>, <sql(), str dbKid>>: {
+          return [ *linkSQLParent(myDb, ent, "<ref>[1..]", fromRole, to, toRole) | UUID ref <- refs ];
+		}
+
+        case <<sql(), str myDb>, <mongodb(), str dbKid>>: {
+          return [ *linkSQLParent(myDb, ent, "<ref>[1..]", fromRole, to, toRole) | UUID ref <- refs ];
+		}
+        
+        case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
+          return [ *linkMongoParent(myDb, ent, "<ref>[1..]", fromRole, toCard, toBeUpdated) | UUID ref <- refs ];            
+        }
+        
+        case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
+		  return [ *linkMongoParent(myDb, ent, "<ref>[1..]", fromRole, toCard, toBeUpdated) | UUID ref <- refs ];
+        }
+
+        case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
+          return [ *linkMongoParent(myDb, ent, "<ref>[1..]", fromRole, toCard, toBeUpdated) | UUID ref <- refs ];
+        }
+      }
+    }
+    else {
+     throw "Could not find field <fld> in schema for <ent>";
+    }
+}
+
+list[Step] updateManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, Field toBeUpdated, Schema s) {
+  if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, fromRole == "<fld>") {
+      //assert toCard in {zero_many(), one_many()};
+      
+      Place targetPlace = placeOf(to, s);
+      
+      switch (<p, targetPlace>) {
+        case <<sql(), str dbName>, <sql(), dbName>>: {
+        
+          // set fk's to null if pointing to "me"
+          // then for each ref in refs, make it point to "me"
+        
+          str fk = fkName(ent, to, toRole == "" ? fromRole : toRole);
+          list[SQLStat] stats = [
+              update(tableName(to),
+                [ \set(columnName(tableName(to), fk), lit(null())) ],
+                [where([equ(column(tableName(to), fk), SQLExpr::placeholder(name="TO_UPDATE"))])])
+            ] +
+            [ update(tableName(to),
+              [ \set(columnName(tableName(to), fk), SQLExpr::placeholder(name="TO_UPDATE")) ],
+              [where([equ(column(tableName(to), typhonId(ent)), lit(evalExpr((Expr)`<UUID ref>`)))])]) | UUID ref <- refs ];
+              
+              
+          return [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_UPDATE": toBeUpdated)) 
+                  | SQLStat stat <- stats ]; 
+        }
+
+        case <<sql(), str myDb>, <sql(), str dbKid>>: {
+          return updateSQLParentManyKids(myDb, ent, fromRole, to, toRole, toCard, refs, "TO_UPDATE", toBeUpdated);
+		}
+
+        case <<sql(), str myDb>, <mongodb(), str dbKid>>: {
+          return updateSQLParentManyKids(myDb, ent, fromRole, to, toRole, toCard, refs, "TO_UPDATE", toBeUpdated);
+		}
+        
+        case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
+          // Q: how to create nesting here?  --> we somehow need to disallow this (in the type checker?)
+		  // if single: update me set fld to ref
+		  // if multi: push/addToSet ref to fld on me
+		  ;            
+        }
+        
+        case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
+          // if single: update me set fld to ref
+		  // if multi: push/addToSet ref to fld on me
+		  return updateMongoParentManyKids(myDb, ent, fromRole, to, toRole, toCard, refs, "TO_UPDATE", toBeUpdated);
+        }
+
+        case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
+          return updateMongoParentManyKids(myDb, ent, fromRole, to, toRole, toCard, refs, "TO_UPDATE", toBeUpdated);
+        }
+      }
+    }
+    else if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels, fromRole == "<fld>") {
+      // a crossref.
+      Place targetPlace = placeof(to, s);
+      switch (<p, targetPlace>) {
+        case <<sql(), str myDb>, <sql(), dbName>>: {
+          return updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, refs, "TO_UPDATE", toBeUpdated);
+        }
+
+        case <<sql(), str myDb>, <sql(), str dbKid>>: {
+          return updateSQLParentManyKids(myDb, ent, fromRole, to, toRole, toCard, refs, "TO_UPDATE", toBeUpdated);
+		}
+
+        case <<sql(), str myDb>, <mongodb(), str dbKid>>: {
+          return updateSQLParentManyKids(myDb, ent, fromRole, to, toRole, toCard, refs, "TO_UPDATE", toBeUpdated);
+		}
+        
+        case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
+          return updateMongoParentManyKids(myDb, ent, fromRole, to, toRole, toCard, refs, "TO_UPDATE", toBeUpdated);            
+        }
+        
+        case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
+		  return updateMongoParentManyKids(myDb, ent, fromRole, to, toRole, toCard, refs, "TO_UPDATE", toBeUpdated);
+        }
+
+        case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
+          return updateMongoParentManyKids(myDb, ent, fromRole, to, toRole, toCard, refs, "TO_UPDATE", toBeUpdated);
+        }
+      }
+    }
+    else {
+     throw "Could not find field <fld> in schema for <ent>";
+    }
+}
+
+list[Step] updateReference(Place p, str ent, Id fld, UUID ref, Field toBeUpdated, Schema s) {
+    if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, fromRole == "<fld>") {
+      Place targetPlace = placeof(to, s);
+      switch (<p, targetPlace>) {
+        case <<sql(), str dbName>, <sql(), dbName>>: {
+          str fk = fkName(ent, to, toRole == "" ? fromRole : toRole);
+          SQLStat stat = update(tableName(to),
+              [ \set(columnName(tableName(to), fk), SQLExpr::placeholder(name="TO_UPDATE")) ],
+              [where([equ(column(tableName(to), typhonId(ent)), lit(evalExpr((Expr)`<UUID ref>`)))])]);
+          return [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_UPDATE": toBeUpdated))]; 
+        }
+
+        case <<sql(), str myDb>, <sql(), str dbKid>>: {
+          return updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+		}
+
+        case <<sql(), str myDb>, <mongodb(), str dbKid>>: {
+          return updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+		}
+        
+        case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
+          // Q: how to create nesting here?  --> we somehow need to disallow this (in the type checker?)
+		  // if single: update me set fld to ref
+		  // if multi: push/addToSet ref to fld on me
+		  ;            
+        }
+        
+        case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
+          // if single: update me set fld to ref
+		  // if multi: push/addToSet ref to fld on me
+		  return updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+        }
+
+        case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
+          return updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+        }
+      }
+    }
+    else if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels, fromRole == "<fld>") {
+      // a crossref.
+      Place targetPlace = placeof(to, s);
+      switch (<p, targetPlace>) {
+        case <<sql(), str myDb>, <sql(), dbName>>: {
+           return updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+        }
+
+        case <<sql(), str myDb>, <sql(), str dbKid>>: {
+          return updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+		}
+
+        case <<sql(), str myDb>, <mongodb(), str dbKid>>: {
+          return updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+		}
+        
+        case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
+          return updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);            
+        }
+        
+        case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
+		  return updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+        }
+
+        case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
+          return updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+        }
+      }
+    }
+    else {
+     throw "Could not find field <fld> in schema for <ent>";
+    }
+}
+
+list[Step] updateSQLParentManyKids(str dbName, str ent, str fromRole, str to, str toRole, Cardinality toCard, {UUID ","}+ refs, str param, Field toBeUpdated) {
+  str parentFk = junctionFkName(ent, fromRole);
+  str kidFk = junctionFkName(to, toRole);
+  str fkTbl = junctionTableName(ent, fromRole, to, toRole);
+  
+  list[SQLStat] stats = [
+        // first delete any old ones (kids/targets)
+        delete(fkTbl, [where([
+          equ(column(fkTbl, parentFk), SQLExpr::placeholder(name=param))])
+        ]),
+        // then insert it for each ref
+        *[
+          \insert(fkTbl, [parentFk, kidFk], [Value::placeholder(name=param),  evalExpr((Expr)`<UUID ref>`)])
+            | UUID ref <- refs ]
+      ];
+  
+  return [step(dbName, sql(executeStatement(dbName, pp(stat))), (param: toBeUpdated)) | SQLStat stat <- stats ];
+}
+
 
 list[Step] updateSQLParent(str dbName, str ent, str fromRole, str to, str toRole, Cardinality toCard, UUID ref, str param, Field toBeUpdated) {
-// this code is very similar to linkParent, but that function
+  // this code is very similar to linkParent, but that function
   // assumes it is a *new* link.
   str parentFk = junctionFkName(ent, fromRole);
   str kidFk = junctionFkName(to, toRole);
@@ -367,7 +656,7 @@ list[Step] updateSQLParent(str dbName, str ent, str fromRole, str to, str toRole
           equ(column(fkTbl, kidFk), lit(evalExpr((Expr)`<UUID ref>`)))])
         ]),
         // then insert it
-        \insert(fkTbl, [parentFk, kidFk], [Value::placeholder(name=TO_UPDATE),  evalExpr((Expr)`<UUID ref>`)])
+        \insert(fkTbl, [parentFk, kidFk], [Value::placeholder(name=param),  evalExpr((Expr)`<UUID ref>`)])
       ];
   }
   else {
@@ -375,11 +664,21 @@ list[Step] updateSQLParent(str dbName, str ent, str fromRole, str to, str toRole
       // first delete *any* old one, if any
       delete(fkTbl, [where([equ(column(fkTbl, parentFk), SQLExpr::placeholder(name=param))])]),
       // then insert it
-      \insert(fkTbl, [parentFk, kidFk], [Value::placeholder(name=TO_UPDATE),  evalExpr((Expr)`<UUID ref>`)])
+      \insert(fkTbl, [parentFk, kidFk], [Value::placeholder(name=param),  evalExpr((Expr)`<UUID ref>`)])
     ];
   }
 	          
   return [step(dbName, sql(executeStatement(dbName, pp(stat))), (param: toBeUpdated)) | SQLStat stat <- stats ];
+}
+
+list[Step] updateMongoParentManyKids(str dbName, str ent, str fromRole, str to, str toRole, Cardinality toCard, {UUID ","}+ refs, str param, Field toBeUpdated) {
+  DBObject q = object([<"_id", DBObject::placeholder(name=param)>]); // unfortunately we cannot reuse expr2obj here...
+  
+  DBObject makeKid(UUID ref) = \value("<ref>"[1..]);
+  
+  DBObject u = object([<"$set", object([<fromRole, array([ makeKid(ref) | UUID ref <- refs ])>])>]);
+  
+  return [step(dbName, mongo(findAndUpdateOne(dbName, parent, pp(q), pp(u))), (param: toBeUpdated))];
 }
 
 list[Step] updateMongoParent(str dbName, str ent, str fromRole, str to, str toRole, Cardinality toCard, UUID ref, str param, Field toBeUpdated) { 
@@ -393,19 +692,19 @@ list[Step] updateMongoParent(str dbName, str ent, str fromRole, str to, str toRo
 }
 
 
-list[Step] unlinkSQLParent(str dbName, str parent, str kidParam, Field kidField, str fromRole, str to, str toRole) {
+list[Step] unlinkSQLParent(str dbName, str parent, SQLExpr kid, str param, Field kidField, str fromRole, str to, str toRole) {
   SQLStat parentStat = 
     \delete(junctionTableName(parent, fromRole, to, toRole),[
       where([
-        equ(column(junctionTableName(parent, fromRole, to, toRole), junctionFkName(to, toRole)), SQLExpr::placeholder(name=kidParam))
+        equ(column(junctionTableName(parent, fromRole, to, toRole), junctionFkName(to, toRole)), kid)
       ])]);
-   return [step(dbName, sql(executeStatement(dbName, pp(parentStat))), (kidParam: kidField))];         
+   return [step(dbName, sql(executeStatement(dbName, pp(parentStat))), (param: kidField))];         
 }
 
-list[Step] unlinkMongoParent(str dbName, str parent, str kidParam, Field kidField, str fromRole, str to, str toRole) {
+list[Step] unlinkMongoParent(str dbName, str parent, DBObject kid, str kidParam, Field kidField, str fromRole, str to, str toRole) {
   // findAndUpdateOne({}, {$pull: {fromRole: <kidParam>}});
   DBObject q = object([]);
-  DBObject u = object([<"$pull", object([<fromRole, DBObject::placeholder(name=kidParam)>])>]);
+  DBObject u = object([<"$pull", object([<fromRole, kid>])>]);
   return [step(dbName, mongo(findAndUpdateOne(dbName, parent, pp(q), pp(u))), (kidParam: kidField))];
 }
 
@@ -494,6 +793,16 @@ void smokeScript() {
   iprintln(request2script((Request)`delete Person p`, s));
 
   iprintln(request2script((Request)`delete Person p where p.name == "Pablo"`, s));
+  
+  iprintln(request2script((Request)`update Person p set {name: "Pablo"}`, s));
+
+  iprintln(request2script((Request)`update Person p set {name: "Pablo", age: 23}`, s));
+
+  iprintln(request2script((Request)`update Person p set {name: "Pablo", reviews: [#abc, #cde]}`, s));
+
+  iprintln(request2script((Request)`update Person p where p.name == "Pablo" set {reviews +: [#abc, #cde]}`, s));
+
+  iprintln(request2script((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`, s));
 
   
 }  
