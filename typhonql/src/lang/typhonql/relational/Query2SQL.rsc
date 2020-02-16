@@ -122,7 +122,7 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
            addResult(named(expr2sql(x, ctx), "<y>.<ent>.<f>"));
            // todo: should be in Normalize
-           idExpr = named(expr2sql(x, ctx), "<y>.<ent>.@id");
+           idExpr = named(expr2sql((Expr)`<VId y>.@id`, ctx), "<y>.<ent>.@id");
            if (idExpr notin q.exprs) {
              addResult(idExpr);
            }
@@ -209,7 +209,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
     return column(tbl2, typhonId(to));
   }
   else if (<entity, _, role, str toRole, _, str to, _> <- ctx.schema.rels) {
-  	// println("# xref, or external containment: <entity> -<role>/<toRole>-\> <to>  ");
+  	println("# xref, or external containment: <entity> -<role>/<toRole>-\> <to> (`<e>`)  ");
     tbl = varForJunction(f, ctx.vars());
   	
   	ctx.addFrom(as(junctionTableName(entity, role, to, toRole), tbl));

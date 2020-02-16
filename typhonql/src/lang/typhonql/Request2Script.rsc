@@ -69,6 +69,10 @@ Script request2script(Request r, Schema s) {
         }
       
       }
+      
+      /*
+       * what to do about nested objects? for now, we don't support them.
+      */
 
 
       for ((KeyVal)`<Id fld>: <UUID ref>` <- kvs) {
@@ -741,6 +745,7 @@ list[Step] createCrossLinkInMongo(str dbName, str parent, str uuid, str fromRole
 
 list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s) {
   r = expandNavigation(addWhereIfAbsent(r), s);
+  println("COMPILING: <r>");
   <sqlStat, params> = compile2sql(r, s, p);
   return [step(dbName, sql(executeQuery(dbName, pp(sqlStat))), params)];
 }
@@ -830,5 +835,7 @@ void smokeScript() {
   smokeIt((Request)`update Person p set {name: "Pablo", cash -: [#abc, #cde]}`);
 
   smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
+
+  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
 
 }  
