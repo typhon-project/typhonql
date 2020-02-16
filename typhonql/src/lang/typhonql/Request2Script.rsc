@@ -298,7 +298,7 @@ list[Step] removeFromManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, F
           str fk = fkName(ent, to, toRole == "" ? fromRole : toRole);
           list[SQLStat] stats = 
             [ delete(tableName(to),
-              [where([equ(column(tableName(to), typhonId(ent)), lit(evalExpr((Expr)`<UUID ref>`)))])]) | UUID ref <- refs ];
+              [where([equ(column(tableName(to), typhonId(to)), lit(evalExpr((Expr)`<UUID ref>`)))])]) | UUID ref <- refs ];
               
               
           return [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_UPDATE": toBeUpdated)) 
@@ -385,7 +385,7 @@ list[Step] addToManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, Field 
           list[SQLStat] stats = 
             [ update(tableName(to),
               [ \set(columnName(tableName(to), fk), SQLExpr::placeholder(name="TO_UPDATE")) ],
-              [where([equ(column(tableName(to), typhonId(ent)), lit(evalExpr((Expr)`<UUID ref>`)))])]) | UUID ref <- refs ];
+              [where([equ(column(tableName(to), typhonId(to)), lit(evalExpr((Expr)`<UUID ref>`)))])]) | UUID ref <- refs ];
               
               
           return [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_UPDATE": toBeUpdated)) 
@@ -556,7 +556,7 @@ list[Step] updateReference(Place p, str ent, Id fld, UUID ref, Field toBeUpdated
           str fk = fkName(ent, to, toRole == "" ? fromRole : toRole);
           SQLStat stat = update(tableName(to),
               [ \set(columnName(tableName(to), fk), SQLExpr::placeholder(name="TO_UPDATE")) ],
-              [where([equ(column(tableName(to), typhonId(ent)), lit(evalExpr((Expr)`<UUID ref>`)))])]);
+              [where([equ(column(tableName(to), typhonId(to)), lit(evalExpr((Expr)`<UUID ref>`)))])]);
           return [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_UPDATE": toBeUpdated))]; 
         }
 
@@ -814,5 +814,9 @@ void smokeScript() {
   smokeIt((Request)`update Review r where r.text == "Good" set {text: "Bad"}`);
 
   smokeIt((Request)`update Person p set {name: "Pablo", cash: [#abc, #cde]}`);
+
+  smokeIt((Request)`update Person p set {name: "Pablo", cash +: [#abc, #cde]}`);
+
+  smokeIt((Request)`update Person p set {name: "Pablo", cash -: [#abc, #cde]}`);
 
 }  
