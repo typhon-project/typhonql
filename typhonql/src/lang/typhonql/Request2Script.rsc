@@ -292,8 +292,8 @@ list[Step] breakLinksWithParent(str ent, Field toBeDeleted, Place p, Schema s) {
 }
 
 list[Step] removeFromManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, Field toBeUpdated, Schema s) {
-   if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, fromRole == "<fld>") {
-      //assert toCard in {zero_many(), one_many()};
+   if (<ent, Cardinality fromCard,  str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, fromRole == "<fld>") {
+      assert fromCard in {zero_many(), one_many()} : "Can only remove from many-valued things: <ent>.<fromRole> is not";
       
       Place targetPlace = placeOf(to, s);
       
@@ -377,8 +377,8 @@ list[Step] removeFromManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, F
 
 
 list[Step] addToManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, Field toBeUpdated, Schema s) {
-  if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, fromRole == "<fld>") {
-      //assert toCard in {zero_many(), one_many()};
+  if (<ent, Cardinality fromCard,  str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, fromRole == "<fld>") {
+      assert fromCard in {zero_many(), one_many()}: "Can only remove from many-valued things: <ent>.<fromRole> is not";
       
       Place targetPlace = placeOf(to, s);
       
@@ -428,8 +428,10 @@ list[Step] addToManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, Field 
         }
       }
     }
-    else if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels, fromRole == "<fld>") {
+    else if (<ent, Cardinality fromCard,  str fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels, fromRole == "<fld>") {
       // a crossref.
+      assert fromCard in {zero_many(), one_many()}: "Can only remove from many-valued things: <ent>.<fromRole> is not";
+      
       Place targetPlace = placeof(to, s);
       switch (<p, targetPlace>) {
         case <<sql(), str myDb>, <sql(), dbName>>: {
@@ -463,8 +465,8 @@ list[Step] addToManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, Field 
 }
 
 list[Step] updateManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, Field toBeUpdated, Schema s) {
-  if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, fromRole == "<fld>") {
-      //assert toCard in {zero_many(), one_many()};
+  if (<ent, Cardinality fromCard,  str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, fromRole == "<fld>") {
+      assert fromCard in {zero_many(), one_many()} : "Can only remove from many-valued things: <ent>.<fromRole> is not";
       
       Place targetPlace = placeOf(to, s);
       
