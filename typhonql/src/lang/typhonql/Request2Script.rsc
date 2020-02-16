@@ -110,91 +110,11 @@ Script request2script(Request r, Schema s) {
 
       Script scr = script(compileQuery(req, p, s));
       
-      Field fieldToBeDeleted = <p.name, "<x>", "<e>", "@id">;
+      Field toBeDeleted = <p.name, "<x>", "<e>", "@id">;
      
-      
-      // then, we're gonna break parent links if the entity to be deleted is owned
-      if (<str parent, _, str fromRole, str toRole, Cardinality toCard, ent, true> <- s.rels) {
-        // NB: this assumes there's a unique owernship path
-        Place parentPlace = placeOf(parent, s);
-        
-        switch (<parentPlace, p>) {
-            case <<sql(), str dbName>, <sql(), dbName>>: {
-              ; // nothing to be done, the parent link will be deleted via the foreinkey to the parent
-              // when the object iself will be deleted 
-            }
-
-            case <<sql(), str dbParent>, <sql(), str dbKid>>: {
-              scr.steps += breakCrossLinkInSQL(dbParent, parent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole); 
-			}
-
-            case <<sql(), str dbParent>, <mongodb(), str dbKid>>: {
-              scr.steps += breakCrossLinkInSQL(dbParent, parent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole); 
-			}
-            
-            case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
-              scr.steps += breakCrossLinkInMongo(dbName, parent, DBObject::placeholder(name="TO_DELETE"), "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole);
-            }
-            
-            case <<mongodb(), str dbParent>, <mongodb(), str dbKid>>: {
-              scr.steps += breakCrossLinkInMongo(dbParent, parent, DBObject::placeholder(name="TO_DELETE"), "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole);
-            }
-
-            case <<mongodb(), str dbParent>, <sql(), str dbKid>>: {
-              scr.steps += breakCrossLinkInMongo(dbParent, parent, DBObject::placeholder(name="TO_DELETE"), "TO_DELETE", fieldToBeDeleted, fromRole, ent, toRole);
-            }
-        }
-      }
-      
-      // then we (cascade) delete kids that are not automatic (e.g. cross db).
-      
-      for (<ent, _, str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, placeOf(to, s) != p) {
-        Place kidPlace = placeOf(to, s);
-        
-        switch (<p, kidPlace>) {
-            case <<sql(), str dbName>, <sql(), dbName>>: {
-              ; // nothing to be done, kids will be deleted as a result of cascade delete
-            }
-
-            case <<sql(), str dbName>, <sql(), str dbKid>>: {
-              // NB this could be done based on the id of the entity to be deleted itself
-              // but breakCrossLinkInSQL now deletes based on the kid's id
-              scr.steps += breakCrossLinkInSQL(dbName, ent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", <p.name, "<x>", to, fromRole>, fromRole, to, toRole);
-              SQLStat stat = delete(tableName(to), [
-               where([equ(column(tableName(to), typhonId(to)), SQLExpr::placeholder(name="TO_DELETE"))])]);
-            
-              scr.steps += [step(dbKid, sql(executeStatement(dbKid, pp(stat))), ("TO_DELETE": <p.name, "<x>", to, fromRole>))]; 
-			}
-
-            case <<sql(), str dbName>, <mongodb(), str dbKid>>: {
-              // on dbName delete from junction table
-              scr.steps += breakCrossLinkInSQL(dbName, ent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", <p.name, "<x>", to, fromRole>, fromRole, to, toRole);
-              
-              DBObject q = object([<"_id", DBObject::placeholder(name="TO_DELETE")>]);
-              scr.steps += [step(dbKid, mongo(deleteOne(dbKid, to, pp(q))), ("TO_DELETE": <p.name, "<x>", to, fromRole>))];
-			}
-            
-            case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
-              ; // nothing to be done, kids will be deleted as a result of nesting.
-            }
-            
-            case <<mongodb(), str dbName>, <mongodb(), str dbKid>>: {
-              // the refs on dbName, dissappear on delete
-              // but we need to delete entities on the other mongo
-              DBObject q = object([<"_id", DBObject::placeholder(name="TO_DELETE")>]);
-              scr.steps += [step(dbKid, mongo(deleteOne(dbKid, to, pp(q))), ("TO_DELETE": <p.name, "<x>", to, fromRole>))];
-            }
-
-            case <<mongodb(), str dbName>, <sql(), str dbKid>>: {
-              // the refs on dbName, dissappear on delete
-              // but we need to delete entities on dbKid sql
-              SQLStat stat = delete(tableName(to), [
-               where([equ(column(tableName(to, typhonId(to))), SQLExpr::placeholder(name="TO_DELETE"))])]);
-            
-              scr.steps += [step(dbKid, sql(executeStatement(dbKid, pp(stat))), ("TO_DELETE": <p.name, "<x>", to, fromRole>))]; 
-            }
-        }
-      }
+     
+      scr.steps += breakLinksWithParent(ent, toBeDeleted, p, s);
+      scr.steps += cascadeToKids(ent, toBeDeleted, x, p, s);
       
       // then delete the entity itself
       
@@ -205,12 +125,12 @@ Script request2script(Request r, Schema s) {
              equ(column(tableName(ent), typhonId(ent)), SQLExpr::placeholder(name="TO_DELETE"))
             ])]);
             
-          scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_DELETE": fieldToBeDeleted))];  
+          scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_DELETE": toBeDeleted))];  
         }
         
         case <mongodb(), str dbName>: {
           DBObject q = object([<"_id", DBObject::placeholder(name="TO_DELETE")>]);
-          scr.steps += [step(dbName, mongo(deleteOne(dbName, ent, pp(q))),  ("TO_DELETE": fieldToBeDeleted))];
+          scr.steps += [step(dbName, mongo(deleteOne(dbName, ent, pp(q))),  ("TO_DELETE": toBeDeleted))];
         }
       }
       
@@ -281,6 +201,94 @@ Script request2script(Request r, Schema s) {
     default: 
       throw "Unsupported request: `<r>`";
   }    
+}
+
+list[Step] cascadeToKids(str ent, Field toBeDeleted, VId x, Place p, Schema s) {
+  list[Step] steps = [];
+  for (<ent, _, str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, placeOf(to, s) != p) {
+    Place kidPlace = placeOf(to, s);
+    
+    switch (<p, kidPlace>) {
+        case <<sql(), str dbName>, <sql(), dbName>>: {
+          ; // nothing to be done, kids will be deleted as a result of cascade delete
+        }
+
+        case <<sql(), str dbName>, <sql(), str dbKid>>: {
+          // NB this could be done based on the id of the entity to be deleted itself
+          // but breakCrossLinkInSQL now deletes based on the kid's id
+          steps += breakCrossLinkInSQL(dbName, ent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", <p.name, "<x>", to, fromRole>, fromRole, to, toRole);
+          SQLStat stat = delete(tableName(to), [
+           where([equ(column(tableName(to), typhonId(to)), SQLExpr::placeholder(name="TO_DELETE"))])]);
+        
+          steps += [step(dbKid, sql(executeStatement(dbKid, pp(stat))), ("TO_DELETE": <p.name, "<x>", to, fromRole>))]; 
+		}
+
+        case <<sql(), str dbName>, <mongodb(), str dbKid>>: {
+          // on dbName delete from junction table
+          steps += breakCrossLinkInSQL(dbName, ent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", <p.name, "<x>", to, fromRole>, fromRole, to, toRole);
+          
+          DBObject q = object([<"_id", DBObject::placeholder(name="TO_DELETE")>]);
+          steps += [step(dbKid, mongo(deleteOne(dbKid, to, pp(q))), ("TO_DELETE": <p.name, "<x>", to, fromRole>))];
+		}
+        
+        case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
+          ; // nothing to be done, kids will be deleted as a result of nesting.
+        }
+        
+        case <<mongodb(), str dbName>, <mongodb(), str dbKid>>: {
+          // the refs on dbName, dissappear on delete
+          // but we need to delete entities on the other mongo
+          DBObject q = object([<"_id", DBObject::placeholder(name="TO_DELETE")>]);
+          steps += [step(dbKid, mongo(deleteOne(dbKid, to, pp(q))), ("TO_DELETE": <p.name, "<x>", to, fromRole>))];
+        }
+
+        case <<mongodb(), str dbName>, <sql(), str dbKid>>: {
+          // the refs on dbName, dissappear on delete
+          // but we need to delete entities on dbKid sql
+          SQLStat stat = delete(tableName(to), [
+           where([equ(column(tableName(to, typhonId(to))), SQLExpr::placeholder(name="TO_DELETE"))])]);
+        
+          steps += [step(dbKid, sql(executeStatement(dbKid, pp(stat))), ("TO_DELETE": <p.name, "<x>", to, fromRole>))]; 
+        }
+    }
+  }
+  return steps;
+}
+
+list[Step] breakLinksWithParent(str ent, Field toBeDeleted, Place p, Schema s) {
+  if (<str parent, _, str fromRole, str toRole, Cardinality toCard, ent, true> <- s.rels) {
+    // NB: this assumes there's a unique owernship path
+    Place parentPlace = placeOf(parent, s);
+    
+    switch (<parentPlace, p>) {
+        case <<sql(), str dbName>, <sql(), dbName>>: {
+          ; // nothing to be done, the parent link will be deleted via the foreinkey to the parent
+          // when the object iself will be deleted 
+        }
+
+        case <<sql(), str dbParent>, <sql(), str dbKid>>: {
+          return breakCrossLinkInSQL(dbParent, parent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", toBeDeleted, fromRole, ent, toRole); 
+		}
+
+        case <<sql(), str dbParent>, <mongodb(), str dbKid>>: {
+          return breakCrossLinkInSQL(dbParent, parent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", toBeDeleted, fromRole, ent, toRole); 
+		}
+        
+        case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
+          return breakCrossLinkInMongo(dbName, parent, DBObject::placeholder(name="TO_DELETE"), "TO_DELETE", toBeDeleted, fromRole, ent, toRole);
+        }
+        
+        case <<mongodb(), str dbParent>, <mongodb(), str dbKid>>: {
+          return breakCrossLinkInMongo(dbParent, parent, DBObject::placeholder(name="TO_DELETE"), "TO_DELETE", toBeDeleted, fromRole, ent, toRole);
+        }
+
+        case <<mongodb(), str dbParent>, <sql(), str dbKid>>: {
+          return breakCrossLinkInMongo(dbParent, parent, DBObject::placeholder(name="TO_DELETE"), "TO_DELETE", toBeDeleted, fromRole, ent, toRole);
+        }
+    }
+  }
+  
+  return [];
 }
 
 list[Step] removeFromManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, Field toBeUpdated, Schema s) {
@@ -805,7 +813,7 @@ void smokeScript() {
 
   smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews +: [#abc, #cde]}`);
 
-  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews +: [#abc, #cde]}`);
+  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
 
   smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews: [#abc, #cde]}`);
 
@@ -818,5 +826,7 @@ void smokeScript() {
   smokeIt((Request)`update Person p set {name: "Pablo", cash +: [#abc, #cde]}`);
 
   smokeIt((Request)`update Person p set {name: "Pablo", cash -: [#abc, #cde]}`);
+
+  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
 
 }  
