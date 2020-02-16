@@ -46,7 +46,7 @@ Script request2script(Request r, Schema s) {
   
     case (Request)`insert <EId e> { <{KeyVal ","}* kvs> } into <UUID owner>.<Id field>`: {
       Place p = placeOf("<e>", s);
-      if (<str parent, _, str fromRole, str toRole, _, str to, _> <- s.rels, fromRole == "<field>", to == "<e>") {
+      if (<str parent, _, str fromRole, str toRole, Cardinality toCard, str to, _> <- s.rels, fromRole == "<field>", to == "<e>") {
         Place parentPlace = placeOf(parent, s);
         str uuid = "<owner>"[1..];
         switch (<parentPlace, p>) {
@@ -57,44 +57,30 @@ Script request2script(Request r, Schema s) {
             }
 
             case <<sql(), str dbParent>, <sql(), str dbKid>>: {
-              SQLStat parentStat = 
-                \insert(junctionTableName(parent, fromRole, to, toRole)
-                        , [junctionFkName(to, toRole), junctionFkName(parent, fromRole)]
-                        , [text(uuid), Value::placeholder(name=ID_PARAM)]);
               <stats, params> = insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p);
-              return script([step(dbParent, sql(executeStatement(dbParent, pp(parentStat)), params))]
+              return script(linkSQLParent(dbParent, parent, uuid, fromRole, to, toRole)
                 + [ step(dbKid, sql(executeStatement(dbKid, pp(stat))), params) | SQLStat stat <- stats ]);
 			}
 
             case <<sql(), str dbParent>, <mongodb(), str dbKid>>: {
-               println("parent = sql, kid = mongo");
-			   SQLStat parentStat = 
-                \insert(junctionTableName(parent, fromRole, to, toRole)
-                        , [junctionFkName(to, toRole), junctionFkName(parent, fromRole)]
-                        , [text(uuid), Value::placeholder(name=ID_PARAM)]);
-                        
-              return script([step(dbParent, sql(executeStatement(dbParent, pp(parentStat))), (ID_PARAM: generatedIdField()))]
+              return script(linkSQLParent(dbParent, parent, uuid, fromRole, to, toRole)
                 + insert2mongo((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p));          
 			  
 			}
             
             case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
-              ;
-              // update the parent with id `owner` insert the object there
-              
+              return script(linkMongoParent(dbName, parent, uuid, fromRole, toCard)
+                 + insert2mongo((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p));
             }
             
             case <<mongodb(), str dbParent>, <mongodb(), str dbKid>>: {
-              ;
-              // update parent with TYPHON_ID on dbParent
-              return insert2mongo((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p);
+              return script(linkMongoParent(dbParent, parent, uuid, fromRole, toCard) 
+                + insert2mongo((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p));
             }
 
             case <<mongodb(), str dbParent>, <sql(), str dbKid>>: {
-              // update parent with TYphonId
-              ;
               <stats, params> = insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p);
-              return script([/* todo */] 
+              return script(linkMongoParent(dbParent, parent, uuid, fromRole, toCard) 
                 + [ step(dbKid, sql(executeStatement(dbKid, pp(stat))), params) | SQLStat stat <- stats ]);
             }
         }
@@ -107,6 +93,23 @@ Script request2script(Request r, Schema s) {
     default: 
       throw "Unsupported request: `<r>`";
   }    
+}
+
+list[Step] linkSQLParent(str dbName, str parent, str uuid, str fromRole, str to, str toRole) {
+  SQLStat parentStat = 
+    \insert(junctionTableName(parent, fromRole, to, toRole)
+            , [junctionFkName(to, toRole), junctionFkName(parent, fromRole)]
+            , [text(uuid), Value::placeholder(name=ID_PARAM)]);
+   return [step(dbName, sql(executeStatement(dbName, pp(parentStat))), (ID_PARAM: generatedIdField()))];         
+}
+
+list[Step] linkMongoParent(str dbName, str parent, str uuid, str fromRole, Cardinality toCard) {
+  DBObject q = object([<"_id", \value(uuid)>]);
+  DBObject u = object([<"$set", object([<fromRole, DBObject::placeholder(name=ID_PARAM)>])>]);
+  if (toCard in {one_many(), zero_many()}) {
+    u = object([<"$addToSet", object([<fromRole, DBObject::placeholder(name=ID_PARAM)>])>]);
+  }
+  return [step(dbName, mongo(findAndUpdateOne(dbName, parent, pp(q), pp(u))), (ID_PARAM: generatedIdField()))];
 }
 
 list[Step] compile(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s) {
@@ -161,6 +164,7 @@ void smokeScript() {
   
   iprintln(request2script((Request)`insert Review {text: "Bad"} into #pablo.reviews`, s));
   
+  iprintln(request2script((Request)`insert Comment {contents: "Bad"} into #somereview.comment`, s));
   
   
 }  

@@ -47,6 +47,7 @@ data CollMethod
   = find(DBObject query)
   | find(DBObject query, DBObject projection)
   | insertOne(DBObject doc)
+  | findAndUpdateOne(DBObject query, DBObject update)
   ;  
   
 // Apparently this API below does not correspond to the one we use

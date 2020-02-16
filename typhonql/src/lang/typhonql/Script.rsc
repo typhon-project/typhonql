@@ -26,6 +26,7 @@ data MongoCall
   = find(str dbName, str coll, str query)
   | find(str dbName, str coll, str query, str proj)
   | insertOne(str dbName, str coll, str doc)
+  | findAndUpdateOne(str dbName, str coll, str query, str update)
   ;
   
 EntityModels schema2entityModels(Schema s) 
