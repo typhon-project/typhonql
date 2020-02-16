@@ -56,17 +56,17 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
   SQLStat q = select([], [], [where([])]);
   
   void addWhere(SQLExpr e) {
-    println("ADDING where clause: <pp(e)>");
+    // println("ADDING where clause: <pp(e)>");
     q.clauses[0].exprs += [e];
   }
   
   void addFrom(As as) {
-    println("ADDING table: <pp(as)>");
+    // println("ADDING table: <pp(as)>");
     q.tables += [as];
   }
   
   void addResult(SQLExpr e) {
-    println("ADDING result: <pp(e)>");
+    // println("ADDING result: <pp(e)>");
     q.exprs += [e];
   }
   
@@ -159,7 +159,7 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
     }
   }
   
-  println("PARAMS: <params>");
+  // println("PARAMS: <params>");
   return <q, params>;
 }
 
@@ -186,7 +186,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.@id`, Ctx ctx) {
   
 // only one level of navigation because of normalization
 SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
-  println("TRANSLATING: <e>");
+  // println("TRANSLATING: <e>");
   str entity = ctx.env["<x>"];
   str role = "<f>"; 
 
@@ -198,7 +198,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
 
   
   if (<entity, _, role, str toRole, _, str to, true> <- ctx.schema.rels, placeOf(to, ctx.schema) == ctx.place) {
-    println("# local containment <entity> -<role>/<toRole>-\> <to>");
+    // println("# local containment <entity> -<role>/<toRole>-\> <to>");
     str tbl1 = "<x>";
     str tbl2 = varForTarget(f, ctx.vars()); // introduce a new table alias
     ctx.addFrom(as(tableName(to), tbl2));
@@ -209,16 +209,16 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
     return column(tbl2, typhonId(to));
   }
   else if (<entity, _, role, str toRole, _, str to, _> <- ctx.schema.rels) {
-  	println("# xref, or external containment: <entity> -<role>/<toRole>-\> <to>  ");
+  	// println("# xref, or external containment: <entity> -<role>/<toRole>-\> <to>  ");
     tbl = varForJunction(f, ctx.vars());
   	
   	ctx.addFrom(as(junctionTableName(entity, role, to, toRole), tbl));
   	ctx.addWhere(equ(column(tbl, junctionFkName(to, toRole)), column("<x>", typhonId(entity))));
-  	println("returning column `<junctionFkName(to, toRole)>` of table <tbl>");
+  	// println("returning column `<junctionFkName(to, toRole)>` of table <tbl>");
   	return column(tbl, junctionFkName(entity, role));
   }
   else if (<entity, role, _> <- ctx.schema.attrs) { 
-    println("# an attribute");
+    // println("# an attribute");
     return column("<x>", columnName(role, entity));
   }
   else {

@@ -30,6 +30,129 @@ Script request2script(Request r, Schema s) {
       list[Place] order = orderPlaces(r, s);
       return script([ *compile(restrict(r, p, order, s), p, s) | Place p <- order]); 
     }
+
+    case (Request)`update <EId e> <VId x> set {<{KeyVal ","}* kvs>}`: {
+      return request2script((Request)`update <EId e> <VId x> where true set {<{KeyVal ","}* kvs>}`, s);
+    }
+    
+    case (Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set {<{KeyVal ","}* kvs>}`: {
+       // first, find all id's of e things that need to be updated
+      Request req = (Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ ws>`;
+      
+      // NB: no partitioning, compile locally.
+      Script scr = script(compile(req, p, s));
+      str ent = "<e>";
+      Place p = placeOf(ent, s);
+      
+      Field toBeUpdated = <p.name, "<x>", ent, "@id">;
+       
+      // update the primitivies
+      switch (p) {
+        case <sql(), str dbName>: {
+          SQLStat stat = update(tableName(ent),
+            [ \set(columnName(kv, ent), lit(evalExpr(kv.\value))) | KeyVal kv <- kvs, isAttr(kv, ent, s) ],
+              [where([equ(column(tableName(ent), typhonId(ent)), SQLExpr::placeholder(name="TO_UPDATE"))])]);
+          scr.steps += [step(dbName, sql(executeUpdate(dbName, pp(stat))), ("TO_UPDATE": toBeUpdated))];
+        }
+        
+        case <mongodb(), str dbName>: {
+          DBObject q = object([<"_id", DBObject::placeholder(name="TO_UPDATE")>]);
+          // NB: keyVal2Prop allows @id fields, but they should *never be set in update -> type checker
+          DBObject u = object([ keyVal2prop(kv) | KeyVal kv <- kvs, isAttr(kv, ent, s) ]);
+          src.steps += [step(dbName, mongo(findAndUpdateOne(dbName, ent, pp(q), pp(u))), ("TOP_UPDATE": toBeUpdated))];
+        }
+      
+      }
+
+
+      for ((KeyVal)`<Id fld>: <UUID ref>` <- kvs) {
+        
+        if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
+          Place targetPlace = placeof(to, s);
+          switch (<p, targetPlace>) {
+            case <<sql(), str dbName>, <sql(), dbName>>: {
+              str fk = fkName(ent, to, toRole == "" ? fromRole : toRole);
+              SQLStat stat = update(tableName(to),
+                  [ \set(columnName(tableName(to), fk), SQLExpr::placeholder(name="TO_UPDATE")) ],
+                  [where([equ(column(tableName(to), typhonId(ent)), lit(evalExpr((Expr)`<UUID ref>`)))])]);
+              scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_UPDATE": toBeUpdated))]; 
+            }
+
+            case <<sql(), str myDb>, <sql(), str dbKid>>: {
+              scr.steps += updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+			}
+
+            case <<sql(), str myDb>, <mongodb(), str dbKid>>: {
+              scr.steps += updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+			}
+            
+            case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
+              // Q: how to create nesting here?  --> we somehow need to disallow this (in the type checker?)
+			  // if single: update me set fld to ref
+			  // if multi: push/addToSet ref to fld on me
+			  ;            
+            }
+            
+            case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
+              // if single: update me set fld to ref
+			  // if multi: push/addToSet ref to fld on me
+			  scr.steps += updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+            }
+
+            case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
+              scr.steps += updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+            }
+          }
+        }
+        else if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+          // a crossref.
+          Place targetPlace = placeof(to, s);
+          switch (<p, targetPlace>) {
+            case <<sql(), str myDb>, <sql(), dbName>>: {
+               scr.steps += updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+            }
+
+            case <<sql(), str myDb>, <sql(), str dbKid>>: {
+              scr.steps += updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+			}
+
+            case <<sql(), str myDb>, <mongodb(), str dbKid>>: {
+              scr.steps += updateSQLParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+			}
+            
+            case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
+              scr.steps += updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);            
+            }
+            
+            case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
+			  scr.steps += updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+            }
+
+            case <<mongodb(), str myDb>, <sql(), str dbKid>>: {
+              scr.steps += updateMongoParent(myDb, ent, fromRole, to, toRole, toCard, ref, "TO_UPDATE", toBeUpdated);
+            }
+          }
+        }
+        else {
+         throw "Could not find field <fld> in schema for <ent>";
+        }
+      }
+      
+
+      for ((KeyVal)`<Id fld>: [<{UUID ","}+ refs>]` <- kvs) {
+        ;
+      }
+
+      
+      for ((KeyVal)`<Id fld> +: [<{UUID ","}+ refs>]` <- kvs) {
+        ;
+      }
+      
+      for ((KeyVal)`<Id fld> -: [<{UUID ","}+ refs>]` <- kvs) {
+        ;
+      }
+      
+    }
     
     case (Request)`delete <EId e> <VId x>`: {
       return request2script((Request)`delete <EId e> <VId x> where true`, s);
@@ -39,8 +162,6 @@ Script request2script(Request r, Schema s) {
       str ent = "<e>";
       Place p = placeOf(ent, s);
       
-      list[Step] steps = [];
-      
       // first, find all id's of e things that need to be deleted
       // including the kid id's of all non-locally owned entities
       // NB: since we're only deleted a single entity type, partitioning has no effect
@@ -49,11 +170,8 @@ Script request2script(Request r, Schema s) {
         + [ "<x>.<f>" | <ent, _, str f, _, _, str to, true> <- s.rels, placeOf(to, s) != p ];
 
       Request req = [Request]"from <e> <x> select <intercalate(", ", results)> where <ws>";
-      println("------\> REQUEST = <req>");
 
       Script scr = script(compile(req, p, s));
-       
-      println("RESULT = <scr>");
       
       Field fieldToBeDeleted = <p.name, "<x>", "<e>", "@id">;
      
@@ -152,12 +270,12 @@ Script request2script(Request r, Schema s) {
              equ(column(tableName(ent), typhonId(ent)), SQLExpr::placeholder(name="TO_DELETE"))
             ])]);
             
-          scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_DELETE": <p.name, "<x>", ent, "@id">))];  
+          scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_DELETE": fieldToBeDeleted))];  
         }
         
         case <mongodb(), str dbName>: {
           DBObject q = object([<"_id", DBObject::placeholder(name="TO_DELETE")>]);
-          scr.steps += [step(dbName, mongo(deleteOne(dbName, ent, pp(q))),  ("TO_DELETE": <p.name, "<x>", ent, "@id">))];
+          scr.steps += [step(dbName, mongo(deleteOne(dbName, ent, pp(q))),  ("TO_DELETE": fieldToBeDeleted))];
         }
       }
       
@@ -231,6 +349,50 @@ Script request2script(Request r, Schema s) {
 }
 
 
+list[Step] updateSQLParent(str dbName, str ent, str fromRole, str to, str toRole, Cardinality toCard, UUID ref, str param, Field toBeUpdated) {
+// this code is very similar to linkParent, but that function
+  // assumes it is a *new* link.
+  str parentFk = junctionFkName(ent, fromRole);
+  str kidFk = junctionFkName(to, toRole);
+  str fkTbl = junctionTableName(ent, fromRole, to, toRole);
+  
+  // update junctiontable so that fk points to me for ref
+  
+  list[SQLStat] stats = [];
+  if (toCard in {one_many(), zero_many()}) {
+      stats = [
+        // first delete the old one, if any
+        delete(fkTbl, [where([
+          equ(column(fkTbl, parentFk), SQLExpr::placeholder(name=param)),
+          equ(column(fkTbl, kidFk), lit(evalExpr((Expr)`<UUID ref>`)))])
+        ]),
+        // then insert it
+        \insert(fkTbl, [parentFk, kidFk], [Value::placeholder(name=TO_UPDATE),  evalExpr((Expr)`<UUID ref>`)])
+      ];
+  }
+  else {
+    stats = [
+      // first delete *any* old one, if any
+      delete(fkTbl, [where([equ(column(fkTbl, parentFk), SQLExpr::placeholder(name=param))])]),
+      // then insert it
+      \insert(fkTbl, [parentFk, kidFk], [Value::placeholder(name=TO_UPDATE),  evalExpr((Expr)`<UUID ref>`)])
+    ];
+  }
+	          
+  return [step(dbName, sql(executeStatement(dbName, pp(stat))), (param: toBeUpdated)) | SQLStat stat <- stats ];
+}
+
+list[Step] updateMongoParent(str dbName, str ent, str fromRole, str to, str toRole, Cardinality toCard, UUID ref, str param, Field toBeUpdated) { 
+  DBObject q = object([<"_id", DBObject::placeholder(name=param)>]); // unfortunately we cannot reuse expr2obj here...
+  DBObject kid = \value("<ref>"[1..]);
+  DBObject u = object([<"$set", object([<fromRole, kid>])>]);
+  if (toCard in {one_many(), zero_many()}) {
+    u = object([<"$addToSet", object([<fromRole, kid>])>]);
+  }
+  return [step(dbName, mongo(findAndUpdateOne(dbName, parent, pp(q), pp(u))), (param: toBeUpdated))];
+}
+
+
 list[Step] unlinkSQLParent(str dbName, str parent, str kidParam, Field kidField, str fromRole, str to, str toRole) {
   SQLStat parentStat = 
     \delete(junctionTableName(parent, fromRole, to, toRole),[
@@ -255,6 +417,7 @@ list[Step] linkSQLParent(str dbName, str parent, str uuid, str fromRole, str to,
             , [text(uuid), Value::placeholder(name=ID_PARAM)]);
    return [step(dbName, sql(executeStatement(dbName, pp(parentStat))), (ID_PARAM: generatedIdField()))];         
 }
+
 
 list[Step] linkMongoParent(str dbName, str parent, str uuid, str fromRole, Cardinality toCard) {
   DBObject q = object([<"_id", \value(uuid)>]);
