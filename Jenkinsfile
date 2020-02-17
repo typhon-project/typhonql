@@ -32,9 +32,19 @@ node {
                 [configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
                 sh 'cd typhonql-bundler && mvn -U -B -gs $MAVEN_SETTINGS deploy'
                 sh 'mvn -U -B -gs $MAVEN_SETTINGS -pl \'!typhonql-update-site\' deploy'
-                sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile jib:dockerBuild'
             }
         }
+    }
+    stage('Deploying server') {
+        if (env.BRANCH_NAME == "master") {
+            configFileProvider(
+                    [configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
+                step([$class: 'DockerBuilderPublisher']) {
+                    sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile jib:dockerBuild'
+                }
+            }
+        }
+
     }
 
     stage('Deploy update site') {
