@@ -25,14 +25,14 @@ public class TestSelect2 {
 		e1.executeSelect("user", "select u.`User.@id` as `u.User.@id` from User u where u.`User.name` = \"Claudio\"");
 		LinkedHashMap<String, Binding> map1 = new LinkedHashMap<String, Binding>();
 		map1.put("user_id", new Binding("user", "u", "User"));
-		e2.executeFind("review", "Review", "{ user: \"${user_id}\" }", map1);
+		e2.executeFind("review", "Review", "{ user: ${user_id} }", map1);
 		
 		// Binding needs an extra argument `attribute` for inspecting attributes in the entities that conform the stored results
 		LinkedHashMap<String, Binding> map2 = new LinkedHashMap<String, Binding>();
 		map2.put("product_id", new Binding("review", "dummy", "Review", "product"));
 		
 		e1.executeSelect("result", 
-				"select p.`Product.@id` as `p.Product.@id`, p.`Product.name` as `p.Product.name`, p.`Product.description` as `p.Product.description` from Product p where p.`Product.@id` = ?", map2);
+				"select p.`Product.@id` as `p.Product.@id`, p.`Product.name` as `p.Product.name`, p.`Product.description` as `p.Product.description` from Product p where p.`Product.@id` = ${product_id}", map2);
 		
 		
 		//List<Entity> result = buildResult("result", );
@@ -51,9 +51,9 @@ public class TestSelect2 {
 		Map<String, TyphonType> attributes = new HashMap<>();
 		attributes.put("description", TyphonType.STRING);
 		attributes.put("name", TyphonType.STRING);
-		WorkingSet result = store.computeResult("result", new String[] { "product" }, new EntityModel("Product", attributes));
+		WorkingSet result = store.computeResult("result", new String[] { "p" }, new EntityModel("Product", attributes));
 		
-		for (Entity e : result.get("product")) {
+		for (Entity e : result.get("p")) {
 			System.out.println(e);
 		}
 
