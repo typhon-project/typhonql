@@ -191,7 +191,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.@id`, Ctx ctx) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_<ctx.vars()>";
     ctx.addParam(token, <p.name, "<x>", ctx.env["<x>"], "@id">);
-    return placeholder(name=token);
+    return SQLExpr::placeholder(name=token);
   }
   str entity = ctx.env["<x>"];
   return column("<x>", typhonId(entity));
