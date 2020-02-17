@@ -27,8 +27,6 @@ import nl.cwi.swat.typhonql.Connections;
  * Thread safe connection to the polystore ql engine, construct this once, and call the executeQuery from as many threads as you like (there is a memory overhead, but it will not interfer with eachother)
  */
 public abstract class BasePolystoreConnection extends PolystoreConnection {
-	
-	private static final String RASCAL_MF = "META-INF/RASCAL.MF";
 	protected static final String LOCALHOST = "localhost";
 	protected final ConcurrentSoftReferenceObjectPool<Evaluator> evaluators;
 	
@@ -65,7 +63,7 @@ public abstract class BasePolystoreConnection extends PolystoreConnection {
 				if (!hasRascalMF(root)) {
 					// we are not inside eclipse/OSGI, so we are in the headless version, so we have to help the registry in finding 
 		            try {
-		                root = URIUtil.createFileLocation(SimplePolystoreConnection.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+		                root = URIUtil.createFileLocation(BasePolystoreConnection.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 		                if (root.getPath().endsWith(".jar")) {
 		                    root = URIUtil.changePath(URIUtil.changeScheme(root, "jar+" + root.getScheme()), root.getPath() + "!/");
 		                }
@@ -91,7 +89,7 @@ public abstract class BasePolystoreConnection extends PolystoreConnection {
 
 				
 				PathConfig pcfg = PathConfig.fromSourceProjectRascalManifest(root);
-				ClassLoader cl = new SourceLocationClassLoader(pcfg.getClassloaders(), SimplePolystoreConnection.class.getClassLoader());
+				ClassLoader cl = new SourceLocationClassLoader(pcfg.getClassloaders(), BasePolystoreConnection.class.getClassLoader());
 				
 				evaluators = new ConcurrentSoftReferenceObjectPool<>(10, TimeUnit.MINUTES, 1, calculateMaxEvaluators(), () -> {
 					// we construct a new evaluator for every concurrent call
@@ -116,5 +114,4 @@ public abstract class BasePolystoreConnection extends PolystoreConnection {
 					return result;
 				});
 	}
-
 }

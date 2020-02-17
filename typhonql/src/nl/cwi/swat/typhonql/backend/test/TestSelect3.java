@@ -117,12 +117,12 @@ public class TestSelect3 {
 		
 		MariaDBEngine e1 = new MariaDBEngine(store, "localhost", 3306, "Inventory", "root", "example");
 		
-		e1.executeSelect("user", "select * from User where `User.name` = \"Pablo\"");
+		e1.executeSelect("user", "select u.`User.name` as `u.User.name`,  u.`User.@id` as `u.User.@id` from User u where u.`User.name` = \"Pablo\"");
 		LinkedHashMap<String, Binding> map1 = new LinkedHashMap<String, Binding>();
-		map1.put("user_id", new Binding("user", "User"));
+		map1.put("user_id", new Binding("user", "u", "User"));
 		
 		
-		e1.executeSelect("user2", "select * from User where `User.@id` = ?", map1);
+		e1.executeSelect("user2", "select u.`User.name` as `u.User.name`,  u.`User.@id` as `u.User.@id` from User u where u.`User.@id` = ?",  map1);
 		
 		System.out.println("Final Result:");
 		
@@ -130,9 +130,9 @@ public class TestSelect3 {
 		
 		attributes.put("name", TyphonType.STRING);
 		
-		WorkingSet result = store.computeResult("user2", new String[] { "user" }, new EntityModel("User", attributes));
+		WorkingSet result = store.computeResult("user2", new String[] { "u" }, new EntityModel("User", attributes));
 		
-		for (Entity e : result.get("user")) {
+		for (Entity e : result.get("u")) {
 			System.out.println(e);
 		}
 

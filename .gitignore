@@ -1,7 +1,7 @@
 # eclipse stuff:
-.project
+#.project
 .metadata
-.classpath
+#.classpath
 bin/
 tmp/
 *.tmp

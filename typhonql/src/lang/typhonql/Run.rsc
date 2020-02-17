@@ -93,6 +93,28 @@ value run(str src, str polystoreId, str xmiString, Log log = noLog) {
   return run(req, polystoreId, s, log = log);
 }
 
+lrel[int, map[str, str]] runPrepared(str src, str polystoreId, list[str] columnNames, list[list[str]] values, str xmiString, Log log = noLog) {
+  Model m = xmiString2Model(xmiString);
+  Schema s = model2schema(m);
+  lrel[int, map[str, str]] rs = [];
+  int numberOfVars = size(columnNames);
+  for (list[str] vs <- values) {
+  	map[str, str] labeled = (() | it + (columnNames[i] : vs[i]) | i <-[0 .. numberOfVars]);
+  	Request req = [Request]src;
+  	int i = 0;
+  	Request req_ = visit(req) {
+  		case (Expr) `<PlaceHolder ph>`: {
+  			valStr = labeled["<ph.name>"];
+  			e = [Expr] valStr; 
+  			insert e;
+  		}
+  	};
+  	println(req_);
+  	if (<int n, map[str, str] uuids> := run(req_, polystoreId, s, log = log))
+  		rs += <n, uuids>;
+  }
+  return rs;
+}
 
 WorkingSet dumpDB(str polystoreId, Schema s) {
   //WorkingSet ws = ( e : [] | <_, str e> <- s.placement );
@@ -292,12 +314,13 @@ value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <
     bool yes = ( true | it && truthy(eval(e, binding, ws)) | Expr e <- es ); 
 
     for (yes, (Result)`<Expr re>` <- rs) {
-      Entity r = evalResult(re, binding, ws);
-      log("[RUN-query] Adding <r> to final result for <re>");
-      if (r.name notin result) {
-        result[r.name] = [];
+      if (Entity r := evalResult(re, binding, ws)) {
+      	log("[RUN-query] Adding <r> to final result for <re>");
+      	if (r.name notin result) {
+        	result[r.name] = [];
+      	}
+      	result[r.name] += [r];
       }
-      result[r.name] += [r];
     }
   }
 

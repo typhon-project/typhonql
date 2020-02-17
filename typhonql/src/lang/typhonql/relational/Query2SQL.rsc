@@ -3,6 +3,8 @@ module lang::typhonql::relational::Query2SQL
 import lang::typhonql::TDBC;
 import lang::typhonql::Normalize;
 import lang::typhonql::Order;
+import lang::typhonql::Script;
+import lang::typhonql::Session;
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::SQL2Text;
 import lang::typhonql::relational::Util;
@@ -16,21 +18,12 @@ import IO;
 import String;
 
 
-data JExpr
-  = field(str entity, str field);
-
-data Command
-  = executeSQLQuery(str entity, str query, list[JExpr] params)
-  | executeMongoFind(str entity, str query, list[JExpr] params)
-  ; 
-
-
 alias Ctx
   = tuple[
       void(SQLExpr) addWhere,
       void(As) addFrom,
       void(SQLExpr) addResult,
-      void(str, str) addParam,
+      void(str, Field) addParam,
       Schema schema,
       Env env,
       set[str] dyns,
@@ -39,10 +32,10 @@ alias Ctx
    ];
 
 
-list[SQLStat] compile2sql((Request)`<Query q>`, Schema s, Place p)
+tuple[SQLStat, Bindings] compile2sql((Request)`<Query q>`, Schema s, Place p)
   = select2sql(q, s, p);
 
-list[SQLStat] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s, Place p) 
+tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s, Place p) 
   = select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, p);
 
 /*
@@ -57,7 +50,8 @@ Steps to compile to SQL
 - translate where clauses to sql where clause, possibly using junction tables, skip #done/#needed/#delayed
 
 */
-list[SQLStat] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s, Place p) {
+tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`
+  , Schema s, Place p) {
 
   SQLStat q = select([], [], [where([])]);
   
@@ -81,9 +75,9 @@ list[SQLStat] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ 
     return _vars += 1;
   }
 
-  map[str, str] params = ();
-  void addParam(str x, str expr) {
-    params[x] = expr;
+  Bindings params = ();
+  void addParam(str x, Field field) {
+    params[x] = field;
   }
 
   Env env = (); 
@@ -114,19 +108,38 @@ list[SQLStat] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ 
 
   
   void recordResults(Expr e) {
+    println("##### record results");
     visit (e) {
-      case x:(Expr)`<VId y>`:
+      case x:(Expr)`<VId y>`: {
+         println("##### record results: var <y>");
+    
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
-           addResult(expr2sql(x, ctx));
+           addResult(named(expr2sql(x, ctx), "<y>.<ent>.@id"));
+           for (<ent, str a, str _> <- ctx.schema.attrs) {
+             Id f = [Id]a;
+             addResult(named(expr2sql((Expr)`<VId y>.<Id f>`, ctx), "<y>.<ent>.<f>"));
+           }
          }
-      case x:(Expr)`<VId y>.@id`:
+       }
+      case x:(Expr)`<VId y>.@id`: {
+         println("##### record results: var <y>.@id");
+    
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
-           addResult(expr2sql(x, ctx));
+           addResult(named(expr2sql(x, ctx), "<y>.<ent>.@id"));
          }
-      case x:(Expr)`<VId y>.<Id _>`:
+      }
+      case x:(Expr)`<VId y>.<Id f>`: {
+         println("##### record results: <y>.<f>");
+    
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
-           addResult(expr2sql(x, ctx));
+           addResult(named(expr2sql(x, ctx), "<y>.<ent>.<f>"));
+           // todo: should be in Normalize
+           idExpr = named(expr2sql((Expr)`<VId y>.@id`, ctx), "<y>.<ent>.@id");
+           if (idExpr notin q.exprs) {
+             addResult(idExpr);
+           }
          }
+      }
     }
   }
 
@@ -137,7 +150,9 @@ list[SQLStat] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ 
       case (Expr)`#needed(<Expr x>)`: 
         recordResults(x);
       default:
-        addResult(expr2sql(e, ctx));
+        // todo: allow arbitrary expressions if they have "as"
+        recordResults(e);
+        //addResult(expr2sql(e, ctx));
     }
   }
 
@@ -158,7 +173,7 @@ list[SQLStat] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ 
   }
   
   println("PARAMS: <params>");
-  return [q];
+  return <q, params>;
 }
 
 
@@ -173,9 +188,9 @@ SQLExpr expr2sql(e:(Expr)`<VId x>`, Ctx ctx)
 
 
 SQLExpr expr2sql(e:(Expr)`<VId x>.@id`, Ctx ctx) {
-  if ("<x>" in ctx.dyns) {
+  if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_<ctx.vars()>";
-    ctx.addParam(token, "<x>.@id");
+    ctx.addParam(token, <p.name, "<x>", ctx.env["<x>"], "@id">);
     return placeholder(name=token);
   }
   str entity = ctx.env["<x>"];
@@ -188,9 +203,9 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
   str entity = ctx.env["<x>"];
   str role = "<f>"; 
 
-  if ("<x>" in ctx.dyns) {
+  if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_<f>_<ctx.vars()>";
-    ctx.addParam(token, "<x>.<f>");
+    ctx.addParam(token, <p.name, "<x>", ctx.env["<x>"], "<f>">);
     return placeholder(name=token);
   }
 
@@ -366,9 +381,6 @@ void smoke2sqlWithAllOnDifferentSQLDB() {
 
 
 void smoke2sql(Schema s) {
-
- 
-  
   
   println("\n\n#####");
   println("## ordered weights");
@@ -378,7 +390,8 @@ void smoke2sql(Schema s) {
   println("ORDER = <order>");
   for (Place p <- order, p.db == sql()) {
     println("\n\t#### Translation of <restrict(q, p, order, s)>");
-    println(pp(compile2sql(restrict(q, p, order, s), s, p)));
+    <stat, params> = compile2sql(restrict(q, p, order, s), s, p); 
+    println(pp(stat));
   }
   
   

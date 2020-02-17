@@ -14,16 +14,27 @@ node {
     stage('Build bundle') {
 	    configFileProvider(
         	[configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
-        sh 'cd typhonql-bundler && mvn -U -B -gs $MAVEN_SETTINGS clean install deploy'
+            sh 'cd typhonql-bundler && mvn -U -B -gs $MAVEN_SETTINGS clean install'
 	    }
     }
 
     stage('Build typhonql') {
 	    configFileProvider(
         	[configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
-        	sh 'mvn -U -B -gs $MAVEN_SETTINGS clean install -pl \'!typhonql-update-site\' deploy'
-   	}
-	    
+        	sh 'mvn -U -B -gs $MAVEN_SETTINGS clean install'
+        	sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile'
+        }
+    }
+
+    stage('Deploying') {
+        if (env.BRANCH_NAME == "master") {
+            configFileProvider(
+                [configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
+                sh 'cd typhonql-bundler && mvn -U -B -gs $MAVEN_SETTINGS deploy'
+                sh 'mvn -U -B -gs $MAVEN_SETTINGS -pl \'!typhonql-update-site\' deploy'
+                sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile jib:dockerBuild'
+            }
+        }
     }
 
     stage('Deploy update site') {
@@ -34,6 +45,7 @@ node {
             sh "cp -a typhonql-update-site/target/. ${UPDATE_SITE_PATH}/"
         }
     }
+
     }catch (e){
         currentBuild.result = "FAILED"
         throw e

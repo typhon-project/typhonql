@@ -127,7 +127,7 @@ DBObject expr2obj((Expr)`<Real r>`) = \value(toReal("<r>"));
 // todo: unescaping
 DBObject expr2obj((Expr)`<Str s>`) = \value("<s>"[1..-1]);
 
-DBObject expr2obj((Expr)`<Bool b>`) = \value("<b>" == true);
+DBObject expr2obj((Expr)`<Bool b>`) = \value("<b>" == "true");
 
 default DBObject expr2obj(Expr e) { throw "Unsupported MongoDB restriction expression: <e>"; }
 

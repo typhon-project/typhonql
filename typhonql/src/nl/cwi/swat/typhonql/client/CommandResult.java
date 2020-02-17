@@ -1,9 +1,13 @@
 package nl.cwi.swat.typhonql.client;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import nl.cwi.swat.typhonql.workingset.JsonSerializableResult;
+import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
 
-public class CommandResult {
+public class CommandResult implements JsonSerializableResult {
 	private int affectedEntities;
 	private Map<String, String> createdUuids;
 	
@@ -25,6 +29,11 @@ public class CommandResult {
 
 	public Map<String, String> getCreatedUuids() {
 		return createdUuids;
+	}
+
+	@Override
+	public void serializeJSON(OutputStream target) throws IOException {
+		WorkingSetJSON.getMapper().writeValue(target, this);
 	}
 
 }

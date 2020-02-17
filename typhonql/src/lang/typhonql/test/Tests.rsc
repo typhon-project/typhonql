@@ -39,10 +39,18 @@ void test3() {
 	run(cmd, "http://localhost:8080", sch);
 }
 
+void test3b() {
+	str cmd = "insert Product {name: \"TV\", description: \"Flat\" }";
+	bootConnections(|http://localhost:8080|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
+	Schema sch = loadSchemaFromXMI(modelStr);
+	run(cmd, "http://localhost:8080", sch);
+}
 
 void test4() {
 	str cmd = "insert 
-			  '@pablo User { name: \"Claudio\", reviews: badradio },
+			  '@pablo User { name: \"Claudio\", reviews: badradio, biography: bio },
+			  '@bio Biography { text: \"Born in Chile\" },
 			  '@radio Product {name: \"TV\", description: \"Flat\", reviews: badradio },
 			  '@badradio Review { contents: \"Good TV\",product: radio,user: pablo}";
 	bootConnections(|http://localhost:8080|, "pablo", "antonio");
@@ -50,6 +58,16 @@ void test4() {
 	Schema sch = loadSchemaFromXMI(modelStr);
 	value v = run(cmd, "http://localhost:8080", sch);
 	println(v);
+}
+
+void test5() {
+	str cmd = "insert Product { name: ??, description: ?? }";
+	bootConnections(|http://localhost:8080|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://localhost:8080|, "pablo", "antonio");
+	Schema sch = loadSchemaFromXMI(modelStr);
+	rs = runPrepared(cmd, "http://localhost:8080", [["\"IPhone\"", "\"Cool but expensive\""],
+													["\"Samsung S10\"", "\"Less cool and still expensive\""]], modelStr);
+	println(rs);
 }
 
 void printSchema() {

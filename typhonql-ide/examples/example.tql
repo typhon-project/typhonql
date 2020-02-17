@@ -17,9 +17,12 @@ delete from User
 
 from Comment c select c
 
-from Product p select p 
+from Product p select p
+
+from Product p select p.name
 
 from Order o select o
+
 
 update Comment c set {id: "Geor" }
 
@@ -50,6 +53,25 @@ insert User { name: "Claudio",
 
 }
 
+insert @sp Product {name: "Smartphone", 
+	description: "Waterproof" }
+	
+insert Review { contents: "Good phone" } 
+
+update Review r
+	 where r.@id == #b58f8848-e887-479b-97a7-f213cc239454
+	 set { product: #7a0c7971-bd0e-4f02-9bad-e12fc91327ca }
+	 
+update Product p
+	where p.@id == #918df0bc-8879-4ea5-9869-32442a5309bd
+	set { directors:  #7ba3681b-71c8-434e-a452-e44317d816e8
+//		 [ #7ba3681b-71c8-434e-a452-e44317d816e8, #7ba3681b-71c8-434e-a452-e44317d816e8] 
+}
+	
+
+from Review r select r
+	where r.@id == #b58f8848-e887-479b-97a7-f213cc239454
+
 insert 
 	@pablo User { name: "Pablo", reviews: badradio },
 	@radio Product {name: "Radio", description: "Wireless", reviews: badradio },
@@ -74,6 +96,13 @@ insert Product {
 	name: "TV",
 	description: "Black and white",
 	price: 300
+}
+
+insert Product {
+	name: "TV",
+	description: "Black and white",
+	price: 300,
+	date: $2019-03-25$
 }
 
 from OBLG_GNL u select u

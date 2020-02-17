@@ -2,7 +2,7 @@ module lang::typhonql::mongodb::DBCollection
 
 import IO;
 import List;
-
+import String;
 
 alias Prop
   = tuple[str name, DBObject val];  
@@ -11,8 +11,31 @@ data DBObject
   = object(list[Prop] props)
   | array(list[DBObject] values)
   | \value(value v)
-  | placeholder() // simulating a kind of ? for doing updates and deletes
+  | placeholder(str name="") 
   ;
+  
+  
+str pp(object(list[Prop] ps)) = "{<intercalate(", ", [ pp(p) | Prop p <- ps ])>}";
+
+str pp(array(list[DBObject] vs)) = "[<intercalate(", ", [ pp(v) | DBObject v <- vs ])>]";
+
+str pp(\value(int i)) = "<i>";
+
+str pp(\value(real r)) = "<r>";
+
+str pp(\value(str s)) = "\"<strEscape(s)>\"";
+
+str pp(\value(bool b)) = "<b>";
+
+str pp(placeholder(name = str x)) = "${<x>}";
+
+str pp(<str f, DBObject v>) = "\"<f>\": <pp(v)>";  
+  
+  
+default str pp(DBObject v) { throw "Unsupported DBObject json value `<v>`"; }
+  
+str strEscape(str s)
+  = escape(s, ("\n": "\\n", "\t": "\\n", "\r": "\\r", "\\": "\\\\", "\"": "\\\"" ));  
     
 // I'm skipping all readpreference, DBEncode, Object and *Options things  
 

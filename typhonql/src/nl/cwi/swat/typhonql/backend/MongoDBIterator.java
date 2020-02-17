@@ -26,12 +26,12 @@ public class MongoDBIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentId(String type) {
+	public String getCurrentId(String label, String type) {
 		return current.getString("_id");
 	}
 
 	@Override
-	public Object getCurrentField(String type, String name) {
+	public Object getCurrentField(String label, String type, String name) {
 		// TODO TEMPORARY!!!!!
 		//return current.get(type + "." + name);
 		return current.get(name);

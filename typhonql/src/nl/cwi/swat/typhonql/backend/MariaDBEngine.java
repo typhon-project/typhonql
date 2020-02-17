@@ -1,6 +1,7 @@
 package nl.cwi.swat.typhonql.backend;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MariaDBEngine extends Engine {
 
@@ -19,23 +20,29 @@ public class MariaDBEngine extends Engine {
 		this.password = password;
 		initializeDriver();
 	}
-
-
-	protected void initializeDriver() {
+	
+	private void initializeDriver() {
 		try {
 			Class.forName("org.mariadb.jdbc.Driver");
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException("MariaDB driver not found", e);
-		}		
+		}
 	}
-	
+
 	private String getConnectionString(String host, int port, String dbName, String user, String password) {
 		return "jdbc:mariadb://" + host + ":" + port + "/" + dbName + "?user=" + user + "&password=" + password;
 	}
 
-	@Override
-	protected QueryExecutor getExecutor(String resultId, String query, LinkedHashMap<String, Binding> bindings) {
-		return new MariaDBQueryExecutor(store, query, bindings, getConnectionString(host, port, dbName, user, password));
+	public void executeSelect(String resultId, String query) {
+		this.storeResults(resultId, executeSelect(query, new HashMap<String, Binding>()));
+	}
+	
+	public void executeSelect(String resultId, String query, Map<String, Binding> bindings) {
+		this.storeResults(resultId, executeSelect(query, bindings));
+	}
+	
+	private ResultIterator executeSelect(String query, Map<String, Binding> bindings) {
+		return new MariaDBQueryExecutor(store, query, bindings, getConnectionString(host, port, dbName, user, password)).executeSelect();
 	}
 
 }

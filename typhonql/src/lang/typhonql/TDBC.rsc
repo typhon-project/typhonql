@@ -12,8 +12,8 @@ start syntax Scratch
   ;
 
 start syntax Request
-  = query: Query
-  | statement: Statement
+  = query: Query qry
+  | statement: Statement stm
   ;
 
 syntax Expr 

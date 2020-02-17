@@ -31,18 +31,18 @@ public class SQLResultIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentId(String type) {
+	public String getCurrentId(String label, String type) {
 		try {
-			return rs.getString(type + ".@id");
+			return rs.getString(label + "." + type + ".@id");
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
-	public Object getCurrentField(String type, String name) {
+	public Object getCurrentField(String label, String type, String name) {
 		try {
-			return rs.getObject(type + "." + name);
+			return rs.getObject(label + "." + type + "." + name);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}

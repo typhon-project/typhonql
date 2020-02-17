@@ -22,11 +22,11 @@ import nl.cwi.swat.typhonql.workingset.EntityRef;
 import nl.cwi.swat.typhonql.workingset.WorkingSet;
 
 public class WorkingSetJSON {
-	private static ObjectMapper mapper = new ObjectMapper();
+	private static final ObjectMapper mapper;
 	
 	static {
 		//mapper.configure(DeserializationFeature.
-		mapper.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
 		mapper.canDeserialize(mapper.getTypeFactory().constructSimpleType(EntityRef.class, new JavaType[0]));
 		mapper.canSerialize(EntityRef.class);
 		/*SimpleModule module = new SimpleModule();
@@ -36,31 +36,20 @@ public class WorkingSetJSON {
 	}
 	
 	public static WorkingSet fromJSON(InputStream is) throws IOException {
-		try {
-			Map<String, List<Entity>> map = mapper.readValue(is, new TypeReference<Map<String, List<Entity>>>() {});
-			return new WorkingSet(map);
-		} catch (JsonParseException e) {
-			throw new RuntimeException(e);
-		} catch (JsonMappingException e) {
-			throw new RuntimeException(e);
-		}
-		
+		Map<String, List<Entity>> map = mapper.readValue(is, new TypeReference<Map<String, List<Entity>>>() {});
+		return new WorkingSet(map);
 	}
 	
 	public static void toJSON(WorkingSet ws, OutputStream os) throws IOException {
-		try {
-			mapper.writeValue(os, ws.getMap());
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+        mapper.writeValue(os, ws.getMap());
 	}
 	
 	public static void toJSON(CommandResult cr, OutputStream os) throws IOException {
-		try {
-			mapper.writeValue(os, cr);
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+        mapper.writeValue(os, cr);
+	}
+	
+	public static ObjectMapper getMapper() {
+		return mapper;
 	}
 	
 	/*
