@@ -126,8 +126,12 @@ tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}
     
   void recordProjections(Expr e) {
      visit (e) {
-      case x:(Expr)`<VId y>`:
+      case x:(Expr)`<VId y>`: {
+         // TODO: there is a difference between y in result and y in where clauses
+         // --> fix normalization to desguar y in where clauses to y.@id, 
+         // and in result to all attrs.
          addProjection(y, "_id");
+      }
       case x:(Expr)`<VId y>.@id`:
          addProjection(y, "_id");
       case x:(Expr)`<VId y>.<{Id "."}+ fs>`:
@@ -285,7 +289,7 @@ DBObject expr2obj(e:(Expr)`<VId x>.<{Id "."}+ fs>`, Ctx ctx) {
 
 DBObject expr2obj(e:(Expr)`<VId x>`, Ctx ctx) 
   = expr2obj((Expr)`<VId x>.@id`, ctx);
-  
+
 DBObject expr2obj(e:(Expr)`<VId x>.@id`, Ctx ctx) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_@id_<ctx.vars()>";
@@ -294,17 +298,6 @@ DBObject expr2obj(e:(Expr)`<VId x>.@id`, Ctx ctx) {
   }
   throw "Only dynamic parameters can be used as expressions in query docs, not <e>";
 }
-
-DBObject expr2obj(e:(Expr)`<VId x>.<{Id "."}+ fs>`, Ctx ctx) {
-  if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
-    str token = "<x>_<fs>_<ctx.vars()>";
-    ctx.addParam(token, <p.name, "<x>", ctx.env["<x>"], "<fs>">);
-    return placeholder(name=token);
-  }
-  throw "Only dynamic parameters can be used as expressions in query docs, not <e>";
-}
-
-
 
 DBObject expr2obj((Expr)`?`, Ctx _) = placeholder();
 

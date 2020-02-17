@@ -47,6 +47,9 @@ void runScript(Script scr, Session session, Schema schema) {
       case step(str r, mongo(find(str db, str coll, str json)), Bindings ps):
         session.mongo.find(r, db, coll, json, ps);
         
+      case step(str r, mongo(find(str db, str coll, str json, str proj)), Bindings ps):
+        session.mongo.findWithProjection(r, db, coll, json, proj, ps);  
+        
       default: throw "Unsupported call: <s.call>";
     }
   }

@@ -108,17 +108,29 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
 
   
   void recordResults(Expr e) {
+    println("##### record results");
     visit (e) {
-      case x:(Expr)`<VId y>`:
+      case x:(Expr)`<VId y>`: {
+         println("##### record results: var <y>");
+    
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
            addResult(named(expr2sql(x, ctx), "<y>.<ent>.@id"));
-           
+           for (<ent, str a, str _> <- ctx.schema.attrs) {
+             Id f = [Id]a;
+             addResult(named(expr2sql((Expr)`<VId y>.<Id f>`, ctx), "<y>.<ent>.<f>"));
+           }
          }
-      case x:(Expr)`<VId y>.@id`:
+       }
+      case x:(Expr)`<VId y>.@id`: {
+         println("##### record results: var <y>.@id");
+    
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
            addResult(named(expr2sql(x, ctx), "<y>.<ent>.@id"));
          }
-      case x:(Expr)`<VId y>.<Id f>`:
+      }
+      case x:(Expr)`<VId y>.<Id f>`: {
+         println("##### record results: <y>.<f>");
+    
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
            addResult(named(expr2sql(x, ctx), "<y>.<ent>.<f>"));
            // todo: should be in Normalize
@@ -127,6 +139,7 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
              addResult(idExpr);
            }
          }
+      }
     }
   }
 

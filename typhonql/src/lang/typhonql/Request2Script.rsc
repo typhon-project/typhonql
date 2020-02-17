@@ -768,8 +768,9 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schem
   <methods, params> = compile2mongo(r, s, p);
   for (str coll <- methods) {
     // TODO: signal if multiple!
-    return [step(dbName, mongo(find(dbName, pp(methods[coll].query), pp(methods[coll].projection))), params)];
+    return [step(dbName, mongo(find(dbName, coll, pp(methods[coll].query), pp(methods[coll].projection))), params)];
   }
+  return [];
 }
 
 void smokeScript() {
@@ -851,5 +852,5 @@ void smokeScript() {
   smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
 
   smokeIt((Request)`delete Person p where p.name == "Pablo"`);
-
+  
 }  

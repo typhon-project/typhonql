@@ -264,6 +264,9 @@ public class Bridge {
 		if (obj instanceof org.bson.BsonDateTime) {
 			return vf.datetime(((org.bson.BsonDateTime)obj).getValue());
 		}
+		if (obj instanceof java.sql.Timestamp) {
+			return vf.datetime(((java.sql.Timestamp)obj).getTime());
+		}
 		
 		throw RuntimeExceptionFactory.illegalArgument(vf.string(obj.getClass().getName()), null, null, 
 				"Cannot convert Java object to Rascal value");

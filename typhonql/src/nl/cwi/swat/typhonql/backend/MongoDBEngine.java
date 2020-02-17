@@ -1,6 +1,6 @@
 package nl.cwi.swat.typhonql.backend;
 
-import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class MongoDBEngine extends Engine {
 	private String host;
@@ -22,9 +22,16 @@ public class MongoDBEngine extends Engine {
 		return "mongodb://" + user + ":" + password + "@" + host + ":" + port;
 	}
 
-	public void executeFind(String resultId, String collectionName, String query, LinkedHashMap<String, Binding> bindings) {
+	public void executeFind(String resultId, String collectionName, String query, Map<String, Binding> bindings) {
 		ResultIterator results = new MongoQueryExecutor(store, collectionName, query, bindings, getConnectionString(host, port, user, password), dbName).executeSelect();
 		storeResults(resultId, results);
+	}
+
+	public void executeFindWithProjection(String resultId, String collectionName, String query, String projection,
+			Map<String, Binding> bindings) {
+		ResultIterator results = new MongoQueryWithProjectionExecutor(store, collectionName, query, projection, bindings, getConnectionString(host, port, user, password), dbName).executeSelect();
+		storeResults(resultId, results);
+		
 	}
 
 }
