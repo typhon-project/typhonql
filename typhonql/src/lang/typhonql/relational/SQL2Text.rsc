@@ -108,7 +108,7 @@ str pp(notIn(SQLExpr arg, list[Value] vals))
 
 // Clause
 
-str pp(where(list[SQLExpr] es)) = "where <intercalate(", ", [ pp(e) | SQLExpr e <- es ])>"; 
+str pp(where(list[SQLExpr] es)) = "where <intercalate(" and ", [ pp(e) | SQLExpr e <- es ])>"; 
 
 str pp(groupBy(list[SQLExpr] es)) = "group by <intercalate(", ", [ pp(e) | SQLExpr e <- es ])>"; 
 
