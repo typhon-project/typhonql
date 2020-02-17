@@ -22,6 +22,21 @@ import lang::typhonql::mongodb::DBCollection;
 import IO;
 import List;
 
+/*
+
+TODO:
+
+- generate dollars instead of :param
+- sync
+
+- modularize using pattern-based dispatch
+- use toRole matching to "" to determine the canonical relation in case of non-ownership
+- clean-up the PARAM string passing
+- custom data type expansion
+- NLP hooks
+
+*/
+
 
 Script request2script(Request r, Schema s) {
   switch (r) {
@@ -318,7 +333,6 @@ list[Step] removeFromManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, F
         }
 
         case <<sql(), str myDb>, <sql(), str dbKid>>: {
-          // str dbName, str parent, str kidParam, Field kidField, str fromRole, str to, str toRole
           return [ *breakCrossLinkInSQL(myDb, ent, lit(text("<ref>"[1..])), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
 		}
 
@@ -336,7 +350,6 @@ list[Step] removeFromManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, F
         case <<mongodb(), str myDb>, <mongodb(), str dbKid>>: {
           // if single: update me set fld to ref
 		  // if multi: push/addToSet ref to fld on me
-		  //breakCrossLinkInMongo(str dbName, str parent, DBObject kid, str kidParam, Field kidField, str fromRole, str to, str toRole)
 		  return [ *breakCrossLinkInMongo(myDb, ent, DBObject::\value("<ref>"[1..]), "TO_UPDATE", toBeUpdated, fromRole, to, toRole) | UUID ref <- refs ];
         }
 
@@ -345,6 +358,7 @@ list[Step] removeFromManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, F
         }
       }
     }
+    // todo: require toRole to be != "" so that we have the canonical one.
     else if (<ent, _,  str fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels, fromRole == "<fld>") {
       // a crossref.
       Place targetPlace = placeof(to, s);
@@ -666,6 +680,9 @@ list[Step] updateSQLParent(str dbName, str ent, str fromRole, str to, str toRole
   list[SQLStat] stats = [];
   if (toCard in {one_many(), zero_many()}) {
       stats = [
+        // NB: we have to do delete + insert, because we can't use
+        // update as it presumes that it is already there;
+        // in this case: if it's not, delete will be a no-op.
         // first delete the old one, if any
         delete(fkTbl, [where([
           equ(column(fkTbl, parentFk), SQLExpr::placeholder(name=param)),
