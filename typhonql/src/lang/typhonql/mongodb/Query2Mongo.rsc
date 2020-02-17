@@ -34,7 +34,7 @@ tuple[map[str, CollMethod], Bindings] compile2mongo(r:(Request)`<Query q>`, Sche
 
 
 alias Ctx = tuple[
-    void(str,Field) addParam,
+    void(str,Param) addParam,
     Schema schema,
     Env env,
     set[str] dyns,
@@ -110,7 +110,7 @@ tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}
   }
   
   Bindings params = (); 
-  void addParam(str x, Field field) {
+  void addParam(str x, Param field) {
     params[x] = field;
   }
   
@@ -281,7 +281,7 @@ tuple[str ent, str path, Expr other] split(Expr lhs, Expr rhs, Ctx ctx) {
 DBObject expr2obj(e:(Expr)`<VId x>.<{Id "."}+ fs>`, Ctx ctx) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_<fs>_<ctx.vars()>";
-    ctx.addParam(token, <p.name, "<x>", ctx.env["<x>"], "<fs>">);
+    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "<fs>"));
     return placeholder(name=token);
   }
   throw "Only dynamic parameters can be used as expressions in query docs, not <e>";
@@ -293,7 +293,7 @@ DBObject expr2obj(e:(Expr)`<VId x>`, Ctx ctx)
 DBObject expr2obj(e:(Expr)`<VId x>.@id`, Ctx ctx) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_@id_<ctx.vars()>";
-    ctx.addParam(token, <p.name, "<x>", ctx.env["<x>"], "@id">);
+    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "@id"));
     return placeholder(name=token);
   }
   throw "Only dynamic parameters can be used as expressions in query docs, not <e>";

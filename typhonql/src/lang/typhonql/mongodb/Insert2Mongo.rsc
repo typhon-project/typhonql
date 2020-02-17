@@ -19,15 +19,15 @@ str mongoId() = "_id";
 
 // Typechecker: nesting in Objects, only for containment in the same database.
 // this form also assumes, it is not owned (so entity e == collection)
-list[Step] insert2mongo((Request)`insert <EId e> {<{KeyVal ","}* kvs>}`, Schema s, Place p) {
+list[Step] insert2mongo((Request)`insert <EId e> {<{KeyVal ","}* kvs>}`, Schema s, Place p, str myId, Param myParam) {
   // abusing Field in params to obtain an ID from the Java side.
-  Bindings params = (ID_PARAM: generatedIdField());
   
+  Bindings myParams = (myId: myParam);
   
   DBObject obj = object([ keyVal2prop(kv) | KeyVal kv <- kvs ]
-    + [ <mongoId(), placeholder(name=ID_PARAM)> ]);
+    + [ <mongoId(), placeholder(name=myId)> ]);
 
-  return [step(p.name, mongo(insertOne(p.name, "<e>", pp(obj))), params)];
+  return [newId(myId), step(p.name, mongo(insertOne(p.name, "<e>", pp(obj))), myParams)];
 }
 
 // TODO: need cardinality interpretation too

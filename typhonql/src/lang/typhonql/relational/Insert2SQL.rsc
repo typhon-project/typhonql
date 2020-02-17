@@ -31,10 +31,9 @@ bool bothAt(str from, str to, Place p, Schema s) = placeOf(from, s) == p && plac
 alias ParentFK = tuple[str col, str val];
 
 // TODO typechecker: if e has owner, disallow this form.
-tuple[list[SQLStat], Bindings] insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s, Place p, ParentFK parent = <"", "">) {
-
-  // abusing Field in params to obtain an ID from the Java side.
-  Bindings params = (ID_PARAM: generatedIdField());
+//tuple[list[SQLStat], Bindings]
+list[Step] insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s, Place p, str myId, Param myVal, ParentFK parent = <"", "">) {
+  Bindings myParams = (myId: myVal);
   
   list[str] aCols({KeyVal ","}* kvs, str entity) 
     = [ *columnName(kv, entity) | KeyVal kv  <- kvs, isAttr(kv, entity, s)]
@@ -43,10 +42,10 @@ tuple[list[SQLStat], Bindings] insert2sql((Request)`insert <EId e> { <{KeyVal ",
   
   list[Value] aVals({KeyVal ","}* kvs, str entity) 
     = [ *evalKeyVal(kv) | KeyVal kv <- kvs, isAttr(kv, entity, s) ]
-    + [ Value::placeholder(name=ID_PARAM) ]
+    + [ Value::placeholder(name=myId) ]
     + [ text(parent.val) | parent.val != "" ];
 
-  result = [ \insert(tableName("<e>"), aCols(kvs, "<e>"), aVals(kvs, "<e>")) ]; 
+  list[SQLStat] result = [ \insert(tableName("<e>"), aCols(kvs, "<e>"), aVals(kvs, "<e>")) ]; 
   
   
   
@@ -75,41 +74,41 @@ tuple[list[SQLStat], Bindings] insert2sql((Request)`insert <EId e> { <{KeyVal ",
         // found the canonical containment rel
         // but then reverse!!    
         str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
-        append outer: update(tableName(to), [\set(fk, SQLExpr::placeholder(name=ID_PARAM))],
+        append outer: update(tableName(to), [\set(fk, SQLExpr::placeholder(name=myId))],
             [where([equ(column(tableName(to), typhonId(to)), lit(text(uuid)))])]);
       }
       else if (<to, _, str toRole, fromRole, _, from, true> <- s.rels, bothAt(from, to, p, s)) {
         str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
         append outer: update(tableName(from), [\set(fk, lit(text(uuid)))],
-          [where([equ(column(tableName(from), typhonId(from)), SQLExpr::placeholder(name=ID_PARAM))])]);
+          [where([equ(column(tableName(from), typhonId(from)), SQLExpr::placeholder(name=myId))])]);
       }
       else if (<from, _, fromRole, str toRole, _, to, false> <- s.rels, bothAt(from, to, p, s))  { // a cross ref
         append outer: \insert(junctionTableName(from, fromRole, to, toRole)
                         , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
-                        , [Value::placeholder(name=ID_PARAM), text(uuid)]);
+                        , [Value::placeholder(name=myId), text(uuid)]);
       }
       else if (<from, _, fromRole, str toRole, _, to, _> <- s.rels, !bothAt(from, to, p, s))  { 
          append outer: \insert(junctionTableName(from, fromRole, to, toRole)
                         , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
-                        , [Value::placeholder(name=ID_PARAM), text(uuid)]);
+                        , [Value::placeholder(name=myId), text(uuid)]);
       }
       else {
         throw "Reference <from>.<fromRole> not found in schema.";
       }
   }
       
-  // NB: params are shared for all statements.
-  return <result, params>;
+  return [newId(myId)]
+    + [ step(p.name, sql(executeStatement(p.name, pp(stat))), myParams) | SQLStat stat <- result ];
 }
 
 // this function assumes the parent is local; if it is outside it should be dealt with higher-up
 // (e.g. in the compile functions of Request2Script)
-tuple[list[SQLStat], Bindings] insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> } into <UUID owner>.<Id field>`, Schema s, Place p) {
+list[Step] insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> } into <UUID owner>.<Id field>`, Schema s, Place p, str myId, Param myVal) {
 
   if (<str parent, _, str fromRole, str toRole, _, str to, _> <- s.rels, fromRole == "<field>", to == "<e>") {
     assert bothAt(parent, "<e>", p, s);
     str fk = fkName(parent, to, toRole == "" ? fromRole : toRole);
-    return insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p, parent = <fk, "<owner>">);
+    return insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p, myId, myVal, parent = <fk, "<owner>">);
   }
   
   throw "no parent entity at db <p> found owning <e> through field <field>";

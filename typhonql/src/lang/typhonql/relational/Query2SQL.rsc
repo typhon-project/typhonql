@@ -23,7 +23,7 @@ alias Ctx
       void(SQLExpr) addWhere,
       void(As) addFrom,
       void(SQLExpr) addResult,
-      void(str, Field) addParam,
+      void(str, Param) addParam,
       Schema schema,
       Env env,
       set[str] dyns,
@@ -76,7 +76,7 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
   }
 
   Bindings params = ();
-  void addParam(str x, Field field) {
+  void addParam(str x, Param field) {
     params[x] = field;
   }
 
@@ -190,7 +190,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>`, Ctx ctx)
 SQLExpr expr2sql(e:(Expr)`<VId x>.@id`, Ctx ctx) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_<ctx.vars()>";
-    ctx.addParam(token, <p.name, "<x>", ctx.env["<x>"], "@id">);
+    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "@id"));
     return SQLExpr::placeholder(name=token);
   }
   str entity = ctx.env["<x>"];
@@ -205,7 +205,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
 
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_<f>_<ctx.vars()>";
-    ctx.addParam(token, <p.name, "<x>", ctx.env["<x>"], "<f>">);
+    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "<f>"));
     return placeholder(name=token);
   }
 
