@@ -9,13 +9,19 @@ alias EntityModels = rel[str name, rel[str name, str \type] attributes, rel[str 
 alias Session = tuple[
 	str (str result, rel[str name, str \type] entities, EntityModels models) read,
 	void () done,
+	void (str) newId,
    	SQLOperations sql,
    	MongoOperations mongo
 ];
 
-alias Field = tuple[str resultSet, str label, str \type, str fieldName];
+//alias Field = tuple[str resultSet, str label, str \type, str fieldName];
 
-alias Bindings = map[str, Field];
+data Param
+  = field(str resultSet, str label, str \type, str fieldName)
+  | uuid(str name)
+  ;
+
+alias Bindings = map[str, Param];
 
 alias SQLOperations = tuple[
 	void (str resultId, str dbName, str query, Bindings bindings) executeQuery
