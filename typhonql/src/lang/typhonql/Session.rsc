@@ -1,8 +1,8 @@
 module lang::typhonql::Session
 
 
-public /*const*/ str ID_PARAM = "TYPHON_ID";
-Field generatedIdField() = <"ID_STORE", "", "", "@id">;
+//public /*const*/ str ID_PARAM = "TYPHON_ID";
+//Field generatedIdField() = <"ID_STORE", "", "", "@id">;
 
 alias EntityModels = rel[str name, rel[str name, str \type] attributes, rel[str name, str entity] relations];
 
@@ -18,7 +18,7 @@ alias Session = tuple[
 
 data Param
   = field(str resultSet, str label, str \type, str fieldName)
-  | uuid(str name)
+  | generatedId(str name)
   ;
 
 alias Bindings = map[str, Param];
@@ -42,3 +42,12 @@ data Connection
 @reflect
 @javaClass{nl.cwi.swat.typhonql.backend.rascal.TyphonSession}
 java Session newSession(map[str, Connection] config);
+
+
+private int _nameCounter = 0;
+
+str newParam() {
+  str p = "param_<_nameCounter>";
+  _nameCounter += 1;
+  return p;
+}
