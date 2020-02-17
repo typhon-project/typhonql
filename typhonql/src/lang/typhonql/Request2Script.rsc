@@ -26,9 +26,6 @@ import List;
 
 TODO:
 
-- generate dollars instead of :param
-- sync
-
 - modularize using pattern-based dispatch
 - use toRole matching to "" to determine the canonical relation in case of non-ownership
 - clean-up the PARAM string passing

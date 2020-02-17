@@ -85,7 +85,7 @@ str pp(\set(str c, SQLExpr e)) = "<q(c)> = <pp(e)>";
 str pp(column(str table, str name)) = "<q(table)>.<q(name)>";
 str pp(named(SQLExpr e, str as)) = "<pp(e)> as <q(as)>";
 str pp(lit(Value val)) = pp(val);
-str pp(placeholder(name = str name)) =  name == "" ? "?" : ":<name>";
+str pp(placeholder(name = str name)) =  name == "" ? "?" : "${<name>}";
 str pp(not(SQLExpr arg)) = "not (<pp(arg)>)";
 str pp(neg(SQLExpr arg)) = "-(<pp(arg)>)"; 
 str pp(pos(SQLExpr arg)) = "+(<pp(arg)>)";
@@ -145,7 +145,7 @@ str pp(dateTime(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
 
 str pp(null()) = "null";
 
-str pp(Value::placeholder(name = str name)) = ":<name>";
+str pp(Value::placeholder(name = str name)) = "${<name>}";
 
 // TableConstraint
 
