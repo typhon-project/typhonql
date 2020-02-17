@@ -113,11 +113,6 @@ Schema checkSchema(Schema sch, loc projectLoc) {
 void setupIDE(bool isDevMode = false) {
   Schema sch = schema({}, {});
   
-  // TODO remove this
-  loc projectLoc = |project://typhonql-ide|;
-  
-  TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
-  
   registerLanguage(TYPHONQL, "tql", start[Script](str src, loc org) {
     return parse(#start[Script], src, org);
   });
