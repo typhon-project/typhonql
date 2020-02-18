@@ -1,9 +1,6 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 
 import org.rascalmpl.interpreter.IEvaluatorContext;
@@ -14,7 +11,6 @@ import org.rascalmpl.interpreter.types.FunctionType;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
-import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
@@ -30,7 +26,7 @@ public class MongoOperations implements Operations {
 		this.connections = connections;
 	}
 
-	private ICallableValue makeFind(ResultStore store, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeFind(ResultStore store, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
 		return makeFunction(ctx, executeType, args -> {
 			String resultId = ((IString) args[0]).getValue();
 			String dbName = ((IString) args[1]).getValue();
@@ -38,28 +34,17 @@ public class MongoOperations implements Operations {
 			String query = ((IString) args[3]).getValue();
 			IMap bindings = (IMap) args[4];
 			
-			Iterator<Entry<IValue, IValue>> iter = bindings.entryIterator();
-			
-			LinkedHashMap<String, Binding> bindingsMap = new LinkedHashMap<>();
-			
-			while (iter.hasNext()) {
-				Entry<IValue, IValue> kv = iter.next();
-				IString param = (IString) kv.getKey();
-				ITuple field = (ITuple) kv.getValue();
-				Binding b = new Binding(((IString) field.get(0)).getValue() ,
-						((IString) field.get(1)).getValue(), ((IString) field.get(2)).getValue(), ((IString) field.get(3)).getValue());
-				bindingsMap.put(param.getValue(), b);
-			}
+			Map<String, Binding> bindingsMap =rascalToJavaBindings(bindings);
 			
 			ConnectionData data = connections.get(dbName);
-			new MongoDBEngine(store, data.getHost(), data.getPort(), dbName, data.getUser(), data.getPassword()).executeFind(resultId, collection, query, bindingsMap);
+			new MongoDBEngine(store, uuids, data.getHost(), data.getPort(), dbName, data.getUser(), data.getPassword()).executeFind(resultId, collection, query, bindingsMap);
 			
 			//sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
 		});
 	}
 	
-	private ICallableValue makeFindWithProjection(ResultStore store, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeFindWithProjection(ResultStore store, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
 		return makeFunction(ctx, executeType, args -> {
 			String resultId = ((IString) args[0]).getValue();
 			String dbName = ((IString) args[1]).getValue();
@@ -68,28 +53,17 @@ public class MongoOperations implements Operations {
 			String projection = ((IString) args[4]).getValue();
 			IMap bindings = (IMap) args[5];
 			
-			Iterator<Entry<IValue, IValue>> iter = bindings.entryIterator();
-			
-			LinkedHashMap<String, Binding> bindingsMap = new LinkedHashMap<>();
-			
-			while (iter.hasNext()) {
-				Entry<IValue, IValue> kv = iter.next();
-				IString param = (IString) kv.getKey();
-				ITuple field = (ITuple) kv.getValue();
-				Binding b = new Binding(((IString) field.get(0)).getValue() ,
-						((IString) field.get(1)).getValue(), ((IString) field.get(2)).getValue(), ((IString) field.get(3)).getValue());
-				bindingsMap.put(param.getValue(), b);
-			}
+			Map<String, Binding> bindingsMap =rascalToJavaBindings(bindings);
 			
 			ConnectionData data = connections.get(dbName);
-			new MongoDBEngine(store, data.getHost(), data.getPort(), dbName, data.getUser(), data.getPassword()).executeFindWithProjection(resultId, collection, query, projection, bindingsMap);
+			new MongoDBEngine(store, uuids, data.getHost(), data.getPort(), dbName, data.getUser(), data.getPassword()).executeFindWithProjection(resultId, collection, query, projection, bindingsMap);
 			
 			//sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
 		});
 	}
 	
-	public ITuple newMongoOperations(ResultStore store, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+	public ITuple newMongoOperations(ResultStore store, Map<String, String> uuids, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
 		
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("MongoOperations"));
 		while (aliasedTuple.isAliased()) {
@@ -100,8 +74,8 @@ public class MongoOperations implements Operations {
 		FunctionType executeType2 = (FunctionType)aliasedTuple.getFieldType("findWithProjection");
 		
 		return vf.tuple(
-            makeFind(store, executeType1, ctx, vf, tf),
-            makeFindWithProjection(store, executeType2, ctx, vf, tf)
+            makeFind(store, uuids, executeType1, ctx, vf, tf),
+            makeFindWithProjection(store, uuids, executeType2, ctx, vf, tf)
 		);
 	}
 }
