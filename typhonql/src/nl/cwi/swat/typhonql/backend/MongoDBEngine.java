@@ -9,8 +9,8 @@ public class MongoDBEngine extends Engine {
 	private String user;
 	private String password;
 
-	public MongoDBEngine(ResultStore store, String host, int port, String dbName, String user, String password) {
-		super(store);
+	public MongoDBEngine(ResultStore store, Map<String, String> uuids, String host, int port, String dbName, String user, String password) {
+		super(store, uuids);
 		this.host = host;
 		this.port = port;
 		this.dbName = dbName;
@@ -23,13 +23,13 @@ public class MongoDBEngine extends Engine {
 	}
 
 	public void executeFind(String resultId, String collectionName, String query, Map<String, Binding> bindings) {
-		ResultIterator results = new MongoQueryExecutor(store, collectionName, query, bindings, getConnectionString(host, port, user, password), dbName).executeSelect();
+		ResultIterator results = new MongoQueryExecutor(store, uuids, collectionName, query, bindings, getConnectionString(host, port, user, password), dbName).executeSelect();
 		storeResults(resultId, results);
 	}
 
 	public void executeFindWithProjection(String resultId, String collectionName, String query, String projection,
 			Map<String, Binding> bindings) {
-		ResultIterator results = new MongoQueryWithProjectionExecutor(store, collectionName, query, projection, bindings, getConnectionString(host, port, user, password), dbName).executeSelect();
+		ResultIterator results = new MongoQueryWithProjectionExecutor(store, uuids, collectionName, query, projection, bindings, getConnectionString(host, port, user, password), dbName).executeSelect();
 		storeResults(resultId, results);
 		
 	}
