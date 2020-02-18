@@ -48,7 +48,7 @@ node {
         if (env.BRANCH_NAME == "master") {
             configFileProvider(
                     [configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
-                    sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile jib:dockerBuild'
+                    sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile jib:build'
             }
         }
 
