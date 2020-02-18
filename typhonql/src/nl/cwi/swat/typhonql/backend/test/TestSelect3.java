@@ -6,6 +6,7 @@ import java.util.Map;
 
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.EntityModel;
+import nl.cwi.swat.typhonql.backend.Field;
 import nl.cwi.swat.typhonql.backend.MariaDBEngine;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.TyphonType;
@@ -115,11 +116,13 @@ public class TestSelect3 {
 		
 		ResultStore store = new ResultStore();
 		
-		MariaDBEngine e1 = new MariaDBEngine(store, "localhost", 3306, "Inventory", "root", "example");
+		Map<String, String> uuids = new HashMap<String, String>();
+		
+		MariaDBEngine e1 = new MariaDBEngine(store, uuids, "localhost", 3306, "Inventory", "root", "example");
 		
 		e1.executeSelect("user", "select u.`User.name` as `u.User.name`,  u.`User.@id` as `u.User.@id` from User u where u.`User.name` = \"Claudio\"");
 		LinkedHashMap<String, Binding> map1 = new LinkedHashMap<String, Binding>();
-		map1.put("user_id", new Binding("user", "u", "User"));
+		map1.put("user_id", new Field("user", "u", "User"));
 		
 		
 		e1.executeSelect("user2", "select u.`User.name` as `u.User.name`,  u.`User.@id` as `u.User.@id` from User u where u.`User.@id` = ${user_id}",  map1);

@@ -6,6 +6,7 @@ import java.util.Map;
 
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.EntityModel;
+import nl.cwi.swat.typhonql.backend.Field;
 import nl.cwi.swat.typhonql.backend.MariaDBEngine;
 import nl.cwi.swat.typhonql.backend.MongoDBEngine;
 import nl.cwi.swat.typhonql.backend.ResultStore;
@@ -32,12 +33,14 @@ public class TestSelectFromScript1 {
 		
 		ResultStore store = new ResultStore();
 		
-		MariaDBEngine e1 = new MariaDBEngine(store, "localhost", 3306, "Inventory", "root", "example");
-		MongoDBEngine e2 = new MongoDBEngine(store, "localhost", 27018, "Reviews", "admin", "admin");
+		Map<String, String> uuids = new HashMap<String, String>();
+		
+		MariaDBEngine e1 = new MariaDBEngine(store, uuids, "localhost", 3306, "Inventory", "root", "example");
+		MongoDBEngine e2 = new MongoDBEngine(store, uuids, "localhost", 27018, "Reviews", "admin", "admin");
 		
 		e1.executeSelect("Inventory", "select `u`.`User.@id` as `u.User.@id` \nfrom `User` as `u`\nwhere (`u`.`User.name`) = (\'Claudio\');");
 		LinkedHashMap<String, Binding> map1 = new LinkedHashMap<String, Binding>();
-		map1.put("u_@id_0", new Binding("Inventory", "u", "User", "@id"));
+		map1.put("u_@id_0", new Field("Inventory", "u", "User", "@id"));
 		e2.executeFindWithProjection("Reviews", "Review","{\"user\": ${u_@id_0}}", "{}", map1);
 		
 		System.out.println("Final Result:");
