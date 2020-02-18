@@ -24,12 +24,17 @@ data Param
 alias Bindings = map[str, Param];
 
 alias SQLOperations = tuple[
-	void (str resultId, str dbName, str query, Bindings bindings) executeQuery
+	void (str resultId, str dbName, str query, Bindings bindings) executeQuery,
+	void (str dbName, str query, Bindings bindings) executeStatement 
 ];
 
 alias MongoOperations = tuple[
 	void (str resultId, str dbName, str collection, str query, Bindings bindings) find,
 	void (str resultId, str dbName, str collection, str query, str projection, Bindings bindings) findWithProjection
+	/*
+		void (str dbName, str coll, str doc) insertOne,
+	void (str dbName, str coll, str doc) findAndUpdateOne,
+	void (str dbName, str coll, str query) deleteOne*/
 ];
 
 
@@ -51,3 +56,4 @@ str newParam() {
   _nameCounter += 1;
   return p;
 }
+
