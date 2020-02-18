@@ -40,7 +40,11 @@
                         </ports>
                     </container>
 					<to>
-						<image>docker.io/clms/typhon-ql</image>
+						<image>docker.io/swatengineering/typhonql-server</image>
+                        <auth>
+                            <username>${env.REGISTRY_USERNAME}</username>
+                            <password>${env.REGISTRY_PASSWORD}</password>
+                        </auth>
 					</to>
 				</configuration>
 			</plugin>
