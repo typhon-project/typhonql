@@ -20,8 +20,8 @@ public class MariaDBQueryExecutor extends QueryExecutor {
 	private PreparedStatement pstmt;
 	private List<String> vars = new ArrayList<String>();
 	
-	public MariaDBQueryExecutor(ResultStore store, String query, Map<String, Binding> bindings, String connectionString) {
-		super(store, query, bindings);
+	public MariaDBQueryExecutor(ResultStore store, Map<String, String> uuids, String query, Map<String, Binding> bindings, String connectionString) {
+		super(store, uuids, bindings);
 		System.out.println(query);
 		Pattern pat =  Pattern.compile("\\$\\{(\\w*?)\\}");
 		Matcher m = pat.matcher(query);
