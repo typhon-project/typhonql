@@ -106,3 +106,37 @@ void smokeTwoBackends2() {
   println(result);
   
 }  
+
+void smokeInsertMaria() {
+	Session session = newSession(connections);
+	Request req1 = (Request)`insert User { name: "Tijs" }`;
+	Script scr1 = request2script(req1, s);
+	iprintln(scr1);
+	runScript(scr1, session, s);
+  
+}
+
+void smokeInsertMongoAndMaria() {
+	Session session = newSession(connections);
+	Request req1 = (Request)`insert Biography { text: "Simple guy" }`;
+	Script scr1 = request2script(req1, s);
+	iprintln(scr1);
+	runScript(scr1, session, s);
+	
+	Request req2 = (Request)`from Biography b select b where b.text == "Simple guy"`;
+	Script scr2 = request2script(req2, s);
+	iprintln(scr2);
+	runScript(scr2, session, s);
+	EntityModels models = {<"Biography", { <"text", "STRING">}, {}>};
+  	str result = session.read("Reviews", {<"b", "Biography">}, models); 
+  	println(result);
+  
+/*	
+	
+	Request req1 = (Request)`insert Person {name: "Pablo", age: 23, reviews: #abc, reviews: #cdef}`;
+	Script scr = request2script(req, s);
+	
+  	iprintln(scr);
+  	runScript(scr, session, s);
+  	*/
+}
