@@ -41,7 +41,7 @@ public abstract class UpdateExecutor {
 			}
 			else {
 				GeneratedIdentifier id = (GeneratedIdentifier) binding;
-				values.put(id.getName(), uuids.get(id.getName()));
+				values.put(var, serialize(uuids.get(id.getName())));
 				executeUpdate(values);
 			}
 			
