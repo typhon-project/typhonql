@@ -148,7 +148,7 @@ void setupIDE(bool isDevMode = false) {
           	  // not dev mode
           	  try {
           		sch = checkSchema(sch, tree@\loc);
-          		TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
+          		TyphonQLManifest typhonConf = readTyphonConfig(tree@\loc);
           		str user = typhonConf.PolystoreUser;
 				str password = typhonConf.PolystorePassword;
           		if (req is query) {
@@ -198,7 +198,7 @@ void setupIDE(bool isDevMode = false) {
     	    	}
     	    } else {
     	    	// non dev mode 
-    	    	TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
+          		TyphonQLManifest typhonConf = readTyphonConfig(tree@\loc);
     	    	str user = typhonConf.PolystoreUser;
 				str password = typhonConf.PolystorePassword;
           		executeResetDatabases(polystoreUri, user, password);
