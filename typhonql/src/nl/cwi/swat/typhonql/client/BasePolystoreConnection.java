@@ -33,7 +33,7 @@ public abstract class BasePolystoreConnection extends PolystoreConnection {
 	private static int calculateMaxEvaluators() {
         int numberOfEvaluators = Math.min(4, Runtime.getRuntime().availableProcessors() - 2);
         if (numberOfEvaluators > 1) {
-            numberOfEvaluators = Math.min(numberOfEvaluators, (int)(Runtime.getRuntime().maxMemory()/ (1024*1024*300L))); // give at least 300MB per evaluator.
+            numberOfEvaluators = Math.min(numberOfEvaluators, (int)(Runtime.getRuntime().maxMemory()/ (1024*1024*700L))); // give at least 700MB per evaluator.
         }
         return Math.max(1, numberOfEvaluators);
 	}
