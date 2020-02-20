@@ -64,11 +64,11 @@
 	<repositories>
         <repository>
             <id>usethesource-cache</id>
-            <url>http://nexus.usethesource.io/content/repositories/public/</url>
+            <url>https://nexus.usethesource.io/content/repositories/public/</url>
         </repository>
         <repository>
             <id>usethesource-snapshots</id>
-            <url>http://nexus.usethesource.io/content/repositories/snapshots/</url>
+            <url>https://nexus.usethesource.io/content/repositories/snapshots/</url>
         </repository>
 
         <repository>
@@ -86,12 +86,12 @@
         <repository>
             <id>neon</id>
             <layout>p2</layout>
-            <url>http://nexus.usethesource.io/content/repositories/eclipse-oxygen/</url>
+            <url>https://nexus.usethesource.io/content/repositories/eclipse-oxygen/</url>
         </repository>
         <repository>
             <id>tm</id>
             <layout>p2</layout>
-            <url>http://nexus.usethesource.io/content/repositories/tm-terminal-marketplace/</url>
+            <url>https://nexus.usethesource.io/content/repositories/tm-terminal-marketplace/</url>
         </repository>
 	</repositories>
 </project>
