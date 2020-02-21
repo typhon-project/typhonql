@@ -116,14 +116,14 @@ Script request2script(Request r, Schema s) {
       str ent = "<e>";
       Place p = placeOf(ent, s);
       
-      // first, find all id's of e things that need to be deleted
-      // including the kid id's of all non-locally owned entities
-      // NB: since we're only deleted a single entity type, partitioning has no effect
-      // on this query, and we get a single "param" corresponding to p.name
-      list[str] results = ["<x>.@id"]
-        + [ "<x>.<f>" | <ent, _, str f, _, _, str to, true> <- s.rels, placeOf(to, s) != p ];
+      //// first, find all id's of e things that need to be deleted
+      //// including the kid id's of all non-locally owned entities
+      //// NB: since we're only deleted a single entity type, partitioning has no effect
+      //// on this query, and we get a single "param" corresponding to p.name
+      //list[str] results = ["<x>.@id"]
+      //  + [ "<x>.<f>" | <ent, _, str f, _, _, str to, true> <- s.rels, placeOf(to, s) != p ];
 
-      Request req = [Request]"from <e> <x> select <intercalate(", ", results)> where <ws>";
+      Request req = [Request]"from <e> <x> select <x>.@id where <ws>";
 
       Script scr = script(compileQuery(req, p, s));
       
@@ -131,7 +131,7 @@ Script request2script(Request r, Schema s) {
      
      
       scr.steps += breakLinksWithParent(ent, toBeDeleted, p, s);
-      scr.steps += cascadeToKids(ent, toBeDeleted, x, p, s);
+      //scr.steps += cascadeToKids(ent, toBeDeleted, x, p, s);
       
       // then delete the entity itself
       
@@ -750,7 +750,7 @@ list[Step] createCrossLinkInSQL(str dbName, str parent, str uuid, str kidParam, 
   SQLStat parentStat = 
     \insert(junctionTableName(parent, fromRole, to, toRole)
             , [junctionFkName(to, toRole), junctionFkName(parent, fromRole)]
-            , [text(uuid), Value::placeholder(name=kidParam)]);
+            , [Value::placeholder(name=kidParam), text(uuid)]);
    return [step(dbName, sql(executeStatement(dbName, pp(parentStat))), (kidParam: kidValue))];         
 }
 
