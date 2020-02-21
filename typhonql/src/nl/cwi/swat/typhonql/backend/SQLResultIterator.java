@@ -6,9 +6,15 @@ import java.sql.SQLException;
 public class SQLResultIterator implements ResultIterator {
 
 	private ResultSet rs;
+	private final boolean isEmpty;
 
 	public SQLResultIterator(ResultSet rs) {
 		this.rs = rs;
+		try {
+			this.isEmpty = !rs.isBeforeFirst();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
@@ -24,6 +30,9 @@ public class SQLResultIterator implements ResultIterator {
 	@Override
 	public boolean hasNextResult() {
 		try {
+			if (isEmpty) {
+				return false;
+			}
 			return !rs.isLast();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
