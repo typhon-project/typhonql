@@ -253,6 +253,8 @@ SQLExpr expr2sql((Expr)`<Str s>`, Ctx ctx) = lit(text("<s>"[1..-1]));
 
 SQLExpr expr2sql((Expr)`<DateTime d>`, Ctx ctx) = lit(dateTime(readTextValueString(#datetime, "<d>")));
 
+SQLExpr expr2sql((Expr)`<UUID u>`, Ctx ctx) = lit(text("<u>"[1..]));
+
 SQLExpr expr2sql((Expr)`true`, Ctx ctx) = lit(boolean(true));
 
 SQLExpr expr2sql((Expr)`false`, Ctx ctx) = lit(boolean(false));
