@@ -1,5 +1,5 @@
 
-# TyphonQL: an Evolving Reference
+# TyphonQL: an Evolving Reference Manual
 
 ## Introduction
 
@@ -10,7 +10,7 @@ which are technically supported by the syntax of TyphonQL, are *not* supported b
 the underlying design principle is to err on the side of native capabilities; TyphonQL is really a compiler to
 existing query languages and/or APIs, but not a database engine itself. 
 
-This document aims to cover these assumptions and limitations. 
+This document aims to cover these assumptions. 
 
 
 ### Example TyphonML Model
@@ -24,28 +24,28 @@ datatype Date
 entity User {
     name: String
     age: int
-    reviews -> Review."Review.author"[0..*]
+    reviews -> Review.[0..*]
     orders -> Order."Order.user"[0..*]
-    cards :-> CreditCard."CreditCard.owner"[0..*]
+    cards :-> CreditCard[0..*]
 }
 
 entity CreditCard {
   number: String
   expires: Date
-  owner -> User."User.paymentInfo"[1]
+  owner -> User."User.cards"[1]
 }
 
 entity Product {
     name : String
     description : String
     price : int
-    reviews :-> Review."Review.product"[0..*]
+    reviews :-> Review[0..*]
     orders -> Order."Order.product"[0..*]
 }
 
 entity Order {
-  user -> User."User.orders"[1]
-  product -> Product."Product.orders"[1]
+  user -> User[1]
+  product -> Product[1]
   amount: int
   date: Date
 }
@@ -81,6 +81,15 @@ documentdb Reviews {
 }
 ```typhonMl
 
+## Well-formedness of TyphonML models
+
+- containment is uni-directional (e.g. inverses of containment cannot be containment)
+- containment is not many-to-many (i.e. tree shaped)
+- containment is uniquely rooted: every owned entity can be reached from a unique 
+path starting from an entity that is not owned
+
+
+
 ## Realizing references 
 
 TyphonML references support bidirectional navigation over relations between entities through inverses (AKA "opposites").
@@ -100,33 +109,40 @@ If both A and B are on MongoDB, the reference is realized by nesting B's directl
 but B is elsewhere, A will contain (an array) of ids which correspond to the identities of the outside Bs.
 
 If a relation A-R-B is *not* containment, we need a reliable way to determine which of A or B is the "master" entity.
-To avoid picking some arbitrary side of such a relation, we require the TyphonML author...
+To avoid picking some arbitrary side of such a relation, we require the TyphonML author explicitly indicate the "master" side
+of such a relation. This is done by declaring inverses/opposites only on one side of the relation; then *that* side is 
+the "derived" side, and the other one the primary/canonical side which will be realized in the back-end.
 
+Consider the following example:
 ```typhonML
 entity A { b -> B }
 
 entity B { a -> A."A.b" }
 ```typhonML
 
+In this case B declares that a is the opposite of A.b, so it won't be implemented. The entity A does not
+specify the opposite, so it is the side that will be realized. In the case A resides on SQL, it will be a junction table; 
+if A is on Mongo, the cross-reference will be realized using (an array of) id-ref(s). 
 
-
-Canonical reference
-
-Constraints
-
-- sfjskdf
-- sdfhskdfh: `x like x`
-
- 
-
-Execute the following `from Person p select p.@id`:
-
-> from Person p  select p.name where p.age > 18
+As a result, the use of inverses [TODO] will be desugared to using the canonical side:
+```
+from A a, B b select b where b.a == a.@id
+```
+Is equivalent to:
+```
+from A a, B b select b where a.b == b.@id
+```
 
 
 ## Querying
 
 Mongo: expression: field op non-field or reverse, but not fields at both sides.
+
+
+```
+from User u, Product p, Review r select u.name, p.name
+ where u.reviews == r, p.reviews == r, r.text like "bad"
+```
 
 
 ## Manipulating Data
@@ -135,6 +151,8 @@ Mongo: expression: field op non-field or reverse, but not fields at both sides.
 ### Insert
 
 Well-formedness of Insert
+- no inverses, just canonical relations
+- no nested documents (for now)
 
 ```
 insert User { name: "John Smith", age: 30 }
@@ -149,7 +167,31 @@ insert User { name: "John Smith", age: 30, cards: [#a129feec-4b92-4ab2-9ef5-d276
 insert CreditCard { number: "1762376287", expires:  $2020-02-21T14:03:45.274+00:00$ }
 ```
 
-Inserting into owner:
+The following is not allowed, because owner is an inverse.
+```
+insert CreditCard { 
+  number: "1762376287", 
+  expires:  $2020-02-21T14:03:45.274+00:00$,
+  owner: #ff704edc-5d85-470b-9ed4-fb8761bbe93a
+}
+```
+
+Alternative is:
+```
+insert CreditCard { 
+  number: "1762376287", 
+  expires:  $2020-02-21T14:03:45.274+00:00$
+}
+```
+
+and then:
+```
+update User u where u.@id == #ff704edc-5d85-470b-9ed4-fb8761bbe93a
+set { cards +: [#the-id-of-the-new-creditcard] }
+```
+
+
+Or, (better), inserting into owner directly:
 
 ```
 insert CreditCard { number: "1762376287", expires:  $2020-02-21T14:03:45.274+00:00$ }
@@ -161,6 +203,8 @@ insert CreditCard { number: "1762376287", expires:  $2020-02-21T14:03:45.274+00:
 
 Well-formedness of Update
 - you cannot update @id fields
+- no nested object literals
+
 
 
 Updating simple-valued attributes
