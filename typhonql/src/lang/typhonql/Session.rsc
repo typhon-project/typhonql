@@ -30,11 +30,10 @@ alias SQLOperations = tuple[
 
 alias MongoOperations = tuple[
 	void (str resultId, str dbName, str collection, str query, Bindings bindings) find,
-	void (str resultId, str dbName, str collection, str query, str projection, Bindings bindings) findWithProjection
-	/*
-		void (str dbName, str coll, str doc) insertOne,
-	void (str dbName, str coll, str doc) findAndUpdateOne,
-	void (str dbName, str coll, str query) deleteOne*/
+	void (str resultId, str dbName, str collection, str query, str projection, Bindings bindings) findWithProjection,
+	void (str dbName, str coll, str query, Bindings bindings) insertOne,
+	void (str dbName, str coll, str query, str update, Bindings bindings) findAndUpdateOne,
+	void (str dbName, str coll, str query, Bindings bindings) deleteOne
 ];
 
 

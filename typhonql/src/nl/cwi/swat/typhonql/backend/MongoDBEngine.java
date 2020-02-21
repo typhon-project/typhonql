@@ -2,6 +2,12 @@ package nl.cwi.swat.typhonql.backend;
 
 import java.util.Map;
 
+import org.bson.Document;
+
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoDatabase;
+
 public class MongoDBEngine extends Engine {
 	private String host;
 	private int port;
@@ -18,20 +24,32 @@ public class MongoDBEngine extends Engine {
 		this.password = password;
 	}
 	
-	private String getConnectionString(String host, int port, String user, String password) {
+	private String getConnectionString() {
 		return "mongodb://" + user + ":" + password + "@" + host + ":" + port;
 	}
 
 	public void executeFind(String resultId, String collectionName, String query, Map<String, Binding> bindings) {
-		ResultIterator results = new MongoQueryExecutor(store, uuids, collectionName, query, bindings, getConnectionString(host, port, user, password), dbName).executeSelect();
+		ResultIterator results = new MongoQueryExecutor(store, uuids, collectionName, query, bindings, getConnectionString(), dbName).executeSelect();
 		storeResults(resultId, results);
 	}
 
 	public void executeFindWithProjection(String resultId, String collectionName, String query, String projection,
 			Map<String, Binding> bindings) {
-		ResultIterator results = new MongoQueryWithProjectionExecutor(store, uuids, collectionName, query, projection, bindings, getConnectionString(host, port, user, password), dbName).executeSelect();
+		ResultIterator results = new MongoQueryWithProjectionExecutor(store, uuids, collectionName, query, projection, bindings, getConnectionString(), dbName).executeSelect();
 		storeResults(resultId, results);
 		
+	}
+
+	public void executeInsertOne(String dbName, String collectionName, String doc, Map<String, Binding> bindings) {
+		new MongoInsertOneExecutor(store, uuids, collectionName, doc, bindings, getConnectionString(), dbName).executeUpdate();
+	}
+	
+	public void executeFindAndUpdateOne(String dbName, String collectionName, String query, String update, Map<String, Binding> bindings) {
+		throw new UnsupportedOperationException();
+	}
+	
+	public void executeDeleteOne(String dbName, String collectionName, String query, Map<String, Binding> bindings) {
+		throw new UnsupportedOperationException();
 	}
 
 }

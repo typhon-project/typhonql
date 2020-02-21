@@ -55,6 +55,15 @@ void runScript(Script scr, Session session, Schema schema) {
         
       case step(str r, mongo(find(str db, str coll, str json, str proj)), Bindings ps):
         session.mongo.findWithProjection(r, db, coll, json, proj, ps);  
+        
+      case step(str r, mongo(insertOne(str db, str coll, str doc)), Bindings ps):
+        session.mongo.insertOne(db, coll, doc, ps); 
+        
+      case step(str r, mongo(findAndUpdateOne(str db, str coll, str query, str update)), Bindings ps):
+        session.mongo.findAndUpdateOne(db, coll, query, update, ps);   
+        
+      case step(str r, mongo(deleteOne(str db, str coll, str query)), Bindings ps):
+        session.mongo.deleteOne(db, coll, query, ps); 
        
       case newId(str var):
         session.newId(var);
