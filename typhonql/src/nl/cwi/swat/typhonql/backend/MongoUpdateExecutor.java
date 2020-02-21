@@ -12,9 +12,9 @@ import com.mongodb.client.MongoDatabase;
 
 public abstract class MongoUpdateExecutor extends UpdateExecutor {
 
-	private String connectionString;
-	private String dbName;
-	private String collectionName;
+	protected String connectionString;
+	protected String dbName;
+	protected String collectionName;
 	private String query;
 
 	public MongoUpdateExecutor(ResultStore store, Map<String, String> uuids, String collectionName, String query,
@@ -35,8 +35,15 @@ public abstract class MongoUpdateExecutor extends UpdateExecutor {
 	}
 	
 	protected abstract void performUpdate(MongoCollection<Document> coll, Document resolveQuery);
+	
+	protected void performUpdate(MongoCollection<Document> coll, Document resolveQuery, Document update) {
+		
+	}
+	
+	
+	
 
-	private Document resolveQuery(Map<String, String> values) {
+	protected Document resolveQuery(Map<String, String> values) {
 		StringSubstitutor sub = new StringSubstitutor(values);
 		String resolvedQuery = sub.replace(query);
 		Document pattern = Document.parse(resolvedQuery);

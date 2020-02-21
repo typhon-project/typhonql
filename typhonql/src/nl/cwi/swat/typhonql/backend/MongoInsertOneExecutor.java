@@ -16,7 +16,6 @@ public class MongoInsertOneExecutor extends MongoUpdateExecutor {
 	@Override
 	protected void performUpdate(MongoCollection<Document> coll, Document resolvedQuery) {
 		coll.insertOne(resolvedQuery);
-
 	}
 
 }
