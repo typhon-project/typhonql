@@ -206,7 +206,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_<f>_<ctx.vars()>";
     ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "<f>"));
-    return placeholder(name=token);
+    return SQLExpr::placeholder(name=token);
   }
 
   
