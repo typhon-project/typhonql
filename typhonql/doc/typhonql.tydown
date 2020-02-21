@@ -1,0 +1,123 @@
+
+# TyphonQL: an Evolving Reference
+
+## Introduction
+
+Although TyphonQL provides an abstraction layer over different back-ends, and allows users to think
+in terms of TyphonML schemas as much as possible, the compiler imposes some constraints on what can be expressed,
+so as to be able to leverage native capabilities of back-ends. This means that some forms of TyphonQL queries, 
+which are technically supported by the syntax of TyphonQL, are *not* supported by the compiler. In general,
+the underlying design principle is to err on the side of native capabilities; TyphonQL is really a compiler to
+existing query languages and/or APIs, but not a database engine itself. 
+
+This document aims to cover these assumptions and limitations. 
+
+
+### Example TyphonML Model
+
+
+```typhonML
+datatype String
+datatype int
+datatype Date
+
+entity User {
+    name: String
+    age: int
+    reviews -> Review."Review.author"[0..*]
+    orders -> Order."Order.user"[0..*]
+    paymentInfo :-> CreditCard."CreditCard.owner"[0..*]
+}
+
+entity CreditCard {
+  number: String
+  expires: Date
+  owner -> User."User.paymentInfo"[1]
+}
+
+entity Product {
+    name : String
+    description : String
+    price : int
+    reviews :-> Review."Review.product"[0..*]
+    orders -> Order."Order.product"[0..*]
+}
+
+entity Order {
+  user -> User."User.orders"[1]
+  product -> Product."Product.orders"[1]
+  amount: int
+  date: Date
+}
+
+entity Review {
+    text : String
+    product -> Product."Product.reviews"[1]
+    author -> User."User.reviews"[1]
+    replies :-> Comment [0..*]
+}
+
+entity Comment {
+  review -> Review."Review.replies"[0..1]
+  text: String
+  replies :-> Comment[0..1]
+  author -> User[0..1]
+}
+
+relationaldb Inventory {
+    tables { 
+      table { User : User }
+      table { Product : Product }
+      table { CreditCard : CreditCard }
+      table { Order : Order }
+    }
+    
+}
+documentdb Reviews {
+    collections { 
+      Reviews : Review
+      Comments : Comment 
+    }
+}
+```typhonMl
+
+## Subsection
+
+Constraints
+
+- sfjskdf
+- sdfhskdfh: `x like x`
+
+ 
+
+Execute the following `from Person p select p.@id`:
+
+> from Person p  select p.name where p.age > 18
+
+
+## Querying
+
+Mongo: expression: field op non-field or reverse, but not fields at both sides.
+
+
+## Manipulating Data
+
+
+### Insert
+
+Well-formedness of Insert
+- 
+
+### Update
+
+Well-formedness of Update
+- laskjdladk
+
+
+### Delete
+
+ 
+ 
+
+
+
