@@ -1,0 +1,78 @@
+
+
+
+# create E at Db
+
+SQL: create table with @id field
+Mongo: create collection
+
+
+# create E.a: T
+
+SQL: alter table E add column a: T
+Mongo: do nothing
+
+NB: if user defined data type, flatten
+
+# create E.r -> E' c
+
+SQL: create (canonical) junction table between E and E', with foreign keys to side(s) that are in SQL
+Mongo: do nothing
+
+NB: we don't interpret cardinality here because we cannot chose tuples if non-optional
+
+# create E.r :-> E' c
+
+SQL: alter table E' add column + reference/foreign key to E if both E/E' in SQL, otherwise junction table
+Mongo: do nothing
+
+# change E.r c
+
+SQL: do nothing
+Mongo: if going from 0..1 or 1..1 to something *, surround all E.rs with [], otherwise nothing/error
+
+# change E.r ->
+
+SQL: in sql only, create junction table and populate according to kids table, add cascade delete
+alter table target of E drop column parent + constraints
+
+# change E.r :->
+
+SQL: in sql only, alter table target of E add column pointing to parent default null,
+insert according to junction table modeling r, *then* add foreign key constraints + cascade to
+kid table; drop junction table.
+
+# change E.r to E'
+
+SQL: [this probably does not make sense]
+Mongo: idem.
+
+# rename E.a to a
+
+SQL: alter table E rename column
+Mongo: rename properties in objects of type E (which can be nested)
+
+# rename E.r to r
+
+SQL: rename junction table, or rename parent column in target table of E.r
+Mongo: rename properties
+
+# drop E
+
+SQL: remove foreign key constraints/cascade on child tables owned by E, *then* drop table E
+
+# drop E.a
+
+SQL: alter table drop column 
+Mongo: remove property a from objects E
+
+NB: if a is user defined data type, flatten first 
+
+# drop E.r
+
+SQL: if containment local, remove constraints, and parent column from target of E.r,
+else drop junction table modeling r
+
+Mongo: if local containment (= nesting), recursively hoist contained objects to collection of type target of E.r,
+then remove property r from E, otherwise just remove properties.
+
