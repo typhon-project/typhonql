@@ -144,14 +144,14 @@ void smokeInsertMongoAndMaria() {
   					if ((Member) `<StringLiteral name1> : <Value v1>` <- obj1.members) {
   						println ("<name1>");
   						if  ("\"uuid\"" == "<name1>") {
-  							bioUuid = "<v1>";
+  							bioUuid = "<v1>"[1 .. -1];
   						}
   					}
   				}
   			}
   		}
   	}
-  	Request req3 = [Request] "insert User {name: \"Tijs\", biography: <bioUuid>}";
+  	Request req3 = [Request] "insert User {name: \"Tijs\", biography: #<bioUuid>}";
 	Script scr3 = request2script(req3, s);
 	
   	iprintln(scr3);
