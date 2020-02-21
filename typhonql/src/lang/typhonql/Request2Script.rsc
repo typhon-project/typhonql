@@ -36,6 +36,7 @@ TODO:
 
 
 Script request2script(Request r, Schema s) {
+  println("REQ: <r>");
   switch (r) {
   
     case (Request)`<Query q>`: {
@@ -238,19 +239,19 @@ list[Step] cascadeToKids(str ent, Param toBeDeleted, VId x, Place p, Schema s) {
         case <<sql(), str dbName>, <sql(), str dbKid>>: {
           // NB this could be done based on the id of the entity to be deleted itself
           // but breakCrossLinkInSQL now deletes based on the kid's id
-          steps += breakCrossLinkInSQL(dbName, ent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", <p.name, "<x>", to, fromRole>, fromRole, to, toRole);
+          steps += breakCrossLinkInSQL(dbName, ent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", field(p.name, "<x>", ent, fromRole), fromRole, to, toRole);
           SQLStat stat = delete(tableName(to), [
            where([equ(column(tableName(to), typhonId(to)), SQLExpr::placeholder(name="TO_DELETE"))])]);
         
-          steps += [step(dbKid, sql(executeStatement(dbKid, pp(stat))), ("TO_DELETE": <p.name, "<x>", to, fromRole>))]; 
+          steps += [step(dbKid, sql(executeStatement(dbKid, pp(stat))), ("TO_DELETE": field(p.name, "<x>", ent, fromRole)))]; 
 		}
 
         case <<sql(), str dbName>, <mongodb(), str dbKid>>: {
           // on dbName delete from junction table
-          steps += breakCrossLinkInSQL(dbName, ent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", field(p.name, "<x>", to, fromRole), fromRole, to, toRole);
+          steps += breakCrossLinkInSQL(dbName, ent, SQLExpr::placeholder(name="TO_DELETE"), "TO_DELETE", field(p.name, "<x>", ent, fromRole), fromRole, to, toRole);
           
           DBObject q = object([<"_id", DBObject::placeholder(name="TO_DELETE")>]);
-          steps += [step(dbKid, mongo(deleteOne(dbKid, to, pp(q))), ("TO_DELETE": field(p.name, "<x>", to, fromRole)))];
+          steps += [step(dbKid, mongo(deleteOne(dbKid, to, pp(q))), ("TO_DELETE": field(p.name, "<x>", ent, fromRole)))];
 		}
         
         case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
@@ -261,7 +262,7 @@ list[Step] cascadeToKids(str ent, Param toBeDeleted, VId x, Place p, Schema s) {
           // the refs on dbName, dissappear on delete
           // but we need to delete entities on the other mongo
           DBObject q = object([<"_id", DBObject::placeholder(name="TO_DELETE")>]);
-          steps += [step(dbKid, mongo(deleteOne(dbKid, to, pp(q))), ("TO_DELETE": field(p.name, "<x>", to, fromRole)))];
+          steps += [step(dbKid, mongo(deleteOne(dbKid, to, pp(q))), ("TO_DELETE": field(p.name, "<x>", ent, fromRole)))];
         }
 
         case <<mongodb(), str dbName>, <sql(), str dbKid>>: {
@@ -270,7 +271,7 @@ list[Step] cascadeToKids(str ent, Param toBeDeleted, VId x, Place p, Schema s) {
           SQLStat stat = delete(tableName(to), [
            where([equ(column(tableName(to, typhonId(to))), SQLExpr::placeholder(name="TO_DELETE"))])]);
         
-          steps += [step(dbKid, sql(executeStatement(dbKid, pp(stat))), ("TO_DELETE": field(p.name, "<x>", to, fromRole)))]; 
+          steps += [step(dbKid, sql(executeStatement(dbKid, pp(stat))), ("TO_DELETE": field(p.name, "<x>", ent, fromRole)))]; 
         }
     }
   }
@@ -732,7 +733,7 @@ list[Step] breakCrossLinkInSQL(str dbName, str parent, SQLExpr kid, str param, P
   SQLStat parentStat = 
     \delete(junctionTableName(parent, fromRole, to, toRole),[
       where([
-        equ(column(junctionTableName(parent, fromRole, to, toRole), junctionFkName(to, toRole)), kid)
+        equ(column(junctionTableName(parent, fromRole, to, toRole), junctionFkName(parent, fromRole)), kid)
       ])]);
    return [step(dbName, sql(executeStatement(dbName, pp(parentStat))), (param: kidField))];         
 }
