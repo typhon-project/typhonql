@@ -8,7 +8,9 @@ import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
 import IO;
 
-str HOST = "localhost";
+//str HOST = "localhost";
+
+str HOST = "tijs-typhon.duckdns.org";
 
 map[str, Connection] connections = (
 			"Reviews" : mongoConnection(HOST, 27018, "admin", "admin"),
@@ -69,7 +71,7 @@ void smokeSingle() {
 
 void smokeTwoBackends1() {
 
-  Request req = (Request)`from User u, Review r select r where r.user == u, u.name == "Claudio"`;
+  Request req = (Request)`from User u, Review r select r where r.user == u, u.name == "Pablo"`;
   
   Script scr = request2script(req, s);
 	
