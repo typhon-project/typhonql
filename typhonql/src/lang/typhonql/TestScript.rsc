@@ -51,7 +51,87 @@ Schema s = schema(
   },
   changeOperators=[]);
   
+
+void smokeStat(Request r) {
+  println("## Smoking statement:");
+  println(r);
+  Script scr = request2script(r, s);
+  println("## Script:");
+  iprintln(scr);
+  Session session = newSession(connections);
+  runScript(scr, session, s);
+}
+
+  
+void smokeQuery(Request r, str result, rel[str name, str \type] entities, EntityModels models) {
+  println("## Smoking query:");
+  println(r);
+
+  Script scr = request2script(r, s);
+  
+  println("## Script:");
+  iprintln(scr);
+
+  Session session = newSession(connections);
+  runScript(scr, session, s);
+  
+  println("## Result:");
+  println(session.read(result, entities, models));
+  
+} 
+
+void smokeSelects() {
+  smokeStat((Request)`delete User u where true`);
+  smokeStat((Request)`delete Biography b where true`);
+
+  smokeStat((Request)`insert User { @id: #pablo, name: "Pablo" }`);
+  smokeStat((Request)`insert User { @id: #davy, name: "Davy" }`);
+  smokeStat((Request)`insert User { @id: #tijs, name: "Tijs" }`);
+
+  smokeStat((Request)`insert Biography { text: "Complex guy" } into #tijs.biography`);
+  smokeStat((Request)`insert Biography { text: "Simple guy" } into #pablo.biography`);
+
+  smokeQuery((Request)`from User u select u`,"Inventory", {<"u", "User">}, {<"User", { <"@id", "STRING">, <"name", "STRING">}, {}>});
+  smokeQuery((Request)`from User u select u.name`,"Inventory", {<"u", "User">}, {<"User", { <"@id", "STRING">, <"name", "STRING">}, {}>});
+  smokeQuery((Request)`from User u select u.@id, u.name`,"Inventory", {<"u", "User">}, {<"User", { <"@id", "STRING">, <"name", "STRING">}, {}>});
+
+
+  smokeQuery((Request)`from User u select u where u.name == "Pablo"`,"Inventory", {<"u", "User">}, {<"User", { <"@id", "STRING">, <"name", "STRING">}, {}>});
+  smokeQuery((Request)`from User u select u.name where u.name == "Pablo"`,"Inventory", {<"u", "User">}, {<"User", { <"@id", "STRING">, <"name", "STRING">}, {}>});
+  smokeQuery((Request)`from User u select u.@id, u.name where u.name == "Pablo"`,"Inventory", {<"u", "User">}, {<"User", { <"@id", "STRING">, <"name", "STRING">}, {}>});
+
+
+  smokeQuery((Request)`from User u select u where u.name == "Pablo" || u.name == "Davy"`,"Inventory", {<"u", "User">}, {<"User", { <"@id", "STRING">, <"name", "STRING">}, {}>});
+  smokeQuery((Request)`from User u select u.name where u.name == "Pablo" || u.name == "Davy"`,"Inventory", {<"u", "User">}, {<"User", { <"@id", "STRING">, <"name", "STRING">}, {}>});
+  smokeQuery((Request)`from User u select u.@id, u.name where u.name == "Pablo"  || u.name == "Davy"`,"Inventory", {<"u", "User">}, {<"User", { <"@id", "STRING">, <"name", "STRING">}, {}>});
+  
+  smokeQuery((Request)`from Biography b select b`,"Reviews", {<"b", "Biography">}, {<"Biography", { <"@id", "STRING">, <"text", "STRING">}, {}>});
+  smokeQuery((Request)`from Biography b select b.text`,"Reviews", {<"b", "Biography">}, {<"Biography", { <"@id", "STRING">, <"text", "STRING">}, {}>});
+  smokeQuery((Request)`from Biography b select b.text, b.@id`,"Reviews", {<"b", "Biography">}, {<"Biography", { <"@id", "STRING">, <"text", "STRING">}, {}>});
+
+  smokeQuery((Request)`from Biography b select b where b.user == #pablo `,"Reviews", {<"b", "Biography">}, {<"Biography", { <"@id", "STRING">, <"text", "STRING">}, {}>});
+
+  //smokeQuery((Request)`from User u, Biography b select b where u.biography == #pablo `,"Reviews", {<"b", "Biography">}, {<"Biography", { <"@id", "STRING">, <"text", "STRING">}, {}>});
+  //smokeQuery((Request)`from User u, Biography b select u.name, b.text where u.biography == #pablo `,"Reviews", {<"b", "Biography">}, {<"Biography", { <"@id", "STRING">, <"text", "STRING">}, {}>});
+  
+  
+}
+
+void smokeInserts() {
+  smokeStat((Request)`delete User u where u.@id == #tijs-id`);
+  smokeStat((Request)`insert User { @id: #tijs-id, name: "Tijs" }`);
+  smokeStat((Request)`insert Biography { text: "Complex guy" }`);
+  smokeStat((Request)`insert Biography { text: "Simple guy" } into #tijs-id.biography`);
+}
+
+
+  
 void smokeSingle() {
+  smokeQuery((Request)`from User u select u.name where u.name == "Claudio"`,
+    "Inventory", {<"u", "User">},
+    {<"User", { <"name", "STRING">}, {}>});
+    
+  return;
 
   Request req = (Request)`from User u select u.name where u.name == "Claudio"`;
   
