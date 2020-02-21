@@ -78,6 +78,36 @@ public class TyphonQL {
 		Connections.boot(infos.toArray(new ConnectionInfo[0]));
 	}
 	
+	// work around to set the right host in the connections
+	public void bootConnections(ISourceLocation path, IString host, IString user, IString password) {
+		URI uri = buildUri(path.getURI(), "/api/databases");
+		String json = doGet(uri, user.getValue(), password.getValue());
+		BsonArray array = BsonArray.parse(json);
+		List<ConnectionInfo> infos = new ArrayList<ConnectionInfo>();
+		for (BsonValue v : array.getValues()) {
+			BsonDocument d = v.asDocument();
+			try {
+				String engineType = d.getString("engineType").getValue().toLowerCase() + "db";
+				DBType dbType = DBType.valueOf(engineType);
+				if (dbType == null)
+					throw new RuntimeException("Engine type " + d.getString("engineType").getValue() + " not known");
+				ConnectionInfo info = new ConnectionInfo(
+					path.getURI().toString(),
+					host.getValue(), 
+					d.getNumber("externalPort").intValue(), 
+					d.getString("name").getValue(), 
+					dbType,
+					d.getString("dbType").getValue(),
+					d.getString("username").getValue(),
+					d.getString("password").getValue());
+				infos.add(info);
+			} catch (BsonInvalidOperationException e) {
+				// TODO not do anything if row of connection information is unparsable
+			}
+		}
+		Connections.boot(infos.toArray(new ConnectionInfo[0]));
+	}
+	
 	public IString readHttpModel(ISourceLocation path, IString user, IString password) {
 		URI uri = buildUri(path.getURI(), "/api/models/ml");
 		String json = doGet(uri, user.getValue(), password.getValue());
