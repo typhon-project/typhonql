@@ -7,6 +7,8 @@ import lang::typhonql::Request2Script;
 import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
 import IO;
+import ParseTree;
+import lang::json::\syntax::JSON;
 
 //str HOST = "localhost";
 
@@ -131,14 +133,28 @@ void smokeInsertMongoAndMaria() {
 	runScript(scr2, session, s);
 	EntityModels models = {<"Biography", { <"text", "STRING">}, {}>};
   	str result = session.read("Reviews", {<"b", "Biography">}, models); 
-  	println(result);
-  
-/*	
+  	//println(result);
+  	JSONText parsed = parse(#JSONText, result);
+  	str bioUuid = "";
+  	if ((JSONText) `<Object obj>` := parsed) {
+  		
+  		for ((Member) `<StringLiteral name> : <Value v>` <- obj.members) {
+  			if ((Value) `<Array a>` := v) {
+  				if ((Value) `<Object obj1>` <- a.values) {
+  					if ((Member) `<StringLiteral name1> : <Value v1>` <- obj1.members) {
+  						println ("<name1>");
+  						if  ("\"uuid\"" == "<name1>") {
+  							bioUuid = "<v1>";
+  						}
+  					}
+  				}
+  			}
+  		}
+  	}
+  	Request req3 = [Request] "insert User {name: \"Tijs\", biography: <bioUuid>}";
+	Script scr3 = request2script(req3, s);
 	
-	Request req1 = (Request)`insert Person {name: "Pablo", age: 23, reviews: #abc, reviews: #cdef}`;
-	Script scr = request2script(req, s);
-	
-  	iprintln(scr);
-  	runScript(scr, session, s);
-  	*/
+  	iprintln(scr3);
+  	runScript(scr3, session, s);
+
 }
