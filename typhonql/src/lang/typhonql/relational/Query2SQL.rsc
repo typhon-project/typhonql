@@ -226,9 +226,12 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
     tbl = varForJunction(f, ctx.vars());
   	
   	ctx.addFrom(as(junctionTableName(entity, role, to, toRole), tbl));
+  	
+  	// add a where to link x to the junction table pointing to `to`
   	ctx.addWhere(equ(column(tbl, junctionFkName(entity, role)), column("<x>", typhonId(entity))));
-  	// println("returning column `<junctionFkName(to, toRole)>` of table <tbl>");
-  	return column(tbl, junctionFkName(entity, role));
+  	
+  	// return the column of the target
+  	return column(tbl, junctionFkName(to, toRole));
   }
   else if (<entity, role, _> <- ctx.schema.attrs) { 
     // println("# an attribute");
