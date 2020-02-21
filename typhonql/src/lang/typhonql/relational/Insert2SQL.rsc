@@ -30,6 +30,9 @@ bool bothAt(str from, str to, Place p, Schema s) = placeOf(from, s) == p && plac
 
 alias ParentFK = tuple[str col, str val];
 
+bool hasId({KeyVal ","}* kvs)
+  = any((KeyVal)`@id: <Expr _>` <- kvs);
+
 // TODO typechecker: if e has owner, disallow this form.
 //tuple[list[SQLStat], Bindings]
 list[Step] insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s, Place p, str myId, Param myVal, ParentFK parent = <"", "">) {
@@ -37,12 +40,12 @@ list[Step] insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema 
   
   list[str] aCols({KeyVal ","}* kvs, str entity) 
     = [ *columnName(kv, entity) | KeyVal kv  <- kvs, isAttr(kv, entity, s)]
-    + [ typhonId(entity) ]
+    + [ typhonId(entity) | !hasId(kvs) ]
     + [ parent.col | parent.col != "" ];
   
   list[Value] aVals({KeyVal ","}* kvs, str entity) 
     = [ *evalKeyVal(kv) | KeyVal kv <- kvs, isAttr(kv, entity, s) ]
-    + [ Value::placeholder(name=myId) ]
+    + [ Value::placeholder(name=myId) | !hasId(kvs) ]
     + [ text(parent.val[1..]) | parent.val != "" ];
 
   list[SQLStat] result = [ \insert(tableName("<e>"), aCols(kvs, "<e>"), aVals(kvs, "<e>")) ]; 
@@ -191,6 +194,6 @@ Value evalExpr((Expr)`<DateTime d>`) = dateTime(readTextValueString(#datetime, "
 // should only happen for @id field (because refs should be done via keys etc.)
 Value evalExpr((Expr)`<UUID u>`) = text("<u>"[1..]);
 
-Value evalExpr((Expr)`<Placeholder p>`) = placeholder(name="<p>"[2..]);
+Value evalExpr((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
 
 default Value evalExpr(Expr _) = null();
