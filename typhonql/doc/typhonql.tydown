@@ -26,7 +26,7 @@ entity User {
     age: int
     reviews -> Review."Review.author"[0..*]
     orders -> Order."Order.user"[0..*]
-    paymentInfo :-> CreditCard."CreditCard.owner"[0..*]
+    cards :-> CreditCard."CreditCard.owner"[0..*]
 }
 
 entity CreditCard {
@@ -81,7 +81,36 @@ documentdb Reviews {
 }
 ```typhonMl
 
-## Subsection
+## Realizing references 
+
+TyphonML references support bidirectional navigation over relations between entities through inverses (AKA "opposites").
+In the implementation, however, we must choose one particular direction to implement the relation. 
+Technically, we could maintain bidirectional relations in both directions, but this would create a lot of redundancy
+in the various back-ends, and incur a lot of administrative overhead to maintain referential integrity.
+
+Given a TyphonML model, TyphonQL realizes the "canonical" direction of a relation. Which direction is 
+canonical is determined as follows:
+
+If a reference represents containment (ownership), the parent/owner "owns" the reference as well.
+So a containment relation R between A and B will be implemented on the side of A. If A and B are both in 
+the same SQL database, this results in a foreign key on B, pointing to A. If A is on SQL, but B is 
+elsewhere, the reference is realized using a junction table in the database of A.
+
+If both A and B are on MongoDB, the reference is realized by nesting B's directly below A.R.  If A is on MongoDB, 
+but B is elsewhere, A will contain (an array) of ids which correspond to the identities of the outside Bs.
+
+If a relation A-R-B is *not* containment, we need a reliable way to determine which of A or B is the "master" entity.
+To avoid picking some arbitrary side of such a relation, we require the TyphonML author...
+
+```typhonML
+entity A { b -> B }
+
+entity B { a -> A."A.b" }
+```typhonML
+
+
+
+Canonical reference
 
 Constraints
 
@@ -106,15 +135,98 @@ Mongo: expression: field op non-field or reverse, but not fields at both sides.
 ### Insert
 
 Well-formedness of Insert
-- 
+
+```
+insert User { name: "John Smith", age: 30 }
+```
+
+
+```
+insert User { name: "John Smith", age: 30, cards: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
+```
+
+```
+insert CreditCard { number: "1762376287", expires:  $2020-02-21T14:03:45.274+00:00$ }
+```
+
+Inserting into owner:
+
+```
+insert CreditCard { number: "1762376287", expires:  $2020-02-21T14:03:45.274+00:00$ }
+  into #751772d3-d378-471a-8d84-555c44e2f822.cards
+```
+
 
 ### Update
 
 Well-formedness of Update
-- laskjdladk
+- you cannot update @id fields
+
+
+Updating simple-valued attributes
+
+```
+update User u where u.name == "John Smith" set { age: 30 }
+```
+
+Updating custom data types: TODO.
+
+Setting a relation:
+
+```
+update Review r where r.@id == #13245f43-634f-46bf-a73d-6bd30865f5d4
+  set { author: #a129feec-4b92-4ab2-9ef5-d276a7566f56 }
+``` 
+
+This is equivalent to:
+
+```
+update User u where u.@id == #a129feec-4b92-4ab2-9ef5-d276a7566f56
+  set { reviews +: [#13245f43-634f-46bf-a73d-6bd30865f5d4] }
+```
+
+// is this possible? Shouldn't review already have an owner? i.e. the author?
+
+
+Setting a many-valued relation:
+
+```
+update User u where u.name == "John Smith"
+  set { cards: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
+``` 
+
+Adding:
+
+```
+update User u where u.name == "John Smith"
+  set { cards +: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
+``` 
+
+Removing
+```
+update User u where u.name == "John Smith"
+  set { cards -: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
+``` 
 
 
 ### Delete
+
+- cascade to owned things, but only one hop across database boundaries.
+
+## Placeholders
+
+
+```
+update User u where u.@id == ?
+  set { cards +: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
+``` 
+
+Named placeholders:
+
+```
+update User u where u.@id == ??param
+  set { cards +: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
+``` 
 
  
  
