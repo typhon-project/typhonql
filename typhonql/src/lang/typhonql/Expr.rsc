@@ -13,7 +13,7 @@ syntax Expr
   | @category="Number" \real: Real realValue
   | @category="Constant" \dt: DateTime dtValue
   | \bool: Bool boolValue
-  | uuid: UUID uuidValue
+  | @category="Identifier" uuid: UUID uuidValue
   | bracket "(" Expr arg ")"
   | obj: Obj objValue // for use in insert and allow nesting of objects
   | custom: Custom customValue // for use in insert and allow nesting of custom data types
