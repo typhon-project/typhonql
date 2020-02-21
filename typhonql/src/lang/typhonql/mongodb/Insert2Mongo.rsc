@@ -27,7 +27,7 @@ list[Step] insert2mongo((Request)`insert <EId e> {<{KeyVal ","}* kvs>}`, Schema 
   DBObject obj = object([ keyVal2prop(kv) | KeyVal kv <- kvs ]
     + [ <mongoId(), placeholder(name=myId)> ]);
 
-  return [newId(myId), step(p.name, mongo(insertOne(p.name, "<e>", pp(obj))), myParams)];
+  return [step(p.name, mongo(insertOne(p.name, "<e>", pp(obj))), myParams)];
 }
 
 // TODO: need cardinality interpretation too
