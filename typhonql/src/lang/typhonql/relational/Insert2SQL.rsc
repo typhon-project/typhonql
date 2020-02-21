@@ -97,8 +97,7 @@ list[Step] insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema 
       }
   }
       
-  return [newId(myId)]
-    + [ step(p.name, sql(executeStatement(p.name, pp(stat))), myParams) | SQLStat stat <- result ];
+  return  [ step(p.name, sql(executeStatement(p.name, pp(stat))), myParams) | SQLStat stat <- result ];
 }
 
 // this function assumes the parent is local; if it is outside it should be dealt with higher-up
