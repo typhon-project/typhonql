@@ -43,7 +43,7 @@ list[Step] insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema 
   list[Value] aVals({KeyVal ","}* kvs, str entity) 
     = [ *evalKeyVal(kv) | KeyVal kv <- kvs, isAttr(kv, entity, s) ]
     + [ Value::placeholder(name=myId) ]
-    + [ text(parent.val) | parent.val != "" ];
+    + [ text(parent.val[1..]) | parent.val != "" ];
 
   list[SQLStat] result = [ \insert(tableName("<e>"), aCols(kvs, "<e>"), aVals(kvs, "<e>")) ]; 
   
