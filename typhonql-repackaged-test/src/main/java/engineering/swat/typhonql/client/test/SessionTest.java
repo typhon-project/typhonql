@@ -88,8 +88,8 @@ public class SessionTest {
 				+ Integer.toHexString(System.identityHashCode(result)) + ")");
 		System.out.flush();
 		// now we are ready to import our main module
-		result.doImport(null, "lang::typhonql::test::SessionTest");
-		result.call("main", "lang::typhonql::test::SessionTest", Collections.<String, IValue>emptyMap());
+		result.doImport(null, "lang::typhonql::TestScript");
+		result.call("smokeTwoBackends2", "lang::typhonql::TestScript", Collections.<String, IValue>emptyMap());
 	}
 
 }
