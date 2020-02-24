@@ -41,6 +41,8 @@ public class QLRestServer {
 	}
 
 	public static void main(String[] args) throws Exception {
+		logger.debug("Reflection params: {}", Arrays.toString(DatabaseInfo.class.getConstructors()[0].getParameters()));
+		
 		if (args.length != 1) {
 			System.err.println("Missing port to run the reset server on, pass it as the first argument");
 			return;
