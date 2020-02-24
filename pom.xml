@@ -21,7 +21,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
-		<tycho-version>1.4.0</tycho-version>
+		<tycho-version>1.6.0</tycho-version>
         <dependency-bundle-version>0.11.0</dependency-bundle-version>
     </properties>
 
@@ -33,6 +33,14 @@
 				<version>${tycho-version}</version>
 				<extensions>true</extensions>
 			</plugin>
+            <plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-compiler-plugin</artifactId>
+				<version>${tycho-version}</version>
+                <configuration>
+                    <compilerArgument>-parameters</compilerArgument>
+                </configuration>
+            </plugin>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>target-platform-configuration</artifactId>
@@ -64,11 +72,11 @@
 	<repositories>
         <repository>
             <id>usethesource-cache</id>
-            <url>http://nexus.usethesource.io/content/repositories/public/</url>
+            <url>https://nexus.usethesource.io/content/repositories/public/</url>
         </repository>
         <repository>
             <id>usethesource-snapshots</id>
-            <url>http://nexus.usethesource.io/content/repositories/snapshots/</url>
+            <url>https://nexus.usethesource.io/content/repositories/snapshots/</url>
         </repository>
 
         <repository>
@@ -86,12 +94,12 @@
         <repository>
             <id>neon</id>
             <layout>p2</layout>
-            <url>http://nexus.usethesource.io/content/repositories/eclipse-oxygen/</url>
+            <url>https://nexus.usethesource.io/content/repositories/eclipse-oxygen/</url>
         </repository>
         <repository>
             <id>tm</id>
             <layout>p2</layout>
-            <url>http://nexus.usethesource.io/content/repositories/tm-terminal-marketplace/</url>
+            <url>https://nexus.usethesource.io/content/repositories/tm-terminal-marketplace/</url>
         </repository>
 	</repositories>
 </project>

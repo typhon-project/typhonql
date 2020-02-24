@@ -14,6 +14,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <jetty.version>9.4.26.v20200117</jetty.version>
         <log4j2.version>2.13.0</log4j2.version>
+        <junit.version>5.5.2</junit.version>
     </properties>
 
 	<build>
@@ -40,10 +41,19 @@
                         </ports>
                     </container>
 					<to>
-						<image>docker.io/clms/typhon-ql</image>
+						<image>docker.io/swatengineering/typhonql-server</image>
+                        <auth>
+                            <username>${env.REGISTRY_USERNAME}</username>
+                            <password>${env.REGISTRY_PASSWORD}</password>
+                        </auth>
 					</to>
 				</configuration>
 			</plugin>
+			<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+            </plugin>
 		</plugins>
 	</build>
 
@@ -94,6 +104,24 @@
             <artifactId>jackson-module-parameter-names</artifactId>
             <version>2.10.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <distributionManagement>
@@ -107,7 +135,7 @@
         <repository>
             <!-- rascal dependencies -->
             <id>usethesource</id>
-            <url>http://nexus.usethesource.io/content/repositories/public/</url>
+            <url>https://nexus.usethesource.io/content/repositories/public/</url>
         </repository>
     </repositories>
 </project>

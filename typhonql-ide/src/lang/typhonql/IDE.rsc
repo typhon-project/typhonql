@@ -113,11 +113,6 @@ Schema checkSchema(Schema sch, loc projectLoc) {
 void setupIDE(bool isDevMode = false) {
   Schema sch = schema({}, {});
   
-  // TODO remove this
-  loc projectLoc = |project://typhonql-ide|;
-  
-  TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
-  
   registerLanguage(TYPHONQL, "tql", start[Script](str src, loc org) {
     return parse(#start[Script], src, org);
   });
@@ -153,7 +148,7 @@ void setupIDE(bool isDevMode = false) {
           	  // not dev mode
           	  try {
           		sch = checkSchema(sch, tree@\loc);
-          		TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
+          		TyphonQLManifest typhonConf = readTyphonConfig(tree@\loc);
           		str user = typhonConf.PolystoreUser;
 				str password = typhonConf.PolystorePassword;
           		if (req is query) {
@@ -203,7 +198,7 @@ void setupIDE(bool isDevMode = false) {
     	    	}
     	    } else {
     	    	// non dev mode 
-    	    	TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
+          		TyphonQLManifest typhonConf = readTyphonConfig(tree@\loc);
     	    	str user = typhonConf.PolystoreUser;
 				str password = typhonConf.PolystorePassword;
           		executeResetDatabases(polystoreUri, user, password);

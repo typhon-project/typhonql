@@ -3,6 +3,7 @@ module lang::typhonql::mongodb::DBCollection
 import IO;
 import List;
 import String;
+import DateTime;
 
 alias Prop
   = tuple[str name, DBObject val];  
@@ -26,6 +27,7 @@ str pp(\value(real r)) = "<r>";
 str pp(\value(str s)) = "\"<strEscape(s)>\"";
 
 str pp(\value(bool b)) = "<b>";
+str pp(dateTime(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
 
 str pp(placeholder(name = str x)) = "${<x>}";
 

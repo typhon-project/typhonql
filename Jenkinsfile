@@ -1,4 +1,6 @@
 node {
+  env.JAVA_HOME="${tool 'adopt-openjdk8'}"
+  env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
     try{
     notifyBuild()
 	properties([
@@ -22,7 +24,7 @@ node {
 	    configFileProvider(
         	[configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
         	sh 'mvn -U -B -gs $MAVEN_SETTINGS clean install'
-        	sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile'
+        	sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean test'
         }
     }
 
@@ -32,11 +34,10 @@ node {
                 [configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
                 sh 'cd typhonql-bundler && mvn -U -B -gs $MAVEN_SETTINGS deploy'
                 sh 'mvn -U -B -gs $MAVEN_SETTINGS -pl \'!typhonql-update-site\' deploy'
-                sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile jib:dockerBuild'
             }
         }
-    }
 
+    }
     stage('Deploy update site') {
         if (env.BRANCH_NAME == "master") {
             sh 'cd typhonql-update-site && mvn clean package'
@@ -45,6 +46,17 @@ node {
             sh "cp -a typhonql-update-site/target/. ${UPDATE_SITE_PATH}/"
         }
     }
+    stage('Deploying server') {
+        if (env.BRANCH_NAME == "master") {
+            configFileProvider(
+                    [configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
+                withCredentials([usernamePassword(credentialsId: 'swateng-typhonbuild', usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+                    sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile jib:build'
+                }
+            }
+        }
+    }
+
 
     }catch (e){
         currentBuild.result = "FAILED"

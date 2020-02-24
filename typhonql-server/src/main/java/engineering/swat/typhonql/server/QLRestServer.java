@@ -41,6 +41,10 @@ public class QLRestServer {
 	}
 
 	public static void main(String[] args) throws Exception {
+		if (DatabaseInfo.class.getConstructors()[0].getParameters()[0].getName().equals("arg0")) {
+			throw new RuntimeException("TyphonQL class was not compiled with parameters flag, server cannot work without it");
+		}
+		
 		if (args.length != 1) {
 			System.err.println("Missing port to run the reset server on, pass it as the first argument");
 			return;

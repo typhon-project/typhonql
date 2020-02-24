@@ -52,6 +52,9 @@ DBObject obj2dbObj((Expr)`<Int n>`,  str from, str fld, map[str, Obj] env, Schem
 
 DBObject obj2dbObj((Expr)`<Real r>`,  str from, str fld, map[str, Obj] env, Schema s) = \value(toReal("<r>"));
 
+DBObject obj2dbObj((Expr)`<DateTime d>`,  str from, str fld, map[str, Obj] env, Schema s) = \value(readTextValueString(#datetime,("<d>")));
+
+
 // todo: unescaping
 DBObject obj2dbObj((Expr)`<Str x>`, str from, str fld, map[str, Obj] env, Schema s) = \value("<x>"[1..-1]);
 
