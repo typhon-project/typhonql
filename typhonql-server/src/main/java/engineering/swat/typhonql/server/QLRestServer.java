@@ -41,6 +41,9 @@ public class QLRestServer {
 	}
 
 	public static void main(String[] args) throws Exception {
+		if (DatabaseInfo.class.getConstructors()[0].getParameters()[0].getName().equals("arg0")) {
+			throw new RuntimeException("TyphonQL class was not compiled with parameters flag, server cannot work without it");
+		}
 		logger.debug("Reflection params: {}", Arrays.toString(DatabaseInfo.class.getConstructors()[0].getParameters()));
 		
 		if (args.length != 1) {
