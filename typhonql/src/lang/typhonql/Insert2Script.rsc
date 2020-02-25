@@ -146,8 +146,76 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
          
       }
       
-      for ((KeyVal)`<Id x>: [<{UUID ","}+ refs>]` <- kvs, UUID ref <- refs) {
-        throw "Lists not supported in insert (yet)";
+      for ((KeyVal)`<Id x>: [<{UUID ","}+ refs>]` <- kvs) {
+        str from = "<e>";
+        str fromRole = "<x>";
+        str uuid = "<ref>"[1..];
+        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
+            // this keyval is updating ref to have me as a foreign key
+            
+          switch (placeOf(to, s)) {
+          
+            case <sql(), dbName> : {  
+              // update each ref's foreign key to point to sqlMe
+              str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
+              SQLStat theUpdate = update(tableName(to), [\set(fk, sqlMe)],
+                [where([\in(column(tableName(to), typhonId(to)), [ evalExpr((Expr)`<UUID ref>`) | UUID ref <- refs])])]);
+                
+              steps += [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
+            }
+            
+            case <sql(), str other> : {
+              ; // todo
+              // // insert entry in junction table between from and to on the current place.
+              //steps += insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
+              //steps += insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
+            }
+            
+            case <mongodb(), str other>: {
+              ; // todo
+              //// insert entry in junction table between from and to on the current place.
+              //steps += insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
+              // //list[Step] insertObjectPointer(str dbName, str coll, DBObject subject, str role, Cardinality card, DBObject target, Bindings params) {
+              //steps += insertObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+              //
+            }
+            
+          }
+        }
+        else if (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels) {
+           // this is the case that the current KeyVal pair is actually
+           // setting the currently inserted object as being owned by each ref which is illegal
+           throw "Cannot have multiple parents <refs> for inserted object";
+        } 
+        
+        // xrefs are symmetric, so both directions are done in one go. 
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+           // save the cross ref
+           steps += [ *insertIntoJunction(dbName, from, fromRole, to, toRole, sqlMe, lit(evalExpr((Expr)`<UUID ref>`)), myParams) 
+              | UUID ref <- refs ];
+           
+           // and the opposite sides
+           switch (placeOf(to, s)) {
+             case <sql(), dbName>: {
+               ; // nothing to be done, locally, the same junction table is used
+               // for both directions.
+             }
+             case <sql(), str other>: {
+               steps += [*insertIntoJunction(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
+                  | UUID ref <- refs ];
+             }
+             case <mongodb(), str other>: {
+               steps += [*insertObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams)
+                 | UUID ref <- refs];
+             }
+           }
+        
+        }
+        else {
+          throw "Cannot happen";
+        } 
+        
+         
       }
       
       
