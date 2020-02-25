@@ -131,7 +131,7 @@ Script request2script(Request r, Schema s) {
      
      
       scr.steps += breakLinksWithParent(ent, toBeDeleted, p, s);
-      //scr.steps += cascadeToKids(ent, toBeDeleted, x, p, s);
+      scr.steps += cascadeToKids(ent, toBeDeleted, x, p, s);
       
       // then delete the entity itself
       
@@ -175,6 +175,8 @@ Script request2script(Request r, Schema s) {
       if (<str parent, _, str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, fromRole == "<field>", to == "<e>") {
         Place parentPlace = placeOf(parent, s);
         str uuid = "<owner>"[1..];
+        // todo: if the @id is given in kvs, we don't want kidParam/kidValue
+        // so we need to lift kidParam somehow to SQLExpr.
         str kidParam = newParam();
         Param kidValue = generatedId(kidParam);
         switch (<parentPlace, p>) {
