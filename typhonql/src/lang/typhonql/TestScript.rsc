@@ -11,7 +11,6 @@ import ParseTree;
 import lang::json::\syntax::JSON;
 
 //str HOST = "localhost";
-
 str HOST = "tijs-typhon.duckdns.org";
 
 map[str, Connection] connections = (
@@ -29,7 +28,7 @@ Schema s = schema(
     <"User",zero_one(),"biography","user",\one(),"Biography",true>
   },
   {
-    <"User","address","Address">,
+    <"User","address","String">,
     <"Product","price","int">,
     <"Review","contents","String">,
     <"Biography","text","String">,
@@ -135,15 +134,6 @@ void smokeSingle() {
 
   Request req = (Request)`from User u select u.name where u.name == "Claudio"`;
   
-  Script scr = request2script(req, s);
-  
-  Session session = newSession(connections);
-  
-  iprintln(scr);
-  
-  runScript(scr, session, s);
-  
-  //EntityModels models = schema2entityModels(s);
   
   EntityModels models = {<"User", { <"name", "STRING">}, {}>};
   str result = session.read("Inventory", {<"u", "User">}, models); 
@@ -152,19 +142,10 @@ void smokeSingle() {
 }  
 
 void smokeTwoBackends1() {
-
   Request req = (Request)`from User u, Review r select r where r.user == u, u.name == "Pablo"`;
-  
-  Script scr = request2script(req, s);
-	
-  Session session = newSession(connections);
-  
-  iprintln(scr);
-  
-  runScript(scr, session, s);
+  Session session = executeRequest([req]);
   
   //EntityModels models = schema2entityModels(s);
-  
   EntityModels models = {<"Review", { <"contents", "STRING">}, {}>};
   str result = session.read("Reviews", {<"r", "Review">}, models); 
   println(result);
@@ -172,19 +153,10 @@ void smokeTwoBackends1() {
 }  
 
 void smokeTwoBackends2() {
-
   Request req = (Request)`from User u, Biography b select u where u.biography == b, b.text == "Born in Chile"`;
-  
-  Script scr = request2script(req, s);
-	
-  Session session = newSession(connections);
-  
-  iprintln(scr);
-  
-  runScript(scr, session, s);
+  Session session = executeRequest([req]);
   
   //EntityModels models = schema2entityModels(s);
-  
   EntityModels models = {<"User", { <"name", "STRING">}, {}>};
   str result = session.read("Inventory", {<"u", "User">}, models); 
   println(result);
@@ -200,41 +172,53 @@ void smokeInsertMaria() {
   
 }
 
-void smokeInsertMongoAndMaria() {
-	Session session = newSession(connections);
-	Request req1 = (Request)`insert Biography { text: "Simple guy" }`;
-	Script scr1 = request2script(req1, s);
-	iprintln(scr1);
-	runScript(scr1, session, s);
-	
-	Request req2 = (Request)`from Biography b select b where b.text == "Simple guy"`;
-	Script scr2 = request2script(req2, s);
-	iprintln(scr2);
-	runScript(scr2, session, s);
-	EntityModels models = {<"Biography", { <"text", "STRING">}, {}>};
-  	str result = session.read("Reviews", {<"b", "Biography">}, models); 
-  	//println(result);
-  	JSONText parsed = parse(#JSONText, result);
-  	str bioUuid = "";
-  	if ((JSONText) `<Object obj>` := parsed) {
-  		
-  		for ((Member) `<StringLiteral name> : <Value v>` <- obj.members) {
-  			if ((Value) `<Array a>` := v) {
-  				if ((Value) `<Object obj1>` <- a.values) {
-  					if ((Member) `<StringLiteral name1> : <Value v1>` <- obj1.members) {
-  						println ("<name1>");
-  						if  ("\"uuid\"" == "<name1>") {
-  							bioUuid = "<v1>"[1 .. -1];
-  						}
-  					}
-  				}
-  			}
-  		}
-  	}
-  	Request req3 = [Request] "insert User {name: \"Tijs\", biography: #<bioUuid>}";
-	Script scr3 = request2script(req3, s);
-	
-  	iprintln(scr3);
-  	runScript(scr3, session, s);
-
+void smokeInsertMongoAndMaria2() {
+	Request req1 = (Request)`insert User { @id: #paul, name: "Paul"}`;
+	Request req2 = (Request)`insert Biography { text: "Simple and complex guy" } into #paul.biography`;
+	executeRequests([req1, req2]);
 }
+
+void smokeInsertIntoCollection() {
+	Request req1 = (Request)`insert Product { @id: #pro1, name: "GSM", price: 500}`;
+	Request req2 = (Request)`insert Product { @id: #pro2, name: "TV", price: 200}`;
+	Request req3 = (Request)`insert User { @id: #paul, name: "Paul"}`;
+	Request req4 = (Request)`insert Review { @id: #rev1, contents: "So so", product: #pro1, user: #paul}`;
+	Request req5 = (Request)`insert Review { @id: #rev2, contents: "Ok", product: #pro2, user: #paul}`;
+	Request req6 = (Request)`update User u where u.@id == #paul set {reviews +: [#rev1, #rev2]}`;
+	Request req7 = (Request)`update Product p where p.@id == #pro1 set {reviews +: [#rev1]}`;
+	Request req8 = (Request)`update Product p where p.@id == #pro2 set {reviews +: [#rev2]}`;
+	
+	executeRequests([req1, req2, req3, req4, req5, req6, req7, req8]);
+}
+
+// The biography does not get a user field after req2
+void smokeWhoOwns1() {
+	Request req1 = (Request)`insert Biography { @id: #bio1, text: "Complex guy" }`;
+	Request req2 = (Request)`insert User { @id: #paul, name: "Paul", biography: #bio1}`;
+	executeRequests([req1, req2]);
+}
+
+// Junction table Biography.user-User.biography is empty after req2
+void smokeWhoOwns2() {
+	Request req1 = (Request)`insert User { @id: #paul, name: "Paul"}`;
+	Request req2 = (Request)`insert Biography { @id: #bio1, text: "Complex guy", user: #paul }`;
+	executeRequests([req1, req2]);
+}
+
+// Junction table Biography.user-User.biography is created after req2, but with the wrong uuid
+void smokeWhoOwns3() {
+	Request req1 = (Request)`insert User { @id: #paul, name: "Paul"}`;
+	Request req2 = (Request)`insert Biography { @id: #bio1,  text: "Complex guy" } into #paul.biography`;
+	executeRequests([req1, req2]);
+}
+
+Session executeRequests(list[Request] rs) {
+	Session session = newSession(connections);
+	for (Request r <- rs) {
+		Script scr = request2script(r, s);
+		iprintln(scr);
+		runScript(scr, session, s);
+	}
+	return session;
+}
+
