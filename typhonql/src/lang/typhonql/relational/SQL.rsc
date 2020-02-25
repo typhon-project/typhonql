@@ -52,6 +52,7 @@ data SQLExpr
   | or(SQLExpr lhs, SQLExpr rhs) 
   | and(SQLExpr lhs, SQLExpr rhs) 
   | notIn(SQLExpr arg, list[Value] vals)
+  | \in(SQLExpr arg, list[Value] vals)
   ;
 
 
