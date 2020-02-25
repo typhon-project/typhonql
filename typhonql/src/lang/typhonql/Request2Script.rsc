@@ -9,14 +9,15 @@ import lang::typhonql::TDBC;
 import lang::typhonql::Order;
 import lang::typhonql::Normalize;
 
+import lang::typhonql::Insert2Script;
+
+
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::Util;
 import lang::typhonql::relational::SQL2Text;
 import lang::typhonql::relational::Query2SQL;
-import lang::typhonql::relational::Insert2SQL;
 
 import lang::typhonql::mongodb::Query2Mongo;
-import lang::typhonql::mongodb::Insert2Mongo;
 import lang::typhonql::mongodb::DBCollection;
 
 import IO;
@@ -48,180 +49,135 @@ Script request2script(Request r, Schema s) {
       return request2script((Request)`update <EId e> <VId x> where true set {<{KeyVal ","}* kvs>}`, s);
     }
     
-    case (Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set {<{KeyVal ","}* kvs>}`: {
-
-      str ent = "<e>";
-      Place p = placeOf(ent, s);
-
-       // first, find all id's of e things that need to be updated
-      Request req = (Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ ws>`;
-      
-      // NB: no partitioning, compile locally.
-      Script scr = script(compileQuery(req, p, s));
-      
-      Param toBeUpdated = field(p.name, "<x>", ent, "@id");
-       
-      // update the primitivies
-      switch (p) {
-        case <sql(), str dbName>: {
-          SQLStat stat = update(tableName(ent),
-            [ Set::\set(columnName("<kv.key>", ent), SQLExpr::lit(evalExpr(kv.\value))) | KeyVal kv <- kvs, isAttr(kv, ent, s) ],
-              [where([equ(column(tableName(ent), typhonId(ent)), SQLExpr::placeholder(name="TO_UPDATE"))])]);
-          if (stat.sets != []) {
-            scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_UPDATE": toBeUpdated))];
-          }
-        }
-        
-        case <mongodb(), str dbName>: {
-          DBObject q = object([<"_id", DBObject::placeholder(name="TO_UPDATE")>]);
-          // NB: keyVal2Prop allows @id fields, but they should *never be set in update -> type checker
-          DBObject u = object([ keyVal2prop(kv) | KeyVal kv <- kvs, isAttr(kv, ent, s) ]);
-          if (u.props != []) {
-            scr.steps += [step(dbName, mongo(findAndUpdateOne(dbName, ent, pp(q), pp(u))), ("TO_UPDATE": toBeUpdated))];
-          }
-        }
-      
-      }
-      
-      /*
-       * what to do about nested objects? for now, we don't support them.
-      */
-
-
-      for ((KeyVal)`<Id fld>: <UUID ref>` <- kvs) {
-        scr.steps += updateReference(p, ent, fld, ref, "TO_UPDATE", toBeUpdated, s);
-      }
-
-      for ((KeyVal)`<Id fld>: [<{UUID ","}+ refs>]` <- kvs) {
-        scr.steps += updateManyReference(p, ent, fld, refs, "TO_UPDATE", toBeUpdated, s);
-      }
-
-      
-      for ((KeyVal)`<Id fld> +: [<{UUID ","}+ refs>]` <- kvs) {
-        scr.steps += addToManyReference(p, ent, fld, refs, "TO_UPDATE", toBeUpdated, s);
-      }
-      
-      for ((KeyVal)`<Id fld> -: [<{UUID ","}+ refs>]` <- kvs) {
-        scr.steps += removeFromManyReference(p, ent, fld, refs, "TO_UPDATE", toBeUpdated, s);
-      }
-      
-      return scr;
-    }
+    case (Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set {<{KeyVal ","}* kvs>}`:
+      return update2script(r, s); 
     
-    case (Request)`delete <EId e> <VId x>`: {
-      return request2script((Request)`delete <EId e> <VId x> where true`, s);
-    }
+
+      case (Request)`delete <EId e> <VId x>`: {
+	  return request2script((Request)`delete <EId e> <VId x> where true`, s);
+	}
+	
+	case (Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`: {
+	  str ent = "<e>";
+	  Place p = placeOf(ent, s);
+	  
+	  //// first, find all id's of e things that need to be deleted
+	  //// including the kid id's of all non-locally owned entities
+	  //// NB: since we're only deleted a single entity type, partitioning has no effect
+	  //// on this query, and we get a single "param" corresponding to p.name
+	  //list[str] results = ["<x>.@id"]
+	  //  + [ "<x>.<f>" | <ent, _, str f, _, _, str to, true> <- s.rels, placeOf(to, s) != p ];
+	
+	  Request req = [Request]"from <e> <x> select <x>.@id where <ws>";
+	
+	  Script scr = script(compileQuery(req, p, s));
+	  
+	  Param toBeDeleted = field(p.name, "<x>", "<e>", "@id");
+	 
+	 
+	  scr.steps += breakLinksWithParent(ent, toBeDeleted, p, s);
+	  scr.steps += cascadeToKids(ent, toBeDeleted, x, p, s);
+	  
+	  // then delete the entity itself
+	  
+	  switch (p) {
+	    case <sql(), str dbName>: {
+	      SQLStat stat = delete(tableName(ent), [
+	        where([
+	         equ(column(tableName(ent), typhonId(ent)), SQLExpr::placeholder(name="TO_DELETE"))
+	        ])]);
+	        
+	      scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_DELETE": toBeDeleted))];  
+	    }
+	    
+	    case <mongodb(), str dbName>: {
+	      DBObject q = object([<"_id", DBObject::placeholder(name="TO_DELETE")>]);
+	      scr.steps += [step(dbName, mongo(deleteOne(dbName, ent, pp(q))),  ("TO_DELETE": toBeDeleted))];
+	    }
+	  }
+	  
+	  return scr;
+    }      
+
+    case (Request)`insert <EId e> { <{KeyVal ","}* kvs> }`:
+       return insert2script(r, s); 
     
-    case (Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`: {
-      str ent = "<e>";
-      Place p = placeOf(ent, s);
-      
-      //// first, find all id's of e things that need to be deleted
-      //// including the kid id's of all non-locally owned entities
-      //// NB: since we're only deleted a single entity type, partitioning has no effect
-      //// on this query, and we get a single "param" corresponding to p.name
-      //list[str] results = ["<x>.@id"]
-      //  + [ "<x>.<f>" | <ent, _, str f, _, _, str to, true> <- s.rels, placeOf(to, s) != p ];
-
-      Request req = [Request]"from <e> <x> select <x>.@id where <ws>";
-
-      Script scr = script(compileQuery(req, p, s));
-      
-      Param toBeDeleted = field(p.name, "<x>", "<e>", "@id");
-     
-     
-      scr.steps += breakLinksWithParent(ent, toBeDeleted, p, s);
-      scr.steps += cascadeToKids(ent, toBeDeleted, x, p, s);
-      
-      // then delete the entity itself
-      
-      switch (p) {
-        case <sql(), str dbName>: {
-          SQLStat stat = delete(tableName(ent), [
-            where([
-             equ(column(tableName(ent), typhonId(ent)), SQLExpr::placeholder(name="TO_DELETE"))
-            ])]);
-            
-          scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_DELETE": toBeDeleted))];  
-        }
-        
-        case <mongodb(), str dbName>: {
-          DBObject q = object([<"_id", DBObject::placeholder(name="TO_DELETE")>]);
-          scr.steps += [step(dbName, mongo(deleteOne(dbName, ent, pp(q))),  ("TO_DELETE": toBeDeleted))];
-        }
-      }
-      
-      return scr;
-      
-    }
-
-    case (Request)`insert <EId e> { <{KeyVal ","}* kvs> }`: {
-      Place p = placeOf("<e>", s);
-      str myId = newParam();
-      Param myParam = generatedId(myId);
-      switch (p) {
-        case <sql(), str dbName>: {
-          return script([newId(myId)] + insert2sql(r, s, p, myId, myParam));
-        }
-
-        case <mongodb(), str dbName>: {
-          return script([newId(myId)] + insert2mongo(r, s, p, myId, myParam));
-        }
-      }
-    }
+//    {
+//      Place p = placeOf("<e>", s);
+//      switch (p) {
+//        case <sql(), str dbName>: {
+//          if (hasId(kvs)) {
+//            return script(insert2sql(r, s, p, lit(text(evalId(kvs))), ()));
+//          }
+//          str myId = newParam();
+//          return script([newId(myId)] + insert2sql(r, s, p, SQLExpr::placeholder(name=myId), (myId: generatedId(myId))));
+//        }
+//
+//        case <mongodb(), str dbName>: {
+//          return script([newId(myId)] + insert2mongo(r, s, p, myId, myParam));
+//        }
+//      }
+//    }
   
-    case (Request)`insert <EId e> { <{KeyVal ","}* kvs> } into <UUID owner>.<Id field>`: {
-      Place p = placeOf("<e>", s);
-      if (<str parent, _, str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, fromRole == "<field>", to == "<e>") {
-        Place parentPlace = placeOf(parent, s);
-        str uuid = "<owner>"[1..];
-        // todo: if the @id is given in kvs, we don't want kidParam/kidValue
-        // so we need to lift kidParam somehow to SQLExpr.
-        str kidParam = newParam();
-        Param kidValue = generatedId(kidParam);
-        switch (<parentPlace, p>) {
-            case <<sql(), str dbName>, <sql(), dbName>>: {
-               str fk = fkName(parent, to, toRole == "" ? fromRole : toRole);
- 			   return script([newId(kidParam)] 
- 			     + insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p, kidParam, kidValue, parent = <fk, "<owner>">));
-            }
-
-            case <<sql(), str dbParent>, <sql(), str dbKid>>: {
-              return script([newId(kidParam)]
-                + createCrossLinkInSQL(dbParent, parent, uuid, kidParam, kidValue, fromRole, to, toRole)
-                + insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p, kidParam, kidValue));
-			}
-
-            case <<sql(), str dbParent>, <mongodb(), str dbKid>>: {
-              return script([newId(kidParam)]  
-                + createCrossLinkInSQL(dbParent, parent, uuid, kidParam, kidValue, fromRole, to, toRole)
-                + insert2mongo((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p, kidParam, kidValue));          
-			  
-			}
-            
-            case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
-              return script([newId(kidParam)]  
-                 + createCrossLinkInMongo(dbName, parent, uuid, kidParam, kidValue, fromRole, toCard)
-                 + insert2mongo((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p, kidParam, kidValue));
-            }
-            
-            case <<mongodb(), str dbParent>, <mongodb(), str dbKid>>: {
-              return script([newId(kidParam)]
-                + createCrossLinkInMongo(dbParent, parent, uuid, kidParam, kidValue, fromRole, toCard) 
-                + insert2mongo((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p, kidParam, kidValue));
-            }
-
-            case <<mongodb(), str dbParent>, <sql(), str dbKid>>: {
-              return script([newId(kidParam)]
-                + createCrossLinkInMongo(dbParent, parent, uuid, kidParam, kidValue, fromRole, toCard) 
-                + insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p, kidParam, kidValue));
-            }
-        }
-      }
-      else {
-        throw "No owner type found for entity <e> via <field>";
-      }
-    }
+//    case (Request)`insert <EId e> { <{KeyVal ","}* kvs> } into <UUID owner>.<Id field>`: {
+//      Place p = placeOf("<e>", s);
+//      if (<str parent, _, str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, fromRole == "<field>", to == "<e>") {
+//        Place parentPlace = placeOf(parent, s);
+//        str uuid = "<owner>"[1..];
+//        // todo: if the @id is given in kvs, we don't want kidParam/kidValue
+//        // so we need to lift kidParam somehow to SQLExpr.
+//        str kidParam = newParam();
+//        Param kidValue = generatedId(kidParam);
+//        Bindings myParams = ( kidParam: kidValue | !hasId(kvs) );
+//        SQLExpr sqlKid = hasId(kvs) ? lit(text(evalId(kvs))) : SQLExpr::placeholder(name=kidParam);
+//        DBObj mongoKid = hasId(kvs) ? \value(evalId(kvs)) : DBObject::placeholder(name=kidParam) ;
+//		list[Step] firstStep = [newId(kidParam) | !hasId(kvs) ];
+//		
+//        switch (<parentPlace, p>) {
+//            case <<sql(), str dbName>, <sql(), dbName>>: {
+//               str fk = fkName(parent, to, toRole == "" ? fromRole : toRole);
+// 			   return script(firstStep 
+// 			     + insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p
+// 			        , sqlKid, myParams, parent = <fk, "<owner>">));
+//            }
+//
+//            case <<sql(), str dbParent>, <sql(), str dbKid>>: {
+//              return script(firstStep
+//                + createCrossLinkInSQL(dbParent, parent, uuid, sqlKid, myParams, fromRole, to, toRole)
+//                + insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p
+//                    , sqlKid, myParams));
+//			}
+//
+//            case <<sql(), str dbParent>, <mongodb(), str dbKid>>: {
+//              return script(firstStep 
+//                + createCrossLinkInSQL(dbParent, parent, uuid, sqlKid, myParams, fromRole, to, toRole)
+//                + insert2mongo((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p, mongoKid, myParams));          
+//			  
+//			}
+//            
+//            case <<mongodb(), str dbName>, <mongodb(), dbName>>: {
+//              return script(firstStep   
+//                 + createCrossLinkInMongo(dbName, parent, uuid, mongoKid, myParams, fromRole, toCard)
+//                 + insert2mongo((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p, mongoKid, myParams));
+//            }
+//            
+//            case <<mongodb(), str dbParent>, <mongodb(), str dbKid>>: {
+//              return script(firstStep
+//                + createCrossLinkInMongo(dbParent, parent, uuid, mongoKid, myParams, fromRole, toCard) 
+//                + insert2mongo((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p, mongoKid, myParams));
+//            }
+//
+//            case <<mongodb(), str dbParent>, <sql(), str dbKid>>: {
+//              return script(firstStep
+//                + createCrossLinkInMongo(dbParent, parent, uuid, mongoKid, myParams, fromRole, toCard) 
+//                + insert2sql((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, s, p, sqlKid, myParams));
+//            }
+//        }
+//      }
+//      else {
+//        throw "No owner type found for entity <e> via <field>";
+//      }
+//    }
     
     default: 
       throw "Unsupported request: `<r>`";
@@ -402,7 +358,7 @@ list[Step] removeFromManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, s
 
 list[Step] addToManyReference(Place p, str ent, Id fld, {UUID ","}+ refs, str paramName, Param toBeUpdated, Schema s) {
   if (<ent, Cardinality fromCard,  str fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, fromRole == "<fld>") {
-      assert fromCard in {zero_many(), one_many()}: "Can only remove from many-valued things: <ent>.<fromRole> is not";
+      assert fromCard in {zero_many(), one_many()}: "Can only add to many-valued things: <ent>.<fromRole> is not";
       
       Place targetPlace = placeOf(to, s);
       
@@ -748,12 +704,12 @@ list[Step] breakCrossLinkInMongo(str dbName, str parent, DBObject kid, str kidPa
 }
 
 
-list[Step] createCrossLinkInSQL(str dbName, str parent, str uuid, str kidParam, Param kidValue, str fromRole, str to, str toRole) {
+list[Step] createCrossLinkInSQL(str dbName, str parent, str uuid, SQLExpr kid, Bindings params, str fromRole, str to, str toRole) {
   SQLStat parentStat = 
     \insert(junctionTableName(parent, fromRole, to, toRole)
             , [junctionFkName(to, toRole), junctionFkName(parent, fromRole)]
-            , [Value::placeholder(name=kidParam), text(uuid)]);
-   return [step(dbName, sql(executeStatement(dbName, pp(parentStat))), (kidParam: kidValue))];         
+            , [kid, lit(text(uuid))]);
+   return [step(dbName, sql(executeStatement(dbName, pp(parentStat))), params)];         
 }
 
 
@@ -814,58 +770,57 @@ void smokeScript() {
     iprintln(request2script(q, s));
   }
   
-  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);  
-  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);  
-
-  smokeIt((Request)`from Person u, Review r select r where r.user == u, u.name == "Pablo"`);
-  
-  
-
-  smokeIt((Request)`delete Review r`);
-
-  
-  smokeIt((Request)`delete Review r where r.text == "Bad"`);
-  
-  smokeIt((Request)`delete Comment c where c.contents == "Bad"`);
-  
-  smokeIt((Request)`delete Person p`);
-
-  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
-  
-  smokeIt((Request)`update Person p set {name: "Pablo"}`);
-
-  smokeIt((Request)`update Person p set {name: "Pablo", age: 23}`);
-
-
-  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews +: [#abc, #cde]}`);
-
-  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
-
-  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews: [#abc, #cde]}`);
-
-  smokeIt((Request)`update Review r set {text: "bad"}`);
-
-  smokeIt((Request)`update Review r where r.text == "Good" set {text: "Bad"}`);
-
-  smokeIt((Request)`update Person p set {name: "Pablo", cash: [#abc, #cde]}`);
-
-  smokeIt((Request)`update Person p set {name: "Pablo", cash +: [#abc, #cde]}`);
-
-  smokeIt((Request)`update Person p set {name: "Pablo", cash -: [#abc, #cde]}`);
-
-  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
-
-  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
+//  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);  
+//  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);  
+//
+//  smokeIt((Request)`from Person u, Review r select r where r.user == u, u.name == "Pablo"`);
+//  
+//  
+//
+//  smokeIt((Request)`delete Review r`);
+//
+//  
+//  smokeIt((Request)`delete Review r where r.text == "Bad"`);
+//  
+//  smokeIt((Request)`delete Comment c where c.contents == "Bad"`);
+//  
+//  smokeIt((Request)`delete Person p`);
+//
+//  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
+//  
+//  smokeIt((Request)`update Person p set {name: "Pablo"}`);
+//
+//  smokeIt((Request)`update Person p set {name: "Pablo", age: 23}`);
+//
+//
+//  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews +: [#abc, #cde]}`);
+//
+//  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
+//
+//  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews: [#abc, #cde]}`);
+//
+//  smokeIt((Request)`update Review r set {text: "bad"}`);
+//
+//  smokeIt((Request)`update Review r where r.text == "Good" set {text: "Bad"}`);
+//
+//  smokeIt((Request)`update Person p set {name: "Pablo", cash: [#abc, #cde]}`);
+//
+//  smokeIt((Request)`update Person p set {name: "Pablo", cash +: [#abc, #cde]}`);
+//
+//  smokeIt((Request)`update Person p set {name: "Pablo", cash -: [#abc, #cde]}`);
+//
+//  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
+//
+//  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
   
   smokeIt((Request)`insert Person {name: "Pablo", age: 23}`);
   smokeIt((Request)`insert Person {name: "Pablo", age: 23, reviews: #abc, reviews: #cdef}`);
 
   smokeIt((Request)`insert Review {text: "Bad"}`);
 
+  smokeIt((Request)`insert Person {name: "Pablo", age: 23, @id: #pablo}`);
   
-  smokeIt((Request)`insert Review {text: "Bad"} into #pablo.reviews`);
-  
-  smokeIt((Request)`insert Comment {contents: "Bad"} into #somereview.comment`);
+  smokeIt((Request)`insert Review {text: "Bad", user: #pablo}`);
   
   
 }  
