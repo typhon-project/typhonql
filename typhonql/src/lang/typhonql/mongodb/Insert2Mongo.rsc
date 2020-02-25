@@ -17,6 +17,10 @@ import IO;
 str mongoId() = "_id";
 
 
+bool hasId({KeyVal ","}* kvs)
+  = any((KeyVal)`@id: <Expr _>` <- kvs);
+
+
 // Typechecker: nesting in Objects, only for containment in the same database.
 // this form also assumes, it is not owned (so entity e == collection)
 list[Step] insert2mongo((Request)`insert <EId e> {<{KeyVal ","}* kvs>}`, Schema s, Place p, str myId, Param myParam) {
@@ -25,7 +29,7 @@ list[Step] insert2mongo((Request)`insert <EId e> {<{KeyVal ","}* kvs>}`, Schema 
   Bindings myParams = (myId: myParam);
   
   DBObject obj = object([ keyVal2prop(kv) | KeyVal kv <- kvs ]
-    + [ <mongoId(), placeholder(name=myId)> ]);
+    + [ <mongoId(), placeholder(name=myId)> | !hasId(kvs) ]);
 
   return [step(p.name, mongo(insertOne(p.name, "<e>", pp(obj))), myParams)];
 }
