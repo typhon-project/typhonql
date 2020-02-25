@@ -6,20 +6,16 @@ import lang::typhonql::Script;
 import lang::typhonql::Session;
 import lang::typhonql::TDBC;
 import lang::typhonql::Order;
-import lang::typhonql::Normalize;
 
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::Util;
 import lang::typhonql::relational::SQL2Text;
-import lang::typhonql::relational::Query2SQL;
-import lang::typhonql::relational::Insert2SQL;
 
-import lang::typhonql::mongodb::Query2Mongo;
-import lang::typhonql::mongodb::Insert2Mongo;
 import lang::typhonql::mongodb::DBCollection;
 
 import IO;
 import List;
+import String;
 
 bool hasId({KeyVal ","}* kvs) = any((KeyVal)`@id: <Expr _>` <- kvs);
 
@@ -28,23 +24,27 @@ str evalId({KeyVal ","}* kvs) = "<e>"[1..]
 
 
 list[Step] insertIntoJunction(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, SQLExpr trg, Bindings params) {
-  return [step(dbName, sql(dbName, \insert(junctionTableName(from, fromRole, to, toRole)
-       , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
-                        , [src, trg])), params)];
+  return [step(dbName, 
+           sql(executeStatement(dbName, 
+             pp(\insert(junctionTableName(from, fromRole, to, toRole)
+                  , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
+                  , [src, trg])))), params)];
 }
 
-list[Step] updateObjectPointer(str dbName, str coll, DBObject subject, str role, Cardinality card, DBObject target, Bindings params) {
+list[Step] updateObjectPointer(str dbName, str coll, str role, Cardinality card, DBObject subject, DBObject target, Bindings params) {
     return [
-      step(dbName, mongo(dbName, coll, findAndUpdateOne(coll,
+      step(dbName, mongo( 
+         findAndUpdateOne(dbName, coll,
           // todo: multiplicity 
-          object([<"_id", subject>]), object([<"$set", object([<role, target>])>]))))
+          pp(object([<"_id", subject>])), 
+          pp(object([<"$set", object([<role, target>])>])))), params)
           ];
 }
 
 Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s) {
   Place p = placeOf("<e>", s);
   str myId = newParam();
-  Bindings myParams = ( myId: generatedId(myId) );
+  Bindings myParams = ( myId: generatedId(myId) | !hasId(kvs) );
   SQLExpr sqlMe = hasId(kvs) ? lit(text(evalId(kvs))) : SQLExpr::placeholder(name=myId);
   DBObject mongoMe = hasId(kvs) ? \value(evalId(kvs)) : DBObject::placeholder(name=myId);
   
@@ -70,7 +70,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
         if (<from, _, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
             // this keyval is updating ref to have me as a foreign key
             
-          switch (placeof(to, s)) {
+          switch (placeOf(to, s)) {
           
             case <sql(), dbName> : {  
               // update ref's foreign key to point to sqlMe
@@ -90,6 +90,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
             case <mongodb(), str other>: {
               // insert entry in junction table between from and to on the current place.
               steps += insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
+               //list[Step] updateObjectPointer(str dbName, str coll, DBObject subject, str role, Cardinality card, DBObject target, Bindings params) {
               steps += updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
               
             }
@@ -106,7 +107,6 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
                 str fk = fkName(parent, from, fromRole == "" ? parentRole : fromRole);
                 theInsert.colNames += [ fk ];
                 theInsert.values += [ lit(text(uuid)) ];
-                steps += step(dbName, sql(executeStatement(dbName, pp(theInsert))), myParams);
              }
              case <sql(), str other>: {
                 steps += insertIntoJunction(p.name, from, fromRole, parent, parentRole, lit(text(uuid)), sqlMe, myParams);
@@ -118,17 +118,30 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
              }
            }
         } 
-        else if (<from, _, fromRole, str toRole, _, str to, false> <- s.rels) {
-           if (placeOf(to, s) == p) {
-             ;
-           }
-           else {
-             ;
+        
+        // xrefs are symmetric, so both directions are done in one go. 
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+           // save the cross ref
+           steps += insertIntoJunction(dbName, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
            
+           // and the opposite sides
+           switch (placeOf(to, s)) {
+             case <sql(), dbName>: {
+               ; // nothing to be done, locally, the same junction table is used
+               // for both directions.
+             }
+             case <sql(), str other>: {
+               steps += insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
+             }
+             case <mongodb(), str other>: {
+               steps += updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+             }
            }
         
         }
-        
+        else {
+          throw "Cannot happen";
+        } 
         
          
       }
@@ -136,10 +149,126 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
       for ((KeyVal)`<Id x>: [<{UUID ","}+ refs>]` <- kvs, UUID ref <- refs) {
         throw "Lists not supported in insert (yet)";
       }
+      
+      
+      // do the actual insert first.
+      return script([step(dbName, sql(executeStatement(dbName, pp(theInsert))), myParams), *steps]);
     }
 
     case <mongodb(), str dbName>: {
-      return script([newId(myId)] + insert2mongo(r, s, p, myId, myParam));
+      DBObject obj = object([ keyVal2prop(kv) | KeyVal kv <- kvs ]
+                          + [ <"_id", mongoMe> ]);
+                          
+      list[Step] steps = [step(dbName, mongo(insertOne(dbName, "<e>", pp(obj))), myParams)];
+
+      // refs/containment are direct, but we need to update the other direction.
+      for ((KeyVal)`<Id x>: <UUID ref>` <- kvs) {
+        str from = "<e>";
+        str fromRole = "<x>";
+        str uuid = "<ref>"[1..];
+
+        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, _> <- s.rels) {
+          switch (placeOf(to, s)) {
+          
+            case <mongodb(), dbName> : {  
+              // update uuid's toRole to me
+              steps += updateObjectPointer(dbName, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+            }
+            
+            case <mongo(), str other> : {
+              // update uuid's toRole to me, but on other db
+              steps += updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+            }
+            
+            case <sql(), str other>: {
+              steps += insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
+            }
+            
+          }
+        }
+      }
+
+      return script(steps);
     }
   }
 }
+
+
+DBObject obj2dbObj((Expr)`<EId e> {<{KeyVal ","}* kvs>}`)
+  = object([ keyVal2prop(kv) | KeyVal kv <- kvs ]);
+   
+DBObject obj2dbObj((Expr)`[<{Obj ","}* objs>]`)
+  = array([ obj2dbObj((Expr)`<Obj obj>`) | Obj obj <- objs ]);
+
+DBObject obj2dbObj((Expr)`[<{UUID ","}+ refs>]`)
+  = array([ obj2dbObj((Expr)`<UUID ref>`) | UUID ref <- refs ]);
+
+DBObject obj2dbObj((Expr)`<Bool b>`) = \value("<b>" == "true");
+
+DBObject obj2dbObj((Expr)`<Int n>`) = \value(toInt("<n>"));
+
+DBObject obj2dbObj((Expr)`<DateTime d>`) 
+  = \value(toInt("<n>"));
+  
+DBObject obj2dbObj((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
+
+DBObject obj2dbObj((Expr)`<UUID id>`) = \value("<id>"[1..]);
+
+DBObject obj2DbObj((Expr)`<DateTime d>`) 
+  = object([<"$date", \value(readTextValueString(#datetime, "<d>"))>]);
+
+
+DBObject obj2dbObj((Expr)`<Real r>`) = \value(toReal("<r>"));
+
+// todo: unescaping
+DBObject obj2dbObj((Expr)`<Str x>`) = \value("<x>"[1..-1]);
+  
+Prop keyVal2prop((KeyVal)`<Id x>: <Expr e>`) = <"<x>", obj2dbObj(e)>;
+  
+Prop keyVal2prop((KeyVal)`@id: <UUID u>`) = <"_id", \value("<u>"[1..])>;
+  
+
+list[str] columnName((KeyVal)`<Id x>: <EId customType> (<{KeyVal ","}* keyVals>)`, str entity) = [columnName("<x>", entity, "<customType>", "<y>") | (KeyVal)`<Id y>: <Expr e>` <- keyVals];
+
+list[str] columnName((KeyVal)`<Id x>: <Expr e>`, str entity) = [columnName("<x>", entity)]
+	when (Expr) `<Custom c>` !:= e;
+
+list[str] columnName((KeyVal)`@id: <Expr _>`, str entity) = [typhonId(entity)]; 
+
+list[SQLExpr] evalKeyVal((KeyVal) `<Id x>: <EId customType> (<{KeyVal ","}* keyVals>)`) 
+  = [lit(evalExpr(e)) | (KeyVal)`<Id x>: <Expr e>` <- keyVals];
+
+list[SQLExpr] evalKeyVal((KeyVal)`<Id _>: <Expr e>`) = [lit(evalExpr(e))]
+	when (Expr) `<Custom c>` !:= e;
+
+list[Value] evalKeyVal((KeyVal)`@id: <Expr e>`) = [evalExpr(e)];
+
+Value evalExpr((Expr)`<VId v>`) { throw "Variable still in expression"; }
+ 
+// todo: unescaping (e.g. \" to ")!
+Value evalExpr((Expr)`<Str s>`) = text("<s>"[1..-1]);
+
+Value evalExpr((Expr)`<Int n>`) = integer(toInt("<n>"));
+
+Value evalExpr((Expr)`<Bool b>`) = boolean("<b>" == "true");
+
+Value evalExpr((Expr)`<Real r>`) = decimal(toReal("<r>"));
+
+Value evalExpr((Expr)`<DateTime d>`) = dateTime(readTextValueString(#datetime, "<d>"));
+
+// should only happen for @id field (because refs should be done via keys etc.)
+Value evalExpr((Expr)`<UUID u>`) = text("<u>"[1..]);
+
+Value evalExpr((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
+
+default Value evalExpr(Expr _) = null();
+
+bool isAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) = <e, "<x>", _> <- s.attrs;
+
+bool isAttr((KeyVal)`<Id x> +: <Expr _>`, str e, Schema s) = false;
+
+bool isAttr((KeyVal)`<Id x> -: <Expr _>`, str e, Schema s) = false;
+
+bool isAttr((KeyVal)`@id: <Expr _>`, str _, Schema _) = false;
+  
+
