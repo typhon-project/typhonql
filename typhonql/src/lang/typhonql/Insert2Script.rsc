@@ -31,7 +31,7 @@ list[Step] insertIntoJunction(str dbName, str from, str fromRole, str to, str to
                   , [src, trg])))), params)];
 }
 
-list[Step] updateObjectPointer(str dbName, str coll, str role, Cardinality card, DBObject subject, DBObject target, Bindings params) {
+list[Step] insertObjectPointer(str dbName, str coll, str role, Cardinality card, DBObject subject, DBObject target, Bindings params) {
     return [
       step(dbName, mongo( 
          findAndUpdateOne(dbName, coll,
@@ -75,10 +75,10 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
             case <sql(), dbName> : {  
               // update ref's foreign key to point to sqlMe
               str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
-              SQLState theUpdate = update(tableName(to), [\set(fk, sqlMe)],
+              SQLStat theUpdate = update(tableName(to), [\set(fk, sqlMe)],
                 [where([equ(column(tableName(to), typhonId(to)), lit(text(uuid)))])]);
                 
-              steps += [step(dbName, sql(executeUpdate(dbName, pp(theUpdate))), myParams)];
+              steps += [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
             }
             
             case <sql(), str other> : {
@@ -90,8 +90,8 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
             case <mongodb(), str other>: {
               // insert entry in junction table between from and to on the current place.
               steps += insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
-               //list[Step] updateObjectPointer(str dbName, str coll, DBObject subject, str role, Cardinality card, DBObject target, Bindings params) {
-              steps += updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+               //list[Step] insertObjectPointer(str dbName, str coll, DBObject subject, str role, Cardinality card, DBObject target, Bindings params) {
+              steps += insertObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
               
             }
             
@@ -114,7 +114,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
              }
              case <mongodb(), str other>: {
                steps += insertIntoJunction(p.name, from, fromRole, parent, parentRole, lit(text(uuid)), sqlMe, myParams);
-               steps += updateObjectPointer(other, parent, parentRole, parentCard, \value(uuid), mongoMe, myParams);
+               steps += insertObjectPointer(other, parent, parentRole, parentCard, \value(uuid), mongoMe, myParams);
              }
            }
         } 
@@ -134,7 +134,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
                steps += insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
              }
              case <mongodb(), str other>: {
-               steps += updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+               steps += insertObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
              }
            }
         
@@ -172,12 +172,12 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
           
             case <mongodb(), dbName> : {  
               // update uuid's toRole to me
-              steps += updateObjectPointer(dbName, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+              steps += insertObjectPointer(dbName, to, toRole, toCard, \value(uuid), mongoMe, myParams);
             }
             
             case <mongo(), str other> : {
               // update uuid's toRole to me, but on other db
-              steps += updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+              steps += insertObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
             }
             
             case <sql(), str other>: {
