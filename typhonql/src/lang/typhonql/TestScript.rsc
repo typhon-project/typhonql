@@ -10,6 +10,10 @@ import IO;
 import ParseTree;
 import lang::json::\syntax::JSON;
 
+// Not needed when we can implement resetDatabases using DDL operations
+import lang::typhonql::Run;
+import lang::typhonml::TyphonML;
+
 //str HOST = "localhost";
 str HOST = "tijs-typhon.duckdns.org";
 
@@ -191,28 +195,41 @@ void smokeInsertIntoCollection() {
 	executeRequests([req1, req2, req3, req4, req5, req6, req7, req8]);
 }
 
-// The biography does not get a user field after req2
+// TODO The biography does not get a user field after req2
 void smokeWhoOwns1() {
 	Request req1 = (Request)`insert Biography { @id: #bio1, text: "Complex guy" }`;
 	Request req2 = (Request)`insert User { @id: #paul, name: "Paul", biography: #bio1}`;
 	executeRequests([req1, req2]);
 }
 
-// Junction table Biography.user-User.biography is empty after req2
+// TODO Junction table Biography.user-User.biography is empty after req2
 void smokeWhoOwns2() {
 	Request req1 = (Request)`insert User { @id: #paul, name: "Paul"}`;
 	Request req2 = (Request)`insert Biography { @id: #bio1, text: "Complex guy", user: #paul }`;
 	executeRequests([req1, req2]);
 }
 
-// Junction table Biography.user-User.biography is created after req2, but with the wrong uuid
+// TODO Junction table Biography.user-User.biography is created after req2, but with the wrong uuid
 void smokeWhoOwns3() {
 	Request req1 = (Request)`insert User { @id: #paul, name: "Paul"}`;
 	Request req2 = (Request)`insert Biography { @id: #bio1,  text: "Complex guy" } into #paul.biography`;
 	executeRequests([req1, req2]);
 }
 
-Session executeRequests(list[Request] rs) {
+// TODO Not performing the cascade delete 
+void smokeCrossCascadeDelete1() {
+	Request req1 = (Request)`insert User { @id: #paul, name: "Paul"}`;
+	Request req2 = (Request)`insert Biography { @id: #bio1, text: "Complex guy", user: #paul }`;
+	Request req3 = (Request)`update User u where u.@id == #paul set {biography: #bio1}`;
+	Request req4 = (Request)`delete User u where u.@id == #paul`;
+	executeRequests([req1, req2, req3, req4]);
+	
+}
+
+Session executeRequests(list[Request] rs, bool clean = true) {
+	if (clean) { 
+		resetDatabases();
+	} 
 	Session session = newSession(connections);
 	for (Request r <- rs) {
 		Script scr = request2script(r, s);
@@ -222,3 +239,11 @@ Session executeRequests(list[Request] rs) {
 	return session;
 }
 
+void resetDatabases() {
+
+	@javaClass{nl.cwi.swat.typhonql.TyphonQL}
+	java Model bootConnections(loc polystoreUri, str host, str user, str password);
+	
+	bootConnections(|http://<HOST>:8080|, HOST, "pablo", "antonio");
+	runSchema("http://<HOST>:8080", s);
+}
