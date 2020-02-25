@@ -22,9 +22,9 @@ str pp(create(str t, list[Column] cs, list[TableConstraint] cos))
     '  <intercalate(",\n", [ pp(c) | Column c <- cs ] + [ pp(c) | TableConstraint c <- cos ])>
     ');";
 
-str pp(\insert(str t, list[str] cs, list[Value] vs))
+str pp(\insert(str t, list[str] cs, list[SQLExpr] vs))
   = "insert into <q(t)> (<intercalate(", ", [ q(c) | str c <- cs ])>) 
-    'values (<intercalate(", ", [ pp(v) | Value v <- vs ])>);";
+    'values (<intercalate(", ", [ pp(v) | SQLExpr v <- vs ])>);";
   
 
 str pp(update(str t, list[Set] ss, list[Clause] cs))
