@@ -17,6 +17,9 @@ import IO;
 import List;
 import String;
 
+// TODO: if junction tables are symmetric, i.e. normalized name order in junctionTableName
+// then we don't have to swap arguments if maintaining the inverse at outside sql db.
+
 list[Step] updateIntoJunctionSingle(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, SQLExpr trg, Bindings params) {
   str tbl = junctionTableName(from, fromRole, to, toRole);
   return [step(dbName,
@@ -45,6 +48,24 @@ list[Step] updateIntoJunctionMany(str dbName, str from, str fromRole, str to, st
                   , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
                   , [src, trg])))), params) | SQLExpr trg <- trgs ];
 
+}
+
+list[Step] insertIntoJunctionMany(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, list[SQLExpr] trgs, Bindings params) {
+  str tbl = junctionTableName(from, fromRole, to, toRole);
+  return  [ step(dbName, 
+           sql(executeStatement(dbName, 
+             pp(\insert(tbl
+                  , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
+                  , [src, trg])))), params) | SQLExpr trg <- trgs ];
+}
+
+list[Step] insertIntoJunctionSingle(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, SQLExpr trg, Bindings params) {
+  str tbl = junctionTableName(from, fromRole, to, toRole);
+  return  [ step(dbName, 
+           sql(executeStatement(dbName, 
+             pp(\insert(tbl
+                  , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
+                  , [src, trg])))), params) ];
 }
 
 list[Step] updateObjectPointer(str dbName, str coll, str role, Cardinality card, DBObject subject, DBObject target, Bindings params) {
@@ -169,9 +190,6 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
           throw "Cannot happen";
         } 
         
-        
-
-      
       }
       
       for ((KeyVal)`<Id fld>: [<{UUID ","}+ refs>]` <- kvs) {
@@ -243,7 +261,79 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
         } 
       } // 
       
+      /*
+       * Adding to many-valued collections
+       */
       
+      for ((KeyVal)`<Id fld> +: [<{UUID ","}+ refs>]` <- kvs) {
+        str from = "<e>";
+        str fromRole = "<x>";
+        
+        if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
+            // this keyval is updating each ref to have me as a parent/owner
+            
+          switch (placeOf(to, s)) {
+          
+            case <sql(), dbName> : {  // same as above
+              // update each ref's foreign key to point to sqlMe
+              str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
+              SQLState theUpdate = update(tableName(to), [\set(fk, sqlMe)],
+                [where([\in(column(tableName(to), typhonId(to)), [ evalExpr((Expr)`<UUID ref>`) | UUID ref <- refs ])])]);
+                
+              steps += [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
+            }
+            
+            case <sql(), str other> : {
+              steps += insertIntoJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ]
+                 , myParams);
+              // NB: ownership is never many to many, so if fromRole is many, toRole cannot be
+              steps += [ *updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr(ref)), sqlMe, myParams)
+                | UUID ref <- refs ];
+            }
+            
+            case <mongodb(), str other>: {
+              steps += insertIntoJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ], myParams);
+              // NB: ownership is never many to many, so if fromRole is many, toRole cannot be
+              steps += [ *updateObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams) 
+                  | UUID ref <- refs ];
+            }
+            
+          }
+        }
+        
+        else if (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels) {
+           // this is the case that the current KeyVal pair is actually
+           // setting the currently updated object as being owned by each ref (which should not be possible)
+           throw "Bad update: an object cannot have many parents  <refs>";
+        }
+        // xrefs are symmetric, so both directions are done in one go. 
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+           // save the cross ref
+           steps += insertIntoJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
+           
+           // and the opposite sides
+           switch (placeOf(to, s)) {
+             case <sql(), dbName>: {
+               ; // nothing to be done, locally, the same junction table is used
+               // for both directions.
+             }
+             case <sql(), str other>: {
+               //steps += insertIntoJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
+               steps += [ insertIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
+                 | UUID ref <- refs ];
+             }
+             case <mongodb(), str other>: {
+               // todo: deal with multiplicity correctly in updateObject Pointer
+               steps += [ *updateObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams) 
+                  | UUID ref <- refs ];
+             }
+           }
+        
+        }
+        else {
+          throw "Cannot happen";
+        } 
+      }
       
       
     }
