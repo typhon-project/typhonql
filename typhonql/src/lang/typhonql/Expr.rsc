@@ -13,7 +13,7 @@ syntax Expr
   | @category="Number" \real: Real realValue
   | @category="Constant" \dt: DateTime dtValue
   | \bool: Bool boolValue
-  | @category="Identifier" uuid: UUID uuidValue
+  | uuid: UUID uuidValue
   | bracket "(" Expr arg ")"
   | obj: Obj objValue // for use in insert and allow nesting of objects
   | custom: Custom customValue // for use in insert and allow nesting of custom data types
@@ -74,7 +74,7 @@ syntax KeyVal
 lexical PlaceHolder = "??" Id name;
 
 // textual encoding of reference
-lexical UUID = "#"[\-a-zA-Z0-9]+ !>> [\-a-zA-Z0-9];
+lexical UUID = @category="Identifier"  "#"[\-a-zA-Z0-9]+ !>> [\-a-zA-Z0-9];
 
 // todo: escaping etc.
 lexical Str = [\"] ![\"]* [\"];
