@@ -35,6 +35,7 @@ list[Step] updateIntoJunctionSingle(str dbName, str from, str fromRole, str to, 
                   , [src, trg])))), params)];
 }
 
+// TODO: have reverse versions of this where, src is list of many
 list[Step] updateIntoJunctionMany(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, list[SQLExpr] trgs, Bindings params) {
   str tbl = junctionTableName(from, fromRole, to, toRole);
   return [step(dbName,
@@ -57,6 +58,22 @@ list[Step] insertIntoJunctionMany(str dbName, str from, str fromRole, str to, st
              pp(\insert(tbl
                   , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
                   , [src, trg])))), params) | SQLExpr trg <- trgs ];
+}
+
+list[Step] removeFromJunctionMany(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, list[SQLExpr] trgs, Bindings params) {
+  str tbl = junctionTableName(from, fromRole, to, toRole);
+  return  [ step(dbName, 
+           sql(executeStatement(dbName, 
+             pp(delete(tbl,
+               [ where([\in(junctionFkName(to, toRole), [ trg.val | SQLExpr trg <- trgs ])]) ])))), params) ];
+}
+
+list[Step] removeFromJunctionSingle(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, SQLExpr trg, Bindings params) {
+  str tbl = junctionTableName(from, fromRole, to, toRole);
+  return  [ step(dbName, 
+           sql(executeStatement(dbName, 
+             pp(delete(tbl,
+               [ where([\in(junctionFkName(to, toRole), [ trg.val | SQLExpr trg <- trgs ])]) ])))), params) ];
 }
 
 list[Step] insertIntoJunctionSingle(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, SQLExpr trg, Bindings params) {
@@ -89,7 +106,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   
   Param toBeUpdated = field(p.name, "<x>", ent, "@id");
   str myId = newParam();
-  SQLExpr sqlMe = SQLExpr::placeholder(name=myId);
+  SQLExpr sqlMe = lit(Value::placeholder(name=myId));
   DBObject mongoMe = DBObject::placeholder(name=myId);
   Bindings myParams = ( myId: toBeUpdated );
   
@@ -117,7 +134,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
             case <sql(), dbName> : {  
               // update ref's foreign key to point to sqlMe
               str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
-              SQLState theUpdate = update(tableName(to), [\set(fk, sqlMe)],
+              SQLStat theUpdate = update(tableName(to), [\set(fk, sqlMe)],
                 [where([equ(column(tableName(to), typhonId(to)), lit(text(uuid)))])]);
                 
               steps += [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
@@ -204,7 +221,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
             case <sql(), dbName> : {  
               // update each ref's foreign key to point to sqlMe
               str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
-              SQLState theUpdate = update(tableName(to), [\set(fk, sqlMe)],
+              SQLStat theUpdate = update(tableName(to), [\set(fk, sqlMe)],
                 [where([\in(column(tableName(to), typhonId(to)), [ evalExpr((Expr)`<UUID ref>`) | UUID ref <- refs ])])]);
                 
               steps += [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
@@ -277,7 +294,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
             case <sql(), dbName> : {  // same as above
               // update each ref's foreign key to point to sqlMe
               str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
-              SQLState theUpdate = update(tableName(to), [\set(fk, sqlMe)],
+              SQLStat theUpdate = update(tableName(to), [\set(fk, sqlMe)],
                 [where([\in(column(tableName(to), typhonId(to)), [ evalExpr((Expr)`<UUID ref>`) | UUID ref <- refs ])])]);
                 
               steps += [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
@@ -335,6 +352,80 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
         } 
       }
       
+      /*
+       * Removing from many-valued collections
+       */
+      
+      for ((KeyVal)`<Id fld> -: [<{UUID ","}+ refs>]` <- kvs) {
+        str from = "<e>";
+        str fromRole = "<x>";
+        
+        if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
+           // this keyval is for each ref removing me as a parent/owner
+            
+          switch (placeOf(to, s)) {
+          
+            case <sql(), dbName> : {  // same as above
+              // delete each ref (we cannot orphan them)
+              str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
+              SQLStat theUpdate = delete(tableName(to), 
+                [where([\in(column(tableName(to), typhonId(to)), [ evalExpr((Expr)`<UUID ref>`) | UUID ref <- refs ])])]);
+                
+              steps += [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
+            }
+            
+            case <sql(), str other> : {
+              steps += removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ]
+                 , myParams);
+              // NB: ownership is never many to many, so if fromRole is many, toRole cannot be
+              steps += [ *removeFromJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr(ref)), sqlMe, myParams)
+                | UUID ref <- refs ];
+                
+              steps += deleteManySQL(other, to, [ lit(evalExpr(ref)) | UUID ref <- refs ]);
+            }
+            
+            case <mongodb(), str other>: {
+              steps += removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ], myParams);
+              steps += deleteManyMongo(other, to, [ \value("<ref>"[1..]) | UUID ref <- refs ]);
+            }
+            
+          }
+        }
+        
+        else if (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels) {
+           // this is the case that the current KeyVal pair is actually
+           // removing owernship for the currently updated object as not being owned anymore by each ref (which should not be possible)
+           throw "Bad update: an object cannot have many parents  <refs>";
+        }
+        // xrefs are symmetric, so both directions are done in one go. 
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+           // save the cross ref
+           steps += removeFromJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
+           
+           // and the opposite sides
+           switch (placeOf(to, s)) {
+             case <sql(), dbName>: {
+               ; // nothing to be done, locally, the same junction table is used
+               // for both directions.
+             }
+             case <sql(), str other>: {
+               steps += removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ]
+                 , myParams);
+               steps += [ removeJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
+                 | UUID ref <- refs ];
+             }
+             case <mongodb(), str other>: {
+				steps += removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ]
+                 , myParams);
+                steps += deleteManyMongo(other, to, [ \value("<ref>"[1..]) | UUID ref <- refs ]);
+             }
+           }
+        
+        }
+        else {
+          throw "Cannot happen";
+        } 
+      }
       
     }
     
@@ -353,23 +444,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   */
 
 
-  for ((KeyVal)`<Id fld>: <UUID ref>` <- kvs) {
-    scr.steps += updateReference(p, ent, fld, ref, "TO_UPDATE", toBeUpdated, s);
-  }
-
-  for ((KeyVal)`<Id fld>: [<{UUID ","}+ refs>]` <- kvs) {
-    scr.steps += updateManyReference(p, ent, fld, refs, "TO_UPDATE", toBeUpdated, s);
-  }
-
-  
-  for ((KeyVal)`<Id fld> +: [<{UUID ","}+ refs>]` <- kvs) {
-    scr.steps += addToManyReference(p, ent, fld, refs, "TO_UPDATE", toBeUpdated, s);
-  }
-  
-  for ((KeyVal)`<Id fld> -: [<{UUID ","}+ refs>]` <- kvs) {
-    scr.steps += removeFromManyReference(p, ent, fld, refs, "TO_UPDATE", toBeUpdated, s);
-  }
-  
+ 
 
   
 
