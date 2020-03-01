@@ -99,6 +99,18 @@ list[Step] insertObjectPointers(str dbName, str coll, str role, Cardinality card
 }
 
 
+
+list[Step] removeObjectPointers(str dbName, str coll, str role, Cardinality card, DBObject subject, list[DBObject] targets, Bindings params) {
+    return [
+      step(dbName, mongo( 
+         findAndUpdateOne(dbName, coll,
+          pp(object([<"_id", subject>])), 
+          pp(object([<"$pull", 
+               object([<role, 
+                 object([<"$in", array([ trg | DBObject trg <- targets ])>])>])>])))), params)
+          ];
+}
+
 list[Step] deleteManyMongo(str dbName, str coll, list[DBObject] objs, Bindings params) {
   return [
     step(dbName, mongo(

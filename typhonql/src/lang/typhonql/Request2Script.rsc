@@ -807,6 +807,13 @@ void smokeScript() {
 
   smokeIt((Request)`update Cash c where c.amount \> 0 set {owner: #pablo}`);
   
+  smokeIt((Request)`update Cash c where c.@id == #dollar  set {owner: #pablo}`);
+  
+  smokeIt((Request)`update Comment c where c.@id == #stupid set { replies: [#abc1, #cdef2] }`);
+
+  smokeIt((Request)`update Comment c where c.@id == #stupid set { replies +: [#abc1, #cdef2] }`);
+
+  smokeIt((Request)`update Comment c where c.@id == #stupid set { replies -: [#abc1, #cdef2] }`);
   
   
 //
