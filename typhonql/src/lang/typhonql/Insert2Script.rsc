@@ -6,6 +6,7 @@ import lang::typhonql::Script;
 import lang::typhonql::Session;
 import lang::typhonql::TDBC;
 import lang::typhonql::Order;
+import lang::typhonql::References;
 
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::Util;
@@ -22,23 +23,6 @@ bool hasId({KeyVal ","}* kvs) = any((KeyVal)`@id: <Expr _>` <- kvs);
 str evalId({KeyVal ","}* kvs) = "<e>"[1..]
   when (KeyVal)`@id: <UUID e>` <- kvs;
 
-
-list[Step] insertIntoJunction(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, SQLExpr trg, Bindings params) {
-  return [step(dbName, 
-           sql(executeStatement(dbName, 
-             pp(\insert(junctionTableName(from, fromRole, to, toRole)
-                  , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
-                  , [src, trg])))), params)];
-}
-
-list[Step] setObjectPointer(str dbName, str coll, str role, Cardinality card, DBObject subject, DBObject target, Bindings params) {
-    return [
-      step(dbName, mongo( 
-         findAndUpdateOne(dbName, coll,
-          pp(object([<"_id", subject>])), 
-          pp(object([<"$set", object([<role, target>])>])))), params)
-          ];
-}
 
 
 Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s) {
@@ -83,15 +67,14 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
             
             case <sql(), str other> : {
                // insert entry in junction table between from and to on the current place.
-              steps += insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
-              steps += insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
+              steps += insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, [lit(text(uuid))], myParams);
+              steps += insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid)), [sqlMe], myParams);
             }
             
             case <mongodb(), str other>: {
               // insert entry in junction table between from and to on the current place.
-              steps += insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
-              steps += setObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
-              
+              steps += insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, [lit(text(uuid))], myParams);
+              steps += insertObjectPointers(other, to, toRole, toCard, \value(uuid), [mongoMe], myParams);
             }
             
           }
@@ -108,12 +91,12 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
                 theInsert.values += [ lit(text(uuid)) ];
              }
              case <sql(), str other>: {
-                steps += insertIntoJunction(p.name, from, fromRole, parent, parentRole, lit(text(uuid)), sqlMe, myParams);
-                steps += insertIntoJunction(other, parent, parentRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
+                steps += insertIntoJunction(p.name, from, fromRole, parent, parentRole, lit(text(uuid)), [sqlMe], myParams);
+                steps += insertIntoJunction(other, parent, parentRole, from, fromRole, lit(text(uuid)), [sqlMe], myParams);
              }
              case <mongodb(), str other>: {
-               steps += insertIntoJunction(p.name, from, fromRole, parent, parentRole, lit(text(uuid)), sqlMe, myParams);
-               steps += setObjectPointer(other, parent, parentRole, parentCard, \value(uuid), mongoMe, myParams);
+               steps += insertIntoJunction(p.name, from, fromRole, parent, parentRole, lit(text(uuid)), [sqlMe], myParams);
+               steps += updateObjectPointer(other, parent, parentRole, parentCard, \value(uuid), mongoMe, myParams);
              }
            }
         } 
@@ -121,7 +104,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
         // xrefs are symmetric, so both directions are done in one go. 
         else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
            // save the cross ref
-           steps += insertIntoJunction(dbName, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
+           steps += insertIntoJunction(dbName, from, fromRole, to, toRole, sqlMe, [lit(text(uuid))], myParams);
            
            // and the opposite sides
            switch (placeOf(to, s)) {
@@ -130,10 +113,10 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
                // for both directions.
              }
              case <sql(), str other>: {
-               steps += insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
+               steps += insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid)), [sqlMe], myParams);
              }
              case <mongodb(), str other>: {
-               steps += setObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+               steps += updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
              }
            }
         
@@ -148,8 +131,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
       for ((KeyVal)`<Id x>: [<{UUID ","}+ refs>]` <- kvs) {
         str from = "<e>";
         str fromRole = "<x>";
-        str uuid = "<ref>"[1..];
-        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
+        if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
             // this keyval is updating ref to have me as a foreign key
             
           switch (placeOf(to, s)) {
@@ -164,19 +146,15 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
             }
             
             case <sql(), str other> : {
-              ; // todo
-              // // insert entry in junction table between from and to on the current place.
-              //steps += insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
-              //steps += insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
+               // insert entry in junction table between from and to on the current place.
+              steps += insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, [lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
+              steps += [ *insertIntoJunction(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), [sqlMe], myParams) | UUID ref <- refs ];
             }
             
             case <mongodb(), str other>: {
-              ; // todo
-              //// insert entry in junction table between from and to on the current place.
-              //steps += insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
-              // //list[Step] setObjectPointer(str dbName, str coll, DBObject subject, str role, Cardinality card, DBObject target, Bindings params) {
-              //steps += setObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
-              //
+              steps += insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, [lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
+              steps += [ *insertObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams) 
+                | UUID ref <- refs ] ;
             }
             
           }
@@ -190,8 +168,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
         // xrefs are symmetric, so both directions are done in one go. 
         else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
            // save the cross ref
-           steps += [ *insertIntoJunction(dbName, from, fromRole, to, toRole, sqlMe, lit(evalExpr((Expr)`<UUID ref>`)), myParams) 
-              | UUID ref <- refs ];
+           steps += [ *insertIntoJunction(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams) ];
            
            // and the opposite sides
            switch (placeOf(to, s)) {
@@ -204,7 +181,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
                   | UUID ref <- refs ];
              }
              case <mongodb(), str other>: {
-               steps += [*setObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams)
+               steps += [*insertObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams)
                  | UUID ref <- refs];
              }
            }
@@ -239,16 +216,16 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
           
             case <mongodb(), dbName> : {  
               // update uuid's toRole to me
-              steps += setObjectPointer(dbName, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+              steps += insertObjectPointer(dbName, to, toRole, toCard, \value(uuid), mongoMe, myParams);
             }
             
             case <mongo(), str other> : {
               // update uuid's toRole to me, but on other db
-              steps += setObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+              steps += insertObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
             }
             
             case <sql(), str other>: {
-              steps += insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
+              steps += insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid)), [sqlMe], myParams);
             }
             
           }
@@ -264,12 +241,12 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
           switch (placeOf(to, s)) {
           
             case <mongodb(), dbName> : {  
-              steps += [ *setObjectPointer(dbName, to, toRole, toCard, \value("<ref>"[1..]) , mongoMe, myParams)
+              steps += [ *insertObjectPointer(dbName, to, toRole, toCard, \value("<ref>"[1..]) , mongoMe, myParams)
                 | UUID ref <- refs ];
             }
             
             case <mongo(), str other> : {
-              steps += [ *setObjectPointer(dbName, to, toRole, toCard, \value("<ref>"[1..]) , mongoMe, myParams)
+              steps += [ *insertObjectPointer(dbName, to, toRole, toCard, \value("<ref>"[1..]) , mongoMe, myParams)
                 | UUID ref <- refs ];
             }
             

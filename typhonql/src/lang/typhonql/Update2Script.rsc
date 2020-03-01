@@ -6,6 +6,7 @@ import lang::typhonql::Script;
 import lang::typhonql::Session;
 import lang::typhonql::TDBC;
 import lang::typhonql::Order;
+import lang::typhonql::References;
 
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::Util;
@@ -13,86 +14,13 @@ import lang::typhonql::relational::SQL2Text;
 
 import lang::typhonql::mongodb::DBCollection;
 
+
 import IO;
 import List;
 import String;
 
-// TODO: if junction tables are symmetric, i.e. normalized name order in junctionTableName
-// then we don't have to swap arguments if maintaining the inverse at outside sql db.
 
-list[Step] updateIntoJunctionSingle(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, SQLExpr trg, Bindings params) {
-  str tbl = junctionTableName(from, fromRole, to, toRole);
-  return [step(dbName,
-           sql(executeStatement(dbName,
-             pp(delete(tbl,
-                 [where([equ(columnName(tbl, junctionFkName(from, fromRole)), src),
-                     equ(columnName(tbl, junctionFkName(to, toRole)), trg)])]))))),
-  
-          step(dbName, 
-           sql(executeStatement(dbName, 
-             pp(\insert(tbl
-                  , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
-                  , [src, trg])))), params)];
-}
-
-// TODO: have reverse versions of this where, src is list of many
-list[Step] updateIntoJunctionMany(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, list[SQLExpr] trgs, Bindings params) {
-  str tbl = junctionTableName(from, fromRole, to, toRole);
-  return [step(dbName,
-           sql(executeStatement(dbName,
-             pp(delete(tbl,
-                 [where([equ(columnName(tbl, junctionFkName(from, fromRole)), src)])])))))]
-      + 
-         [ step(dbName, 
-           sql(executeStatement(dbName, 
-             pp(\insert(tbl
-                  , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
-                  , [src, trg])))), params) | SQLExpr trg <- trgs ];
-
-}
-
-list[Step] insertIntoJunctionMany(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, list[SQLExpr] trgs, Bindings params) {
-  str tbl = junctionTableName(from, fromRole, to, toRole);
-  return  [ step(dbName, 
-           sql(executeStatement(dbName, 
-             pp(\insert(tbl
-                  , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
-                  , [src, trg])))), params) | SQLExpr trg <- trgs ];
-}
-
-list[Step] removeFromJunctionMany(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, list[SQLExpr] trgs, Bindings params) {
-  str tbl = junctionTableName(from, fromRole, to, toRole);
-  return  [ step(dbName, 
-           sql(executeStatement(dbName, 
-             pp(delete(tbl,
-               [ where([\in(junctionFkName(to, toRole), [ trg.val | SQLExpr trg <- trgs ])]) ])))), params) ];
-}
-
-list[Step] removeFromJunctionSingle(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, SQLExpr trg, Bindings params) {
-  str tbl = junctionTableName(from, fromRole, to, toRole);
-  return  [ step(dbName, 
-           sql(executeStatement(dbName, 
-             pp(delete(tbl,
-               [ where([\in(junctionFkName(to, toRole), [ trg.val | SQLExpr trg <- trgs ])]) ])))), params) ];
-}
-
-list[Step] insertIntoJunctionSingle(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, SQLExpr trg, Bindings params) {
-  str tbl = junctionTableName(from, fromRole, to, toRole);
-  return  [ step(dbName, 
-           sql(executeStatement(dbName, 
-             pp(\insert(tbl
-                  , [junctionFkName(from, fromRole), junctionFkName(to, toRole)]
-                  , [src, trg])))), params) ];
-}
-
-list[Step] updateObjectPointer(str dbName, str coll, str role, Cardinality card, DBObject subject, DBObject target, Bindings params) {
-    return [
-      step(dbName, mongo( 
-         findAndUpdateOne(dbName, coll,
-          pp(object([<"_id", subject>])), 
-          pp(object([<"$set", object([<role, target>])>])))), params)
-          ];
-}
+//deleteManyMongo(other, to, [ \value("<ref>"[1..]) | UUID ref <- refs ]);
     
 Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set {<{KeyVal ","}* kvs>}`, Schema s) {
   str ent = "<e>";
@@ -386,7 +314,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
             
             case <mongodb(), str other>: {
               steps += removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ], myParams);
-              steps += deleteManyMongo(other, to, [ \value("<ref>"[1..]) | UUID ref <- refs ]);
+              steps += deleteManyMongo(other, to, [ \value("<ref>"[1..]) | UUID ref <- refs ], myParas);
             }
             
           }
@@ -417,7 +345,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
              case <mongodb(), str other>: {
 				steps += removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ]
                  , myParams);
-                steps += deleteManyMongo(other, to, [ \value("<ref>"[1..]) | UUID ref <- refs ]);
+                steps += deleteManyMongo(other, to, [ \value("<ref>"[1..]) | UUID ref <- refs ], myParams);
              }
            }
         
