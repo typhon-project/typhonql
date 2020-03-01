@@ -105,7 +105,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
         } 
         
         // xrefs are symmetric, so both directions are done in one go. 
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
            // save the cross ref
            steps += insertIntoJunction(dbName, from, fromRole, to, toRole, sqlMe, [lit(text(uuid))], myParams);
            
@@ -169,7 +169,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
         } 
         
         // xrefs are symmetric, so both directions are done in one go. 
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
            // save the cross ref
            steps += [ *insertIntoJunction(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams) ];
            
@@ -233,27 +233,8 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
             }
             
           }
-      }
+        }
       
-      //if (<str to, Cardinality toCard, str toRole, fromRole, _, from, _> <- s.rels) {
-      //    switch (placeOf(to, s)) {
-      //    
-      //      case <mongodb(), dbName> : {  
-      //        // update uuid's toRole to me
-      //        steps += insertObjectPointer(dbName, to, toRole, toCard, \value(uuid), mongoMe, myParams);
-      //      }
-      //      
-      //      case <mongo(), str other> : {
-      //        // update uuid's toRole to me, but on other db
-      //        steps += insertObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
-      //      }
-      //      
-      //      case <sql(), str other>: {
-      //        steps += insertIntoJunction(other, from, fromRole, to, toRole, lit(text(uuid)), [sqlMe], myParams);
-      //      }
-      //      
-      //    }
-      //}
       }
       
       for ((KeyVal)`<Id x>: [<{UUID ","}+ refs>]` <- kvs) {

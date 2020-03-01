@@ -209,6 +209,12 @@ bool ownedLocally(str entity, Schema s, Place p)
   = any(<str from, _, _, _, _, entity, true> <- s.rels, <p, from> <- s.placement);
 
 
+
+Rels trueCrossRefs(Rels rels) 
+  = { <from, fromCard, fromRole, toRole, toCard, to, false> | 
+    <str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, false> <- rels,
+      <to, toCard, toRole, fromRole, fromCard, from, true> notin rels };
+
 Rels symmetricReduction(Rels rels) {
   // filter out symmetric bidir relations
   // if containment, that one gets preference

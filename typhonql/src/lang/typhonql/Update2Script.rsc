@@ -129,7 +129,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
         }
         
         // xrefs are symmetric, so both directions are done in one go. 
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
            // save the cross ref
            scr.steps +=  updateIntoJunctionSingle(dbName, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
            
@@ -196,7 +196,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
            throw "Bad update: an object cannot have many parents  <refs>";
         }
         // xrefs are symmetric, so both directions are done in one go. 
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
            // save the cross ref
            scr.steps +=  updateIntoJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
            
@@ -269,7 +269,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
            throw "Bad update: an object cannot have many parents  <refs>";
         }
         // xrefs are symmetric, so both directions are done in one go. 
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
            // save the cross ref
            scr.steps +=  insertIntoJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
            
@@ -343,7 +343,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
            throw "Bad update: an object cannot have many parents  <refs>";
         }
         // xrefs are symmetric, so both directions are done in one go. 
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
            // save the cross ref
            scr.steps +=  removeFromJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
            
@@ -479,7 +479,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
            throw "Bad update: an object cannot have many parents  <refs>";
         }
         // xrefs are symmetric, so both directions are done in one go. 
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
 
            scr.steps += insertObjectPointers(dbName, from, fromRole, fromCard, mongoMe, 
                [ \value("<ref>"[1..]) | UUID ref <- refs ], myParams);
@@ -546,7 +546,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
            // removing owernship for the currently updated object as not being owned anymore by each ref (which should not be possible)
            throw "Bad update: an object cannot have many parents  <refs>";
         }
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
            scr.steps += removeObjectPointers(dbName, from, fromRole, fromCard, mongoMe, 
              [ \value("<ref>"[1..]) | UUID ref <- refs ], myParams);  
             

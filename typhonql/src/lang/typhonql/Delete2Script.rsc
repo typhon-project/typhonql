@@ -110,7 +110,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
         }
         
       // break cross references  
-      for (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+      for (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
            
            switch (placeOf(to, s)) {
              case <sql(), dbName>: {
@@ -184,7 +184,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
         }
         
       // break cross references  
-      for (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
+      for (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
            
            switch (placeOf(to, s)) {
              case <mongodb(), dbName>: {
