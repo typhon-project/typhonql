@@ -28,7 +28,6 @@ default bool isDelta(KeyVal _) = false;
 
 
 
-// todo; special case where .@id == #...     
 Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set {<{KeyVal ","}* kvs>}`, Schema s) {
   str ent = "<e>";
   Place p = placeOf(ent, s);

@@ -11,6 +11,7 @@ import lang::typhonql::Normalize;
 
 import lang::typhonql::Insert2Script;
 import lang::typhonql::Update2Script;
+import lang::typhonql::Delete2Script;
 import lang::typhonql::Query2Script;
 
 
@@ -41,6 +42,8 @@ TODO:
 
 Script request2script(Request r, Schema s) {
   println("REQ: <r>");
+  
+  
   switch (r) {
   
     case (Request)`<Query q>`: {
@@ -60,47 +63,48 @@ Script request2script(Request r, Schema s) {
 	  return request2script((Request)`delete <EId e> <VId x> where true`, s);
 	}
 	
-	case (Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`: {
-	  str ent = "<e>";
-	  Place p = placeOf(ent, s);
-	  
-	  //// first, find all id's of e things that need to be deleted
-	  //// including the kid id's of all non-locally owned entities
-	  //// NB: since we're only deleted a single entity type, partitioning has no effect
-	  //// on this query, and we get a single "param" corresponding to p.name
-	  //list[str] results = ["<x>.@id"]
-	  //  + [ "<x>.<f>" | <ent, _, str f, _, _, str to, true> <- s.rels, placeOf(to, s) != p ];
-	
-	  Request req = [Request]"from <e> <x> select <x>.@id where <ws>";
-	
-	  Script scr = script(compileQuery(req, p, s));
-	  
-	  Param toBeDeleted = field(p.name, "<x>", "<e>", "@id");
-	 
-	 
-	  scr.steps += breakLinksWithParent(ent, toBeDeleted, p, s);
-	  scr.steps += cascadeToKids(ent, toBeDeleted, x, p, s);
-	  
-	  // then delete the entity itself
-	  
-	  switch (p) {
-	    case <sql(), str dbName>: {
-	      SQLStat stat = delete(tableName(ent), [
-	        where([
-	         equ(column(tableName(ent), typhonId(ent)), SQLExpr::placeholder(name="TO_DELETE"))
-	        ])]);
-	        
-	      scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_DELETE": toBeDeleted))];  
-	    }
-	    
-	    case <mongodb(), str dbName>: {
-	      DBObject q = object([<"_id", DBObject::placeholder(name="TO_DELETE")>]);
-	      scr.steps += [step(dbName, mongo(deleteOne(dbName, ent, pp(q))),  ("TO_DELETE": toBeDeleted))];
-	    }
-	  }
-	  
-	  return scr;
-    }      
+	case (Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`: 
+	  return delete2script(r, s);
+	//  str ent = "<e>";
+	//  Place p = placeOf(ent, s);
+	//  
+	//  //// first, find all id's of e things that need to be deleted
+	//  //// including the kid id's of all non-locally owned entities
+	//  //// NB: since we're only deleted a single entity type, partitioning has no effect
+	//  //// on this query, and we get a single "param" corresponding to p.name
+	//  //list[str] results = ["<x>.@id"]
+	//  //  + [ "<x>.<f>" | <ent, _, str f, _, _, str to, true> <- s.rels, placeOf(to, s) != p ];
+	//
+	//  Request req = [Request]"from <e> <x> select <x>.@id where <ws>";
+	//
+	//  Script scr = script(compileQuery(req, p, s));
+	//  
+	//  Param toBeDeleted = field(p.name, "<x>", "<e>", "@id");
+	// 
+	// 
+	//  scr.steps += breakLinksWithParent(ent, toBeDeleted, p, s);
+	//  scr.steps += cascadeToKids(ent, toBeDeleted, x, p, s);
+	//  
+	//  // then delete the entity itself
+	//  
+	//  switch (p) {
+	//    case <sql(), str dbName>: {
+	//      SQLStat stat = delete(tableName(ent), [
+	//        where([
+	//         equ(column(tableName(ent), typhonId(ent)), SQLExpr::placeholder(name="TO_DELETE"))
+	//        ])]);
+	//        
+	//      scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), ("TO_DELETE": toBeDeleted))];  
+	//    }
+	//    
+	//    case <mongodb(), str dbName>: {
+	//      DBObject q = object([<"_id", DBObject::placeholder(name="TO_DELETE")>]);
+	//      scr.steps += [step(dbName, mongo(deleteOne(dbName, ent, pp(q))),  ("TO_DELETE": toBeDeleted))];
+	//    }
+	//  }
+	//  
+	//  return scr;
+ //   }      
 
     case (Request)`insert <EId e> { <{KeyVal ","}* kvs> }`:
        return insert2script(r, s); 
@@ -816,24 +820,40 @@ void smokeScript() {
   smokeIt((Request)`update Comment c where c.@id == #stupid set { replies -: [#abc1, #cdef2] }`);
   
   
-//
-//  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
+
+  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
   
-//  smokeIt((Request)`insert Person {name: "Pablo", age: 23}`);
-//  smokeIt((Request)`insert Person {name: "Pablo", age: 23, reviews: #abc, reviews: #cdef}`);
-//
-//  smokeIt((Request)`insert Review {text: "Bad"}`);
-//
-//  smokeIt((Request)`insert Person {name: "Pablo", age: 23, @id: #pablo}`);
-//  
-//  smokeIt((Request)`insert Review {text: "Bad", user: #pablo}`);
-//  
-//  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
-//  
-//  smokeIt((Request)`insert Person {name: "Pablo", age: 23}`);
-//  smokeIt((Request)`insert Person {name: "Pablo", age: 23, reviews: [#abc, #cdef]}`);
-//
-//  smokeIt((Request)`insert Review {text: "Bad", user: #pablo}`);
+  smokeIt((Request)`insert Person {name: "Pablo", age: 23}`);
+  smokeIt((Request)`insert Person {name: "Pablo", age: 23, reviews: #abc, reviews: #cdef}`);
+
+  smokeIt((Request)`insert Review {text: "Bad"}`);
+
+  smokeIt((Request)`insert Person {name: "Pablo", age: 23, @id: #pablo}`);
+  
+  smokeIt((Request)`insert Review {text: "Bad", user: #pablo}`);
+  
+  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
+  
+  smokeIt((Request)`insert Person {name: "Pablo", age: 23}`);
+  smokeIt((Request)`insert Person {name: "Pablo", age: 23, reviews: [#abc, #cdef]}`);
+
+  smokeIt((Request)`insert Review {text: "Bad", user: #pablo}`);
+
+  smokeIt((Request)`update Person p set {name: "Pablo"}`);
+
+  smokeIt((Request)`update Person p set {name: "Pablo", age: 23}`);
+
+  
+  
+  smokeIt((Request)`delete Comment c where c.contents == "Bad"`);
+  
+  smokeIt((Request)`delete Person p`);
+
+  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
+  
+  smokeIt((Request)`delete Review r`);
+  
+  smokeIt((Request)`delete Review r where r.text == "Bad"`);
   
   
   

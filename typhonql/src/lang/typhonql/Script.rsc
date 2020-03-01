@@ -30,7 +30,9 @@ data MongoCall
   | find(str dbName, str coll, str query, str proj)
   | insertOne(str dbName, str coll, str doc)
   | findAndUpdateOne(str dbName, str coll, str query, str update)
+  | findAndUpdateMany(str dbName, str coll, str query, str update)
   | deleteOne(str dbName, str coll, str query)
+  | deleteMany(str dbName, str coll, str query)
   ;
   
 EntityModels schema2entityModels(Schema s) 

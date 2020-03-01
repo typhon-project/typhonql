@@ -6,6 +6,7 @@ data SQLStat
   | \insert(str table, list[str] colNames, list[SQLExpr] values)
   | update(str table, list[Set] sets, list[Clause] clauses)
   | delete(str table, list[Clause] clauses)
+  | deleteJoining(list[str] joinTables, list[Clause] clauses)
   | select(list[SQLExpr] exprs, list[As] tables, list[Clause] clauses)
   | alterTable(str table, list[Alter] alters)
   | dropTable(list[str] tableNames, bool ifExists, list[DropOption] options)

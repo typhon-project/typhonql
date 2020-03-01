@@ -35,6 +35,11 @@ str pp(delete(str t, list[Clause] cs))
   = "delete from <q(t)> 
     '<intercalate("\n", [ pp(c) | Clause c <- cs ])>;";
 
+str pp(deleteJoining(list[str] tables, list[Clause] clauses)) 
+  = "delete <intercalate(", ", [ q(t) | str t <- tables ])> 
+    'from <intercalate(" inner join ", [ q(t) | str t <- tables ])>
+    '<intercalate("\n", [ pp(c) | Clause c <- cs ])>";
+
 str pp(select(list[SQLExpr] es, list[As] as, list[Clause] cs))
   = "select <intercalate(", ", [ pp(e) | SQLExpr e <- es ])> 
     'from <intercalate(", ", [ pp(a) | As a <- as ])>

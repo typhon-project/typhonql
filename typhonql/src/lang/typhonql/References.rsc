@@ -60,6 +60,17 @@ list[Step] removeFromJunction(str dbName, str from, str fromRole, str to, str to
                     \in(column(tbl, junctionFkName(to, toRole)), [ trg.val | SQLExpr trg <- trgs ])]) ])))), params) ];
 }
 
+list[Step] cascadeViaJunction(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, Bindings params) {
+  // src is a from
+  str tbl = junctionTableName(from, fromRole, to, toRole);
+  
+  SQLStat stat = deleteJoining([tbl, tableName(to)],
+    [ where([equ(column(tbl, junctionFkName(from, fromRole)), src),
+         equ(column(tableName(to)), column(junctionFkName(to, toRole)))])]);
+         
+  return [step(dbName, sql(executeStatement(dbName, pp(stat))), params)];
+}
+
 
 list[Step] updateObjectPointer(str dbName, str coll, str role, Cardinality card, DBObject subject, DBObject target, Bindings params) {
     return [
@@ -98,7 +109,23 @@ list[Step] insertObjectPointers(str dbName, str coll, str role, Cardinality card
           ];
 }
 
+list[Step] cascadeViaInverse(str dbName, str coll, str role, DBObject parent, Bindings params) {
+  DBObject q = object([<role, parent>]);
+  // todo: use deleteMany
+  return [step(dbName, mongo(deleteMany(dbName, coll, pp(q))), params)];
+}
 
+
+list[Step] removeAllObjectPointers(str dbName, str coll, str role, Cardinality card, DBObject target, Bindings params) {
+    return [
+      step(dbName, mongo( 
+         findAndUpdateMany(dbName, coll,
+          pp(object([])), 
+          pp(object([<"$pull", 
+               object([<role, 
+                 object([<"$in", array([ target ])>])>])>])))), params)
+          ];
+}
 
 list[Step] removeObjectPointers(str dbName, str coll, str role, Cardinality card, DBObject subject, list[DBObject] targets, Bindings params) {
     return [
@@ -113,8 +140,8 @@ list[Step] removeObjectPointers(str dbName, str coll, str role, Cardinality card
 
 list[Step] deleteManyMongo(str dbName, str coll, list[DBObject] objs, Bindings params) {
   return [
+    // todo: use deleteMany and $in
     step(dbName, mongo(
-      // todo: use deleteMany
        deleteOne(dbName, coll, pp(object([<"_id", obj>])))), params)
        | DBObject obj <- objs ];
 }
