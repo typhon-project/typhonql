@@ -9,7 +9,7 @@ import lang::typhonql::TDBC;
 import lang::typhonql::Order;
 import lang::typhonql::Normalize;
 
-//import lang::typhonql::Insert2Script;
+import lang::typhonql::Insert2Script;
 //import lang::typhonql::Update2Script;
 import lang::typhonql::References;
 import lang::typhonql::Query2Script;
@@ -28,7 +28,7 @@ import IO;
 import List;
 
 Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, Schema s) {
-  s.rels = symmetricReduction(s.rels);
+  //s.rels = symmetricReduction(s.rels);
   
   str ent = "<e>";
   Place p = placeOf(ent, s);

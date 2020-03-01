@@ -3,6 +3,8 @@ module lang::typhonql::Script
 import lang::typhonml::Util;
 import lang::typhonql::Session;
 
+import IO;
+
 data Script
   = script(list[Step] steps);
 
@@ -66,6 +68,9 @@ void runScript(Script scr, Session session, Schema schema) {
         
       case step(str r, mongo(deleteOne(str db, str coll, str query)), Bindings ps):
         session.mongo.deleteOne(db, coll, query, ps); 
+      
+      case step(str r, mongo(deleteMany(str db, str coll, str query)), Bindings ps):
+        println("WARNING: not yet executed: <s>"); 
        
       case newId(str var):
         session.newId(var);

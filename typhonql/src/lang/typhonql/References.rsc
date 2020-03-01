@@ -25,7 +25,7 @@ import String;
 
 list[Step] updateIntoJunctionSingle(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, SQLExpr trg, Bindings params) {
   return removeFromJunction(dbName, from, fromRole, to, toRole, src, params)
-    + insertIntoJunctionMany(dbName, from, fromRole, to, toRole, src, [trg], params);
+    + insertIntoJunction(dbName, from, fromRole, to, toRole, src, [trg], params);
 }
 
 list[Step] updateIntoJunctionMany(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, list[SQLExpr] trgs, Bindings params) {

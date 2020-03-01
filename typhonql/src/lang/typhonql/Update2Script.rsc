@@ -30,6 +30,10 @@ default bool isDelta(KeyVal _) = false;
 
 Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set {<{KeyVal ","}* kvs>}`, Schema s) {
   str ent = "<e>";
+
+  // this is needed to prevent multiple updates to "the same" junction tables etc.  
+  //s.rels = symmetricReduction(s.rels);
+  
   Place p = placeOf(ent, s);
 
   Param toBeUpdated = field(p.name, "<x>", ent, "@id");
@@ -52,11 +56,6 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   }
   
  
-  
-
-   
-  
-  
    
   switch (p) {
     case <sql(), str dbName>: {

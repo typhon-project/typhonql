@@ -91,8 +91,8 @@ void smokeSelects() {
   smokeStat((Request)`insert User { @id: #davy, name: "Davy" }`);
   smokeStat((Request)`insert User { @id: #tijs, name: "Tijs" }`);
 
-  smokeStat((Request)`insert Biography { text: "Complex guy" } into #tijs.biography`);
-  smokeStat((Request)`insert Biography { text: "Simple guy" } into #pablo.biography`);
+  smokeStat((Request)`insert Biography { text: "Complex guy", user: #tijs }`);
+  smokeStat((Request)`insert Biography { text: "Simple guy", user: #pablo }`);
 
   smokeQuery((Request)`from User u select u`,"Inventory", {<"u", "User">}, {<"User", { <"@id", "STRING">, <"name", "STRING">}, {}>});
   smokeQuery((Request)`from User u select u.name`,"Inventory", {<"u", "User">}, {<"User", { <"@id", "STRING">, <"name", "STRING">}, {}>});
@@ -178,7 +178,7 @@ void smokeInsertMaria() {
 
 void smokeInsertMongoAndMaria2() {
 	Request req1 = (Request)`insert User { @id: #paul, name: "Paul"}`;
-	Request req2 = (Request)`insert Biography { text: "Simple and complex guy" } into #paul.biography`;
+	Request req2 = (Request)`insert Biography { text: "Simple and complex guy", user: #paul}`;
 	executeRequests([req1, req2]);
 }
 
@@ -212,7 +212,7 @@ void smokeWhoOwns2() {
 // TODO Junction table Biography.user-User.biography is created after req2, but with the wrong uuid
 void smokeWhoOwns3() {
 	Request req1 = (Request)`insert User { @id: #paul, name: "Paul"}`;
-	Request req2 = (Request)`insert Biography { @id: #bio1,  text: "Complex guy" } into #paul.biography`;
+	Request req2 = (Request)`insert Biography { @id: #bio1,  text: "Complex guy", user: #paul}`;
 	executeRequests([req1, req2]);
 }
 

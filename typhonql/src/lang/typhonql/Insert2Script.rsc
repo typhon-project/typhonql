@@ -26,6 +26,9 @@ str evalId({KeyVal ","}* kvs) = "<e>"[1..]
 
 
 Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s) {
+  
+  //s.rels = symmetricReduction(s.rels);
+  
   Place p = placeOf("<e>", s);
   str myId = newParam();
   Bindings myParams = ( myId: generatedId(myId) | !hasId(kvs) );
@@ -74,7 +77,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
             case <mongodb(), str other>: {
               // insert entry in junction table between from and to on the current place.
               steps += insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, [lit(text(uuid))], myParams);
-              steps += insertObjectPointers(other, to, toRole, toCard, \value(uuid), [mongoMe], myParams);
+              steps += insertObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
             }
             
           }
@@ -210,6 +213,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
         str from = "<e>";
         str fromRole = "<x>";
         str uuid = "<ref>"[1..];
+        
 
         if (<from, _, fromRole, str toRole, Cardinality toCard, str to, _> <- s.rels) {
           switch (placeOf(to, s)) {
@@ -229,7 +233,27 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
             }
             
           }
-        }
+      }
+      
+      //if (<str to, Cardinality toCard, str toRole, fromRole, _, from, _> <- s.rels) {
+      //    switch (placeOf(to, s)) {
+      //    
+      //      case <mongodb(), dbName> : {  
+      //        // update uuid's toRole to me
+      //        steps += insertObjectPointer(dbName, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+      //      }
+      //      
+      //      case <mongo(), str other> : {
+      //        // update uuid's toRole to me, but on other db
+      //        steps += insertObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+      //      }
+      //      
+      //      case <sql(), str other>: {
+      //        steps += insertIntoJunction(other, from, fromRole, to, toRole, lit(text(uuid)), [sqlMe], myParams);
+      //      }
+      //      
+      //    }
+      //}
       }
       
       for ((KeyVal)`<Id x>: [<{UUID ","}+ refs>]` <- kvs) {
