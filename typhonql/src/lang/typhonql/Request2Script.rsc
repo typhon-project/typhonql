@@ -794,6 +794,21 @@ void smokeScript() {
   smokeIt((Request)`update Person p set {name: "Pablo", cash -: [#abc, #cde]}`);
 
   smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
+  
+  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews +: [#abc, #cde], reviews -: [#xyz]}`);
+
+  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde], name: "Pete"}`);
+
+  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde], age: 32, name: "Bla"}`);
+  
+  smokeIt((Request)`update Person p where p.name == "Pablo" set {cash: [#dollar]}`);
+  smokeIt((Request)`update Person p where p.name == "Pablo" set {cash +: [#dollar]}`);
+  smokeIt((Request)`update Person p where p.name == "Pablo" set {cash -: [#dollar]}`);
+
+  smokeIt((Request)`update Cash c where c.amount \> 0 set {owner: #pablo}`);
+  
+  
+  
 //
 //  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
   

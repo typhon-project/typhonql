@@ -54,7 +54,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
       
       for ((KeyVal)`<Id fld>: <UUID ref>` <- kvs) {
         str from = "<e>";
-        str fromRole = "<x>";
+        str fromRole = "<fld>";
         str uuid = "<ref>"[1..];
 
         if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
@@ -94,7 +94,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
             case <sql(), dbName> : {  
               // update "my" foreign key to point to uuid
               str fk = fkName(parent, from, fromRole == "" ? parentRole : fromRole);
-              SQLStat theUpdate = update(tableName(from), [\set(fk, uui)],
+              SQLStat theUpdate = update(tableName(from), [\set(fk, lit(text(uuid)))],
                 [where([equ(column(tableName(from), typhonId(from)), sqlMe)])]);
                 
               scr.steps +=  [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
@@ -216,10 +216,6 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
       for ((KeyVal)`<Id fld> +: [<{UUID ","}+ refs>]` <- kvs) {
         str from = "<e>";
         str fromRole = "<fld>";
-        
-        println("FROM: <from>");
-        println("ROLE: <fromRole>");
-        iprintln(s.rels);
         
         if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
             // this keyval is updating each ref to have me as a parent/owner
