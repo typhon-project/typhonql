@@ -29,17 +29,29 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   str ent = "<e>";
   Place p = placeOf(ent, s);
 
-   // first, find all id's of e things that need to be updated
-  Request req = (Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ ws>`;
-  
-  // NB: no partitioning, compile locally.
-  Script scr = script(compileQuery(req, p, s));
-  
   Param toBeUpdated = field(p.name, "<x>", ent, "@id");
   str myId = newParam();
   SQLExpr sqlMe = lit(Value::placeholder(name=myId));
   DBObject mongoMe = DBObject::placeholder(name=myId);
   Bindings myParams = ( myId: toBeUpdated );
+  Script scr = script([]);
+  
+  if ((Where)`where <VId _>.@id == <UUID mySelf>` := (Where)`where <{Expr ","}+ ws>`) {
+    sqlMe = lit(evalExpr((Expr)`<UUID myself>`));
+    mongoMe = \value("<mySelf>"[1..]);
+    myParams = ();
+  }
+  else {
+    // first, find all id's of e things that need to be updated
+    Request req = (Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ ws>`;
+    // NB: no partitioning, compile locally.
+    scr.steps = compileQuery(req, p, s);
+  }
+  
+ 
+  
+
+   
   
   
    
