@@ -104,7 +104,7 @@ str pp(or(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) or (<pp(rhs)>)";
 str pp(and(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) and (<pp(rhs)>)";
 str pp(notIn(SQLExpr arg, list[Value] vals)) 
   = "(<pp(arg)>) not in (<intercalate(", ", [ pp(v) | Value v <- vals])>)";
-str pp(notIn(SQLExpr arg, list[Value] vals)) 
+str pp(\in(SQLExpr arg, list[Value] vals)) 
   = "(<pp(arg)>) in (<intercalate(", ", [ pp(v) | Value v <- vals])>)";
 
 
