@@ -204,7 +204,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
 
     case <mongodb(), str dbName>: {
       DBObject obj = object([ keyVal2prop(kv) | KeyVal kv <- kvs ]
-                          + [ <"_id", mongoMe> ]);
+                          + [ <"_id", mongoMe> | !hasId(kvs) ]);
                           
       list[Step] steps = [step(dbName, mongo(insertOne(dbName, "<e>", pp(obj))), myParams)];
 
