@@ -7,6 +7,8 @@ import lang::typhonql::Session;
 import lang::typhonql::TDBC;
 import lang::typhonql::Order;
 import lang::typhonql::References;
+import lang::typhonql::Query2Script;
+import lang::typhonql::Insert2Script;
 
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::Util;
@@ -20,8 +22,9 @@ import List;
 import String;
 
 
-//deleteManyMongo(other, to, [ \value("<ref>"[1..]) | UUID ref <- refs ]);
-    
+
+
+// todo; special case where .@id == #...     
 Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set {<{KeyVal ","}* kvs>}`, Schema s) {
   str ent = "<e>";
   Place p = placeOf(ent, s);
@@ -65,18 +68,18 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
               SQLStat theUpdate = update(tableName(to), [\set(fk, sqlMe)],
                 [where([equ(column(tableName(to), typhonId(to)), lit(text(uuid)))])]);
                 
-              steps += [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
+              scr.steps +=  [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
             }
             
             case <sql(), str other> : {
               // it's single ownership, so dont' insert in the junction but update.
-              steps += updateIntoJunctionSingle(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
-              steps += updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
+              scr.steps +=  updateIntoJunctionSingle(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
+              scr.steps +=  updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
             }
             
             case <mongodb(), str other>: {
-              steps += updateIntoJunctionSingle(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
-              steps += updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+              scr.steps +=  updateIntoJunctionSingle(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
+              scr.steps +=  updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
             }
             
           }
@@ -94,18 +97,18 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
               SQLStat theUpdate = update(tableName(from), [\set(fk, uui)],
                 [where([equ(column(tableName(from), typhonId(from)), sqlMe)])]);
                 
-              steps += [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
+              scr.steps +=  [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
             }
             
             case <sql(), str other> : {
               // it's single ownership, so dont' insert in the junction but update.
-              steps += updateIntoJunctionSingle(p.name, from, fromRole, parent, parentRole, lit(text(uuid)), sqlMe, myParams);
-              steps += updateIntoJunctionSingle(other, parent, parentRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
+              scr.steps +=  updateIntoJunctionSingle(p.name, from, fromRole, parent, parentRole, lit(text(uuid)), sqlMe, myParams);
+              scr.steps +=  updateIntoJunctionSingle(other, parent, parentRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
             }
             
             case <mongodb(), str other>: {
-              steps += updateIntoJunctionSingle(p.name, from, fromRole, parent, parentRole, lit(text(uuid)), sqlMe, myParams);
-              steps += updateObjectPointer(other, parent, parentRole, parentCard, \value(uuid), mongoMe, myParams);
+              scr.steps +=  updateIntoJunctionSingle(p.name, from, fromRole, parent, parentRole, lit(text(uuid)), sqlMe, myParams);
+              scr.steps +=  updateObjectPointer(other, parent, parentRole, parentCard, \value(uuid), mongoMe, myParams);
             }
             
           }
@@ -114,7 +117,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
         // xrefs are symmetric, so both directions are done in one go. 
         else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
            // save the cross ref
-           steps += updateIntoJunctionSingle(dbName, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
+           scr.steps +=  updateIntoJunctionSingle(dbName, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
            
            // and the opposite sides
            switch (placeOf(to, s)) {
@@ -123,10 +126,10 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
                // for both directions.
              }
              case <sql(), str other>: {
-               steps += updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
+               scr.steps +=  updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
              }
              case <mongodb(), str other>: {
-               steps += updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+               scr.steps +=  updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
              }
            }
         
@@ -139,7 +142,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
       
       for ((KeyVal)`<Id fld>: [<{UUID ","}+ refs>]` <- kvs) {
         str from = "<e>";
-        str fromRole = "<x>";
+        str fromRole = "<fld>";
         
         if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
             // this keyval is updating each ref to have me as a parent/owner
@@ -152,21 +155,21 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
               SQLStat theUpdate = update(tableName(to), [\set(fk, sqlMe)],
                 [where([\in(column(tableName(to), typhonId(to)), [ evalExpr((Expr)`<UUID ref>`) | UUID ref <- refs ])])]);
                 
-              steps += [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
+              scr.steps +=  [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
             }
             
             case <sql(), str other> : {
-              steps += updateIntoJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ]
+              scr.steps +=  updateIntoJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
                  , myParams);
               // NB: ownership is never many to many, so if fromRole is many, toRole cannot be
-              steps += [ *updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr(ref)), sqlMe, myParams)
+              scr.steps +=  [ *updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
                 | UUID ref <- refs ];
             }
             
             case <mongodb(), str other>: {
-              steps += updateIntoJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ], myParams);
+              scr.steps +=  updateIntoJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
               // NB: ownership is never many to many, so if fromRole is many, toRole cannot be
-              steps += [ *updateObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams) 
+              scr.steps +=  [ *updateObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams) 
                   | UUID ref <- refs ];
             }
             
@@ -181,7 +184,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
         // xrefs are symmetric, so both directions are done in one go. 
         else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
            // save the cross ref
-           steps += updateIntoJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
+           scr.steps +=  updateIntoJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
            
            // and the opposite sides
            switch (placeOf(to, s)) {
@@ -190,12 +193,12 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
                // for both directions.
              }
              case <sql(), str other>: {
-               steps += [ updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
+               scr.steps +=  [ updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
                  | UUID ref <- refs ];
              }
              case <mongodb(), str other>: {
                // todo: deal with multiplicity correctly in updateObject Pointer
-               steps += [ *updateObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams) 
+               scr.steps +=  [ *updateObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams) 
                   | UUID ref <- refs ];
              }
            }
@@ -212,7 +215,11 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
       
       for ((KeyVal)`<Id fld> +: [<{UUID ","}+ refs>]` <- kvs) {
         str from = "<e>";
-        str fromRole = "<x>";
+        str fromRole = "<fld>";
+        
+        println("FROM: <from>");
+        println("ROLE: <fromRole>");
+        iprintln(s.rels);
         
         if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
             // this keyval is updating each ref to have me as a parent/owner
@@ -225,21 +232,21 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
               SQLStat theUpdate = update(tableName(to), [\set(fk, sqlMe)],
                 [where([\in(column(tableName(to), typhonId(to)), [ evalExpr((Expr)`<UUID ref>`) | UUID ref <- refs ])])]);
                 
-              steps += [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
+              scr.steps +=  [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
             }
             
             case <sql(), str other> : {
-              steps += insertIntoJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ]
+              scr.steps +=  insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
                  , myParams);
               // NB: ownership is never many to many, so if fromRole is many, toRole cannot be
-              steps += [ *updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr(ref)), sqlMe, myParams)
+              scr.steps +=  [ *updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
                 | UUID ref <- refs ];
             }
             
             case <mongodb(), str other>: {
-              steps += insertIntoJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ], myParams);
+              scr.steps +=  insertIntoJunction(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
               // NB: ownership is never many to many, so if fromRole is many, toRole cannot be
-              steps += [ *updateObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams) 
+              scr.steps +=  [ *updateObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams) 
                   | UUID ref <- refs ];
             }
             
@@ -254,7 +261,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
         // xrefs are symmetric, so both directions are done in one go. 
         else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
            // save the cross ref
-           steps += insertIntoJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
+           scr.steps +=  insertIntoJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
            
            // and the opposite sides
            switch (placeOf(to, s)) {
@@ -263,13 +270,13 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
                // for both directions.
              }
              case <sql(), str other>: {
-               //steps += insertIntoJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
-               steps += [ insertIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
+               //scr.steps +=  insertIntoJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
+               scr.steps +=  [ insertIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
                  | UUID ref <- refs ];
              }
              case <mongodb(), str other>: {
                // todo: deal with multiplicity correctly in updateObject Pointer
-               steps += [ *updateObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams) 
+               scr.steps +=  [ *updateObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams) 
                   | UUID ref <- refs ];
              }
            }
@@ -286,7 +293,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
       
       for ((KeyVal)`<Id fld> -: [<{UUID ","}+ refs>]` <- kvs) {
         str from = "<e>";
-        str fromRole = "<x>";
+        str fromRole = "<fld>";
         
         if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
            // this keyval is for each ref removing me as a parent/owner
@@ -299,22 +306,22 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
               SQLStat theUpdate = delete(tableName(to), 
                 [where([\in(column(tableName(to), typhonId(to)), [ evalExpr((Expr)`<UUID ref>`) | UUID ref <- refs ])])]);
                 
-              steps += [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
+              scr.steps +=  [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
             }
             
             case <sql(), str other> : {
-              steps += removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ]
+              scr.steps +=  removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
                  , myParams);
               // NB: ownership is never many to many, so if fromRole is many, toRole cannot be
-              steps += [ *removeFromJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr(ref)), sqlMe, myParams)
+              scr.steps +=  [ *removeFromJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
                 | UUID ref <- refs ];
                 
-              steps += deleteManySQL(other, to, [ lit(evalExpr(ref)) | UUID ref <- refs ]);
+              scr.steps +=  deleteManySQL(other, to, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]);
             }
             
             case <mongodb(), str other>: {
-              steps += removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ], myParams);
-              steps += deleteManyMongo(other, to, [ \value("<ref>"[1..]) | UUID ref <- refs ], myParas);
+              scr.steps +=  removeFromJunction(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
+              scr.steps +=  deleteManyMongo(other, to, [ \value("<ref>"[1..]) | UUID ref <- refs ], myParams);
             }
             
           }
@@ -328,7 +335,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
         // xrefs are symmetric, so both directions are done in one go. 
         else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- s.rels) {
            // save the cross ref
-           steps += removeFromJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
+           scr.steps +=  removeFromJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
            
            // and the opposite sides
            switch (placeOf(to, s)) {
@@ -337,15 +344,15 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
                // for both directions.
              }
              case <sql(), str other>: {
-               steps += removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ]
+               scr.steps +=  removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
                  , myParams);
-               steps += [ removeJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
+               scr.steps +=  [ removeJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
                  | UUID ref <- refs ];
              }
              case <mongodb(), str other>: {
-				steps += removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr(ref)) | UUID ref <- refs ]
+				scr.steps +=  removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
                  , myParams);
-                steps += deleteManyMongo(other, to, [ \value("<ref>"[1..]) | UUID ref <- refs ], myParams);
+                scr.steps +=  deleteManyMongo(other, to, [ \value("<ref>"[1..]) | UUID ref <- refs ], myParams);
              }
            }
         
@@ -372,6 +379,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   */
 
 
+  return scr;
  
 
   

@@ -10,6 +10,9 @@ import lang::typhonql::Order;
 import lang::typhonql::Normalize;
 
 import lang::typhonql::Insert2Script;
+import lang::typhonql::Update2Script;
+import lang::typhonql::Query2Script;
+
 
 
 import lang::typhonql::relational::SQL;
@@ -53,7 +56,7 @@ Script request2script(Request r, Schema s) {
       return update2script(r, s); 
     
 
-      case (Request)`delete <EId e> <VId x>`: {
+    case (Request)`delete <EId e> <VId x>`: {
 	  return request2script((Request)`delete <EId e> <VId x> where true`, s);
 	}
 	
@@ -722,25 +725,6 @@ list[Step] createCrossLinkInMongo(str dbName, str parent, str uuid, str kidParam
   return [step(dbName, mongo(findAndUpdateOne(dbName, parent, pp(q), pp(u))), (kidParam: kidValue))];
 }
 
-list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s) {
-  r = expandNavigation(addWhereIfAbsent(r), s);
-  println("COMPILING: <r>");
-  <sqlStat, params> = compile2sql(r, s, p);
-  // hack
-  if (sqlStat.exprs == []) {
-    return [];
-  }
-  return [step(dbName, sql(executeQuery(dbName, pp(sqlStat))), params)];
-}
-
-list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s) {
-  <methods, params> = compile2mongo(r, s, p);
-  for (str coll <- methods) {
-    // TODO: signal if multiple!
-    return [step(dbName, mongo(find(dbName, coll, pp(methods[coll].query), pp(methods[coll].projection))), params)];
-  }
-  return [];
-}
 
 void smokeScript() {
   s = schema({
@@ -770,57 +754,65 @@ void smokeScript() {
     iprintln(request2script(q, s));
   }
   
-//  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);  
-//  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);  
-//
-//  smokeIt((Request)`from Person u, Review r select r where r.user == u, u.name == "Pablo"`);
-//  
-//  
-//
-//  smokeIt((Request)`delete Review r`);
-//
-//  
-//  smokeIt((Request)`delete Review r where r.text == "Bad"`);
-//  
-//  smokeIt((Request)`delete Comment c where c.contents == "Bad"`);
-//  
-//  smokeIt((Request)`delete Person p`);
-//
-//  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
-//  
-//  smokeIt((Request)`update Person p set {name: "Pablo"}`);
-//
-//  smokeIt((Request)`update Person p set {name: "Pablo", age: 23}`);
-//
-//
-//  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews +: [#abc, #cde]}`);
-//
-//  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
-//
-//  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews: [#abc, #cde]}`);
-//
-//  smokeIt((Request)`update Review r set {text: "bad"}`);
-//
-//  smokeIt((Request)`update Review r where r.text == "Good" set {text: "Bad"}`);
-//
-//  smokeIt((Request)`update Person p set {name: "Pablo", cash: [#abc, #cde]}`);
-//
-//  smokeIt((Request)`update Person p set {name: "Pablo", cash +: [#abc, #cde]}`);
-//
-//  smokeIt((Request)`update Person p set {name: "Pablo", cash -: [#abc, #cde]}`);
-//
-//  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
+  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);  
+  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);  
+
+  smokeIt((Request)`from Person u, Review r select r where r.user == u, u.name == "Pablo"`);
+  
+  
+
+  smokeIt((Request)`delete Review r`);
+
+  
+  smokeIt((Request)`delete Review r where r.text == "Bad"`);
+  
+  smokeIt((Request)`delete Comment c where c.contents == "Bad"`);
+  
+  smokeIt((Request)`delete Person p`);
+
+  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
+  
+  smokeIt((Request)`update Person p set {name: "Pablo"}`);
+
+  smokeIt((Request)`update Person p set {name: "Pablo", age: 23}`);
+
+
+  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews +: [#abc, #cde]}`);
+
+  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
+
+  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews: [#abc, #cde]}`);
+
+  smokeIt((Request)`update Review r set {text: "bad"}`);
+
+  smokeIt((Request)`update Review r where r.text == "Good" set {text: "Bad"}`);
+
+  smokeIt((Request)`update Person p set {name: "Pablo", cash: [#abc, #cde]}`);
+
+  smokeIt((Request)`update Person p set {name: "Pablo", cash +: [#abc, #cde]}`);
+
+  smokeIt((Request)`update Person p set {name: "Pablo", cash -: [#abc, #cde]}`);
+
+  smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
 //
 //  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
   
-  smokeIt((Request)`insert Person {name: "Pablo", age: 23}`);
-  smokeIt((Request)`insert Person {name: "Pablo", age: 23, reviews: #abc, reviews: #cdef}`);
-
-  smokeIt((Request)`insert Review {text: "Bad"}`);
-
-  smokeIt((Request)`insert Person {name: "Pablo", age: 23, @id: #pablo}`);
+//  smokeIt((Request)`insert Person {name: "Pablo", age: 23}`);
+//  smokeIt((Request)`insert Person {name: "Pablo", age: 23, reviews: #abc, reviews: #cdef}`);
+//
+//  smokeIt((Request)`insert Review {text: "Bad"}`);
+//
+//  smokeIt((Request)`insert Person {name: "Pablo", age: 23, @id: #pablo}`);
+//  
+//  smokeIt((Request)`insert Review {text: "Bad", user: #pablo}`);
+//  
+//  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
+//  
+//  smokeIt((Request)`insert Person {name: "Pablo", age: 23}`);
+//  smokeIt((Request)`insert Person {name: "Pablo", age: 23, reviews: [#abc, #cdef]}`);
+//
+//  smokeIt((Request)`insert Review {text: "Bad", user: #pablo}`);
   
-  smokeIt((Request)`insert Review {text: "Bad", user: #pablo}`);
   
   
 }  
