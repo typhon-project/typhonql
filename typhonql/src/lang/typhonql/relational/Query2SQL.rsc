@@ -17,6 +17,38 @@ import lang::typhonml::Util;
 import IO;
 import String;
 
+/*
+
+to get null, instead of empty result sets, do the following for refs/containments
+
+select `User.name`, `Review.user-User.reviews`.`Review.user`  
+from User left outer join `Review.user-User.reviews` on `User.@id` = `Review.user-User.reviews`.`User.reviews`;
+
+for multiples
+
+select 
+  `User.name`, 
+  `Review.user-User.reviews`.`Review.user`, 
+  `Biography.user-User.biography`.`Biography.user`
+from 
+  User left outer join 
+   `Review.user-User.reviews` on `User.@id` = `Review.user-User.reviews`.`User.reviews`  left outer join
+      `Biography.user-User.biography` on `User.@id` = `Biography.user-User.biography`.`User.biography`;
+
+
+With names:
+
+select 
+  u.`User.name`, 
+  r.`Review.user`, 
+  b.`Biography.user`  
+from 
+  User as u left outer join `Review.user-User.reviews` as r 
+     on u.`User.@id` = r.`User.reviews` 
+       left outer join `Biography.user-User.biography` as b 
+         on u.`User.@id` = b.`User.biography`;
+
+*/
 
 alias Ctx
   = tuple[
@@ -48,6 +80,7 @@ Steps to compile to SQL
 - add to the result the expressions used in #needed expressions
 - translate refs to #dynamic entities to named placeholders, put the expression itself into params
 - translate where clauses to sql where clause, possibly using junction tables, skip #done/#needed/#delayed
+
 
 */
 tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`

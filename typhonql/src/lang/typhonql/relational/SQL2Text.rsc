@@ -80,6 +80,9 @@ str pp(renameColumn(column(str name, ColumnType \type, list[ColumnConstraint] _)
 
 str pp(as(str t, str x)) = "<q(t)> as <q(x)>";
 
+str pp(leftOuterJoin(As left, As right, SQLExpr on))
+  = "<pp(left)> left outer join <pp(right)> on <pp(on)>";
+
 // Set
 
 str pp(\set(str c, SQLExpr e)) = "<q(c)> = <pp(e)>";

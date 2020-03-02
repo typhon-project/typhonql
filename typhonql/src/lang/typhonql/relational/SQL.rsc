@@ -58,7 +58,9 @@ data SQLExpr
 
 
 data As
-  = as(str table, str name);
+  = as(str table, str name)
+  | leftOuterJoin(As left, As right, SQLExpr on)
+  ;
 
 data Clause
   = where(list[SQLExpr] exprs)
