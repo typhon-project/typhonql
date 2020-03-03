@@ -201,7 +201,7 @@ public class QLRestServer {
 				JsonSerializableResult result = handler.handle(req);
 				long stop = System.nanoTime();
 				resp.setStatus(HttpServletResponse.SC_OK);
-				resp.setHeader("QL-WallTime-Ms", Long.toString(TimeUnit.NANOSECONDS.toMillis(stop-start)));
+				resp.setHeader("QL-Wall-Time-Ms", Long.toString(TimeUnit.NANOSECONDS.toMillis(stop-start)));
 				resp.setContentType("application/json");
 				result.serializeJSON(responseStream);
 			}
