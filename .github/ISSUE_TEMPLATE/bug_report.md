@@ -36,7 +36,7 @@ If applicable, add screenshots to help explain your problem.
 If the bug happens inside the QL IDE:
 
 - Version of eclipse
-- Installed version of QL
+- Installed version of QL (about eclipse -> installation details -> plugins, search for ql)
 - java version eclipse is running
 - output in "Impulse Console"
 - relevant entry in the "Error Log"  ("View->Error Log")
