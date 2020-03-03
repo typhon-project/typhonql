@@ -5,6 +5,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
@@ -196,8 +197,11 @@ public class QLRestServer {
 	private static void handle(HttpServletRequest req, HttpServletResponse resp, ServletHandler handler) throws ServletException, IOException {
 		try (ServletOutputStream responseStream = resp.getOutputStream()) {
 			try { // nested try so that we can report an error before the stream is closed
+				long start = System.nanoTime();
 				JsonSerializableResult result = handler.handle(req);
+				long stop = System.nanoTime();
 				resp.setStatus(HttpServletResponse.SC_OK);
+				resp.setHeader("QL-WallTime-Ms", Long.toString(TimeUnit.NANOSECONDS.toMillis(stop-start)));
 				resp.setContentType("application/json");
 				result.serializeJSON(responseStream);
 			}
