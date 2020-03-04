@@ -30,6 +30,7 @@ import org.rascalmpl.interpreter.TypeReifier;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 import org.rascalmpl.values.ValueFactoryFactory;
 
+import io.usethesource.vallang.IBool;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.ISourceLocation;
 import io.usethesource.vallang.IString;
@@ -116,9 +117,10 @@ public class TyphonQL {
 		return vf.string(contents);
 	}
 	
-	public void executeResetDatabases(ISourceLocation path, IString user, IString password) {
+	public IBool executeResetDatabases(ISourceLocation path, IString user, IString password) {
 		URI uri = buildUri(path.getURI(), "/api/resetdatabases");
-		doGet(uri, user.getValue(), password.getValue());
+		String isReset = doGet(uri, user.getValue(), password.getValue());
+		return vf.bool(Boolean.parseBoolean(isReset));
 	}
 	
 	public IMap executeQuery(ISourceLocation path, IString user, IString password, IString query) {
@@ -244,7 +246,8 @@ public class TyphonQL {
 	public static void main(String[] args) {
 		IValueFactory vf = ValueFactoryFactory.getValueFactory();
 		TyphonQL ql = new TyphonQL(vf);
-		IMap ws = ql.executeQuery(vf.sourceLocation(URI.create("http://localhost:8080")), vf.string("pablo"), vf.string("antonio"), vf.string("from Product p select p"));
-		System.out.println(ws);
+		//IMap ws = ql.executeQuery(vf.sourceLocation(URI.create("http://localhost:8080")), vf.string("pablo"), vf.string("antonio"), vf.string("from Product p select p"));
+		ql.executeResetDatabases(vf.sourceLocation(URI.create("http://localhost:8080")), vf.string("pablo"), vf.string("antonio"));
+		//System.out.println(ws);
 	}
 }

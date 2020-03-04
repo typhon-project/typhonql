@@ -32,7 +32,7 @@ java void bootConnections(loc polystoreUri, str user, str password);
 java str readHttpModel(loc polystoreUri, str user, str password);
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
-java void executeResetDatabases(loc polystoreUri, str user, str password);
+java bool executeResetDatabases(loc polystoreUri, str user, str password);
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java WorkingSet executeQuery(loc polystoreUri, str user, str password, str query);
@@ -176,8 +176,16 @@ void setupIDE(bool isDevMode = false) {
     	    	}
     	    } else {
     	    	// non dev mode 
-           		executeResetDatabases(polystoreUri, user, password);
-	          	alert("Polystore successfully reset");
+    	    	try {
+           			bool isReset = executeResetDatabases(polystoreUri, user, password);
+           			if (isReset)
+           				alert("Polystore successfully reset");
+           			else
+           				alert("Problem with the polystore: Polystore could not be reset");
+           		} catch e: {
+	        		alert("Error: <e> ");
+    	    	}	
+	          	
     	    }
     	      
         }
