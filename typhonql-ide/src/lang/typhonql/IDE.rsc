@@ -60,31 +60,25 @@ private loc project(loc file) {
 
 PathConfig getDefaultPathConfig() = pathConfig();
 
-TyphonQLManifest readTyphonConfig(loc file) {
+alias PolystoreInfo = tuple[loc uri, str user, str password];
+
+PolystoreInfo readTyphonConfig(loc file) {
    assert file.scheme == "project";
 
    p = project(file);
    cfgFile = configFile(file);
-   mf = readManifest(#TyphonQLManifest, cfgFile);
+   typhonConf = readManifest(#TyphonQLManifest, cfgFile);
    
-   return mf;
+   return <|http://<typhonConf.PolystoreHost>:<typhonConf.PolystorePort>|,
+   	typhonConf.PolystoreUser, typhonConf.PolystorePassword>; 
 }
 
-loc buildPolystoreUri(loc projectLoc) {
-	TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
-	return |http://<typhonConf.PolystoreHost>:<typhonConf.PolystorePort>|;
-}
-
-Schema checkSchema(Schema sch, loc projectLoc) {
+Schema checkSchema(Schema sch, loc polystoreUri, str user, str password) {
 	if (schema({}, {}) := sch) {
-		loc polystoreUri = buildPolystoreUri(projectLoc);
-		TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
-		str user = typhonConf.PolystoreUser;
-		str password = typhonConf.PolystorePassword;
 		str modelStr = readHttpModel(polystoreUri, user, password);
 		Schema newSch = loadSchemaFromXMI(modelStr);
 		
-		set[Message] msgs = schemaSanity(newSch, projectLoc);
+		set[Message] msgs = schemaSanity(newSch, polystoreUri);
 	    if (msgs != {}) {
 	      throw "Not all entities assigned to backend in the model in polystore. Please upload a consistent model before continuing.";
 	    }
@@ -94,29 +88,10 @@ Schema checkSchema(Schema sch, loc projectLoc) {
 	}
 	
     return sch;
-	
-	/*
-		}
-		else {
-			loc modelLoc = |project://typhonql/src/lang/typhonml/mydb4.xmi|;
-			Schema sch = loadSchema(modelLoc);
-			return sch;
-		}
-	*/
-		
-	/*} catch value v:{
-		println(v);
-		return schema({}, {});
-	}*/
 }
 
 void setupIDE(bool isDevMode = false) {
   Schema sch = schema({}, {});
-  
-  // TODO remove this
-  loc projectLoc = |project://typhonql-ide|;
-  
-  TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
   
   registerLanguage(TYPHONQL, "tql", start[Script](str src, loc org) {
     return parse(#start[Script], src, org);
@@ -134,12 +109,12 @@ void setupIDE(bool isDevMode = false) {
   
   actions = [
       action("Execute",  void (Tree tree, loc selection) {
+      	<polystoreUri, user, password> = readTyphonConfig(tree@\loc);
+      	sch = checkSchema(sch, polystoreUri, user, password);
         if (treeFound(Request req) := treeAt(#Request, selection, tree)) {
-        	loc polystoreUri = buildPolystoreUri(tree@\loc);
         	if (isDevMode) {
 	          try {
-	          	sch = checkSchema(sch, tree@\loc);
-	      	  	value result = run(req, polystoreUri.uri, sch);
+	          	value result = run(req, polystoreUri.uri, sch);
 	          	if (WorkingSet ws := result) {
 	            	text(ws);
 	          	}
@@ -152,10 +127,6 @@ void setupIDE(bool isDevMode = false) {
           	} else {
           	  // not dev mode
           	  try {
-          		sch = checkSchema(sch, tree@\loc);
-          		TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
-          		str user = typhonConf.PolystoreUser;
-				str password = typhonConf.PolystorePassword;
           		if (req is query) {
 	      	  		WorkingSet ws = executeQuery(polystoreUri, user, password, "<req>");
 	          		text(ws);
@@ -173,8 +144,9 @@ void setupIDE(bool isDevMode = false) {
       }),
       action("Reload schema from polystore",  void (Tree tree, loc selection) {
       	try {
+      		<polystoreUri, user, password> = readTyphonConfig(tree@\loc);
         	sch = schema({}, {});
-        	sch = checkSchema(sch, tree@\loc);
+        	sch = checkSchema(sch, polystoreUri, user, password);
         	alert("Schema successfully reloaded from polystore");
         } catch e: {
         	alert("Error: <e> ");
@@ -182,8 +154,9 @@ void setupIDE(bool isDevMode = false) {
       }),
       action("Dump schema",  void (Tree tree, loc selection) {
       	try {
-      		sch = checkSchema(sch, tree@\loc);
-        	dumpSchema(sch);
+      		<polystoreUri, user, password> = readTyphonConfig(tree@\loc);
+      		sch = checkSchema(sch, polystoreUri, user, password);
+        	println(ppSchema(s));
         	text(sch);
         } catch e: {
         	alert("Error: <e> ");
@@ -192,10 +165,10 @@ void setupIDE(bool isDevMode = false) {
       action("Reset database...", void (Tree tree, loc selection) {
       	str yes = prompt("Are you sure to reset the polystore? (type \'yes\' to confirm)");
       	if (yes == "yes") {
-      		loc polystoreUri = buildPolystoreUri(tree@\loc);
-        	if (isDevMode) {        		
+      		<polystoreUri, user, password> = readTyphonConfig(tree@\loc);
+      		if (isDevMode) {        		
         		try {
-          			sch = checkSchema(sch, tree@\loc);
+          			sch = checkSchema(sch, polystoreUri, user, password);
           			runSchema(polystoreUri.uri, sch);
           			alert("Polystore successfully reset");
           		} catch e: {
@@ -203,10 +176,7 @@ void setupIDE(bool isDevMode = false) {
     	    	}
     	    } else {
     	    	// non dev mode 
-    	    	TyphonQLManifest typhonConf = readTyphonConfig(projectLoc);
-    	    	str user = typhonConf.PolystoreUser;
-				str password = typhonConf.PolystorePassword;
-          		executeResetDatabases(polystoreUri, user, password);
+           		executeResetDatabases(polystoreUri, user, password);
 	          	alert("Polystore successfully reset");
     	    }
     	      
@@ -217,9 +187,9 @@ void setupIDE(bool isDevMode = false) {
   
   if (isDevMode) {
   	actions += action("Dump database",  void (Tree tree, loc selection) {
-      	try {
-      		sch = checkSchema(sch, tree@\loc);
-      		loc polystoreUri = buildPolystoreUri(tree@\loc);
+  		try {
+  			<polystoreUri, user, password> = readTyphonConfig(tree@\loc);
+      		sch = checkSchema(sch, polystoreUri, user, password);
       		text(dumpDB(polystoreUri.uri, sch));
       	} catch e: {
         	alert("Error: <e> ");
@@ -230,15 +200,6 @@ void setupIDE(bool isDevMode = false) {
   
   registerContributions(TYPHONQL, {
     builder(set[Message] (start[Script] s) {
-      //try {
-      	//Model m = bootTyphonQL(#Model, |tmp:///|);
-      	//loc polystoreUri = buildPolystoreUri(tree@\loc);
-      	//bootConnections(polystoreUri, typhonConf.PolystoreUser, typhonConf.PolystorePassword);
-        //sch = getSchema(polystoreUri, typhonConf.PolystoreUser, typhonConf.PolystorePassword);
-      /*}
-      catch value v: {
-        return {error("Error loading schema: <v>", s@\loc)};
-      }*/
       return {};
     }),
     outliner(scriptOutliner),

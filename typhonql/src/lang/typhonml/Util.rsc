@@ -39,11 +39,6 @@ alias Place = tuple[DB db, str name];
 
 alias Placement = rel[Place place, str entity];
 
-
-void dumpSchema(Schema s) {
-  println(ppSchema(s));
-}
-
 str ppSchema(Schema s) {
   str txt = "";
   for (str ent <- s.rels<0> + s.attrs<0>, <Place p, ent> <- s.placement) {
