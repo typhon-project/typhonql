@@ -59,5 +59,10 @@ public class AggregatedResultIterator implements ResultIterator {
 
 	}
 
+	@Override
+	public Object getCurrentField(String fullyQualifiedName) {
+		return results.get(index).getCurrentField(fullyQualifiedName);
+	}
+
 
 }

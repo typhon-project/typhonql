@@ -66,4 +66,13 @@ public class SQLResultIterator implements ResultIterator {
 		}
 	}
 
+	@Override
+	public Object getCurrentField(String fullyQualifiedName) {
+		try {
+			return rs.getObject(fullyQualifiedName);
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 }

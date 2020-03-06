@@ -42,4 +42,9 @@ public class MongoDBIterator implements ResultIterator {
 		cursor = results.cursor();
 	}
 
+	@Override
+	public Object getCurrentField(String fullyQualifiedName) {
+		return current.get(fullyQualifiedName);
+	}
+
 }
