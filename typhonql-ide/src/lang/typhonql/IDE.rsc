@@ -120,7 +120,7 @@ void setupIDE(bool isDevMode = false) {
         if (treeFound(Request req) := treeAt(#Request, selection, tree)) {
         	if (isDevMode) {
 	          try {
-	          	if (req is Query) {
+	          	if ((Request) `<Query q>` := req) {
 	          		value result = run(req, polystoreUri.uri, sch);
 	            	if (WorkingSet ws := result) {
 	            		text(ws);
@@ -137,7 +137,7 @@ void setupIDE(bool isDevMode = false) {
           	} else {
           	  // not dev mode
           	  try {
-          		if (req is query) {
+          		if ((Request) `<Query q>` := req) {
 	      	  		WorkingSet ws = executeQuery(polystoreUri, user, password, "<req>");
 	          		text(ws);
 	          	}
