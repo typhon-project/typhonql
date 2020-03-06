@@ -2,8 +2,10 @@ package nl.cwi.swat.typhonql.backend;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 import nl.cwi.swat.typhonql.workingset.Entity;
 import nl.cwi.swat.typhonql.workingset.WorkingSet;
 
@@ -21,6 +23,22 @@ public class ResultStore {
 
 	public void put(String id, ResultIterator results) {
 		store.put(id, results);
+	}
+	
+	public ResultTable computeResultTable(String resultName, List<String> columnNames) {
+		ResultIterator iter = store.get(resultName);
+		iter.beforeFirst();
+		List<List<Object>> vs = new ArrayList<List<Object>>();
+		while (iter.hasNextResult()) {
+			iter.nextResult();
+			List<Object> os = new ArrayList<Object>();
+			for (String columnName : columnNames) {
+				Object obj = iter.getCurrentField(columnName);
+				os.add(obj);
+			}
+			vs.add(os);
+		}
+		return new ResultTable(columnNames, vs);
 	}
 
 	public WorkingSet computeResult(String resultName, String[] entityLabels, EntityModel... models) {
