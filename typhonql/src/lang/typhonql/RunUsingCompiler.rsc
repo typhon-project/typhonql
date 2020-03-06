@@ -17,7 +17,7 @@ import lang::typhonql::Script;
 import lang::typhonql::util::Log;
 
 import lang::typhonml::XMIReader;
-
+import lang::typhonql::ResultTable;
 
 import IO;
 import Set;
@@ -30,5 +30,14 @@ void runUpdate(Request r, Schema s, map[str, Connection] connections) {
 	println(connections);
 	Session session = newSession(connections);
 	runScript(scr, session, s);
+}
+
+ResultTable runQuery(Request r, Schema s, map[str, Connection] connections) {
+	scr = request2script(r, s);
+	println(scr);
+	println(connections);
+	Session session = newSession(connections);
+	runScript(scr, session, s);
+	return <[], []>;
 }
 

@@ -70,7 +70,10 @@ void runUpdate(Request req) {
 }
 
 value runQuery(Request req) {
-	return false;
+	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	Schema s = loadSchemaFromXMI(modelStr);
+	return runQuery(req, s, connections);
 }
 
 void printSchema() {
