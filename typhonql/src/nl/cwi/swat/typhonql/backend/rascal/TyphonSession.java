@@ -30,7 +30,7 @@ import io.usethesource.vallang.type.TypeFactory;
 import io.usethesource.vallang.type.TypeStore;
 import nl.cwi.swat.typhonql.backend.EntityModel;
 import nl.cwi.swat.typhonql.backend.ResultStore;
-import nl.cwi.swat.typhonql.workingset.WorkingSet;
+import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
 
 public class TyphonSession implements Operations {
@@ -128,14 +128,14 @@ public class TyphonSession implements Operations {
 				types.add(type.getValue());
 			}
 			
-			List<EntityModel> models = EntityModelReader.fromRascalRelation(types, modelsRel);
-			
-			WorkingSet ws = store.computeResult(resultName, labels.toArray(new String[0]), models.toArray(new EntityModel[0]));
+			//List<EntityModel> models = EntityModelReader.fromRascalRelation(types, modelsRel);
+			//WorkingSet ws = store.computeResult(resultName, labels.toArray(new String[0]), models.toArray(new EntityModel[0]));
+			ResultTable rt = store.computeResultTable(resultName, labels);
 			
  			ByteArrayOutputStream os = new ByteArrayOutputStream();
  			
  			try {
-				WorkingSetJSON.toJSON(ws, os);
+ 				rt.serializeJSON(os);
 				os.flush();
 			} catch (IOException e) {
 				throw new RuntimeException(e);
