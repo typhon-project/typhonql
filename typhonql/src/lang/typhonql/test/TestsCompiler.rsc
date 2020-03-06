@@ -33,9 +33,15 @@ java map[str, Connection] readConnectionsInfo(str host, int port, str user, str 
 
 
 void test1() {
-	rs = runQuery((Request) `from Product p select p`);
+	rs = runQuery((Request) `from Product p select p.name`, "Inventory");
 	println(rs);
 }
+
+void test1b() {
+	rs = runQuery((Request) `from Product p select p`, "Inventory");
+	println(rs);
+}
+
 
 void test2() {
 	runUpdate((Request) `insert User {name: "Pablo" }`);
@@ -69,11 +75,11 @@ void runUpdate(Request req) {
 	runUpdate(req, s, connections);
 }
 
-value runQuery(Request req) {
+value runQuery(Request req, str entryDatabase) {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
 	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
 	Schema s = loadSchemaFromXMI(modelStr);
-	return runQuery(req, s, connections);
+	return runQuery(req, entryDatabase, s, connections);
 }
 
 void printSchema() {
