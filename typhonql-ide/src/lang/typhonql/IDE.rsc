@@ -8,6 +8,13 @@ import lang::typhonml::XMIReader;
 import lang::typhonql::TDBC;
 import lang::typhonql::WorkingSet;
 import lang::typhonql::Run;
+import lang::typhonql::RunUsingCompiler;
+
+
+import lang::typhonql::Session;
+import lang::typhonql::Script;
+import lang::typhonql::Request2Script;
+
 
 import util::IDE;
 import util::Prompt;
@@ -21,12 +28,11 @@ import Boolean;
 import util::Reflective;
 import lang::manifest::IO;
 
-
-// TODO do the parsing of JSon containing meta information in Rascal
-alias ConnectionInfo = tuple[str dbType, str host, int port, str dbName, str user, str password];
-
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java void bootConnections(loc polystoreUri, str user, str password);
+
+@javaClass{nl.cwi.swat.typhonql.TyphonQL}
+java map[str, Connection] readConnectionsInfo(loc uri, str user, str password);
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java str readHttpModel(loc polystoreUri, str user, str password);
@@ -114,11 +120,15 @@ void setupIDE(bool isDevMode = false) {
         if (treeFound(Request req) := treeAt(#Request, selection, tree)) {
         	if (isDevMode) {
 	          try {
-	          	value result = run(req, polystoreUri.uri, sch);
-	          	if (WorkingSet ws := result) {
-	            	text(ws);
+	          	if (req is Query) {
+	          		value result = run(req, polystoreUri.uri, sch);
+	            	if (WorkingSet ws := result) {
+	            		text(ws);
+	            	}
 	          	}
 	          	else {
+	          		map[str, Connection] connections = readConnectionsInfo(polystoreUri, user, password);
+	          		runUpdate(req, sch, connections);
 	            	alert("Operation succesfully executed");
 	          	}
 	          } catch e: {
