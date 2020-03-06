@@ -32,12 +32,23 @@ void runUpdate(Request r, Schema s, map[str, Connection] connections) {
 	runScript(scr, session, s);
 }
 
-ResultTable runQuery(Request r, Schema s, map[str, Connection] connections) {
-	scr = request2script(r, s);
-	println(scr);
-	println(connections);
-	Session session = newSession(connections);
-	runScript(scr, session, s);
-	return <[], []>;
+str runQuery(Request r, str entryDatabase, Schema s, map[str, Connection] connections) {
+	if ((Request) `from <{Binding ","}+ _> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
+		list[str] columnNames = ["<s>" | s <- selected];
+		println(selected);
+		println(columnNames);
+		scr = request2script(r, s);
+		println(scr);
+		println(connections);
+		Session session = newSession(connections);
+		runScript(scr, session, s);
+		
+		
+		// TODO {<column, "DUMMY">} => [column]
+		str result = session.read(entryDatabase, {<column, "DUMMY"> | column <- columnNames}, {}); 
+		return result;
+	}
+	else
+		throw "Expected query, given statement";
 }
 
