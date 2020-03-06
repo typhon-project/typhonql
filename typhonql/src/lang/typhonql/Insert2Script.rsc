@@ -35,7 +35,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   SQLExpr sqlMe = hasId(kvs) ? lit(text(evalId(kvs))) : SQLExpr::placeholder(name=myId);
   DBObject mongoMe = hasId(kvs) ? \value(evalId(kvs)) : DBObject::placeholder(name=myId);
   
-  list[Step] steps = [];    
+  list[Step] steps = [ newId(myId) | !hasId(kvs) ];    
       
   switch (p) {
     case <sql(), str dbName>: {
