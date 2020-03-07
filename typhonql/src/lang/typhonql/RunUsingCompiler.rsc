@@ -23,6 +23,7 @@ import IO;
 import Set;
 import List;
 import util::Maybe;
+import String;
 
 void runUpdate(Request r, Schema s, map[str, Connection] connections) {
 	scr = request2script(r, s);
@@ -33,8 +34,9 @@ void runUpdate(Request r, Schema s, map[str, Connection] connections) {
 }
 
 str runQuery(Request r, str entryDatabase, Schema sch, map[str, Connection] connections) {
-	if ((Request) `from <{Binding ","}+ _> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
-		list[str] columnNames = ["<s>" | s <- selected];
+	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
+		map[str, str] types = (() | it + ("<var>":"<entity>") | (Binding) `<EId entity> <VId var>` <- bs);
+		list[str] columnNames = ["<parts[0]>.<ty>.<intercalate(".", parts[1..])>" | s <- selected, list[str] parts := split(".", "<s>"), ty := types[parts[0]]];
 		println(selected);
 		println(columnNames);
 		scr = request2script(r, sch);
