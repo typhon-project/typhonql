@@ -32,16 +32,16 @@ void runUpdate(Request r, Schema s, map[str, Connection] connections) {
 	runScript(scr, session, s);
 }
 
-str runQuery(Request r, str entryDatabase, Schema s, map[str, Connection] connections) {
+str runQuery(Request r, str entryDatabase, Schema sch, map[str, Connection] connections) {
 	if ((Request) `from <{Binding ","}+ _> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
 		list[str] columnNames = ["<s>" | s <- selected];
 		println(selected);
 		println(columnNames);
-		scr = request2script(r, s);
+		scr = request2script(r, sch);
 		println(scr);
 		println(connections);
 		Session session = newSession(connections);
-		runScript(scr, session, s);
+		runScript(scr, session, sch);
 		
 		
 		// TODO {<column, "DUMMY">} => [column]
