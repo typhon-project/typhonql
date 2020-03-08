@@ -42,9 +42,15 @@ void test1b() {
 	println(rs);
 }
 
+void test1c() {
+	rs = runQuery((Request) `from Review r select r.contents`, "Reviews");
+	println(rs);
+}
+
+
 
 void test2() {
-	runUpdate((Request) `insert User {name: "Pablo" }`);
+	runUpdate((Request) `insert User { @id: #pablo, name: "Pablo" }`);
 }
 
 void test3() {
@@ -59,6 +65,7 @@ void test4() {
 			  '@radio Product {name: \"TV\", description: \"Flat\", reviews: badradio },
 			  '@badradio Review { contents: \"Good TV\",product: radio,user: pablo}";
 	*/
+	runUpdate((Request) `insert Review { @id: #rev, contents: "Good TV", user: #pablo }`);
 }
 
 void test5() {
