@@ -33,10 +33,20 @@ void runUpdate(Request r, Schema s, map[str, Connection] connections) {
 	runScript(scr, session, s);
 }
 
+str buildColumnName(str selector, map[str, str] entityTypes) {
+	list[str] parts = split(".", selector);
+	ty = entityTypes[parts[0]];
+	if (size(parts) == 1) {
+		return "<parts[0]>.<ty>.@id";
+	} else {
+		return "<parts[0]>.<ty>.<intercalate(".", parts[1..])>";
+	} 
+}
+
 str runQuery(Request r, str entryDatabase, Schema sch, map[str, Connection] connections) {
 	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
 		map[str, str] types = (() | it + ("<var>":"<entity>") | (Binding) `<EId entity> <VId var>` <- bs);
-		list[str] columnNames = ["<parts[0]>.<ty>.<intercalate(".", parts[1..])>" | s <- selected, list[str] parts := split(".", "<s>"), ty := types[parts[0]]];
+		list[str] columnNames = [buildColumnName("<s>", types)| s <- selected];
 		println(selected);
 		println(columnNames);
 		scr = request2script(r, sch);
