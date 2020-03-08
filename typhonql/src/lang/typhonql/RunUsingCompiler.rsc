@@ -43,19 +43,18 @@ str buildColumnName(str selector, map[str, str] entityTypes) {
 	} 
 }
 
-str runQuery(Request r, str entryDatabase, Schema sch, map[str, Connection] connections) {
+str runQuery(Request r, Schema sch, map[str, Connection] connections) {
 	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
 		map[str, str] types = (() | it + ("<var>":"<entity>") | (Binding) `<EId entity> <VId var>` <- bs);
 		list[str] columnNames = [buildColumnName("<s>", types)| s <- selected];
 		println(selected);
 		println(columnNames);
 		scr = request2script(r, sch);
+		str entryDatabase = [r | step(str r, _, _) <- scr.steps][-1];
 		println(scr);
 		println(connections);
 		Session session = newSession(connections);
 		runScript(scr, session, sch);
-		
-		
 		// TODO {<column, "DUMMY">} => [column]
 		str result = session.read(entryDatabase, {<column, "DUMMY"> | column <- columnNames}, {}); 
 		return result;
