@@ -36,11 +36,11 @@ public class ResultStore {
 			for (Path path : paths) {
 				Object obj = null;
 				if (path.isRoot()) {
-					obj = iter.getCurrentId(path.getEntity(), path.getEntityType());
+					obj = iter.getCurrentId(path.getLabel(), path.getEntityType());
 				}
 				else {
 					if (path.getSelectors().length == 1) {
-						obj = iter.getCurrentField(path.getEntity(), path.getEntityType(), path.getSelectors()[0]);
+						obj = iter.getCurrentField(path.getLabel(), path.getEntityType(), path.getSelectors()[0]);
 					}
 					else {
 						// TODO
@@ -58,7 +58,7 @@ public class ResultStore {
 		List<String> names = new ArrayList<String>();
 		for (Path path : paths) {
 			List<String> name = new ArrayList<String>();
-			name.add(path.getEntity());
+			name.add(path.getLabel());
 			for (String selector : path.getSelectors()) {
 				name.add(selector);
 			}
