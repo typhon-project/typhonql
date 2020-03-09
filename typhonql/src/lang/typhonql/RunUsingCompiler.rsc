@@ -33,22 +33,10 @@ void runUpdate(Request r, Schema s, map[str, Connection] connections) {
 	runScript(scr, session, s);
 }
 
-str buildColumnName(str selector, map[str, str] entityTypes) {
-	list[str] parts = split(".", selector);
-	ty = entityTypes[parts[0]];
-	if (size(parts) == 1) {
-		return "<parts[0]>.<ty>.@id";
-	} else {
-		return "<parts[0]>.<ty>.<intercalate(".", parts[1..])>";
-	} 
-}
-
 str runQuery(Request r, Schema sch, map[str, Connection] connections) {
 	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
 		map[str, str] types = (() | it + ("<var>":"<entity>") | (Binding) `<EId entity> <VId var>` <- bs);
-		list[str] columnNames = [buildColumnName("<s>", types)| s <- selected];
-		println(selected);
-		println(columnNames);
+		list[Path] paths = [buildPath("<s>", types)| s <- selected];
 		scr = request2script(r, sch);
 		str entryDatabase = [r | step(str r, _, _) <- scr.steps][-1];
 		println(scr);
@@ -56,10 +44,17 @@ str runQuery(Request r, Schema sch, map[str, Connection] connections) {
 		Session session = newSession(connections);
 		runScript(scr, session, sch);
 		// TODO {<column, "DUMMY">} => [column]
-		str result = session.read(entryDatabase, {<column, "DUMMY"> | column <- columnNames}, {}); 
+		str result = session.read(entryDatabase, paths); 
 		return result;
 	}
 	else
 		throw "Expected query, given statement";
 }
+
+Path buildPath(str selector, map[str, str] entityTypes) {
+	list[str] parts = split(".", selector);
+	str label = parts[0];
+	ty = entityTypes[label];
+	return <label, ty, parts[1..]>;
+} 
 

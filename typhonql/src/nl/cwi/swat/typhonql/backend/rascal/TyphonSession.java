@@ -19,6 +19,7 @@ import org.rascalmpl.interpreter.types.FunctionType;
 
 import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IInteger;
+import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.ISet;
 import io.usethesource.vallang.IString;
@@ -28,10 +29,8 @@ import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import io.usethesource.vallang.type.TypeStore;
-import nl.cwi.swat.typhonql.backend.EntityModel;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
-import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
 
 public class TyphonSession implements Operations {
 	private static final TypeFactory TF = TypeFactory.getInstance();
@@ -113,24 +112,19 @@ public class TyphonSession implements Operations {
 	private ICallableValue makeRead(ResultStore store, FunctionType readType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, readType, args -> {
 			String resultName = ((IString) args[0]).getValue();
-			List<String> labels = new ArrayList<>();
-			List<String> types = new ArrayList<>();
+			List<Path> paths = new ArrayList<>();
 			
-			ISet nameTypeRel = (ISet) args[1];
-			ISet modelsRel = (ISet) args[2];
-			Iterator<IValue> iter = nameTypeRel.iterator();
+			IList pathsList = (IList) args[1];
+			Iterator<IValue> iter = pathsList.iterator();
 			
 			while (iter.hasNext()) {
 				ITuple tuple = (ITuple) iter.next();
-				IString name = (IString) tuple.get(0);
-				IString type = (IString) tuple.get(1);
-				labels.add(name.getValue());
-				types.add(type.getValue());
+				paths.add(toPath(tuple));
 			}
 			
 			//List<EntityModel> models = EntityModelReader.fromRascalRelation(types, modelsRel);
 			//WorkingSet ws = store.computeResult(resultName, labels.toArray(new String[0]), models.toArray(new EntityModel[0]));
-			ResultTable rt = store.computeResultTable(resultName, labels);
+			ResultTable rt = store.computeResultTable(resultName, paths);
 			
  			ByteArrayOutputStream os = new ByteArrayOutputStream();
  			
@@ -144,6 +138,20 @@ public class TyphonSession implements Operations {
  			String json = new String(os.toByteArray());
  			return ResultFactory.makeResult(TF.stringType(), vf.string(json), ctx);
 		});
+	}
+
+	private Path toPath(ITuple path) {
+		IList pathLst = (IList) path.get(2);
+		Iterator<IValue> vs = pathLst.iterator();
+		List<String> fields = new ArrayList<String>();
+		while (vs.hasNext()) {
+			fields.add(((IString)(vs.next())).getValue());
+		}
+		String label = ((IString) path.get(0)).getValue();
+		String entityType = ((IString) path.get(1)).getValue();
+		return new Path(label,
+			entityType,
+			fields.toArray(new String[0]));
 	}
 
 }
