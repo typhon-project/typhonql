@@ -4,6 +4,8 @@ import lang::typhonql::Expr;
 import lang::typhonql::WorkingSet;
 import lang::typhonql::util::UUID;
 
+import String;
+
 /*
 
 This module contains an interpreter of the TyphonQL expression sub-language.

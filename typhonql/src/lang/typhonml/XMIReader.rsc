@@ -53,6 +53,8 @@ Model xmiNode2Model(node n) {
   
   str get(node n, str name) = x 
     when str x := getKeywordParameters(n)[name];
+    
+  bool has(node n, str name) = name in (getKeywordParameters(n));
   
   map[str, DataType] typeMap = ();
   map[str, Relation] relMap = ();
@@ -192,7 +194,10 @@ Model xmiNode2Model(node n) {
              relPath = "<dtPath>/@relations.<relPos>";
              myrel = ensureRel(relPath);
              myrel.name = get(xrel, "name");
-             myrel.cardinality = make(#Cardinality, get(xrel, "cardinality"), []);
+             if (has(xrel, "cardinality"))
+             	myrel.cardinality = make(#Cardinality, get(xrel, "cardinality"), []);
+             else
+             	myrel.cardinality =  make(#Cardinality, "zero_one", []);
              
              ePath = get(xrel, "type");
              myrel.\type = referTo(#Entity, ensureEntity(ePath).entity);

@@ -134,7 +134,9 @@ public class Connections {
 			try {
 				Connection conn = DriverManager.getConnection(ms.getConnectionString(host, port, "", user, password));
 				Statement stmt = conn.createStatement();
-				int result = stmt.executeUpdate("CREATE DATABASE " + dbName);
+				stmt.executeUpdate("CREATE DATABASE " + dbName + 
+						"   DEFAULT CHARACTER SET utf8mb4" + 
+						"   DEFAULT COLLATE utf8mb4_unicode_ci"); // TODO: collate might have to come from a model, since it's culture specific
 				addRelationalConnection(polystoreId, host, port, dbName, dbms, user, password);
 			} catch (SQLException e1) {
 				throw new RuntimeException(e1);
