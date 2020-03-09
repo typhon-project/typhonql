@@ -115,19 +115,17 @@ void setupIDE(bool isDevMode = false) {
   
   actions = [
       action("Execute",  void (Tree tree, loc selection) {
-      	<polystoreUri, user, password> = readTyphonConfig(tree@\loc);
-      	sch = checkSchema(sch, polystoreUri, user, password);
-        if (treeFound(Request req) := treeAt(#Request, selection, tree)) {
+      	if (treeFound(Request req) := treeAt(#Request, selection, tree)) {
+      		<polystoreUri, user, password> = readTyphonConfig(tree@\loc);
+      		sch = checkSchema(sch, polystoreUri, user, password);
+      		map[str, Connection] connections = readConnectionsInfo(polystoreUri, user, password);
         	if (isDevMode) {
 	          try {
 	          	if ((Request) `<Query q>` := req) {
-	          		value result = run(req, polystoreUri.uri, sch);
-	            	if (WorkingSet ws := result) {
-	            		text(ws);
-	            	}
+	          		str result = runQuery(req, sch, connections);
+	            	text(result);
 	          	}
 	          	else {
-	          		map[str, Connection] connections = readConnectionsInfo(polystoreUri, user, password);
 	          		runUpdate(req, sch, connections);
 	            	alert("Operation succesfully executed");
 	          	}

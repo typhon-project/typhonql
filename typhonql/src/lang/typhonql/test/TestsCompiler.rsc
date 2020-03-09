@@ -47,6 +47,11 @@ void test1c() {
 	println(rs);
 }
 
+void test1d() {
+	rs = runQuery((Request) `from Review r select r`);
+	println(rs);
+}
+
 
 
 void test2() {

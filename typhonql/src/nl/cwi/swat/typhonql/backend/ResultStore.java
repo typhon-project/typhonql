@@ -36,7 +36,7 @@ public class ResultStore {
 			for (Path path : paths) {
 				Object obj = null;
 				if (path.isRoot()) {
-					obj = iter.getCurrentField(path.getEntity(), path.getEntityType(), "@id");
+					obj = iter.getCurrentId(path.getEntity(), path.getEntityType());
 				}
 				else {
 					if (path.getSelectors().length == 1) {
