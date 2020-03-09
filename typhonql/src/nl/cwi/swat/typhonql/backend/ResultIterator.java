@@ -6,6 +6,5 @@ public interface ResultIterator {
 	boolean hasNextResult();
 	String getCurrentId(String label, String type);
 	Object getCurrentField(String label, String type, String name);
-	Object getCurrentField(String fullyQualifiedName);
 	void beforeFirst();
 }
