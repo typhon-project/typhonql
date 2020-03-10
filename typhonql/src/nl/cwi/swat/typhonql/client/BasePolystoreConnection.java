@@ -18,8 +18,13 @@ import org.rascalmpl.uri.classloaders.SourceLocationClassLoader;
 import org.rascalmpl.util.ConcurrentSoftReferenceObjectPool;
 import org.rascalmpl.values.ValueFactoryFactory;
 
+import io.usethesource.vallang.IInteger;
+import io.usethesource.vallang.IMap;
+import io.usethesource.vallang.IMapWriter;
 import io.usethesource.vallang.ISourceLocation;
+import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValue;
+import io.usethesource.vallang.IValueFactory;
 import nl.cwi.swat.typhonql.ConnectionInfo;
 import nl.cwi.swat.typhonql.Connections;
 
@@ -27,8 +32,11 @@ import nl.cwi.swat.typhonql.Connections;
  * Thread safe connection to the polystore ql engine, construct this once, and call the executeQuery from as many threads as you like (there is a memory overhead, but it will not interfer with eachother)
  */
 public abstract class BasePolystoreConnection extends PolystoreConnection {
-	protected static final String LOCALHOST = "localhost";
+
 	protected final ConcurrentSoftReferenceObjectPool<Evaluator> evaluators;
+	protected IMap connections;
+	protected static final IValueFactory VF = ValueFactoryFactory.getValueFactory();
+	protected static final String LOCALHOST = "localhost";
 	
 	private static int calculateMaxEvaluators() {
         int numberOfEvaluators = Math.min(4, Runtime.getRuntime().availableProcessors() - 2);
@@ -48,7 +56,7 @@ public abstract class BasePolystoreConnection extends PolystoreConnection {
 				Connections.boot(infos.stream().map(i -> new ConnectionInfo(LOCALHOST, i)).toArray(ConnectionInfo[]::new));
 
 				// we prepare some configuration that every evaluator will need
-				
+				connections = buildConnectionsMap(infos);
 
 				ISourceLocation root = URIUtil.correctLocation("project", "typhonql", null);
 				URIResolverRegistry reg = URIResolverRegistry.getInstance();
@@ -108,10 +116,33 @@ public abstract class BasePolystoreConnection extends PolystoreConnection {
 					System.out.println("Starting a fresh evaluator to interpret the query (" + Integer.toHexString(System.identityHashCode(result)) + ")");
 					System.out.flush();
 					// now we are ready to import our main module
+					result.doImport(null, "lang::typhonql::RunUsingCompiler");
 					result.doImport(null, "lang::typhonql::Run");
 					System.out.println("Finished initializing evaluator: " + Integer.toHexString(System.identityHashCode(result)));
 					System.out.flush();
 					return result;
 				});
+	}
+
+
+	private IMap buildConnectionsMap(List<DatabaseInfo> infos) {
+		IMapWriter mw = VF.mapWriter();
+		for (DatabaseInfo info : infos) {
+			IString host = VF.string(info.getHost());
+			IInteger port = VF.integer(info.getPort());
+			IString user = VF.string(info.getUser());
+			IString password = VF.string(info.getPassword());
+			IString dbName = VF.string(info.getDbName());
+			switch (info.getDbType()) { 
+			case relationaldb:
+				mw.put(dbName, VF.tuple(VF.string("sql"), host, port, user, password));
+				break;
+			case documentdb:
+				mw.put(dbName,  VF.tuple(VF.string("mongo"), host, port, user, password));
+				break;
+			}
+		}
+		
+		return mw.done();
 	}
 }
