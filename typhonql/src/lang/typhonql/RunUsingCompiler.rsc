@@ -138,3 +138,11 @@ Path buildPath(str selector, map[str, str] entityTypes) {
 	return <label, ty, parts[1..]>;
 } 
 
+void resetDatabase() {
+	bootConnections(|http://<HOST>:<PORT>|, HOST, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	Schema sch = loadSchemaFromXMI(modelStr);
+	runSchema("http://<HOST>:<PORT>", sch);
+}
+
+
