@@ -6,7 +6,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.List;
 
 import nl.cwi.swat.typhonql.DBType;
 import nl.cwi.swat.typhonql.MariaDB;
@@ -18,7 +17,7 @@ import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
 
-public class XMIBasedTyphonQLClientTest {
+public class XMIBasedTyphonQLClientTest4DDL {
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		DatabaseInfo[] infos = new DatabaseInfo[] {
 				new DatabaseInfo("localhost", 27017, "Reviews", DBType.documentdb, new MongoDB().getName(),
@@ -38,24 +37,8 @@ public class XMIBasedTyphonQLClientTest {
 
 		PolystoreConnection conn = new XMIPolystoreConnection(xmiString, Arrays.asList(infos));
 		
-		conn.resetDatabases();
-		
-		/*CommandResult cr = conn.executeUpdate("insert \n" + 
-				"	@pablo User { name: \"Pablo\", reviews: badradio },\n" + 
-				"	@radio Product {name: \"Radio\", description: \"Wireless\", reviews: badradio },\n" + 
-				"	@badradio Review { contents: \"Bad radio\",product: radio,user: pablo}");*/
-		
-		CommandResult cr = conn.executeUpdate(
-				"insert Review { contents: \"Average phone\" }");
-		System.out.println("COMMAND RESULT");
+		CommandResult cr = conn.executeUpdate("create Bank at Inventory");
 		WorkingSetJSON.toJSON(cr, System.out);
-		System.out.println("END COMMAND RESULT");
-		
-		
-		//WorkingSet iv = conn.executeQuery("from Product p select p");
-		ResultTable iv = conn.executeQuery("from Review r select r.contents");
-		System.out.println("RESULT TABLE");
-		iv.print();
 		
 	}
 }
