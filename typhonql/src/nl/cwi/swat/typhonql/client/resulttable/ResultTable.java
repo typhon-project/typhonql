@@ -168,5 +168,13 @@ public class ResultTable {
 	public void serializeJSON(OutputStream target) throws IOException {
 		mapper.writeValue(target, this);
 	}
+	
+	public void print() {
+		System.out.println(String.join(", ", columnNames));
+		for (List<Object> vs : values) {
+			System.out.println(String.join(",", 
+					vs.stream().map(o -> o.toString()).collect(Collectors.toList())));
+		}
+	}
 
 }
