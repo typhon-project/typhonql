@@ -35,3 +35,6 @@ lexical Nat = [0-9]+ !>> [0-9];
 syntax Arrow = "-\>" | ":-\>";
 
 lexical CardinalityEnd = [0-1] | "*";
+  
+bool isDDL(Statement s) = s is \createEntity || s is \createAttribute || s is \createRelation
+  || s is \dropEntity || s is \dropAttribute || s is \dropRelation || s is \renameAttribute || s is \renameRelation; 
