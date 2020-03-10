@@ -26,6 +26,7 @@ import Message;
 data Schema
   = schema(Rels rels, Attrs attrs, Placement placement = {}, Attrs elements = {}, ChangeOps changeOperators = {}, map[str, value] config = ());
 
+alias Conn = tuple[str dbType, str host, int port, str user, str password];
 
 alias Rel = tuple[str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool containment];
 alias Rels = set[Rel];
