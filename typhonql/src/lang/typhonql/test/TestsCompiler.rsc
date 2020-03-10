@@ -20,11 +20,6 @@ str PORT = "8080";
 str user = "pablo";
 str password = "antonio";
 
-map[str, Connection] connections = (
-			"Reviews" : mongoConnection(HOST, 27018, "admin", "admin"),
- 			"Inventory" : sqlConnection(HOST, 3306, "root", "example")
-	);
-
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java str readHttpModel(loc polystoreUri, str user, str password);
 
@@ -52,6 +47,11 @@ void test1d() {
 	println(rs);
 }
 
+void test1e() {
+	rs = runQuery((Request) `from User u select u.biography where u == #victor`);
+	println(rs);
+}
+
 
 
 void test2() {
@@ -74,6 +74,11 @@ void test4() {
 }
 
 void test5() {
+	runUpdate((Request) `insert User { @id: #victor, name: "Víctor" }`);
+	runUpdate((Request) `insert Biography { @id: #bio1, text: "Born in Chile", user: #victor }`);
+}
+
+void test6() {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
 	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
 	Schema s = loadSchemaFromXMI(modelStr);
@@ -88,7 +93,7 @@ void runUpdate(Request req) {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
 	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
 	Schema s = loadSchemaFromXMI(modelStr);
-	runUpdate(req, s, connections);
+	runUpdate(req, "localhost", s, connections);
 }
 
 value runQuery(Request req) {
