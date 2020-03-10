@@ -122,7 +122,7 @@ void setupIDE(bool isDevMode = false) {
         	if (isDevMode) {
 	          try {
 	          	if ((Request) `<Query q>` := req) {
-	          		str result = runQuery(req, sch, connections);
+	          		ResultTable result = runQuery(req, sch, connections);
 	            	text(result);
 	          	}
 	          	else {
