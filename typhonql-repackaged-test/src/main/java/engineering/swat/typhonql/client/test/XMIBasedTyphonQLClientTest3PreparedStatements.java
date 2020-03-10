@@ -53,7 +53,7 @@ public class XMIBasedTyphonQLClientTest3PreparedStatements {
 		System.out.println("END COMMAND RESULTS");
 		
 		
-		ResultTable iv = conn.executeQuery("from Product p select p");
+		ResultTable iv = conn.executeQuery("from Product p select p.name");
 		System.out.println("RESULT TABLE");
 		iv.print();
 		
