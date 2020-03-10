@@ -126,17 +126,9 @@ public class TyphonSession implements Operations {
 			//WorkingSet ws = store.computeResult(resultName, labels.toArray(new String[0]), models.toArray(new EntityModel[0]));
 			ResultTable rt = store.computeResultTable(resultName, paths);
 			
- 			ByteArrayOutputStream os = new ByteArrayOutputStream();
- 			
- 			try {
- 				rt.serializeJSON(os);
-				os.flush();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
- 			
- 			String json = new String(os.toByteArray());
- 			return ResultFactory.makeResult(TF.stringType(), vf.string(json), ctx);
+ 			// alias ResultTable =  tuple[list[str] columnNames, list[list[value]] values];
+ 			return ResultFactory.makeResult(TF.tupleType(new Type[] { TF.listType(TF.stringType()), TF.listType(TF.listType(TF.valueType()))}, 
+ 					new String[]{ "columnNames", "values"}), rt.toIValue(), ctx);
 		});
 	}
 
