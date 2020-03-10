@@ -77,6 +77,7 @@ public class XMIPolystoreConnection extends BasePolystoreConnection {
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(update), 
+							VF.string(LOCALHOST),
 							xmiModel,
 							connections);
 				}

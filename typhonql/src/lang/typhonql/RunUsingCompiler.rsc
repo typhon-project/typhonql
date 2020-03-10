@@ -14,9 +14,9 @@ import lang::typhonql::Closure;
 import lang::typhonql::Session;
 import lang::typhonql::Request2Script;
 import lang::typhonql::Script;
-
+// TODO for now only for the DDL. Modularize better
+import lang::typhonql::Run;
 import lang::typhonql::util::Log;
-
 import lang::typhonml::XMIReader;
 
 import IO;
@@ -26,20 +26,25 @@ import util::Maybe;
 import String;
 
 tuple[int, map[str, str]] runUpdate(Request r, str polystoreUri, Schema s, map[str, Connection] connections) {
-	if ((Request) `<Statement stmt>` := req) {
-  	if (isDDL(stmt)) {
-  		return run(r, polystoreUri, s);
+	if ((Request) `<Statement stmt>` := r) {
+  		if (isDDL(stmt)) {
+  			if (tuple[int, map[str, str]]  t := run(r, polystoreUri, s)) {
+  				return t;
+  			}
+  			else
+  				throw "Dynamic type error for DDL execution operation";
+  			
+  		}
+  		else {
+  			scr = request2script(r, s);
+			println(scr);
+			println(connections);
+			Session session = newSession(connections);
+			runScript(scr, session, s);
+			return <-1, ()>;
+  		}
   	}
-  	else {
-  		scr = request2script(r, s);
-		println(scr);
-		println(connections);
-		Session session = newSession(connections);
-		runScript(scr, session, s);
-		return <-1, ()>;
-  	}
-  }
-  throw "Statement should have been provided";
+    throw "Statement should have been provided";
 }
 
 
