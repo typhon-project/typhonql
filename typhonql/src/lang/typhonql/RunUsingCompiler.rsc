@@ -69,6 +69,33 @@ ResultTable runQuery(str src, str xmiString, map[str, Conn] conns) {
   return runQuery(req, s, connections);
 }
 
+lrel[int, map[str, str]] runPrepared(Request req, list[str] columnNames, list[list[str]] values, Schema s, map[str, Connection] conns) {
+  lrel[int, map[str, str]] rs = [];
+  int numberOfVars = size(columnNames);
+  for (list[str] vs <- values) {
+  	map[str, str] labeled = (() | it + (columnNames[i] : vs[i]) | i <-[0 .. numberOfVars]);
+  	int i = 0;
+  	Request req_ = visit(req) {
+  		case (Expr) `<PlaceHolder ph>`: {
+  			valStr = labeled["<ph.name>"];
+  			e = [Expr] valStr; 
+  			insert e;
+  		}
+  	};
+  	println(req_);
+  	<n, uuids> = runUpdate(req_, s, conns);
+  	rs += <n, uuids>;
+  }
+  return rs;
+}
+
+lrel[int, map[str, str]] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, map[str, Conn] conns) {
+  Model m = xmiString2Model(xmiString);
+  Schema s = model2schema(m);
+  map[str, Connection] connections = (() | it + (k : toConnection(tupl)) | k <- conns, tupl := conns[k]);
+  return runPrepared([Request] src, columnNames, values, s, connections); 
+}
+
 Connection toConnection(<str dbType, str host, int port, str user, str password>) {
 	switch (dbType) {
 		case "sql":

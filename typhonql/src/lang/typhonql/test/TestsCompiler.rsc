@@ -74,10 +74,14 @@ void test4() {
 }
 
 void test5() {
-	str cmd = "insert Product { name: ??, description: ?? }";
-	/*rs = runPrepared(cmd, "http://<HOST>:<PORT>", [["\"IPhone\"", "\"Cool but expensive\""],
-													["\"Samsung S10\"", "\"Less cool and still expensive\""]], modelStr);
-	*/
+	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	Schema s = loadSchemaFromXMI(modelStr);
+	Request cmd = (Request) `insert Product { name: ??name, description: ??description }`;
+	rs = runPrepared(cmd, ["name", "description"],
+						  [["\"IPhone\"", "\"Cool but expensive\""],
+				           ["\"Samsung S10\"", "\"Less cool and still expensive\""]], s, connections);
+
 }
 
 void runUpdate(Request req) {
