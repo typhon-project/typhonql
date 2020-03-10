@@ -104,10 +104,6 @@ void smokeScript() {
     iprintln(request2script(q, s));
   }
   
-  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);  
-  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);  
-
-  smokeIt((Request)`from Person u, Review r select r where r.user == u, u.name == "Pablo"`);
   
   
 
@@ -178,7 +174,6 @@ void smokeScript() {
   
   smokeIt((Request)`insert Review {text: "Bad", user: #pablo}`);
   
-  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
   
   smokeIt((Request)`insert Person {name: "Pablo", age: 23}`);
   smokeIt((Request)`insert Person {name: "Pablo", age: 23, reviews: [#abc, #cdef]}`);
@@ -201,6 +196,15 @@ void smokeScript() {
   
   smokeIt((Request)`delete Review r where r.text == "Bad"`);
   
+  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);  
+  
+  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);  
+
+  smokeIt((Request)`from Person u, Review r select r where r.user == u, u.name == "Pablo"`);
+  
+  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
+  
+  smokeIt((Request)`from Person p, Cash c select p.name where p.name == "Pablo", p.cash == c, c.amount \> 0`);
   
   
 }  
