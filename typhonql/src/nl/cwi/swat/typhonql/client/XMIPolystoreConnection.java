@@ -111,13 +111,13 @@ public class XMIPolystoreConnection extends BasePolystoreConnection {
 				synchronized (evaluator) {
 					// str src, str polystoreId, Schema s,
 					return evaluator.call("runPrepared", 
-							"lang::typhonql::Run",
+							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(preparedStatement),
-							VF.string(LOCALHOST),
 							columnsWriter.done(),
 							lw.done(),
-							xmiModel);
+							xmiModel,
+							connections);
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
