@@ -8,6 +8,7 @@ import lang::typhonql::WorkingSet;
 import lang::typhonql::Native;
 import lang::typhonql::Partition;
 import lang::typhonql::TDBC;
+import lang::typhonql::DDL;
 import lang::typhonql::Eval;
 import lang::typhonql::Closure;
 import lang::typhonql::Session;
@@ -24,13 +25,21 @@ import List;
 import util::Maybe;
 import String;
 
-tuple[int, map[str, str]] runUpdate(Request r, Schema s, map[str, Connection] connections) {
-	scr = request2script(r, s);
-	println(scr);
-	println(connections);
-	Session session = newSession(connections);
-	runScript(scr, session, s);
-	return <-1, ()>;
+tuple[int, map[str, str]] runUpdate(Request r, str polystoreUri, Schema s, map[str, Connection] connections) {
+	if ((Request) `<Statement stmt>` := req) {
+  	if (isDDL(stmt)) {
+  		return run(r, polystoreUri, s);
+  	}
+  	else {
+  		scr = request2script(r, s);
+		println(scr);
+		println(connections);
+		Session session = newSession(connections);
+		runScript(scr, session, s);
+		return <-1, ()>;
+  	}
+  }
+  throw "Statement should have been provided";
 }
 
 
@@ -52,16 +61,26 @@ ResultTable runQuery(Request r, Schema sch, map[str, Connection] connections) {
 		throw "Expected query, given statement";
 }
 
-tuple[int, map[str, str]] runUpdate(str src, str xmiString, map[str, Conn] conns) {
+tuple[int, map[str, str]] runUpdate(str src, str polystoreUri, str xmiString, map[str, Conn] conns) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   Request req = [Request]src;
   map[str, Connection] connections = (() | it + (k : toConnection(tupl)) | k <- conns, tupl := conns[k]);
-  return runUpdate(req, s, connections);
+  return runUpdate(req, polystoreUri, s, connections);
 }
 
 
 ResultTable runQuery(str src, str xmiString, map[str, Conn] conns) {
+  Model m = xmiString2Model(xmiString);
+  Schema s = model2schema(m);
+  Request req = [Request]src;
+  map[str, Connection] connections = (() | it + (k : toConnection(tupl)) | k <- conns, tupl := conns[k]);
+  return runQuery(req, s, connections);
+}
+
+// TODO This function is needed because we do not have an explicit way to distinguish
+// DDL updates from DML updates. Perhaps we should consider it
+ResultTable runQuery(str src, str polystoreUri, str xmiString, map[str, Conn] conns) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   Request req = [Request]src;
