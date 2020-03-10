@@ -6,6 +6,7 @@ import lang::typhonml::Util;
 import lang::typhonml::XMIReader;
 
 import lang::typhonql::TDBC;
+import lang::typhonql::DDL;
 import lang::typhonql::WorkingSet;
 import lang::typhonql::Run;
 import lang::typhonql::RunUsingCompiler;
@@ -125,8 +126,15 @@ void setupIDE(bool isDevMode = false) {
 	          		ResultTable result = runQuery(req, sch, connections);
 	            	text(result);
 	          	}
-	          	else {
-	          		runUpdate(req, sch, connections);
+	          	else if ((Request) `<Statement s>` := req)  {
+	          		if (isDDL(s)) {
+	          			// use interpreter
+	          			 run(req, polystoreUri.uri, sch);
+	          		}
+	          		else {
+	          			// use compiler
+	          			runUpdate(req, sch, connections);
+	          		}
 	            	alert("Operation succesfully executed");
 	          	}
 	          } catch e: {
