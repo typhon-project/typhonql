@@ -9,12 +9,16 @@ alias EntityModels = rel[str name, rel[str name, str \type] attributes, rel[str 
 alias Path = tuple[str name, str entityType, list[str] path];
 
 alias Session = tuple[
-	str (str result, list[Path path] paths) read,
+	ResultTable (str result, list[Path path] paths) read,
 	void () done,
 	void (str) newId,
    	SQLOperations sql,
    	MongoOperations mongo
 ];
+
+alias ResultTable
+  = tuple[list[str] columnNames, list[list[value]] values];
+
 
 //alias Field = tuple[str resultSet, str label, str \type, str fieldName];
 
