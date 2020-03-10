@@ -16,6 +16,7 @@ import lang::typhonml::Util;
 
 import IO;
 import String;
+import List;
 
 /*
 
@@ -54,6 +55,7 @@ alias Ctx
   = tuple[
       void(SQLExpr) addWhere,
       void(As) addFrom,
+      void(str, As, SQLExpr) addLeftOuterJoin,
       void(SQLExpr) addResult,
       void(str, Param) addParam,
       Schema schema,
@@ -98,6 +100,15 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
     q.tables += [as];
   }
   
+  void addLeftOuterJoin(str this, As other, SQLExpr on) {
+    for (int i <- [0..size(q.tables)]) {
+      if (me:as(_, this) := q.tables[i]) {
+        q.tables[i] = leftOuterJoin(me, other, on);
+        return;
+      } 
+    }
+  }
+  
   void addResult(SQLExpr e) {
     // println("ADDING result: <pp(e)>");
     q.exprs += [e];
@@ -127,10 +138,12 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
         env["<x>"] = "<e>";
     }
   }
+  
 
   Ctx ctx = <
      addWhere,
      addFrom,
+     addLeftOuterJoin,
      addResult,
      addParam,
      s,
@@ -244,27 +257,28 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
 
   
   if (<entity, _, role, str toRole, _, str to, true> <- ctx.schema.rels, placeOf(to, ctx.schema) == ctx.place) {
-    // println("# local containment <entity> -<role>/<toRole>-\> <to>");
+    println("# local containment <entity> -<role>/<toRole>-\> <to>");
     str tbl1 = "<x>";
     str tbl2 = varForTarget(f, ctx.vars()); // introduce a new table alias
-    ctx.addFrom(as(tableName(to), tbl2));
-    ctx.addWhere(equ(column(tbl2, fkName(entity, to, toRole)), column(tbl1, typhonId(entity))));
-    
+    ctx.addLeftOuterJoin(tbl1,
+       as(tableName(to), tbl2),
+       equ(column(tbl2, fkName(entity, to, toRole)), column(tbl1, typhonId(entity))));
+       
     // the value is of this expression is the id column of the child table
     // provided that its parent is the table representing x 
     return column(tbl2, typhonId(to));
   }
   else if (<entity, _, role, str toRole, _, str to, _> <- ctx.schema.rels) {
   	println("# xref, or external containment: <entity> -<role>/<toRole>-\> <to> (`<e>`)  ");
-    tbl = varForJunction(f, ctx.vars());
-  	
-  	ctx.addFrom(as(junctionTableName(entity, role, to, toRole), tbl));
-  	
-  	// add a where to link x to the junction table pointing to `to`
-  	ctx.addWhere(equ(column(tbl, junctionFkName(entity, role)), column("<x>", typhonId(entity))));
+  	tbl1 = "<x>";
+    tbl2 = varForJunction(f, ctx.vars());
+
+    ctx.addLeftOuterJoin(tbl1,  	
+  	  as(junctionTableName(entity, role, to, toRole), tbl2),
+  	  equ(column(tbl2, junctionFkName(entity, role)), column(tbl1, typhonId(entity))));
   	
   	// return the column of the target
-  	return column(tbl, junctionFkName(to, toRole));
+  	return column(tbl2, junctionFkName(to, toRole));
   }
   else if (<entity, role, _> <- ctx.schema.attrs) { 
     // println("# an attribute");
