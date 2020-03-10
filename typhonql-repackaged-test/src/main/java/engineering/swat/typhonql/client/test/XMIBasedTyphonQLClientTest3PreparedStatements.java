@@ -14,7 +14,7 @@ import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.PolystoreConnection;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
-import nl.cwi.swat.typhonql.workingset.WorkingSet;
+import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
 
 public class XMIBasedTyphonQLClientTest3PreparedStatements {
@@ -53,11 +53,9 @@ public class XMIBasedTyphonQLClientTest3PreparedStatements {
 		System.out.println("END COMMAND RESULTS");
 		
 		
-		WorkingSet iv = conn.executeQuery("from Product p select p");
-		System.out.println("JSON");
-		WorkingSetJSON.toJSON(iv, System.out);
-		System.out.println("END JSON");
+		ResultTable iv = conn.executeQuery("from Product p select p");
+		System.out.println("RESULT TABLE");
+		iv.print();
 		
-
 	}
 }
