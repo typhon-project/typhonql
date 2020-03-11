@@ -35,7 +35,7 @@ Basic primitive types.
 | `int` | :full_moon: | :full_moon: | |
 | `bigint` | :first_quarter_moon: | :first_quarter_moon: | |
 | `string(maxSize)` | :first_quarter_moon: | :first_quarter_moon: | currently `str` exists, but this will be renamed to `text`, and `string` will get a length field |
-| `text` | :waxing_crescent_moon: | :waxing_crescent_moon: | in current syntax this is still called `str` |
+| `text` | :waxing_gibbous_moon: | :full_moon: | in current syntax this is still called `str` |
 | `point` | :new_moon: | :new_moon: | |
 | `point` | :new_moon: | :new_moon: | |
 | `bool` | :full_moon: | :full_moon: | |
@@ -44,3 +44,27 @@ Basic primitive types.
 | `freetext[Id+]` | :waxing_gibbous_moon: | :new_moon: | Syntax is almost finished, still requiring some work with ML & NLP teams |
 | `date` | :full_moon: | :first_quarter_moon: | |
 | `datetime` | :full_moon: | :first_quarter_moon: | |
+| Custom data types | :waxing_gibbous_moon | :waxing_crescent_moon: | |
+
+## Relations
+
+TODO: make table about different kind of relations in relation to cross database operations
+
+## Backends
+
+| Backend | Supported | Remarks |
+| --- | :--: | --- |
+| MariaDB | :waxing_gibbous_moon: | Currently not using indexes on important columns |
+| MariaDB clusters | :new_moon: | Have to talk with DL team what the influence will be |
+| MongoDB | :full_moon: | |
+| Cassandra | :new_moon: | |
+| Neo4J | :new_moon: | |
+
+## Generic features
+
+| Feature | Supported | Remarks |
+| --- | :--: | --- |
+| Query across different backends | :waxing_gibbous_moon: | |
+| Query validation | :waxing_gibbous_moon: | Syntax is validated and checked against the ML model |
+| Query type checking in IDE | :new_moon: | |
+| Text Search Queries | :new_moon: | Working with NLP team to get this integrated |
