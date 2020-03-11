@@ -44,7 +44,7 @@ Basic primitive types.
 | `freetext[Id+]` | :waxing_gibbous_moon: | :new_moon: | Syntax is almost finished, still requiring some work with ML & NLP teams |
 | `date` | :full_moon: | :first_quarter_moon: | |
 | `datetime` | :full_moon: | :first_quarter_moon: | |
-| Custom data types | :waxing_gibbous_moon | :waxing_crescent_moon: | |
+| Custom data types | :waxing_gibbous_moon: | :waxing_crescent_moon: | |
 
 ## Relations
 
