@@ -20,11 +20,11 @@ In the tables below we will try to give an overview of feature support of the cu
 
 | Icon | Meaning |
 |:---:|--|
-|:new_moon: | not implemented |
-|:waxing_crescent_moon: | initial implementation, expect bugs |
-|:first_quarter_moon: | partially implemented (for example not on all backends) |
-|:waxing_gibbous_moon: | fully implemented, might be some bugs left |
-|:full_moon: | finished |
+| 🌑 | not implemented |
+| 🌒 | initial implementation, expect bugs |
+| 🌓 | partially implemented (for example not on all backends) |
+| 🌔 | fully implemented, might be some bugs left |
+| 🌕 | finished |
 
 ## Types
 
@@ -50,9 +50,23 @@ Basic primitive types.
 
 TODO: make table about different kind of relations in relation to cross database operations
 
+## Expressions
+
+| Feature | Syntax | Backend | Remarks |
+|----|:---:|:---:|---|
+| "nested" field access (`a.b.c`) | 🌕 | 🌔 | |
+| placeholders (`??<name>`) | 🌕 | 🌔 | |
+| lists (`[..]`) | 🌕 | 🌔 | only usable for relations |
+| positive `+` & negative `-` | 🌕 | 🌔 | if backends supports it |
+| math operations (`*+/-`) | 🌕 | ? | TODO: check support |
+| comparisons  (`==` and friends) | 🌕 | ? | TODO: check support|
+| boolean operations (`&&` and `||`) | 🌕 | 🌔 | |
+| containment `x in y` | 🌕 | 🌓 | currently doesn't work form the inverse side |
+| text compare `x like y` | 🌕 | ? | TODO: check support |
+
 ## Backends
 
-| Backend | Supported | Remarks |
+| Backend | Support | Remarks |
 | --- | :--: | --- |
 | MariaDB | :waxing_gibbous_moon: | Currently not using indexes on important columns |
 | MariaDB clusters | :new_moon: | Have to talk with DL team what the influence will be |
@@ -62,9 +76,16 @@ TODO: make table about different kind of relations in relation to cross database
 
 ## Generic features
 
-| Feature | Supported | Remarks |
+| Feature | Support | Remarks |
 | --- | :--: | --- |
 | Query across different backends | :waxing_gibbous_moon: | |
 | Query validation | :waxing_gibbous_moon: | Syntax is validated and checked against the ML model |
 | Query type checking in IDE | :new_moon: | |
-| Text Search Queries | :new_moon: | Working with NLP team to get this integrated |
+| Query optimization | :waxing_crescent_moon: | We try to get where clauses on the correct backend |
+| Unicode Support | :waxing_gibbous_moon: | It should be possible to use unicode anywhere. Collation is currently fixed (we have to think about extending this in ML if needed) |
+| DAL/Generated API | :new_moon: | |
+| Navigation based queries (path, reachability, transitive closure) | :new_moon: | |
+| Transactions | :new_moon: | unclear if we can add decent support for this |
+| Parametrized/Bulk queries | :waxing_crescent_moon: | Currently doesn't provide a lot of performance benefit, but can in the future |
+| DDL Operations | :first_quarter_moon: | |
+| Operations on `freetext` attributes | :new_moon: | Working with NLP team to get this integrated |
