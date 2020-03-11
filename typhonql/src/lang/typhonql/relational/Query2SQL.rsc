@@ -107,6 +107,7 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
         return;
       } 
     }
+    throw "Could not find source tbl for outer join: <this> with <other> on <on>";
   }
   
   void addResult(SQLExpr e) {
@@ -189,6 +190,15 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
     }
   }
 
+  
+  // NB: this needs to happen before adding
+  // results, because "."-expressions in
+  // results require tables for joining.
+  for ((Binding)`<EId e> <VId x>` <- bs) {
+    // skipping #dynamic / #ignored
+    addFrom(as(tableName("<e>"), "<x>"));
+  }
+
   for ((Result)`<Expr e>` <- rs) {
     switch (e) {
       case (Expr)`#done(<Expr x>)`: ;
@@ -202,11 +212,6 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
     }
   }
 
-  for ((Binding)`<EId e> <VId x>` <- bs) {
-    // skipping #dynamic / #ignored
-    addFrom(as(tableName("<e>"), "<x>"));
-  }
-  
   for (Expr e <- ws) {
     switch (e) {
       case (Expr)`#needed(<Expr x>)`:
