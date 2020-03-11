@@ -60,7 +60,7 @@ TODO: make table about different kind of relations in relation to cross database
 | positive `+` & negative `-` | 🌕 | 🌔 | if backends supports it |
 | math operations (`*+/-`) | 🌕 | ? | TODO: check support |
 | comparisons  (`==` and friends) | 🌕 | ? | TODO: check support|
-| boolean operations (`&&` and `||`) | 🌕 | 🌔 | |
+| boolean operations (`&&` and `\|\|`) | 🌕 | 🌔 | |
 | containment `x in y` | 🌕 | 🌓 | currently doesn't work form the inverse side |
 | text compare `x like y` | 🌕 | ? | TODO: check support |
 
