@@ -16,23 +16,23 @@ syntax Statement
 syntax Inverse = inverseId: "(" Id inverse ")";
 
 syntax Type
-  = "int" // the 32bit int
-  | "bigint"  // 64bit
-  | "string" "(" Nat maxSize ")"
-  | "text"
-  | "point" // To check
-  | "polygon" // To check 
-  | "bool" 
-  | "float" // IEEE float 
-  | "blob" 
-  | "freetext" "[" {Id ","}+ nlpFeature "]"
-  | "date" 
-  | "datetime"
+  = intType: "int" // the 32bit int
+  | bigIntType: "bigint"  // 64bit
+  | stringType: "string" "(" Nat maxSize ")"
+  | textType: "text"
+  | pointType: "point" // To check
+  | polygonType: "polygon" // To check 
+  | boolType: "bool" 
+  | floatType: "float" // IEEE float 
+  | blobType: "blob" 
+  | freeTextType: "freetext" "[" {Id ","}+ nlpFeatures "]"
+  | dateType: "date" 
+  | dateTimeType: "datetime"
   ;
 
 lexical Nat = [0-9]+ !>> [0-9];
 
-syntax Arrow = "-\>" | ":-\>";
+lexical Arrow = "-\>" | ":-\>";
 
 lexical CardinalityEnd = [0-1] | "*";
   
