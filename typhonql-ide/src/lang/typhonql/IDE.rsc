@@ -133,7 +133,7 @@ void setupIDE(bool isDevMode = false) {
 	          		}
 	          		else {
 	          			// use compiler
-	          			runUpdate(req, sch, connections);
+	          			runUpdate(req,  polystoreUri.uri, sch, connections);
 	          		}
 	            	alert("Operation succesfully executed");
 	          	}
