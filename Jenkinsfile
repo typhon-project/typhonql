@@ -40,7 +40,7 @@ node {
     }
     stage('Deploy update site') {
         if (env.BRANCH_NAME == "master") {
-            sh 'cd typhonql-update-site && mvn clean package'
+            sh 'mvn -B -gs $MAVEN_SETTINGS package'
             sh "rm -rf ${UPDATE_SITE_PATH}"
             sh "mkdir ${UPDATE_SITE_PATH}"
             sh "cp -a typhonql-update-site/target/. ${UPDATE_SITE_PATH}/"
