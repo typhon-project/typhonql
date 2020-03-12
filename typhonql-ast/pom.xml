@@ -118,8 +118,7 @@
                             <executable>java</executable>
                             <workingDirectory>${typhonql.basedir}/src/</workingDirectory>
                             <arguments>
-                                <argument>-XX:+UseContainerSupport</argument>
-                                <argument>-XX:MaxRAMPercentage=80.0</argument>
+                                <argument>-Xmx2G</argument>
                                 <argument>-Dfile.encoding=UTF-8</argument>
                                 <argument>-cp</argument>
                                 <classpath />
