@@ -48,7 +48,7 @@ void test1d() {
 }
 
 void test1e() {
-	rs = runQuery((Request) `from User u select u.biography where u == #victor`);
+	rs = runQuery((Request) `from User u select u.biography.text where u == #victor`);
 	println(rs);
 }
 
@@ -104,7 +104,10 @@ value runQuery(Request req) {
 }
 
 void printSchema() {
-	bootConnections(|http://<HOST>:<PORT>|, HOST, "pablo", "antonio");
+	@javaClass{nl.cwi.swat.typhonql.TyphonQL}
+	java Model bootConnections(loc polystoreUri, str user, str password);
+	
+	bootConnections(|http://<HOST>:<PORT>|, "pablo", "antonio");
 	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
 	Schema sch = loadSchemaFromXMI(modelStr);
 	iprintln(sch);

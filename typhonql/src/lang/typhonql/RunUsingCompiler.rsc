@@ -27,6 +27,8 @@ import String;
 
 tuple[int, map[str, str]] runUpdate(Request r, str polystoreUri, Schema s, map[str, Connection] connections) {
 	if ((Request) `<Statement stmt>` := r) {
+		// TODO This is needed because we do not have an explicit way to distinguish
+		// DDL updates from DML updates. Perhaps we should consider it
   		if (isDDL(stmt)) {
   			if (tuple[int, map[str, str]]  t := run(r, polystoreUri, s)) {
   				return t;
@@ -83,8 +85,6 @@ ResultTable runQuery(str src, str xmiString, map[str, Conn] conns) {
   return runQuery(req, s, connections);
 }
 
-// TODO This function is needed because we do not have an explicit way to distinguish
-// DDL updates from DML updates. Perhaps we should consider it
 ResultTable runQuery(str src, str polystoreUri, str xmiString, map[str, Conn] conns) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);

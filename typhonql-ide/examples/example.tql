@@ -53,7 +53,7 @@ insert User { name: "Claudio",
 
 }
 
-insert @sp Product {name: "Smartphone", 
+insert Product {name: "Smartphone", 
 	description: "Waterproof" }
 	
 insert Review { contents: "Good phone" } 
@@ -91,6 +91,10 @@ insert
 		reviews: [ @really Review {contents: "Really?", product: radio, user: pablo},
 				   @nested2 Review {contents: "Indeed!", product: radio, user: pablo}]}	
 
+
+insert User {
+	name: "Pablo"
+}
 
 insert Product {
 	name: "TV",
