@@ -22,9 +22,10 @@ import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import nl.cwi.swat.typhonql.workingset.EntityRef;
+import nl.cwi.swat.typhonql.workingset.JsonSerializableResult;
 
 
-public class ResultTable {
+public class ResultTable implements JsonSerializableResult {
 
 	private static final ObjectMapper mapper;
 	
