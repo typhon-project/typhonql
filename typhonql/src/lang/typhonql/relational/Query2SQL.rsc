@@ -16,14 +16,48 @@ import lang::typhonml::Util;
 
 import IO;
 import String;
+import List;
 
+/*
+
+to get null, instead of empty result sets, do the following for refs/containments
+
+select `User.name`, `Review.user-User.reviews`.`Review.user`  
+from User left outer join `Review.user-User.reviews` on `User.@id` = `Review.user-User.reviews`.`User.reviews`;
+
+for multiples
+
+select 
+  `User.name`, 
+  `Review.user-User.reviews`.`Review.user`, 
+  `Biography.user-User.biography`.`Biography.user`
+from 
+  User left outer join 
+   `Review.user-User.reviews` on `User.@id` = `Review.user-User.reviews`.`User.reviews`  left outer join
+      `Biography.user-User.biography` on `User.@id` = `Biography.user-User.biography`.`User.biography`;
+
+
+With names:
+
+select 
+  u.`User.name`, 
+  r.`Review.user`, 
+  b.`Biography.user`  
+from 
+  User as u left outer join `Review.user-User.reviews` as r 
+     on u.`User.@id` = r.`User.reviews` 
+       left outer join `Biography.user-User.biography` as b 
+         on u.`User.@id` = b.`User.biography`;
+
+*/
 
 alias Ctx
   = tuple[
       void(SQLExpr) addWhere,
       void(As) addFrom,
+      void(str, As, SQLExpr) addLeftOuterJoin,
       void(SQLExpr) addResult,
-      void(str, Field) addParam,
+      void(str, Param) addParam,
       Schema schema,
       Env env,
       set[str] dyns,
@@ -49,6 +83,7 @@ Steps to compile to SQL
 - translate refs to #dynamic entities to named placeholders, put the expression itself into params
 - translate where clauses to sql where clause, possibly using junction tables, skip #done/#needed/#delayed
 
+
 */
 tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`
   , Schema s, Place p) {
@@ -56,17 +91,27 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
   SQLStat q = select([], [], [where([])]);
   
   void addWhere(SQLExpr e) {
-    println("ADDING where clause: <pp(e)>");
+    // println("ADDING where clause: <pp(e)>");
     q.clauses[0].exprs += [e];
   }
   
   void addFrom(As as) {
-    println("ADDING table: <pp(as)>");
+    // println("ADDING table: <pp(as)>");
     q.tables += [as];
   }
   
+  void addLeftOuterJoin(str this, As other, SQLExpr on) {
+    for (int i <- [0..size(q.tables)]) {
+      if (me:as(_, this) := q.tables[i]) {
+        q.tables[i] = leftOuterJoin(me, other, on);
+        return;
+      } 
+    }
+    throw "Could not find source tbl for outer join: <this> with <other> on <on>";
+  }
+  
   void addResult(SQLExpr e) {
-    println("ADDING result: <pp(e)>");
+    // println("ADDING result: <pp(e)>");
     q.exprs += [e];
   }
   
@@ -76,7 +121,7 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
   }
 
   Bindings params = ();
-  void addParam(str x, Field field) {
+  void addParam(str x, Param field) {
     params[x] = field;
   }
 
@@ -94,10 +139,12 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
         env["<x>"] = "<e>";
     }
   }
+  
 
   Ctx ctx = <
      addWhere,
      addFrom,
+     addLeftOuterJoin,
      addResult,
      addParam,
      s,
@@ -143,6 +190,15 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
     }
   }
 
+  
+  // NB: this needs to happen before adding
+  // results, because "."-expressions in
+  // results require tables for joining.
+  for ((Binding)`<EId e> <VId x>` <- bs) {
+    // skipping #dynamic / #ignored
+    addFrom(as(tableName("<e>"), "<x>"));
+  }
+
   for ((Result)`<Expr e>` <- rs) {
     switch (e) {
       case (Expr)`#done(<Expr x>)`: ;
@@ -156,11 +212,6 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
     }
   }
 
-  for ((Binding)`<EId e> <VId x>` <- bs) {
-    // skipping #dynamic / #ignored
-    addFrom(as(tableName("<e>"), "<x>"));
-  }
-  
   for (Expr e <- ws) {
     switch (e) {
       case (Expr)`#needed(<Expr x>)`:
@@ -172,7 +223,7 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
     }
   }
   
-  println("PARAMS: <params>");
+  // println("PARAMS: <params>");
   return <q, params>;
 }
 
@@ -190,8 +241,8 @@ SQLExpr expr2sql(e:(Expr)`<VId x>`, Ctx ctx)
 SQLExpr expr2sql(e:(Expr)`<VId x>.@id`, Ctx ctx) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_<ctx.vars()>";
-    ctx.addParam(token, <p.name, "<x>", ctx.env["<x>"], "@id">);
-    return placeholder(name=token);
+    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "@id"));
+    return SQLExpr::placeholder(name=token);
   }
   str entity = ctx.env["<x>"];
   return column("<x>", typhonId(entity));
@@ -199,14 +250,14 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.@id`, Ctx ctx) {
   
 // only one level of navigation because of normalization
 SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
-  println("TRANSLATING: <e>");
+  // println("TRANSLATING: <e>");
   str entity = ctx.env["<x>"];
   str role = "<f>"; 
 
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_<f>_<ctx.vars()>";
-    ctx.addParam(token, <p.name, "<x>", ctx.env["<x>"], "<f>">);
-    return placeholder(name=token);
+    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "<f>"));
+    return SQLExpr::placeholder(name=token);
   }
 
   
@@ -214,24 +265,28 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
     println("# local containment <entity> -<role>/<toRole>-\> <to>");
     str tbl1 = "<x>";
     str tbl2 = varForTarget(f, ctx.vars()); // introduce a new table alias
-    ctx.addFrom(as(tableName(to), tbl2));
-    ctx.addWhere(equ(column(tbl2, fkName(entity, to, toRole)), column(tbl1, typhonId(entity))));
-    
+    ctx.addLeftOuterJoin(tbl1,
+       as(tableName(to), tbl2),
+       equ(column(tbl2, fkName(entity, to, toRole)), column(tbl1, typhonId(entity))));
+       
     // the value is of this expression is the id column of the child table
     // provided that its parent is the table representing x 
     return column(tbl2, typhonId(to));
   }
   else if (<entity, _, role, str toRole, _, str to, _> <- ctx.schema.rels) {
-  	println("# xref, or external containment: <entity> -<role>/<toRole>-\> <to>  ");
-    tbl = varForJunction(f, ctx.vars());
+  	println("# xref, or external containment: <entity> -<role>/<toRole>-\> <to> (`<e>`)  ");
+  	tbl1 = "<x>";
+    tbl2 = varForJunction(f, ctx.vars());
+
+    ctx.addLeftOuterJoin(tbl1,  	
+  	  as(junctionTableName(entity, role, to, toRole), tbl2),
+  	  equ(column(tbl2, junctionFkName(entity, role)), column(tbl1, typhonId(entity))));
   	
-  	ctx.addFrom(as(junctionTableName(entity, role, to, toRole), tbl));
-  	ctx.addWhere(equ(column(tbl, junctionFkName(to, toRole)), column("<x>", typhonId(entity))));
-  	println("returning column `<junctionFkName(to, toRole)>` of table <tbl>");
-  	return column(tbl, junctionFkName(entity, role));
+  	// return the column of the target
+  	return column(tbl2, junctionFkName(to, toRole));
   }
   else if (<entity, role, _> <- ctx.schema.attrs) { 
-    println("# an attribute");
+    // println("# an attribute");
     return column("<x>", columnName(role, entity));
   }
   else {
@@ -249,6 +304,8 @@ SQLExpr expr2sql((Expr)`<Real r>`, Ctx ctx) = lit(decimal(toReal("<r>")));
 SQLExpr expr2sql((Expr)`<Str s>`, Ctx ctx) = lit(text("<s>"[1..-1]));
 
 SQLExpr expr2sql((Expr)`<DateTime d>`, Ctx ctx) = lit(dateTime(readTextValueString(#datetime, "<d>")));
+
+SQLExpr expr2sql((Expr)`<UUID u>`, Ctx ctx) = lit(text("<u>"[1..]));
 
 SQLExpr expr2sql((Expr)`true`, Ctx ctx) = lit(boolean(true));
 

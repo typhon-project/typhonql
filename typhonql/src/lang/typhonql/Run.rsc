@@ -140,28 +140,28 @@ value run(r:(Request)`create <EId eId> at <Id dbName>`, str polystoreId, Schema 
 	 if (p:<db, name> <- s.placement<0>, name == "<dbName>") {
 	 	runCreateEntity(p, polystoreId, "<eId>", s, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
 value run(r:(Request)`create <EId eId>.<Id attribute> : <Type ty>`, str polystoreId, Schema s, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
 	 	return runCreateAttribute(p, polystoreId, "<eId>", "<attribute>", "<ty>", s, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
 value run(r:(Request)`create <EId eId>.<Id relation> ( <Id inverse> ) <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, str polystoreId, Schema s, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
 	 	return runCreateRelation(p, polystoreId, "<eId>", "<relation>", "<targetId>", toCardinality("<lower>", "<upper>"), (Arrow) `:-\>` := arrow, just("<inverse>"), s, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
 value run(r:(Request)`create <EId eId>.<Id relation> <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, str polystoreId, Schema s, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
 	 	return runCreateRelation(p, polystoreId, "<eId>", "<relation>", "<targetId>", toCardinality("<lower>", "<upper>"), (Arrow) `:-\>` := arrow, nothing(), s, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
 Cardinality toCardinality(str from, str to) {
@@ -179,13 +179,13 @@ value run(r:(Request)`drop <EId eId>`, str polystoreId, Schema s, Log log = noLo
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
 	 	return runDropEntity(p, polystoreId, "<eId>", s, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 value run(r:(Request)`drop attribute  <EId eId>.<Id attribute>`, str polystoreId, Schema s, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
 	 	return runDropAttribute(p, polystoreId, "<eId>", "<attribute>", s, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
 value run(r:(Request)`drop relation  <EId eId>.<Id relation>`, str polystoreId, Schema s, Log log = noLog) {
@@ -194,21 +194,21 @@ value run(r:(Request)`drop relation  <EId eId>.<Id relation>`, str polystoreId, 
 	 		return runDropRelation(p, polystoreId, "<eId>", "<relation>", to, toRole, containment, s, log = log);
 	 	}
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
 value run(r:(Request)`rename attribute  <EId eId>.<Id name> to <Id newName>`, str polystoreId, Schema s, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
 	 	return runRenameAttribute(p, polystoreId, "<eId>", "<name>", "<newName>", s, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
 value run(r:(Request)`rename relation <EId eId>.<Id name> to <Id newName>`, str polystoreId, Schema s, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
 	 	return runRenameRelation(p, polystoreId, "<eId>", "<name>", "<newName>", s, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
 
@@ -239,7 +239,7 @@ value run((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`, str polystor
     throw "Did not get workingset from select evaluation";
   }
   
-  return -1;
+  return <-1, ()>;
   
   // TODO: cross-db containment cascade semantics
 
@@ -284,7 +284,7 @@ value run((Request)`update <EId eid> <VId vid> where <{Expr ","}+ es> set {<{Key
         affected += runUpdateById(p, polystoreId, entity, uuid, kvs);
       }
     } 
-    return affected;
+    return <affected, ()>;
   }
   else {
     throw "Did not get workingset from select evaluation";

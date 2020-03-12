@@ -26,6 +26,7 @@ import Message;
 data Schema
   = schema(Rels rels, Attrs attrs, Placement placement = {}, Attrs elements = {}, ChangeOps changeOperators = {}, map[str, value] config = ());
 
+alias Conn = tuple[str dbType, str host, int port, str user, str password];
 
 alias Rel = tuple[str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool containment];
 alias Rels = set[Rel];
@@ -38,11 +39,6 @@ data DB = mongodb() | sql() | hyperj() | recombine() | unknown() | typhon();
 alias Place = tuple[DB db, str name];
 
 alias Placement = rel[Place place, str entity];
-
-
-void dumpSchema(Schema s) {
-  println(ppSchema(s));
-}
 
 str ppSchema(Schema s) {
   str txt = "";
@@ -177,6 +173,43 @@ Rels model2rels(Model m) {
   return result;
 }
 
+@doc{Find the (unique [we assume]) path to `entity` by following ownership links down from roots}
+tuple[str, list[str]] localPathToEntity(str entity, Schema s, Place p) {
+  
+  list[str] pathTo(str from, str to) {
+    if (<from, _, str fromRole, _, _, to, true> <- s.rels) {
+      return [fromRole];
+    }
+    for (<str from2, _, str fromRole, _, _, to, true> <- s.rels, <p, from2> <- s.placement) {
+      if (list[str] sub := pathTo(from, from2), sub != []) {
+        return sub + [fromRole];
+      }  
+    }
+    return [];
+  }
+  
+  for (str e <- localRoots(s, p)) {
+    if (list[str] path := pathTo(e, entity), path != []) {
+      return <e, path>;
+    } 
+  }
+  
+  return <entity, []>;
+  
+}
+
+set[str] localRoots(Schema s, Place p) 
+  = { e | str e <- entities(s), <p, e> <- s.placement,  !ownedLocally(e, s, p) };
+  
+bool ownedLocally(str entity, Schema s, Place p) 
+  = any(<str from, _, _, _, _, entity, true> <- s.rels, <p, from> <- s.placement);
+
+
+
+Rels trueCrossRefs(Rels rels) 
+  = { <from, fromCard, fromRole, toRole, toCard, to, false> | 
+    <str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, false> <- rels,
+      <to, toCard, toRole, fromRole, fromCard, from, true> notin rels };
 
 Rels symmetricReduction(Rels rels) {
   // filter out symmetric bidir relations

@@ -26,26 +26,37 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInvalidOperationException;
 import org.bson.BsonValue;
-import org.rascalmpl.interpreter.TypeReifier;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 import org.rascalmpl.values.ValueFactoryFactory;
 
+import io.usethesource.vallang.IBool;
+import io.usethesource.vallang.IConstructor;
+import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IMap;
+import io.usethesource.vallang.IMapWriter;
 import io.usethesource.vallang.ISourceLocation;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValueFactory;
+import io.usethesource.vallang.type.Type;
+import io.usethesource.vallang.type.TypeFactory;
+import io.usethesource.vallang.type.TypeStore;
 import nl.cwi.swat.typhonql.workingset.WorkingSet;
 import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
 
 public class TyphonQL {
 
 	private final IValueFactory vf;
-	private final TypeReifier tr;
+	private final TypeFactory tf;
+	private final TypeStore ts = new TypeStore();
 		
-		
+	public TyphonQL(IValueFactory vf, TypeFactory tf) {
+		this.vf = vf;
+		this.tf = tf;
+	}
+	
 	public TyphonQL(IValueFactory vf) {
 		this.vf = vf;
-		this.tr = new TypeReifier(vf);
+		this.tf = TypeFactory.getInstance();
 	}
 		
 
@@ -78,6 +89,36 @@ public class TyphonQL {
 		Connections.boot(infos.toArray(new ConnectionInfo[0]));
 	}
 	
+	// work around to set the right host in the connections
+	public void bootConnections(ISourceLocation path, IString host, IString user, IString password) {
+		URI uri = buildUri(path.getURI(), "/api/databases");
+		String json = doGet(uri, user.getValue(), password.getValue());
+		BsonArray array = BsonArray.parse(json);
+		List<ConnectionInfo> infos = new ArrayList<ConnectionInfo>();
+		for (BsonValue v : array.getValues()) {
+			BsonDocument d = v.asDocument();
+			try {
+				String engineType = d.getString("engineType").getValue().toLowerCase() + "db";
+				DBType dbType = DBType.valueOf(engineType);
+				if (dbType == null)
+					throw new RuntimeException("Engine type " + d.getString("engineType").getValue() + " not known");
+				ConnectionInfo info = new ConnectionInfo(
+					path.getURI().toString(),
+					host.getValue(), 
+					d.getNumber("externalPort").intValue(), 
+					d.getString("name").getValue(), 
+					dbType,
+					d.getString("dbType").getValue(),
+					d.getString("username").getValue(),
+					d.getString("password").getValue());
+				infos.add(info);
+			} catch (BsonInvalidOperationException e) {
+				// TODO not do anything if row of connection information is unparsable
+			}
+		}
+		Connections.boot(infos.toArray(new ConnectionInfo[0]));
+	}
+	
 	public IString readHttpModel(ISourceLocation path, IString user, IString password) {
 		URI uri = buildUri(path.getURI(), "/api/models/ml");
 		String json = doGet(uri, user.getValue(), password.getValue());
@@ -86,9 +127,10 @@ public class TyphonQL {
 		return vf.string(contents);
 	}
 	
-	public void executeResetDatabases(ISourceLocation path, IString user, IString password) {
+	public IBool executeResetDatabases(ISourceLocation path, IString user, IString password) {
 		URI uri = buildUri(path.getURI(), "/api/resetdatabases");
-		doGet(uri, user.getValue(), password.getValue());
+		String isReset = doGet(uri, user.getValue(), password.getValue());
+		return vf.bool(Boolean.parseBoolean(isReset));
 	}
 	
 	public IMap executeQuery(ISourceLocation path, IString user, IString password, IString query) {
@@ -211,10 +253,65 @@ public class TyphonQL {
 		}
 	}
 	
-	public static void main(String[] args) {
+	public IMap readConnectionsInfo(IString host, IInteger port, IString user, IString password) throws URISyntaxException {
+		URI uri = new URI("http://" + host.getValue() + ":" + port.intValue());
+		return readConnectionsInfo(vf.sourceLocation(uri), user, password);
+	}
+	
+	public IMap readConnectionsInfo(ISourceLocation path, IString user, IString password) throws URISyntaxException {
+		URI uri = buildUri(path.getURI(), "/api/databases");
+		String json = doGet(uri, user.getValue(), password.getValue());
+		BsonArray array = BsonArray.parse(json);
+		IMapWriter mw = vf.mapWriter();
+		for (BsonValue v : array.getValues()) {
+			BsonDocument d = v.asDocument();
+			try {
+				String engineType = d.getString("engineType").getValue().toLowerCase() + "db";
+				DBType dbType = DBType.valueOf(engineType);
+				if (dbType == null)
+					throw new RuntimeException("Engine type " + d.getString("engineType").getValue() + " not known");
+				String dbName = d.getString("name").getValue();
+				IConstructor info = buildConnectionInfo(
+					d.getString("externalHost").getValue(),
+					d.getNumber("externalPort").intValue(), 
+					dbType,
+					d.getString("username").getValue(),
+					d.getString("password").getValue());
+				mw.put(vf.string(dbName), info);
+			} catch (BsonInvalidOperationException e) {
+				// TODO not do anything if row of connection information is unparsable
+			}
+		}
+		return mw.done();
+	}
+
+	private IConstructor buildConnectionInfo(String host, int port, DBType dbType, String user,
+			String password) {
+		Type adtType = tf.abstractDataType(ts, "Connection");
+		Type connectionType = null;
+		
+        switch (dbType) {
+        case documentdb:
+        	connectionType = tf.constructor(ts, adtType, "mongoConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
+        	break;
+        case relationaldb:
+        	connectionType =tf.constructor(ts, adtType, "sqlConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
+        	break;
+        }
+        return vf.constructor(connectionType, vf.string(host), vf.integer(port), vf.string(user), vf.string(password));
+	}
+
+	public static void main(String[] args) throws URISyntaxException, IOException {
 		IValueFactory vf = ValueFactoryFactory.getValueFactory();
 		TyphonQL ql = new TyphonQL(vf);
-		IMap ws = ql.executeQuery(vf.sourceLocation(URI.create("http://localhost:8080")), vf.string("pablo"), vf.string("antonio"), vf.string("from Product p select p"));
-		System.out.println(ws);
+		//IMap ws = ql.executeQuery(vf.sourceLocation(URI.create("http://localhost:8080")), vf.string("pablo"), vf.string("antonio"), vf.string("from Product p select p"));
+		//IBool reset = ql.executeResetDatabases(vf.sourceLocation(URI.create("http://localhost:8080")), vf.string("pablo"), vf.string("antonio"));
+		//System.out.println(reset);
+		//System.out.println(ws);
+		
+		IMap  m = ql.readConnectionsInfo(vf.string("localhost"), vf.integer(8080), vf.string("pablo"), vf.string("antonio"));
+		System.out.println(m);
+		
 	}
+
 }

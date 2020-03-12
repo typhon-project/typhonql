@@ -19,9 +19,9 @@ public class MongoQueryWithProjectionExecutor extends QueryExecutor {
 	private String query;
 	private String projection;
 
-	public MongoQueryWithProjectionExecutor(ResultStore store, String collectionName, String query,
+	public MongoQueryWithProjectionExecutor(ResultStore store, Map<String, String> uuids, String collectionName, String query,
 			String projection, Map<String, Binding> bindings, String connectionString, String dbName) {
-		super(store, query, bindings);
+		super(store, uuids, bindings);
 		this.dbName = dbName;
 		this.connectionString = connectionString;
 		this.collectionName = collectionName;

@@ -11,8 +11,8 @@ public class MariaDBEngine extends Engine {
 	private String user;
 	private String password;
 
-	public MariaDBEngine(ResultStore store, String host, int port, String dbName, String user, String password) {
-		super(store);
+	public MariaDBEngine(ResultStore store, Map<String, String> uuids, String host, int port, String dbName, String user, String password) {
+		super(store, uuids);
 		this.host = host;
 		this.port = port;
 		this.dbName = dbName;
@@ -42,7 +42,11 @@ public class MariaDBEngine extends Engine {
 	}
 	
 	private ResultIterator executeSelect(String query, Map<String, Binding> bindings) {
-		return new MariaDBQueryExecutor(store, query, bindings, getConnectionString(host, port, dbName, user, password)).executeSelect();
+		return new MariaDBQueryExecutor(store, uuids, query, bindings, getConnectionString(host, port, dbName, user, password)).executeSelect();
+	}
+
+	public void executeUpdate(String query, Map<String, Binding> bindings) {
+		new MariaDBUpdateExecutor(store, uuids, query, bindings, getConnectionString(host, port, dbName, user, password)).executeUpdate();		
 	}
 
 }

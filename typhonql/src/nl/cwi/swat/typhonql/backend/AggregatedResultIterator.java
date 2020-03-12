@@ -58,6 +58,4 @@ public class AggregatedResultIterator implements ResultIterator {
 		}
 
 	}
-
-
 }

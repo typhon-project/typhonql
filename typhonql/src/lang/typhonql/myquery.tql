@@ -1,1 +1,0 @@
-from Person p select p.name
