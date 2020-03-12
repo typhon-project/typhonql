@@ -81,7 +81,7 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 				if (!hasRascalMF(root)) {
 					// we are not inside eclipse/OSGI, so we are in the headless version, so we have to help the registry in finding 
 		            try {
-		                root = URIUtil.createFileLocation(BasePolystoreConnection.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+		                root = URIUtil.createFileLocation(XMIPolystoreConnection.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 		                if (root.getPath().endsWith(".jar")) {
 		                    root = URIUtil.changePath(URIUtil.changeScheme(root, "jar+" + root.getScheme()), root.getPath() + "!/");
 		                }
@@ -107,7 +107,7 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 
 				
 				PathConfig pcfg = PathConfig.fromSourceProjectRascalManifest(root);
-				ClassLoader cl = new SourceLocationClassLoader(pcfg.getClassloaders(), BasePolystoreConnection.class.getClassLoader());
+				ClassLoader cl = new SourceLocationClassLoader(pcfg.getClassloaders(), XMIPolystoreConnection.class.getClassLoader());
 				
 				evaluators = new ConcurrentSoftReferenceObjectPool<>(10, TimeUnit.MINUTES, 1, calculateMaxEvaluators(), () -> {
 					// we construct a new evaluator for every concurrent call
@@ -254,6 +254,40 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 		});
 	}
 
+	private static int calculateMaxEvaluators() {
+        int numberOfEvaluators = Math.min(4, Runtime.getRuntime().availableProcessors() - 2);
+        if (numberOfEvaluators > 1) {
+            numberOfEvaluators = Math.min(numberOfEvaluators, (int)(Runtime.getRuntime().maxMemory()/ (1024*1024*300L))); // give at least 300MB per evaluator.
+        }
+        return Math.max(1, numberOfEvaluators);
+	}
+
+	
+	private static boolean hasRascalMF(ISourceLocation root) {
+		return URIResolverRegistry.getInstance().exists(URIUtil.getChildLocation(root, RascalManifest.META_INF_RASCAL_MF));
+	}
+
+	private IMap buildConnectionsMap(List<DatabaseInfo> infos) {
+		IMapWriter mw = VF.mapWriter();
+		for (DatabaseInfo info : infos) {
+			IString host = VF.string(info.getHost());
+			IInteger port = VF.integer(info.getPort());
+			IString user = VF.string(info.getUser());
+			IString password = VF.string(info.getPassword());
+			IString dbName = VF.string(info.getDbName());
+			switch (info.getDbType()) { 
+			case relationaldb:
+				mw.put(dbName, VF.tuple(VF.string("sql"), host, port, user, password));
+				break;
+			case documentdb:
+				mw.put(dbName,  VF.tuple(VF.string("mongo"), host, port, user, password));
+				break;
+			}
+		}
+		
+		return mw.done();
+	}
+	
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		DatabaseInfo[] infos = new DatabaseInfo[] {
 				new DatabaseInfo("localhost", 27017, "Reviews", DBType.documentdb, new MongoDB().getName(),
@@ -276,39 +310,6 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 
 	}
 	
-	private static int calculateMaxEvaluators() {
-        int numberOfEvaluators = Math.min(4, Runtime.getRuntime().availableProcessors() - 2);
-        if (numberOfEvaluators > 1) {
-            numberOfEvaluators = Math.min(numberOfEvaluators, (int)(Runtime.getRuntime().maxMemory()/ (1024*1024*300L))); // give at least 300MB per evaluator.
-        }
-        return Math.max(1, numberOfEvaluators);
-	}
-
 	
-	private static boolean hasRascalMF(ISourceLocation root) {
-		return URIResolverRegistry.getInstance().exists(URIUtil.getChildLocation(root, RascalManifest.META_INF_RASCAL_MF));
-	}
-
-
-	private IMap buildConnectionsMap(List<DatabaseInfo> infos) {
-		IMapWriter mw = VF.mapWriter();
-		for (DatabaseInfo info : infos) {
-			IString host = VF.string(info.getHost());
-			IInteger port = VF.integer(info.getPort());
-			IString user = VF.string(info.getUser());
-			IString password = VF.string(info.getPassword());
-			IString dbName = VF.string(info.getDbName());
-			switch (info.getDbType()) { 
-			case relationaldb:
-				mw.put(dbName, VF.tuple(VF.string("sql"), host, port, user, password));
-				break;
-			case documentdb:
-				mw.put(dbName,  VF.tuple(VF.string("mongo"), host, port, user, password));
-				break;
-			}
-		}
-		
-		return mw.done();
-	}
 
 }
