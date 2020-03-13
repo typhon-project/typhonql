@@ -52,9 +52,6 @@ public class TyphonSession implements Operations {
 			aliasedTuple = aliasedTuple.getAliased();
 		}
 
-		
-		
-		
 		// get the function types
 		FunctionType readType = (FunctionType)aliasedTuple.getFieldType("read");
 		FunctionType closeType = (FunctionType)aliasedTuple.getFieldType("done");

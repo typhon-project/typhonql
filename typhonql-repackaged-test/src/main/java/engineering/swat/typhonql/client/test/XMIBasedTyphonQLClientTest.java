@@ -6,7 +6,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.List;
 
 import nl.cwi.swat.typhonql.DBType;
 import nl.cwi.swat.typhonql.MariaDB;
@@ -40,11 +39,6 @@ public class XMIBasedTyphonQLClientTest {
 		
 		conn.resetDatabases();
 		
-		/*CommandResult cr = conn.executeUpdate("insert \n" + 
-				"	@pablo User { name: \"Pablo\", reviews: badradio },\n" + 
-				"	@radio Product {name: \"Radio\", description: \"Wireless\", reviews: badradio },\n" + 
-				"	@badradio Review { contents: \"Bad radio\",product: radio,user: pablo}");*/
-		
 		CommandResult cr = conn.executeUpdate(
 				"insert Review { contents: \"Average phone\" }");
 		System.out.println("COMMAND RESULT");
@@ -52,7 +46,6 @@ public class XMIBasedTyphonQLClientTest {
 		System.out.println("END COMMAND RESULT");
 		
 		
-		//WorkingSet iv = conn.executeQuery("from Product p select p");
 		ResultTable iv = conn.executeQuery("from Review r select r.contents");
 		System.out.println("RESULT TABLE");
 		iv.print();
