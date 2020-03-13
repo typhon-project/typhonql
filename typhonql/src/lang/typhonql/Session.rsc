@@ -48,17 +48,6 @@ data Connection
  = sqlConnection(str host, int port, str user, str password)
  | mongoConnection(str host, int port, str user, str password)
  ;
- 
- Connection toConnection(<str dbType, str host, int port, str user, str password>) {
-	switch (dbType) {
-		case "sql":
-			return sqlConnection(host, port, user, password);
-		case "mongo":
-			return mongoConnection(host, port, user, password);
-		default:
-			throw "DB type <dbType> unknown";
-	}
-}
 
 @reflect
 @javaClass{nl.cwi.swat.typhonql.backend.rascal.TyphonSession}
