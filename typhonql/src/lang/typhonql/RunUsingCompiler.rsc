@@ -79,7 +79,6 @@ ResultTable runQuery(Request r, Schema sch, Session session) {
 		scr = request2script(r, sch);
 		str entryDatabase = [r | step(str r, _, _) <- scr.steps][-1];
 		println(scr);
-		Session session = newSession(connections);
 		runScript(scr, session, sch);
 		// TODO {<column, "DUMMY">} => [column]
 		ResultTable result = session.read(entryDatabase, paths); 
@@ -89,29 +88,28 @@ ResultTable runQuery(Request r, Schema sch, Session session) {
 		throw "Expected query, given statement";
 }
 
-tuple[int, map[str, str]] runUpdate(str src, str xmiString, map[str, Conn] conns) {
-  Model m = xmiString2Model(xmiString);
-  Schema s = model2schema(m);
-  Request req = [Request]src;
-  map[str, Connection] connections = (() | it + (k : toConnection(tupl)) | k <- conns, tupl := conns[k]);
-  return runUpdate(req, s, connections);
+tuple[int, map[str, str]] runUpdate(str src, str xmiString, map[str, Connection] connections) {
+  Session session = newSession(connections);
+  return runUpdate(src, xmiString, session);
 }
 
-
-ResultTable runQuery(str src, str xmiString, map[str, Conn] conns) {
+tuple[int, map[str, str]] runUpdate(str src, str xmiString, Session session) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   Request req = [Request]src;
-  map[str, Connection] connections = (() | it + (k : toConnection(tupl)) | k <- conns, tupl := conns[k]);
-  return runQuery(req, s, connections);
+  return runUpdate(req, s, session);
 }
 
-ResultTable runQuery(str src, str xmiString, map[str, Conn] conns) {
+ResultTable runQuery(str src, str xmiString, map[str, Connection] connections) {
+  Session session = newSession(connections);
+  return runQuery(src, xmiString, session);
+}
+
+ResultTable runQuery(str src, str xmiString, Session session) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   Request req = [Request]src;
-  map[str, Connection] connections = (() | it + (k : toConnection(tupl)) | k <- conns, tupl := conns[k]);
-  return runQuery(req, s, connections);
+  return runQuery(req, s, session);
 }
 
 lrel[int, map[str, str]] runPrepared(Request req, list[str] columnNames, list[list[str]] values, Schema s, map[str, Connection] conns) {
@@ -139,11 +137,15 @@ lrel[int, map[str, str]] runPrepared(Request req, list[str] columnNames, list[li
   return rs;
 }
 
-lrel[int, map[str, str]] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, map[str, Conn] conns) {
-  Model m = xmiString2Model(xmiString);
-  Schema s = model2schema(m);
-  map[str, Connection] connections = (() | it + (k : toConnection(tupl)) | k <- conns, tupl := conns[k]);
-  return runPrepared([Request] src, columnNames, values, s, connections); 
+lrel[int, map[str, str]] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, Session session) {
+ 	Model m = xmiString2Model(xmiString);
+  	Schema s = model2schema(m);	
+	return runPrepared([Request] src, columnNames, values, s, session);
+}
+
+lrel[int, map[str, str]] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, map[str, Connection] connections) {
+ 	Session session = newSession(connections);
+ 	return runPrepared(src, columnNames, values, xmiString, session);
 }
 
 Path buildPath(str selector, map[str, str] entityTypes) {
@@ -151,13 +153,5 @@ Path buildPath(str selector, map[str, str] entityTypes) {
 	str label = parts[0];
 	ty = entityTypes[label];
 	return <label, ty, parts[1..]>;
-} 
-
-void resetDatabase() {
-	map[str, Connection] connections = (() | it + (k : toConnection(tupl)) | k <- conns, tupl := conns[k]);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
-	Schema sch = loadSchemaFromXMI(modelStr);
-	runSchema("http://<HOST>:<PORT>", sch, connections);
 }
-
 
