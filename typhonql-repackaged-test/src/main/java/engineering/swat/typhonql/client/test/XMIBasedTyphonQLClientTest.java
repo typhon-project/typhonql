@@ -32,7 +32,7 @@ public class XMIBasedTyphonQLClientTest {
 		}
 		*/
 			
-		String fileName = "file:///Users/pablo/git/typhonql/typhonql/src/lang/typhonml/customdatatypes.xmi";
+		String fileName = "file:///Users/pablo/git/typhonql/typhonql/src/lang/typhonml/user-review-product-bio.tmlx";
 		
 		String xmiString = String.join("\n", Files.readAllLines(Paths.get(new URI(fileName))));
 
