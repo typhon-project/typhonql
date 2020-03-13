@@ -25,7 +25,7 @@ import List;
 import util::Maybe;
 import String;
 
-tuple[int, map[str, str]] runUpdate(Request r, Schema s, map[str, Connection] connections) {
+tuple[int, map[str, str]] runDDL(Request r, Schema s, map[str, Connection] connections) {
 	if ((Request) `<Statement stmt>` := r) {
 		// TODO This is needed because we do not have an explicit way to distinguish
 		// DDL updates from DML updates. Perhaps we should consider it
@@ -38,26 +38,47 @@ tuple[int, map[str, str]] runUpdate(Request r, Schema s, map[str, Connection] co
   			
   		}
   		else {
-  			scr = request2script(r, s);
-			println(scr);
-			println(connections);
-			Session session = newSession(connections);
-			runScript(scr, session, s);
-			return <-1, ()>;
+  			throw "DDL statement should have been provided";
   		}
   	}
     throw "Statement should have been provided";
 }
 
 
+tuple[int, map[str, str]] runUpdate(Request r, Schema s, map[str, Connection] connections) {
+	Session session = newSession(connections);
+	return runUpdate(r, s, session);
+}
+
+tuple[int, map[str, str]] runUpdate(Request r, Schema s, Session session) {
+	if ((Request) `<Statement stmt>` := r) {
+		// TODO This is needed because we do not have an explicit way to distinguish
+		// DDL updates from DML updates. Perhaps we should consider it
+  		if (!isDDL(stmt)) {
+  			scr = request2script(r, s);
+			println(scr);
+			runScript(scr, session, s);
+			return <-1, ()>;
+  		}
+  		else {
+  			throw "DML statement should have been provided";
+  		}
+  	}
+    throw "Statement should have been provided";
+}
+
 ResultTable runQuery(Request r, Schema sch, map[str, Connection] connections) {
+	Session session = newSession(connections);
+	return runQuery(r, sch, session);
+}
+
+ResultTable runQuery(Request r, Schema sch, Session session) {
 	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
 		map[str, str] types = (() | it + ("<var>":"<entity>") | (Binding) `<EId entity> <VId var>` <- bs);
 		list[Path] paths = [buildPath("<s>", types)| s <- selected];
 		scr = request2script(r, sch);
 		str entryDatabase = [r | step(str r, _, _) <- scr.steps][-1];
 		println(scr);
-		println(connections);
 		Session session = newSession(connections);
 		runScript(scr, session, sch);
 		// TODO {<column, "DUMMY">} => [column]
@@ -94,6 +115,11 @@ ResultTable runQuery(str src, str xmiString, map[str, Conn] conns) {
 }
 
 lrel[int, map[str, str]] runPrepared(Request req, list[str] columnNames, list[list[str]] values, Schema s, map[str, Connection] conns) {
+	Session session = newSession(connections);
+	return runPrepared(req, columnNames, values, s, session);
+}
+
+lrel[int, map[str, str]] runPrepared(Request req, list[str] columnNames, list[list[str]] values, Schema s, Session session) {
   lrel[int, map[str, str]] rs = [];
   int numberOfVars = size(columnNames);
   for (list[str] vs <- values) {
@@ -107,7 +133,7 @@ lrel[int, map[str, str]] runPrepared(Request req, list[str] columnNames, list[li
   		}
   	};
   	println(req_);
-  	<n, uuids> = runUpdate(req_, s, conns);
+  	<n, uuids> = runUpdate(req_, s, session);
   	rs += <n, uuids>;
   }
   return rs;
