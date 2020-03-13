@@ -25,12 +25,12 @@ import List;
 import util::Maybe;
 import String;
 
-tuple[int, map[str, str]] runUpdate(Request r, str polystoreUri, Schema s, map[str, Connection] connections) {
+tuple[int, map[str, str]] runUpdate(Request r, Schema s, map[str, Connection] connections) {
 	if ((Request) `<Statement stmt>` := r) {
 		// TODO This is needed because we do not have an explicit way to distinguish
 		// DDL updates from DML updates. Perhaps we should consider it
   		if (isDDL(stmt)) {
-  			if (tuple[int, map[str, str]]  t := run(r, polystoreUri, s)) {
+  			if (tuple[int, map[str, str]]  t := run(r, s, connections)) {
   				return t;
   			}
   			else
@@ -68,12 +68,12 @@ ResultTable runQuery(Request r, Schema sch, map[str, Connection] connections) {
 		throw "Expected query, given statement";
 }
 
-tuple[int, map[str, str]] runUpdate(str src, str polystoreUri, str xmiString, map[str, Conn] conns) {
+tuple[int, map[str, str]] runUpdate(str src, str xmiString, map[str, Conn] conns) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   Request req = [Request]src;
   map[str, Connection] connections = (() | it + (k : toConnection(tupl)) | k <- conns, tupl := conns[k]);
-  return runUpdate(req, polystoreUri, s, connections);
+  return runUpdate(req, s, connections);
 }
 
 
@@ -85,7 +85,7 @@ ResultTable runQuery(str src, str xmiString, map[str, Conn] conns) {
   return runQuery(req, s, connections);
 }
 
-ResultTable runQuery(str src, str polystoreUri, str xmiString, map[str, Conn] conns) {
+ResultTable runQuery(str src, str xmiString, map[str, Conn] conns) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   Request req = [Request]src;
@@ -120,17 +120,6 @@ lrel[int, map[str, str]] runPrepared(str src, list[str] columnNames, list[list[s
   return runPrepared([Request] src, columnNames, values, s, connections); 
 }
 
-Connection toConnection(<str dbType, str host, int port, str user, str password>) {
-	switch (dbType) {
-		case "sql":
-			return sqlConnection(host, port, user, password);
-		case "mongo":
-			return mongoConnection(host, port, user, password);
-		default:
-			throw "DB type <dbType> unknown";
-	}
-}
-
 Path buildPath(str selector, map[str, str] entityTypes) {
 	list[str] parts = split(".", selector);
 	str label = parts[0];
@@ -139,10 +128,10 @@ Path buildPath(str selector, map[str, str] entityTypes) {
 } 
 
 void resetDatabase() {
-	bootConnections(|http://<HOST>:<PORT>|, HOST, "pablo", "antonio");
+	map[str, Connection] connections = (() | it + (k : toConnection(tupl)) | k <- conns, tupl := conns[k]);
 	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
 	Schema sch = loadSchemaFromXMI(modelStr);
-	runSchema("http://<HOST>:<PORT>", sch);
+	runSchema("http://<HOST>:<PORT>", sch, connections);
 }
 
 

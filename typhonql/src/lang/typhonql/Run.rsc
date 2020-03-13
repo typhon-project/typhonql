@@ -117,22 +117,23 @@ lrel[int, map[str, str]] runPrepared(str src, list[str] columnNames, list[list[s
   return rs;
 }
 
-WorkingSet dumpDB(Schema s) {
+WorkingSet dumpDB(Schema s, map[str, Connection] connections) {
   //WorkingSet ws = ( e : [] | <_, str e> <- s.placement );
   
   WorkingSet ws = ();
   
   for (<Place p, str e> <- s.placement) {
   	println(p);
-    ws += runGetEntities(p, e, s);
+    ws += runGetEntities(p, e, s, connections);
   }
   
   return ws;
 }
 
-void runSchema(str xmiString, map[str, Connection] connections, Log log = noLog) {
+void runSchema(str xmiString, map[str, Conn] conns, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
+  map[str, Connection] connections = (() | it + (k : toConnection(tupl)) | k <- conns, tupl := conns[k]);
   runSchema(s, connections, log = log);
 }
 
