@@ -36,14 +36,17 @@ import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IMapWriter;
 import io.usethesource.vallang.ISourceLocation;
 import io.usethesource.vallang.IString;
+import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.io.StandardTextWriter;
-import nl.cwi.swat.typhonql.ConnectionInfo;
-import nl.cwi.swat.typhonql.Connections;
+import io.usethesource.vallang.type.Type;
+import io.usethesource.vallang.type.TypeFactory;
+import io.usethesource.vallang.type.TypeStore;
 import nl.cwi.swat.typhonql.DBType;
 import nl.cwi.swat.typhonql.MariaDB;
 import nl.cwi.swat.typhonql.MongoDB;
+import nl.cwi.swat.typhonql.backend.rascal.TyphonSession;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 import nl.cwi.swat.typhonql.workingset.Entity;
 
@@ -52,8 +55,9 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 
 	private volatile IString xmiModel;
 	private final ConcurrentSoftReferenceObjectPool<Evaluator> evaluators;
-	private IMap connections;
 	private static final IValueFactory VF = ValueFactoryFactory.getValueFactory();
+	private static final TypeFactory TF = TypeFactory.getInstance();
+	private IMap connections;
 	
 	public XMIPolystoreConnection(String xmiModel, List<DatabaseInfo> infos) throws IOException {
 		this(infos);
@@ -61,9 +65,7 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 	}
 	
 	private XMIPolystoreConnection(List<DatabaseInfo> infos) throws IOException {
-				
-				connections = buildConnectionsMap(infos);
-
+				this.connections = buildConnections(infos);
 				ISourceLocation root = URIUtil.correctLocation("project", "typhonql", null);
 				URIResolverRegistry reg = URIResolverRegistry.getInstance();
 				if (!hasRascalMF(root)) {
@@ -124,6 +126,7 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 					// now we are ready to import our main module
 					result.doImport(null, "lang::typhonql::RunUsingCompiler");
 					result.doImport(null, "lang::typhonql::Run");
+					result.doImport(null, "lang::typhonql::Session");
 					System.out.println("Finished initializing evaluator: " + Integer.toHexString(System.identityHashCode(result)));
 					System.out.flush();
 					return result;
@@ -139,13 +142,14 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 		return evaluators.useAndReturn(evaluator -> {
 			try {
 				synchronized (evaluator) {
-					// str src, str xmiString, map[str, Connection] connections
+					ITuple session = createSession(evaluator);
+					// str src, str xmiString, Session session
 					return evaluator.call("runQuery", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(query), 
 							xmiModel,
-							connections);
+							session);
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
@@ -165,13 +169,14 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 		return evaluators.useAndReturn(evaluator -> {
 			try {
 				synchronized (evaluator) {
-					// str src, str xmiString, map[str, Connection] connections
+					// str src, str xmiString, Session sessions
+					ITuple session = createSession(evaluator);
 					return evaluator.call("runUpdate", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(update), 
 							xmiModel,
-							connections);
+							session);
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
@@ -202,7 +207,8 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 		return evaluators.useAndReturn(evaluator -> {
 			try {
 				synchronized (evaluator) {
-					// str src, str polystoreId, Schema s,
+					ITuple session = createSession(evaluator);
+					// str src, str polystoreId, Schema s, Session session
 					return evaluator.call("runPrepared", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
@@ -210,7 +216,7 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 							columnsWriter.done(),
 							lw.done(),
 							xmiModel,
-							connections);
+							session);
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
@@ -262,9 +268,18 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 		return URIResolverRegistry.getInstance().exists(URIUtil.getChildLocation(root, RascalManifest.META_INF_RASCAL_MF));
 	}
 
-	private IMap buildConnectionsMap(List<DatabaseInfo> infos) {
+	private IMap buildConnections(List<DatabaseInfo> connectionInfo) {
 		IMapWriter mw = VF.mapWriter();
-		for (DatabaseInfo info : infos) {
+		TypeStore ts = new TypeStore();
+		Type connectionType = TF.abstractDataType(ts, "Connection");
+		Type mariaDbType = TF.constructor(ts, connectionType, "sqlConnection", 
+				TF.stringType(), "host", TF.integerType(), "port", TF.stringType(), "user",
+				TF.stringType(), "password");
+		Type mongoType = TF.constructor(ts, connectionType, "mongoConnection", 
+				TF.stringType(), "host", TF.integerType(), "port", TF.stringType(), "user",
+				TF.stringType(), "password");
+
+		for (DatabaseInfo info : connectionInfo) {
 			IString host = VF.string(info.getHost());
 			IInteger port = VF.integer(info.getPort());
 			IString user = VF.string(info.getUser());
@@ -272,15 +287,20 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 			IString dbName = VF.string(info.getDbName());
 			switch (info.getDbType()) { 
 			case relationaldb:
-				mw.put(dbName, VF.tuple(VF.string("sql"), host, port, user, password));
+				IValue v = VF.constructor(mariaDbType, host, port, user, password);
+				mw.put(dbName, VF.constructor(mariaDbType, host, port, user, password));
 				break;
 			case documentdb:
-				mw.put(dbName,  VF.tuple(VF.string("mongo"), host, port, user, password));
+				mw.put(dbName, VF.constructor(mongoType, host, port, user, password));
 				break;
 			}
 		}
-		
 		return mw.done();
+	}
+	
+	private ITuple createSession(Evaluator evaluator) {
+		TyphonSession sessionBuilder = new TyphonSession(VF);
+		return sessionBuilder.newSession(connections, evaluator);
 	}
 	
 	public static void main(String[] args) throws IOException, URISyntaxException {
