@@ -30,9 +30,6 @@ import util::Reflective;
 import lang::manifest::IO;
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
-java void bootConnections(loc polystoreUri, str user, str password);
-
-@javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java map[str, Connection] readConnectionsInfo(loc uri, str user, str password);
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
@@ -89,8 +86,6 @@ Schema checkSchema(Schema sch, loc polystoreUri, str user, str password) {
 	    if (msgs != {}) {
 	      throw "Not all entities assigned to backend in the model in polystore. Please upload a consistent model before continuing.";
 	    }
-		
-		bootConnections(polystoreUri, user, password);
 		sch = newSch;
 	}
 	
@@ -129,11 +124,11 @@ void setupIDE(bool isDevMode = false) {
 	          	else if ((Request) `<Statement s>` := req)  {
 	          		if (isDDL(s)) {
 	          			// use interpreter
-	          			 run(req, polystoreUri.uri, sch);
+	          			 run(req, sch, connections);
 	          		}
 	          		else {
 	          			// use compiler
-	          			runUpdate(req,  polystoreUri.uri, sch, connections);
+	          			runUpdate(req, sch, connections);
 	          		}
 	            	alert("Operation succesfully executed");
 	          	}
@@ -144,7 +139,7 @@ void setupIDE(bool isDevMode = false) {
           	  // not dev mode
           	  try {
           		if ((Request) `<Query q>` := req) {
-	      	  		WorkingSet ws = executeQuery(polystoreUri, user, password, "<req>");
+	      	  		ResultTable ws = executeQuery(polystoreUri, user, password, "<req>");
 	          		text(ws);
 	          	}
 	          	else {
@@ -184,8 +179,9 @@ void setupIDE(bool isDevMode = false) {
       		<polystoreUri, user, password> = readTyphonConfig(tree@\loc);
       		if (isDevMode) {        		
         		try {
+          			map[str, Connection] connections = readConnectionsInfo(polystoreUri, user, password);
           			sch = checkSchema(sch, polystoreUri, user, password);
-          			runSchema(polystoreUri.uri, sch);
+          			runSchema(sch, connections);
           			alert("Polystore successfully reset");
           		} catch e: {
 	        		alert("Error: <e> ");
@@ -212,8 +208,9 @@ void setupIDE(bool isDevMode = false) {
   	actions += action("Dump database",  void (Tree tree, loc selection) {
   		try {
   			<polystoreUri, user, password> = readTyphonConfig(tree@\loc);
-      		sch = checkSchema(sch, polystoreUri, user, password);
-      		text(dumpDB(polystoreUri.uri, sch));
+  			sch = checkSchema(sch, polystoreUri, user, password);
+  			map[str, Connection] connections = readConnectionsInfo(polystoreUri, user, password);
+      		text(dumpDB(sch, connections));
       	} catch e: {
         	alert("Error: <e> ");
         } 
