@@ -54,7 +54,6 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 	private final ConcurrentSoftReferenceObjectPool<Evaluator> evaluators;
 	private IMap connections;
 	private static final IValueFactory VF = ValueFactoryFactory.getValueFactory();
-	private static final String LOCALHOST = "localhost";
 	
 	public XMIPolystoreConnection(String xmiModel, List<DatabaseInfo> infos) throws IOException {
 		this(infos);
@@ -62,10 +61,7 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 	}
 	
 	private XMIPolystoreConnection(List<DatabaseInfo> infos) throws IOException {
-		// bootstrap the connections
-				Connections.boot(infos.stream().map(i -> new ConnectionInfo(LOCALHOST, i)).toArray(ConnectionInfo[]::new));
-
-				// we prepare some configuration that every evaluator will need
+				
 				connections = buildConnectionsMap(infos);
 
 				ISourceLocation root = URIUtil.correctLocation("project", "typhonql", null);
@@ -174,7 +170,6 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(update), 
-							VF.string(LOCALHOST),
 							xmiModel,
 							connections);
 				}
@@ -239,7 +234,7 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 					return evaluator.call("runSchema", 
 							"lang::typhonql::Run",
                     		Collections.emptyMap(),
-                    		VF.string(LOCALHOST), xmiModel);
+                    		xmiModel, connections);
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
