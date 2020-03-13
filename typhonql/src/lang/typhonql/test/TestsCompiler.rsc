@@ -104,10 +104,6 @@ value runQuery(Request req) {
 }
 
 void printSchema() {
-	@javaClass{nl.cwi.swat.typhonql.TyphonQL}
-	java Model bootConnections(loc polystoreUri, str user, str password);
-	
-	bootConnections(|http://<HOST>:<PORT>|, "pablo", "antonio");
 	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
 	Schema sch = loadSchemaFromXMI(modelStr);
 	iprintln(sch);
@@ -115,11 +111,8 @@ void printSchema() {
 
 
 void resetDatabase() {
-	@javaClass{nl.cwi.swat.typhonql.TyphonQL}
-	java Model bootConnections(loc polystoreUri, str user, str password);
-	
-	bootConnections(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
 	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
 	Schema sch = loadSchemaFromXMI(modelStr);
-	runSchema("http://<HOST>:<PORT>", sch);
+	runSchema("http://<HOST>:<PORT>", sch, connections);
 }
