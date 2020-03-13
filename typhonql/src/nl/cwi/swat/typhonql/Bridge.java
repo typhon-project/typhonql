@@ -1,6 +1,7 @@
 package nl.cwi.swat.typhonql;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -14,11 +15,14 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.UpdateResult;
 
 import io.usethesource.vallang.IBool;
+import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IDateTime;
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
@@ -42,29 +46,13 @@ public class Bridge {
 	}
 	
 	
-	private static Connection getJDBCConnection(IString polystoreId, IString dbName) {
-		Connection con = (Connection) Connections.getInstance().getConnection(polystoreId.getValue(), dbName.getValue());
-		if (con == null) {
-			throw RuntimeExceptionFactory.illegalArgument(dbName, null, null, "No SQL connection for database");
-		}
-		return con;
-	}
-	
-	private static MongoDatabase getMongoDB(IString polystoreId, IString dbName) {
-		MongoDatabase db = (MongoDatabase) Connections.getInstance().getConnection(polystoreId.getValue(), dbName.getValue());
-		if (db == null) {
-			throw RuntimeExceptionFactory.illegalArgument(dbName, null, null, "No MongoDB for database");
-		}
-		return db;
-	}
-
-	public IList executeQuery(IString polystoreId, IString dbName, IString sql, IList arguments) {
+	public IList executeQuery(IString dbName, IString sql, IList arguments, IConstructor conn) {
 		throw new AssertionError("not yet implemented");
 	}
 
 	
-	public IList executeQuery(IString polystoreId, IString dbName, IString sql) {
-		Connection con = getJDBCConnection(polystoreId, dbName);
+	public IList executeQuery(IString dbName, IString sql, IConstructor conn) {
+		Connection con = makeJDBCConnection(dbName, conn);
 		try {
 			Statement stat = con.createStatement();
 			ResultSet rs = stat.executeQuery(sql.getValue());
@@ -88,8 +76,8 @@ public class Bridge {
 	}
 	
 
-	public IInteger executeUpdate(IString polystoreId, IString dbName, IString sql) {
-		Connection con = getJDBCConnection(polystoreId, dbName);
+	public IInteger executeUpdate(IString dbName, IString sql, IConstructor conn) {
+		Connection con = makeJDBCConnection(dbName, conn);
 		try {
 			Statement stat = con.createStatement();
 			int result = stat.executeUpdate(sql.getValue());
@@ -99,19 +87,19 @@ public class Bridge {
 		}
 	}
 	
-	public void createCollection(IString polystoreId, IString dbName, IString collectionName) {
-		MongoDatabase db = getMongoDB(polystoreId, dbName);
+	public void createCollection(IString dbName, IString collectionName, IConstructor conn) {
+		MongoDatabase db = makeMongoConnection(dbName, conn);
 		db.createCollection(collectionName.getValue());
 	}
 	
-	public void drop(IString polystoreId, IString dbName, IString collectionName) {
-		MongoDatabase db = getMongoDB(polystoreId, dbName);
+	public void drop(IString dbName, IString collectionName, IConstructor conn) {
+		MongoDatabase db = makeMongoConnection(dbName, conn);
 		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
 		coll.drop();
 	}
 	
-	public IList find(IString polystoreId, IString dbName, IString collectionName, IMap pattern) {
-		MongoDatabase db = getMongoDB(polystoreId, dbName);
+	public IList find(IString dbName, IString collectionName, IMap pattern, IConstructor conn) {
+		MongoDatabase db =  makeMongoConnection(dbName, conn);
 		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
 		IListWriter result = vf.listWriter();
 		for (Document doc: coll.find((Document)value2doc(pattern))) {
@@ -120,29 +108,29 @@ public class Bridge {
 		return result.done();
 	}
 
-	public void deleteOne(IString polystoreId, IString dbName, IString collectionName, IMap doc) {
-		MongoDatabase db = getMongoDB(polystoreId, dbName);
+	public void deleteOne(IString dbName, IString collectionName, IMap doc, IConstructor conn) {
+		MongoDatabase db =  makeMongoConnection(dbName, conn);
 		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
 		coll.deleteOne((Document) value2doc(doc));
 	}
 
-	public void insertOne(IString polystoreId, IString dbName, IString collectionName, IMap doc) {
-		MongoDatabase db = getMongoDB(polystoreId, dbName);
+	public void insertOne(IString dbName, IString collectionName, IMap doc, IConstructor conn) {
+		MongoDatabase db =  makeMongoConnection(dbName, conn);
 		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
 		coll.insertOne((Document) value2doc(doc));
 	}
 	
 	
-	public ITuple updateOne(IString polystoreId,IString dbName, IString collectionName, IMap pattern, IMap update) {
-		MongoDatabase db = getMongoDB(polystoreId, dbName);
+	public ITuple updateOne(IString dbName, IString collectionName, IMap pattern, IMap update, IConstructor conn) {
+		MongoDatabase db =  makeMongoConnection(dbName, conn);
 		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
 		UpdateResult result = coll.updateOne((Document)value2doc(pattern), (Document)value2doc(update));
 		return vf.tuple(vf.integer(result.getMatchedCount()), vf.integer(result.getModifiedCount()));
 	}
 
 	
-	public ITuple updateMany(IString polystoreId, IString dbName, IString collectionName, IMap pattern, IMap update) {
-		MongoDatabase db = getMongoDB(polystoreId, dbName);
+	public ITuple updateMany(IString dbName, IString collectionName, IMap pattern, IMap update, IConstructor conn) {
+		MongoDatabase db =  makeMongoConnection(dbName, conn);
 		MongoCollection<Document> coll = db.getCollection(collectionName.getValue());
 		UpdateResult result = coll.updateMany((Document)value2doc(pattern), (Document)value2doc(update));
 		return vf.tuple(vf.integer(result.getMatchedCount()), vf.integer(result.getModifiedCount()));
@@ -270,6 +258,43 @@ public class Bridge {
 		
 		throw RuntimeExceptionFactory.illegalArgument(vf.string(obj.getClass().getName()), null, null, 
 				"Cannot convert Java object to Rascal value");
+	}
+	
+	private static Connection makeJDBCConnection(IString dbName, IConstructor conn) {
+		if (conn.getName().equals("sqlConnection")) {
+			IString host = (IString) conn.get(0);
+			IInteger port = (IInteger) conn.get(1);
+			IString user = (IString) conn.get(2);
+			IString password = (IString) conn.get(3);
+			DBMS ms = DBType.relationaldb.getDBMS("MariaDB");
+			ms.initializeDriver();
+			String connString = ms.getConnectionString(host.getValue(), port.intValue(), dbName.getValue(), user.getValue(), password.getValue());
+			Connection connection = null;
+			try {
+				connection = DriverManager.getConnection(connString);
+				return connection;
+			} catch (SQLException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		else 
+			throw new RuntimeException("Wrong connection information provided");
+	}
+
+	private static MongoDatabase makeMongoConnection(IString dbName, IConstructor conn) {
+		if (conn.getName().equals("mongoConnection")) {
+			IString host = (IString) conn.get(0);
+			IInteger port = (IInteger) conn.get(1);
+			IString user = (IString) conn.get(2);
+			IString password = (IString) conn.get(3);
+			DBMS ms = DBType.documentdb.getDBMS("MongoDB");
+			String connString = ms.getConnectionString(host.getValue(), port.intValue(), dbName.getValue(), user.getValue(), password.getValue());
+			MongoClient mongoClient = MongoClients.create(connString);
+			MongoDatabase db = mongoClient.getDatabase(dbName.getValue());
+			return db;
+		}
+		else 
+			throw new RuntimeException("Wrong connection information provided");
 	}
 
 }
