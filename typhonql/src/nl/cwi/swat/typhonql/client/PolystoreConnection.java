@@ -17,12 +17,6 @@ import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public abstract class PolystoreConnection {
 
-	public ResultTable executeQuery(String query) {
-		IValue val = evaluateQuery(query);
-		ITuple tuple = (ITuple) val;
-		return ResultTable.fromIValue(tuple);
-	}
-
 	public CommandResult executeUpdate(String query) {
 		IValue val = evaluateUpdate(query);
 		ITuple tuple = (ITuple) val;
@@ -69,7 +63,7 @@ public abstract class PolystoreConnection {
 
 	public abstract void resetDatabases();
 
-	protected abstract IValue evaluateQuery(String query);
+	public abstract ResultTable executeQuery(String query);
 	
 	protected abstract IValue evaluateUpdate(String update);
 }

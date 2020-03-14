@@ -1,7 +1,5 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -21,7 +19,6 @@ import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
-import io.usethesource.vallang.ISet;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
@@ -35,6 +32,8 @@ import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 public class TyphonSession implements Operations {
 	private static final TypeFactory TF = TypeFactory.getInstance();
 	private final IValueFactory vf;
+	
+	private ResultTable storedResult = null;
 	
 	public TyphonSession(IValueFactory vf) {
 		this.vf = vf;
@@ -54,6 +53,7 @@ public class TyphonSession implements Operations {
 
 		// get the function types
 		FunctionType readType = (FunctionType)aliasedTuple.getFieldType("read");
+		FunctionType readAndStoreType = (FunctionType)aliasedTuple.getFieldType("readAndStore");
 		FunctionType closeType = (FunctionType)aliasedTuple.getFieldType("done");
 		FunctionType newIdType = (FunctionType)aliasedTuple.getFieldType("newId");
 		
@@ -82,6 +82,7 @@ public class TyphonSession implements Operations {
 		Map<String, String> uuids = new HashMap<>();
 		return vf.tuple(
 			makeRead(store, readType, ctx),
+			makeReadAndStore(store, readAndStoreType, ctx),
             makeClose(store, closeType, ctx),
             makeNewId(uuids, newIdType, ctx),
             new MariaDBOperations(mariaDbConnections).newSQLOperations(store, uuids, ctx, vf, TF),
@@ -106,26 +107,38 @@ public class TyphonSession implements Operations {
 		});
 	}
 	
+	private ResultTable computeResultTable(ResultStore store, IValue[] args) {
+		String resultName = ((IString) args[0]).getValue();
+		List<Path> paths = new ArrayList<>();
+		
+		IList pathsList = (IList) args[1];
+		Iterator<IValue> iter = pathsList.iterator();
+		
+		while (iter.hasNext()) {
+			ITuple tuple = (ITuple) iter.next();
+			paths.add(toPath(tuple));
+		}
+		
+		//List<EntityModel> models = EntityModelReader.fromRascalRelation(types, modelsRel);
+		//WorkingSet ws = store.computeResult(resultName, labels.toArray(new String[0]), models.toArray(new EntityModel[0]));
+		ResultTable rt = store.computeResultTable(resultName, paths);
+		return rt;
+	}
+	
 	private ICallableValue makeRead(ResultStore store, FunctionType readType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, readType, args -> {
-			String resultName = ((IString) args[0]).getValue();
-			List<Path> paths = new ArrayList<>();
-			
-			IList pathsList = (IList) args[1];
-			Iterator<IValue> iter = pathsList.iterator();
-			
-			while (iter.hasNext()) {
-				ITuple tuple = (ITuple) iter.next();
-				paths.add(toPath(tuple));
-			}
-			
-			//List<EntityModel> models = EntityModelReader.fromRascalRelation(types, modelsRel);
-			//WorkingSet ws = store.computeResult(resultName, labels.toArray(new String[0]), models.toArray(new EntityModel[0]));
-			ResultTable rt = store.computeResultTable(resultName, paths);
-			
- 			// alias ResultTable =  tuple[list[str] columnNames, list[list[value]] values];
+			ResultTable rt = computeResultTable(store, args);
+			// alias ResultTable =  tuple[list[str] columnNames, list[list[value]] values];
  			return ResultFactory.makeResult(TF.tupleType(new Type[] { TF.listType(TF.stringType()), TF.listType(TF.listType(TF.valueType()))}, 
  					new String[]{ "columnNames", "values"}), rt.toIValue(), ctx);
+		});
+	}
+	
+	private ICallableValue makeReadAndStore(ResultStore store, FunctionType readAndStoreType, IEvaluatorContext ctx) {
+		return makeFunction(ctx, readAndStoreType, args -> {
+			ResultTable rt = computeResultTable(store, args);
+			this.storedResult = rt;
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 
@@ -142,5 +155,11 @@ public class TyphonSession implements Operations {
 			entityType,
 			fields.toArray(new String[0]));
 	}
+
+	public ResultTable getStoredResult() {
+		return storedResult;
+	}
+	
+	
 
 }

@@ -10,6 +10,7 @@ alias Path = tuple[str name, str entityType, list[str] path];
 
 alias Session = tuple[
 	ResultTable (str result, list[Path path] paths) read,
+	void (str result, list[Path path] paths) readAndStore,
 	void () done,
 	void (str) newId,
    	SQLOperations sql,

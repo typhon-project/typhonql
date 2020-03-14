@@ -138,18 +138,21 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 	}
 	
 	@Override
-	protected IValue evaluateQuery(String query) {
+	public ResultTable executeQuery(String query) {
 		return evaluators.useAndReturn(evaluator -> {
 			try {
 				synchronized (evaluator) {
-					ITuple session = createSession(evaluator);
+					TyphonSession sessionBuilder = new TyphonSession(VF);
+					ITuple session = sessionBuilder.newSession(connections, evaluator);
 					// str src, str xmiString, Session session
-					return evaluator.call("runQuery", 
+					evaluator.call("runQueryAndStore", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(query), 
 							xmiModel,
 							session);
+					return sessionBuilder.getStoredResult();
+					
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
@@ -324,7 +327,6 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 		System.out.println(iv);
 
 	}
-	
-	
 
 }
+
