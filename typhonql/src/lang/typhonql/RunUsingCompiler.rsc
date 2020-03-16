@@ -36,7 +36,9 @@ void runDDL(Request r, Schema s, map[str, Connection] connections) {
   			throw "DDL statement should have been provided";
   		}
   	}
-    throw "Statement should have been provided";
+  	else {
+  		throw "Statement should have been provided";
+  	}
 }
 
 tuple[int, map[str, str]] runUpdate(Request r, Schema s, map[str, Connection] connections) {
