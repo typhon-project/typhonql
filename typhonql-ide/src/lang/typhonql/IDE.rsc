@@ -42,6 +42,9 @@ java bool executeResetDatabases(loc polystoreUri, str user, str password);
 java WorkingSet executeQuery(loc polystoreUri, str user, str password, str query);
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
+java void executeDDLUpdate(loc polystoreUri, str user, str password, str query);
+
+@javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java void executeUpdate(loc polystoreUri, str user, str password, str query);
 
 private str TYPHONQL = "TyphonQL";
@@ -124,7 +127,7 @@ void setupIDE(bool isDevMode = false) {
 	          	else if ((Request) `<Statement s>` := req)  {
 	          		if (isDDL(s)) {
 	          			// use interpreter
-	          			 run(req, sch, connections);
+	          			 runDDL(req, sch, connections);
 	          		}
 	          		else {
 	          			// use compiler
@@ -142,8 +145,13 @@ void setupIDE(bool isDevMode = false) {
 	      	  		ResultTable ws = executeQuery(polystoreUri, user, password, "<req>");
 	          		text(ws);
 	          	}
-	          	else {
-	          	    executeUpdate(polystoreUri, user, password, "<req>");
+	          	else if ((Request) `<Statement s>` := req)  {
+	          		if (isDDL(s)) {
+	          			executeDDLUpdate(polystoreUri, user, password, "<req>");
+	          		}
+	          		else {
+	          	    	executeUpdate(polystoreUri, user, password, "<req>");
+	          	    }
 	            	alert("Operation succesfully executed");
 	          	}
 	          } catch e: {

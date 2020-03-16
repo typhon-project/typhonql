@@ -33,6 +33,11 @@ public class QueryEngine {
 	public CommandResult executeCommand(String cmd) throws IOException {
 		return getBackend().executeUpdate(cmd);
 	}
+	
+	public JsonSerializableResult executeDDL(String cmd) throws IOException {
+		getBackend().executeDDLUpdate(cmd);
+		return RESULT_OK;
+	}
 
 	public JsonSerializableResult initialize(String xmi, List<DatabaseInfo> databaseInfo) throws IOException {
 		backend = new XMIPolystoreConnection(xmi, databaseInfo);

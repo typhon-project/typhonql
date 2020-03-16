@@ -91,6 +91,11 @@ public class TyphonQL {
 		return ws.toIValue();
 	}
 	
+	public void executeDDLUpdate(ISourceLocation path, IString user, IString password, IString query) {
+		URI uri = buildUri(path.getURI(), "/api/ddl");
+		doPost(uri, user.getValue(), password.getValue(), query.getValue());
+	}
+	
 	public void executeUpdate(ISourceLocation path, IString user, IString password, IString query) {
 		URI uri = buildUri(path.getURI(), "/api/update");
 		doPost(uri, user.getValue(), password.getValue(), query.getValue());

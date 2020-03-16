@@ -67,6 +67,7 @@ public class QLRestServer {
         context.setMaxFormContentSize(100*1024*1024); // 100MB should be max for parameters
         context.addServlet(jsonGetHandler(r -> handleQuery(engine, r)), "/query");
         context.addServlet(jsonPostHandler(r -> handleCommand(engine, r)), "/update");
+        context.addServlet(jsonPostHandler(r -> handleDDLCommand(engine, r)), "/ddl");
         context.addServlet(jsonPostHandler(r -> handlePreparedCommand(engine, r)), "/preparedUpdate");
         context.addServlet(jsonPostHandler(r -> handleInitialize(engine, r)), "/initialize");
         context.addServlet(jsonPostHandler(r -> handleReset(engine, r)), "/reset");
@@ -78,6 +79,20 @@ public class QLRestServer {
 	}
 	
 	
+
+
+	private static JsonSerializableResult handleDDLCommand(QueryEngine engine, HttpServletRequest r) throws IOException {
+		CommandArgs args;
+		try {
+			args = CommandArgs.fromJSON(r.getReader());
+		} catch (IOException e) {
+			throw new IOException("Failure to parse args", e);
+		}
+		logger.trace("Running DDL command: {}", args);
+        return engine.executeDDL(args.command);
+	}
+
+
 
 
 	private static JsonSerializableResult handleReset(QueryEngine engine, HttpServletRequest r) throws IOException {
