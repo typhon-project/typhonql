@@ -35,7 +35,7 @@ public class MongoFindOneAndUpdateExecutor extends MongoUpdateExecutor {
 
 	protected Document resolveUpdate(Map<String, String> values) {
 		StringSubstitutor sub = new StringSubstitutor(values);
-		String resolvedQuery = sub.replace(update);
+		String resolvedQuery = "{$set: " + sub.replace(update) + "}";
 		Document pattern = Document.parse(resolvedQuery);
 		return pattern;
 	}

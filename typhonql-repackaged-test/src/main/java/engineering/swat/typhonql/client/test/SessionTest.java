@@ -91,7 +91,7 @@ public class SessionTest {
 		result.doImport(null, "lang::typhonql::test::TestsCompiler");
 		//result.doImport(null, "lang::typhonql::TestScript");
 		//result.call("smokeTwoBackends2", "lang::typhonql::TestScript", Collections.<String, IValue>emptyMap());
-		result.call("test1", "lang::typhonql::test::TestsCompiler", Collections.<String, IValue>emptyMap());
+		result.call("test6", "lang::typhonql::test::TestsCompiler", Collections.<String, IValue>emptyMap());
 	}
 
 }

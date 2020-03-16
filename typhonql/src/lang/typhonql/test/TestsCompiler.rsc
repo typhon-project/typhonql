@@ -52,6 +52,10 @@ void test1e() {
 	println(rs);
 }
 
+void test1f() {
+	rs = runQuery((Request) `from User u, Biography b select b.text where u.biography == b, u == #victor`);
+	println(rs);
+}
 
 
 void test2() {
@@ -79,6 +83,15 @@ void test5() {
 }
 
 void test6() {
+	runUpdate((Request) `update Biography b where b.@id == #bio1 set { text:  "Another text" }`);
+}
+
+void test6b() {
+	runUpdate((Request) `update User u where u.@id == #victor set { address:  "Fresia 898" }`);
+}
+
+
+void test7() {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
 	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
 	Schema s = loadSchemaFromXMI(modelStr);
@@ -93,7 +106,7 @@ void runUpdate(Request req) {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
 	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
 	Schema s = loadSchemaFromXMI(modelStr);
-	runUpdate(req, "localhost", s, connections);
+	runUpdate(req, s, connections);
 }
 
 value runQuery(Request req) {
