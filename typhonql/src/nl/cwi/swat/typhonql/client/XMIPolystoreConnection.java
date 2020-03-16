@@ -10,8 +10,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -31,6 +33,7 @@ import org.rascalmpl.util.ConcurrentSoftReferenceObjectPool;
 import org.rascalmpl.values.ValueFactoryFactory;
 
 import io.usethesource.vallang.IInteger;
+import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IMapWriter;
@@ -50,7 +53,7 @@ import nl.cwi.swat.typhonql.backend.rascal.TyphonSession;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 import nl.cwi.swat.typhonql.workingset.Entity;
 
-public class XMIPolystoreConnection extends PolystoreConnection {
+public class XMIPolystoreConnection implements PolystoreConnection {
 	private static final StandardTextWriter VALUE_PRINTER = new StandardTextWriter(true, 2);
 
 	private volatile IString xmiModel;
@@ -167,8 +170,7 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 		});
 	}
 	
-	@Override
-	protected IValue evaluateUpdate(String update) {
+	private IValue evaluateUpdate(String update) {
 		return evaluators.useAndReturn(evaluator -> {
 			try {
 				synchronized (evaluator) {
@@ -195,8 +197,7 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 	}
 	
 
-	@Override
-	protected IValue evaluatePreparedStatementQuery(String preparedStatement, String[] columnNames, String[][] matrix) {
+	private IValue evaluatePreparedStatementQuery(String preparedStatement, String[] columnNames, String[][] matrix) {
 		IListWriter lw = VF.listWriter();
 		for (Object[] row : matrix) {
 			List<IValue> vs = Arrays.asList(row).stream().map(
@@ -304,6 +305,23 @@ public class XMIPolystoreConnection extends PolystoreConnection {
 	private ITuple createSession(Evaluator evaluator) {
 		TyphonSession sessionBuilder = new TyphonSession(VF);
 		return sessionBuilder.newSession(connections, evaluator);
+	}
+	
+	public CommandResult executeUpdate(String query) {
+		IValue val = evaluateUpdate(query);
+		return CommandResult.fromIValue(val);
+	}
+	
+	@Override
+	public CommandResult[] executePreparedUpdate(String preparedStatement, String[] columnNames, String[][] values) {
+		IValue v = evaluatePreparedStatementQuery(preparedStatement, columnNames, values);
+		Iterator<IValue> iter0 = ((IList) v).iterator();
+		List<CommandResult> results = new ArrayList<CommandResult>();
+		while (iter0.hasNext()) {
+			IValue val = iter0.next();
+			results.add(CommandResult.fromIValue(val));		
+		}
+		return results.toArray(new CommandResult[0]);
 	}
 	
 	public static void main(String[] args) throws IOException, URISyntaxException {
