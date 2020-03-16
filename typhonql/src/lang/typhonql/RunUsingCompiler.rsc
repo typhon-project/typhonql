@@ -25,17 +25,12 @@ import List;
 import util::Maybe;
 import String;
 
-tuple[int, map[str, str]] runDDL(Request r, Schema s, map[str, Connection] connections) {
+void runDDL(Request r, Schema s, map[str, Connection] connections) {
 	if ((Request) `<Statement stmt>` := r) {
 		// TODO This is needed because we do not have an explicit way to distinguish
 		// DDL updates from DML updates. Perhaps we should consider it
   		if (isDDL(stmt)) {
-  			if (tuple[int, map[str, str]]  t := run(r, s, connections)) {
-  				return t;
-  			}
-  			else
-  				throw "Dynamic type error for DDL execution operation";
-  			
+  			run(r, s, connections);
   		}
   		else {
   			throw "DDL statement should have been provided";
@@ -43,7 +38,6 @@ tuple[int, map[str, str]] runDDL(Request r, Schema s, map[str, Connection] conne
   	}
     throw "Statement should have been provided";
 }
-
 
 tuple[int, map[str, str]] runUpdate(Request r, Schema s, map[str, Connection] connections) {
 	Session session = newSession(connections);
@@ -188,6 +182,12 @@ lrel[int, map[str, str]] runPrepared(str src, list[str] columnNames, list[list[s
 lrel[int, map[str, str]] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, map[str, Connection] connections) {
  	Session session = newSession(connections);
  	return runPrepared(src, columnNames, values, xmiString, session);
+}
+
+void runDDL(str src,  str xmiString, map[str, Connection] connections) {
+	Model m = xmiString2Model(xmiString);
+  	Schema s = model2schema(m);	
+	runDDL([Request] src, s, connections);
 }
 
 Path buildPath(str selector, map[str, str] entityTypes) {

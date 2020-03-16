@@ -8,6 +8,8 @@ public interface PolystoreConnection {
 
 	ResultTable executeQuery(String query);
 	
+	void executeDDLUpdate(String update);
+	
 	CommandResult executeUpdate(String update);
 	
 	CommandResult[] executePreparedUpdate(String preparedStatement, String[] columnNames,

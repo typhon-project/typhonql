@@ -170,6 +170,39 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 		});
 	}
 	
+	@Override
+	public void executeDDLUpdate(String update) {
+		evaluators.useAndReturn(evaluator -> {
+			try {
+				synchronized (evaluator) {
+					// str src, str xmiString, Session sessions
+					return evaluator.call("runDDL", 
+							"lang::typhonql::RunUsingCompiler",
+                    		Collections.emptyMap(),
+							VF.string(update), 
+							xmiModel,
+							connections);
+				}
+			} catch (StaticError e) {
+				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				throw e;
+			} catch (Throw e) {
+				throwMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				throw e;
+			} catch (Throwable e) {
+				throwableMessage(evaluator.getStdErr(), e, evaluator.getStackTrace(), VALUE_PRINTER);
+				throw e;
+			}
+		});
+		
+	}
+	
+	public CommandResult executeUpdate(String query) {
+		IValue val = evaluateUpdate(query);
+		return CommandResult.fromIValue(val);
+	}
+	
+	
 	private IValue evaluateUpdate(String update) {
 		return evaluators.useAndReturn(evaluator -> {
 			try {
@@ -305,11 +338,6 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 	private ITuple createSession(Evaluator evaluator) {
 		TyphonSession sessionBuilder = new TyphonSession(VF);
 		return sessionBuilder.newSession(connections, evaluator);
-	}
-	
-	public CommandResult executeUpdate(String query) {
-		IValue val = evaluateUpdate(query);
-		return CommandResult.fromIValue(val);
 	}
 	
 	@Override
