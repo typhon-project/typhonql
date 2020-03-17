@@ -57,8 +57,8 @@ Request unjoinWheres(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}
        case (Expr)`<Expr lhs> #join <Expr rhs>` => (Expr)`<Expr lhs2> #join <Expr rhs>` 
           when Expr lhs2 := unjoin(lhs, x)
         
-       case (Expr)`<VId x1>.<Id f>` => (Expr)`<VId var>.<{Id "."}+ fs>.<Id f>`
-         when x1 == x, bprintln("Rewriting <x>"), (Expr)`<VId var>.<{Id "."}+ fs> #join <VId x>` <- ws
+       case (Expr)`<VId x1>.<Id f>` => (Expr)`<VId var>.<{Id "."}+ fs2>.<Id f>`
+         when x1 == x, bprintln("Rewriting <x>"), (Expr)`<VId var>.<{Id "."}+ fs2> #join <VId x2>` <- ws, x2 == x
     }
   }
   

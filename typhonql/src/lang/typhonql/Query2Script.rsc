@@ -21,7 +21,7 @@ import IO;
 import List;
 
 list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s) {
-  r = expandNavigation(addWhereIfAbsent(r), s);
+  //r = expandNavigation(addWhereIfAbsent(r), s);
   println("COMPILING: <r>");
   <sqlStat, params> = compile2sql(r, s, p);
   // hack

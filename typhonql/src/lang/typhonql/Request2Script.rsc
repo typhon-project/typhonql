@@ -48,6 +48,7 @@ Script request2script(Request r, Schema s) {
   
     case (Request)`<Query q>`: {
       list[Place] order = orderPlaces(r, s);
+      r = expandNavigation(addWhereIfAbsent(r), s);
       return script([ *compileQuery(restrict(r, p, order, s), p, s) | Place p <- order]); 
     }
 
@@ -207,5 +208,5 @@ void smokeScript() {
   smokeIt((Request)`from Person p, Cash c select p.name where p.name == "Pablo", p.cash == c, c.amount \> 0`);
   
 
-  smokeIt((Request)`from Person p select p.reviews where p == #victor`);  
+  smokeIt((Request)`from Person p select p.reviews.comment.contents where p == #victor`);  
 }  
