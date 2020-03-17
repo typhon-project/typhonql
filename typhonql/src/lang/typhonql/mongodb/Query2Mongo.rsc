@@ -11,6 +11,7 @@ import lang::typhonql::mongodb::DBCollection;
 
 import List;
 import IO;
+import String;
 
 ////////
 /////// TODO: normalization (e.g. expandNavigation) is SQL specific
@@ -73,7 +74,11 @@ Request unjoinWheres(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}
      if (!(w is hashjoin)) {
        return false;
      }
-     if ((Expr)`<VId x>.<{Id "."}+ _> #join <Expr rhs>` := w) {
+     // only return false for the outermost join
+     // from a dynamic variable, that's why we
+     // don't match on a seq of {Id ","}+
+    
+     if ((Expr)`<VId x>.<Id _> #join <Expr rhs>` := w) {
        if ((Binding)`#dynamic(<EId _> <VId x2>)` <- bs, x == x2) {
          return false;
        }
@@ -137,11 +142,37 @@ tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding
   bool isLocal(VId x) = (str ent := env["<x>"] && <p, ent> <- s.placement);
     
   void addProjection(VId x, str fields) {
-    if (!isLocal(x)) {
-      return;
-    }
+    /*
+     Here we are assuming the non-annotated result clauses are in fact
+     on the collection we're querying, so we have to strip of the
+     path from the front up-till the entity that we're querying on
+     so p.reviews.contents becomes a projection "contents", because
+     the current collection is Review, and p.reviews leads to that.
+    */
+    
     str ent = env["<x>"];
+    
+    if (!isLocal(x)) {
+      list[str] fs = split(".", fields); // ugh
+      
+      while (ent notin paths) {
+         if (fs == []) {
+           throw "Could not find entity in current maps of collections";
+         }
+         role = fs[0];
+         if (<ent, _, role, _, _, str to, _> <- s.rels) {
+           ent = to;
+           fs = fs[1..];
+         }
+         else {
+           throw "No such role <role> for <ent> in schema";
+         }
+      }
+      fields = intercalate(".", fs);
+    }
+    
     prePath = paths[ent].path;
+    
     if (prePath != []) {
       result[paths[ent].root].projection.props += [<"<intercalate(".", paths[ent].path)>.<fields>", \value(1)>];
     }
@@ -228,6 +259,9 @@ tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding
     }
       
   }
+  
+  println("*****RESULT ****");
+  iprintln(result);
   
   return <result, params>;
 }
