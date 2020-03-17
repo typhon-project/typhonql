@@ -97,7 +97,7 @@ Request expandNavigation(req:(Request)`from <{Binding ","}+ bs> select <{Result 
       str y = newVar(target);
       env[y] = target;
       newBindings += [ [Binding]"<target> <y>" ];
-      newWheres += [ [Expr]"<var>.<role> == <y>" ];
+      newWheres += [ [Expr]"<var>.<role> #join <y>" ];
       VId vid = [VId]y;
       
       req = visit (req) {
