@@ -38,19 +38,27 @@ Column typhonIdColumn(str entity) = column(typhonId(entity), typhonIdType(), [no
 
 ColumnType typhonIdType() = char(36); // UUID
 
-ColumnType typhonType2SQL("Date") = dateTime();
+ColumnType typhonType2SQL("date") = date();
 
-ColumnType typhonType2SQL("date") = dateTime();
+ColumnType typhonType2SQL("datetime") = dateTime();
 
-ColumnType typhonType2SQL("str") = text();
+ColumnType typhonType2SQL(/^string.<n:[0-9]+>./) = varchar(toInt(n));
 
-ColumnType typhonType2SQL("String") = text();
+ColumnType typhonType2SQL(/^freetext/) = text();
 
-ColumnType typhonType2SQL("Real") = float();
+ColumnType typhonType2SQL("blob") = blob();
+
+ColumnType typhonType2SQL("text") = text();
+
+ColumnType typhonType2SQL("float") = float();
 
 ColumnType typhonType2SQL("int") = integer();
 
-ColumnType typhonType2SQL("Int") = integer();
+ColumnType typhonType2SQL("bigint") = bigint();
+
+ColumnType typhonType2SQL("point") = point();
+
+ColumnType typhonType2SQL("polygon") = polygon();
 
 
 default ColumnType typhonType2SQL(str t) { throw "Unsupported Typhon type <t>"; }

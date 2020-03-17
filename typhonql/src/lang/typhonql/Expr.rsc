@@ -51,8 +51,24 @@ syntax Expr
 lexical EId = Id entityName \ Primitives;
   
 keyword Primitives
-  = "int" | "str" | "bool" | "text" | "float" | "blob" | "freetext" | "date" ;
+  = "int" | "bigint" | "string" | "bool" | "text" | "float" 
+  | "blob" | "freetext" | "date" | "datetime" | "point" | "polygon" ;
   
+
+syntax Point
+  = "#point" "(" XY ")"
+  ;
+
+syntax XY
+  = Real Real;
+
+syntax Polygon
+  = "#polygon" "(" {Segment ","}* ")" 
+  ;
+  
+syntax Segment
+  = "(" {XY ","}* ")";
+
 
 // Variable Ids
 lexical VId = Id variableName \ "true" \ "false" \ "null";

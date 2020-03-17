@@ -96,13 +96,16 @@ data OnDelete
 
 // https://dev.mysql.com/doc/refman/8.0/en/data-types.html  
 data ColumnType
-  = char(int size)
-  | varchar(int size)
+  = varchar(int size)
+  | char(int size)
   | text()
   | integer()
+  | bigint()
   | float()
   | double()
   | blob()
+  | point()
+  | polygon()
   | date()
   | dateTime()
   ; 
@@ -112,6 +115,8 @@ data Value
   | decimal(real realVal)
   | integer(int intVal)
   | boolean(bool boolVal)
+  | point(real x, real y)
+  | polygon(list[lrel[real, real]] segs)
   | dateTime(datetime dateTimeVal)
   | placeholder(str name="")
   | null()
