@@ -14,7 +14,7 @@ data Step
   // SQL: select p.name as x1 from Person  p
   // executeQuery("x", "relational", "select p.name from Person as p", ())
   = step(str result, Call call, Bindings bindings)
-  | read(str result, list[Path] path)
+  | read(list[Path] path)
   | newId(str var)
   ;
   
@@ -76,11 +76,9 @@ void runScript(Script scr, Session session, Schema schema) {
       case newId(str var):
         session.newId(var);
           
-      case read(str r, list[Path path] paths): {
-      	session.readAndStore(r, paths);
+      case read(list[Path path] paths): {
+      	session.readAndStore(paths);
       }
-      case done(): 
-  	  	session.done();
   	  	
       default: throw "Unsupported call: <s>";
     }
