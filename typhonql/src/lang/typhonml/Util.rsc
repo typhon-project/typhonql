@@ -100,6 +100,12 @@ ChangeOps model2changeOperators(Model m) {
   for (ChangeOperator(RenameEntity(entityToRename = toRename, newEntityName = newName)) <- m.changeOperators) {
     result += <"renameEntity", [lookup(m, #Entity, toRename).name, newName]>;
   }
+  
+  for (ChangeOperator(MigrateEntity(entity = entity, newDatabase = db)) <- m.changeOperators) {
+    result += <"migrateEntity", [lookup(m, #Entity, entity).name, lookup(m, #Database, entity).name]>;
+  }
+  
+  
   return result;
 }
 

@@ -14,7 +14,7 @@ import util::ValueUI;
 
 
 void smokeTest() {
-  str xmi = readFile(|project://typhonql/src/newmydb4.xmi|);
+  str xmi = readFile(|project://typhonql/src/test/addEntityChangeOperator.xmi|);
   Model m = xmiString2Model(xmi);
   iprintln(m);
   iprintln(model2schema(m));
@@ -58,6 +58,7 @@ Model xmiNode2Model(node n) {
   
   map[str, DataType] typeMap = ();
   map[str, Relation] relMap = ();
+  map[str, Database] dbMap = ();
   
   
   DataType ensureEntity(str path) {
@@ -65,6 +66,13 @@ Model xmiNode2Model(node n) {
       typeMap[path] = DataType(realm.new(#Entity, Entity("", [], [], [])));
     }
     return typeMap[path];
+  }
+  
+  Database ensureDatabase(str path) {
+    if (path notin dbMap) {
+      dbMap[path] = NamedElement(realm.new(#Database, Database("")));
+    }
+    return dbMap[path];
   }
   
   DataType ensurePrimitive(str path) {
@@ -89,7 +97,6 @@ Model xmiNode2Model(node n) {
   }
   
   
-  
   Relation ensureRel(str path) {
     if (path notin relMap) {
       relMap[path] = realm.new(#Relation, Relation("", zero_one()));
@@ -99,7 +106,11 @@ Model xmiNode2Model(node n) {
   
   if ("Model"(list[node] kids) := n) {
 
+	int dbPos = 0;
+	
     for (xdb:"databases"(list[node] xelts) <- kids) {
+      dbPath = "//@dataTypes.<dbPos>";
+    	
       switch (get(xdb, "type")) {
         case "typhonml:RelationalDB": {
           tbls = [];
@@ -128,30 +139,9 @@ Model xmiNode2Model(node n) {
         default:
           throw "Non implemented database type: <xdb.\type>";
       }
-      
+      dbPos += 1;
     }
     
-    for (xcho:"changeOperators"(list[node] xelts) <- kids) {
-      switch (get(xcho, "type")) {
-        case "typhonml:RemoveEntity": {
-        	e = get(xcho, "entityToRemove");
-        	toRemove = referTo(#Entity, ensureEntity(e).entity);
-        	re = realm.new(#RemoveEntity, RemoveEntity(toRemove));
-          	chos += [ ChangeOperator(re)];
-        } // ChangeOperator(RemoveEntity \removeEntity, lang::ecore::Refs::Ref[Entity] \entityToRemove = \removeEntity.\entityToRemove, lang::ecore::Refs::Id uid = \removeEntity.uid, bool _inject = true) ];
-        
-         case "typhonml:RenameEntity": {
-        	e = get(xcho, "entityToRename");
-        	newName = get(xcho, "newEntityName");
-        	toRename = referTo(#Entity, ensureEntity(e).entity);
-        	re = realm.new(#RenameEntity, RenameEntity(\entityToRename = toRename, \newEntityName = newName));
-          	chos += [ ChangeOperator(re)];
-        }
-        default:
-          throw "Non implemented change operator: <get(xcho, "type")>";
-      }
-      
-    }
     
     int dtPos = 0;
     for (xdt:"dataTypes"(list[node] xelts) <- kids) {
@@ -227,6 +217,51 @@ Model xmiNode2Model(node n) {
        }
        
        dtPos += 1;
+    }
+    
+    
+    for (xcho:"changeOperators"(list[node] xelts) <- kids) {
+      switch (get(xcho, "type")) {
+      
+      	case "typhonml:AddEntity":{
+      		// TODO
+      		name = get(xcho, "name");
+      		re = realm.new(#RenameEntity, RenameEntity(\name = name, \attributes = [], \fretextAttributes = [], \relations = []));
+      		chos += [ ChangeOperator(re)];
+      	}
+      	
+        case "typhonml:RemoveEntity": {
+        	e = get(xcho, "entityToRemove");
+        	toRemove = referTo(#Entity, ensureEntity(e).entity);
+        	re = realm.new(#RemoveEntity, RemoveEntity(toRemove));
+          	chos += [ ChangeOperator(re)];
+        } // ChangeOperator(RemoveEntity \removeEntity, lang::ecore::Refs::Ref[Entity] \entityToRemove = \removeEntity.\entityToRemove, lang::ecore::Refs::Id uid = \removeEntity.uid, bool _inject = true) ];
+        
+         case "typhonml:RenameEntity": {
+        	e = get(xcho, "entityToRename");
+        	newName = get(xcho, "newEntityName");
+        	toRename = referTo(#Entity, ensureEntity(e).entity);
+        	re = realm.new(#RenameEntity, RenameEntity(\entityToRename = toRename, \newEntityName = newName));
+          	chos += [ ChangeOperator(re)];
+        }
+         case "typhonml:MigrateEntity": {
+         	// TODO
+         	e = get(xcho, "entity");
+         	db = get(xcho, "newDatabase");
+         	
+         	println(ensureEntity(e));
+         	ent = referTo(#Entity, ensureEntity(e).entity);
+         	new_db = referTo(#Database, ensureDatabase(db).database);
+         	
+         	println(ent);
+         	println(new_db);
+         	println(dbs);
+         	re = realm.new(#MigrateEntity, MigrateEntity(\entity = ent, \newDatabase = new_db));
+         }
+        default:
+          throw "Non implemented change operator: <get(xcho, "type")>";
+      }
+      
     }
     
     return  realm.new(#Model, Model(dbs, dts, chos));
