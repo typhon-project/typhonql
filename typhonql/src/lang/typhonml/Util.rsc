@@ -105,12 +105,16 @@ ChangeOps model2changeOperators(Model m) {
 
 Attrs model2attrs(Model m) {
   Attrs result = {};
-  for (DataType(Entity(str from, list[Attribute] attrs, _, _)) <- m.dataTypes) {
+  for (DataType(Entity(str from, list[Attribute] attrs, list[FreeText] \fretextAttributes, _)) <- m.dataTypes) {
     for (Attribute a <- attrs) {
       DataType dt = lookup(m, #DataType, a.\type);
       assert (DataType(PrimitiveDataType(_)) := dt || DataType(CustomDataType(_,_)) := dt) :
       	 "Only built-in and custom primitives allowed for attributes (for now).";
       result += {<from, a.name, dt.name>};
+    }
+    for (FreeText ft <- freTextAttributes) {
+      // for now we represent the freetext type as a string as well.
+      result += {<from, ft.name, "freetext[<intercalate(",", [ getName(t.\type) | NlpTask t <- ft.tasks ])>]">};
     }
   }
   return result;

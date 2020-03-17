@@ -187,6 +187,15 @@ Model xmiNode2Model(node n) {
              attr.\type = referTo(#DataType, ensurePrimitive(aPath));
              attrs += [attr]; 
            }  
+           
+           freeTexts = [];
+           for (xfre:"fretextAttributes"(list[node] taskElts) <- xelts) {
+             myft = realm.new(#FreeText, FreeText(get(xfre, "name"), []));
+             myft.tasks = [ realm.new(#NlpTask, NlpTask(make(#NlpTaskType, get(x, "type"), []))) 
+               | x:"tasks"(_) <- taskElts ];
+             freeTexts += [myft]; 
+           }
+           
          
            rels = [];
            relPos = 0;
@@ -215,11 +224,12 @@ Model xmiNode2Model(node n) {
              rels += [myrel];
              relPos += 1;
            }
+           
 
            entity = ensureEntity(dtPath).entity;
            entity.name = get(xdt, "name");
            entity.attributes = attrs;
-           entity.fretextAttributes = []; // todo;
+           entity.fretextAttributes = freeTexts; ;
            entity.relations = rels;
            dt = DataType(entity);              
            dts += [dt];
