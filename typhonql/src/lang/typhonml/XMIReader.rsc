@@ -14,7 +14,7 @@ import util::ValueUI;
 
 
 void smokeTest() {
-  str xmi = readFile(|project://typhonql/src/test/addEntityChangeOperator.xmi|);
+  str xmi = readFile(|project://typhonql/src/test/addRelationChangeOperator.xmi|);
   Model m = xmiString2Model(xmi);
   iprintln(m);
   iprintln(model2schema(m));
@@ -67,13 +67,14 @@ Model xmiNode2Model(node n) {
     }
     return typeMap[path];
   }
-  
+  /*
   Database ensureDatabase(str path) {
     if (path notin dbMap) {
       dbMap[path] = NamedElement(realm.new(#Database, Database("")));
     }
     return dbMap[path];
   }
+  */
   
   DataType ensurePrimitive(str path) {
     if (path notin typeMap) {
@@ -200,8 +201,7 @@ Model xmiNode2Model(node n) {
              if ("isContainment" in getKeywordParameters(xrel)) {
                myrel.isContainment = get(xrel, "isContainment") == "true";
              } 
-             
-             
+           
              rels += [myrel];
              relPos += 1;
            }
@@ -219,14 +219,79 @@ Model xmiNode2Model(node n) {
        dtPos += 1;
     }
     
-    
+    int chOpPos = 0;
     for (xcho:"changeOperators"(list[node] xelts) <- kids) {
-      switch (get(xcho, "type")) {
+      dtPath = "//@changeOperators.<chOpPos>";
       
+      println(getKeywordParameters(xcho));
+      
+      switch (get(xcho, "type")) {
+      	
       	case "typhonml:AddEntity":{
-      		// TODO
+      		
+      		attrs = [];
+           	for (xattr:"attributes"(_) <- xcho) {
+             	attr = realm.new(#Attribute, Attribute(get(xattr, "name")));
+             	aPath = get(xattr, "type");
+             	attr.\type = referTo(#DataType, ensurePrimitive(aPath));
+             	attrs += [attr]; 
+           	}  
+           	
+           	
+           	rels = [];
+           	relPos = 0;
+          	for (xrel:"relations"(_) <- xcho) {
+             	relPath = "<dtPath>/@relations.<relPos>";
+             	myrel = ensureRel(relPath);
+             	myrel.name = get(xrel, "name");
+             	if (has(xrel, "cardinality"))
+             		myrel.cardinality = make(#Cardinality, get(xrel, "cardinality"), []);
+             	else
+             		myrel.cardinality =  make(#Cardinality, "zero_one", []);
+             
+             	ePath = get(xrel, "type");
+             	myrel.\type = referTo(#Entity, ensureEntity(ePath).entity);
+             
+             	if ("opposite" in getKeywordParameters(xrel)) {
+               		oppPath = get(xrel, "opposite");
+               		myrel.opposite = referTo(#Relation, ensureRel(oppPath));
+             	}
+             
+             	if ("isContainment" in getKeywordParameters(xrel)) {
+               		myrel.isContainment = get(xrel, "isContainment") == "true";
+             	} 
+           
+             	rels += [myrel];
+             	relPos += 1;
+           	}
+           	
+           	name = get(xcho, "name");
+      		re = realm.new(#AddEntity, AddEntity(name, attrs, [], rels));
+      		chos += [ ChangeOperator(re)];
+           	
+           	entity = ensureEntity(dtPath).entity;
+           	entity.name = name;
+           	entity.attributes = attrs;
+           	entity.fretextAttributes = []; // todo;
+           	entity.relations = rels;
+           	dt = DataType(entity);   
+           	
+      		dts += [dt];
+      	}
+      	
+      	case "typhonml:AddRelation":{
+      	
+      		entity = ensureEntity(get(xcho, "ownerEntity")).entity;
+      		
+      		if (has(xrel, "cardinality"))
+             	cardinality = make(#Cardinality, get(xcho, "cardinality"), []);
+            else
+             	cardinality =  make(#Cardinality, "zero_one", []);
+      		
+      		containement = get(xrel, "isContainment") == "true";
       		name = get(xcho, "name");
-      		re = realm.new(#RenameEntity, RenameEntity(\name = name, \attributes = [], \fretextAttributes = [], \relations = []));
+      		
+      		re = realm.new(#AddRelation, AddRelation(name, cardinality, entity, \isContainment=containement));
       		chos += [ ChangeOperator(re)];
       	}
       	
@@ -239,28 +304,17 @@ Model xmiNode2Model(node n) {
         
          case "typhonml:RenameEntity": {
         	e = get(xcho, "entityToRename");
+        	
         	newName = get(xcho, "newEntityName");
         	toRename = referTo(#Entity, ensureEntity(e).entity);
         	re = realm.new(#RenameEntity, RenameEntity(\entityToRename = toRename, \newEntityName = newName));
           	chos += [ ChangeOperator(re)];
         }
-         case "typhonml:MigrateEntity": {
-         	// TODO
-         	e = get(xcho, "entity");
-         	db = get(xcho, "newDatabase");
-         	
-         	println(ensureEntity(e));
-         	ent = referTo(#Entity, ensureEntity(e).entity);
-         	new_db = referTo(#Database, ensureDatabase(db).database);
-         	
-         	println(ent);
-         	println(new_db);
-         	println(dbs);
-         	re = realm.new(#MigrateEntity, MigrateEntity(\entity = ent, \newDatabase = new_db));
-         }
         default:
           throw "Non implemented change operator: <get(xcho, "type")>";
       }
+      
+      chOpPos += 1;
       
     }
     
