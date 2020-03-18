@@ -6,17 +6,20 @@ import java.io.Writer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -24,10 +27,11 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+
 import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
+import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 import nl.cwi.swat.typhonql.workingset.JsonSerializableResult;
-import nl.cwi.swat.typhonql.workingset.WorkingSet;
 
 public class QLRestServer {
 	private static final Logger logger = LogManager.getLogger(QLRestServer.class);
@@ -63,6 +67,7 @@ public class QLRestServer {
         context.setMaxFormContentSize(100*1024*1024); // 100MB should be max for parameters
         context.addServlet(jsonGetHandler(r -> handleQuery(engine, r)), "/query");
         context.addServlet(jsonPostHandler(r -> handleCommand(engine, r)), "/update");
+        context.addServlet(jsonPostHandler(r -> handleDDLCommand(engine, r)), "/ddl");
         context.addServlet(jsonPostHandler(r -> handlePreparedCommand(engine, r)), "/preparedUpdate");
         context.addServlet(jsonPostHandler(r -> handleInitialize(engine, r)), "/initialize");
         context.addServlet(jsonPostHandler(r -> handleReset(engine, r)), "/reset");
@@ -76,11 +81,25 @@ public class QLRestServer {
 	
 
 
+	private static JsonSerializableResult handleDDLCommand(QueryEngine engine, HttpServletRequest r) throws IOException {
+		CommandArgs args;
+		try {
+			args = CommandArgs.fromJSON(r.getReader());
+		} catch (IOException e) {
+			throw new IOException("Failure to parse args", e);
+		}
+		logger.trace("Running DDL command: {}", args);
+        return engine.executeDDL(args.command);
+	}
+
+
+
+
 	private static JsonSerializableResult handleReset(QueryEngine engine, HttpServletRequest r) throws IOException {
 		return engine.resetDatabase();
 	}
 
-	private static WorkingSet handleQuery(QueryEngine engine, HttpServletRequest r) throws IOException {
+	private static ResultTable handleQuery(QueryEngine engine, HttpServletRequest r) throws IOException {
 		String query = r.getParameter("q");
 		if (query == null || query.isEmpty()) {
 			throw new IOException("Missing q parameter");

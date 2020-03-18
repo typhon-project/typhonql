@@ -18,9 +18,9 @@ public class MongoQueryExecutor extends QueryExecutor {
 	private String collectionName;
 	private String query;
 
-	public MongoQueryExecutor(ResultStore store, String collectionName, String query,
+	public MongoQueryExecutor(ResultStore store, Map<String, String> uuids, String collectionName, String query,
 			Map<String, Binding> bindings, String connectionString, String dbName) {
-		super(store, query, bindings);
+		super(store, uuids, bindings);
 		this.dbName = dbName;
 		this.connectionString = connectionString;
 		this.collectionName = collectionName;

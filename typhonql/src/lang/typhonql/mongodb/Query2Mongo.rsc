@@ -33,40 +33,8 @@ tuple[map[str, CollMethod], Bindings] compile2mongo(r:(Request)`<Query q>`, Sche
   = select2mongo(r, s, p);
 
 
-@doc{Find the (unique [we assume]) path to `entity` by following ownership links down from roots}
-tuple[str, list[str]] localPathToEntity(str entity, Schema s, Place p) {
-  
-  list[str] pathTo(str from, str to) {
-    if (<from, _, str fromRole, _, _, to, true> <- s.rels) {
-      return [fromRole];
-    }
-    for (<str from2, _, str fromRole, _, _, to, true> <- s.rels, <p, from2> <- s.placement) {
-      if (list[str] sub := pathTo(from, from2), sub != []) {
-        return sub + [fromRole];
-      }  
-    }
-    return [];
-  }
-  
-  for (str e <- localRoots(s, p)) {
-    if (list[str] path := pathTo(e, entity), path != []) {
-      return <e, path>;
-    } 
-  }
-  
-  return <entity, []>;
-  
-}
-
-set[str] localRoots(Schema s, Place p) 
-  = { e | str e <- entities(s), <p, e> <- s.placement,  !ownedLocally(e, s, p) };
-  
-bool ownedLocally(str entity, Schema s, Place p) 
-  = any(<str from, _, _, _, _, entity, true> <- s.rels, <p, from> <- s.placement);
-
-
 alias Ctx = tuple[
-    void(str,Field) addParam,
+    void(str,Param) addParam,
     Schema schema,
     Env env,
     set[str] dyns,
@@ -142,7 +110,7 @@ tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}
   }
   
   Bindings params = (); 
-  void addParam(str x, Field field) {
+  void addParam(str x, Param field) {
     params[x] = field;
   }
   
@@ -180,8 +148,10 @@ tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}
         recordProjections(x);
 
       default: {
-        <ent, prop> = expr2pattern(e, ctx);
-        addConstraint(ent, prop);   
+        if ((Expr)`true` !:= e) {
+          <ent, prop> = expr2pattern(e, ctx);
+          addConstraint(ent, prop);
+        }   
       }
     }
       
@@ -311,7 +281,7 @@ tuple[str ent, str path, Expr other] split(Expr lhs, Expr rhs, Ctx ctx) {
 DBObject expr2obj(e:(Expr)`<VId x>.<{Id "."}+ fs>`, Ctx ctx) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_<fs>_<ctx.vars()>";
-    ctx.addParam(token, <p.name, "<x>", ctx.env["<x>"], "<fs>">);
+    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "<fs>"));
     return placeholder(name=token);
   }
   throw "Only dynamic parameters can be used as expressions in query docs, not <e>";
@@ -323,13 +293,11 @@ DBObject expr2obj(e:(Expr)`<VId x>`, Ctx ctx)
 DBObject expr2obj(e:(Expr)`<VId x>.@id`, Ctx ctx) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_@id_<ctx.vars()>";
-    ctx.addParam(token, <p.name, "<x>", ctx.env["<x>"], "@id">);
+    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "@id"));
     return placeholder(name=token);
   }
   throw "Only dynamic parameters can be used as expressions in query docs, not <e>";
 }
-
-
 
 DBObject expr2obj((Expr)`?`, Ctx _) = placeholder();
 

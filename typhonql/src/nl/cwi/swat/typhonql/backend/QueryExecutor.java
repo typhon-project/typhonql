@@ -9,10 +9,12 @@ public abstract class QueryExecutor {
 	
 	private ResultStore store;
 	private Map<String, Binding> bindings;
+	private Map<String, String> uuids;
 
-	public QueryExecutor(ResultStore store, String query, Map<String, Binding> bindings) {
+	public QueryExecutor(ResultStore store, Map<String, String> uuids, Map<String, Binding> bindings) {
 		this.store = store;
 		this.bindings = bindings;
+		this.uuids = uuids;
 	}
 	
 	public ResultIterator executeSelect() {
@@ -26,18 +28,27 @@ public abstract class QueryExecutor {
 			return performSelect(values); 
 		}
 		else {
-			List<ResultIterator> lst = new ArrayList<>();
 			String var = bindings.keySet().iterator().next();
 			Binding binding = bindings.get(var);
-			ResultIterator results =  store.getResults(binding.getReference());
-			results.beforeFirst();
-			while (results.hasNextResult()) {
-				results.nextResult();
-				String value = (binding.getAttribute().equals("@id"))? serialize(results.getCurrentId(binding.getLabel(), binding.getType())) : serialize(results.getCurrentField(binding.getLabel(), binding.getType(), binding.getAttribute()));
-				values.put(var, value);
-				lst.add(executeSelect(values));
+			if (binding instanceof Field) {
+				List<ResultIterator> lst = new ArrayList<>();
+				Field field = (Field) binding;
+				ResultIterator results =  store.getResults(field.getReference());
+				results.beforeFirst();
+				while (results.hasNextResult()) {
+					results.nextResult();
+					String value = (field.getAttribute().equals("@id"))? serialize(results.getCurrentId(field.getLabel(), field.getType())) : serialize(results.getCurrentField(field.getLabel(), field.getType(), field.getAttribute()));
+					values.put(var, value);
+					lst.add(executeSelect(values));
+				}
+				return new AggregatedResultIterator(lst);
 			}
-			return new AggregatedResultIterator(lst);
+			else {
+				GeneratedIdentifier id = (GeneratedIdentifier) binding;
+				values.put(id.getName(), uuids.get(id.getName()));
+				return executeSelect(values);
+			}
+			
 		}
 	}
 

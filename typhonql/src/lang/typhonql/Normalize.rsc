@@ -49,6 +49,9 @@ void smokeNormalize() {
   println(expandNavigation(q, s));
 }
 
+Request elicitBindings(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
+
+}
 
 Request expandNavigation(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
   Env env = queryEnv(bs);
@@ -66,8 +69,18 @@ Request expandNavigation(req:(Request)`from <{Binding ","}+ bs> select <{Result 
   list[Result] newResults = [];
   list[Expr] newWheres = [];
   
-  while (true) {
+  rel[str entity, str role] done = {};
   
+  bool change = true;
+  
+  bool doChange() {
+    change = true;
+    return true;
+  }
+  
+  while (change) {
+    change = false;
+    
     // NB: a rel, so same prefix, will be once in the set, and get the same binding/newvar
     rel[str,str] varRoles = { <"<x>", "<f>"> | /(Expr)`<VId x>.<Id f>.<{Id "."}+ fs>` := req };
     
@@ -77,7 +90,10 @@ Request expandNavigation(req:(Request)`from <{Binding ","}+ bs> select <{Result 
     }
     
     // iterate over var-role pairs, and find the target entity for each one of them
-    for (<str var, str role> <- varRoles, str entity := env[var], <entity, _, role, _, _, str target, _> <- s.rels) {
+    for (<str var, str role> <- varRoles, str entity := env[var], <entity, _, role, _, _, str target, _> <- s.rels
+          , <entity, role> notin done) {
+      println("DOING: <entity> and <role>");
+      done += {<entity, role>};
       str y = newVar(target);
       env[y] = target;
       newBindings += [ [Binding]"<target> <y>" ];
@@ -87,7 +103,7 @@ Request expandNavigation(req:(Request)`from <{Binding ","}+ bs> select <{Result 
       req = visit (req) {
         case e:(Expr)`<VId x>.<Id f>.<{Id "."}+ fs>` => (Expr)`<VId vid>.<{Id "."}+ fs>`
           when
-             "<x>" == var, "<f>" == role
+             "<x>" == var, "<f>" == role, doChange()
       }
     }
   }

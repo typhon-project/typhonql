@@ -22,9 +22,9 @@ str pp(create(str t, list[Column] cs, list[TableConstraint] cos))
     '  <intercalate(",\n", [ pp(c) | Column c <- cs ] + [ pp(c) | TableConstraint c <- cos ])>
     ');";
 
-str pp(\insert(str t, list[str] cs, list[Value] vs))
+str pp(\insert(str t, list[str] cs, list[SQLExpr] vs))
   = "insert into <q(t)> (<intercalate(", ", [ q(c) | str c <- cs ])>) 
-    'values (<intercalate(", ", [ pp(v) | Value v <- vs ])>);";
+    'values (<intercalate(", ", [ pp(v) | SQLExpr v <- vs ])>);";
   
 
 str pp(update(str t, list[Set] ss, list[Clause] cs))
@@ -34,6 +34,11 @@ str pp(update(str t, list[Set] ss, list[Clause] cs))
 str pp(delete(str t, list[Clause] cs))
   = "delete from <q(t)> 
     '<intercalate("\n", [ pp(c) | Clause c <- cs ])>;";
+
+str pp(deleteJoining(list[str] tables, list[Clause] clauses)) 
+  = "delete <intercalate(", ", [ q(t) | str t <- tables ])> 
+    'from <intercalate(" inner join ", [ q(t) | str t <- tables ])>
+    '<intercalate("\n", [ pp(c) | Clause c <- cs ])>";
 
 str pp(select(list[SQLExpr] es, list[As] as, list[Clause] cs))
   = "select <intercalate(", ", [ pp(e) | SQLExpr e <- es ])> 
@@ -75,6 +80,9 @@ str pp(renameColumn(column(str name, ColumnType \type, list[ColumnConstraint] _)
 
 str pp(as(str t, str x)) = "<q(t)> as <q(x)>";
 
+str pp(leftOuterJoin(As left, As right, SQLExpr on))
+  = "<pp(left)> left outer join <pp(right)> on <pp(on)>";
+
 // Set
 
 str pp(\set(str c, SQLExpr e)) = "<q(c)> = <pp(e)>";
@@ -85,7 +93,7 @@ str pp(\set(str c, SQLExpr e)) = "<q(c)> = <pp(e)>";
 str pp(column(str table, str name)) = "<q(table)>.<q(name)>";
 str pp(named(SQLExpr e, str as)) = "<pp(e)> as <q(as)>";
 str pp(lit(Value val)) = pp(val);
-str pp(placeholder(name = str name)) =  name == "" ? "?" : ":<name>";
+str pp(placeholder(name = str name)) =  name == "" ? "?" : "${<name>}";
 str pp(not(SQLExpr arg)) = "not (<pp(arg)>)";
 str pp(neg(SQLExpr arg)) = "-(<pp(arg)>)"; 
 str pp(pos(SQLExpr arg)) = "+(<pp(arg)>)";
@@ -102,11 +110,15 @@ str pp(gt(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) \> (<pp(rhs)>)";
 str pp(like(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) like (<pp(rhs)>)"; 
 str pp(or(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) or (<pp(rhs)>)"; 
 str pp(and(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) and (<pp(rhs)>)";
+str pp(notIn(SQLExpr arg, list[Value] vals)) 
+  = "(<pp(arg)>) not in (<intercalate(", ", [ pp(v) | Value v <- vals])>)";
+str pp(\in(SQLExpr arg, list[Value] vals)) 
+  = "(<pp(arg)>) in (<intercalate(", ", [ pp(v) | Value v <- vals])>)";
 
 
 // Clause
 
-str pp(where(list[SQLExpr] es)) = "where <intercalate(", ", [ pp(e) | SQLExpr e <- es ])>"; 
+str pp(where(list[SQLExpr] es)) = "where <intercalate(" and ", [ pp(e) | SQLExpr e <- es ])>"; 
 
 str pp(groupBy(list[SQLExpr] es)) = "group by <intercalate(", ", [ pp(e) | SQLExpr e <- es ])>"; 
 
@@ -142,6 +154,8 @@ str pp(boolean(bool b)) = "<b>";
 str pp(dateTime(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
 
 str pp(null()) = "null";
+
+str pp(Value::placeholder(name = str name)) = "${<name>}";
 
 // TableConstraint
 

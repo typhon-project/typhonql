@@ -1,6 +1,5 @@
 package engineering.swat.typhonql.client.test;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -15,7 +14,7 @@ import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.PolystoreConnection;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
-import nl.cwi.swat.typhonql.workingset.WorkingSet;
+import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
 
 public class XMIBasedTyphonQLClientTest {
@@ -32,7 +31,7 @@ public class XMIBasedTyphonQLClientTest {
 		}
 		*/
 			
-		String fileName = "file:///Users/pablo/git/typhonql/typhonql/src/lang/typhonml/customdatatypes.xmi";
+		String fileName = "file:///Users/pablo/git/typhonql/typhonql/src/lang/typhonml/user-review-product-bio.tmlx";
 		
 		String xmiString = String.join("\n", Files.readAllLines(Paths.get(new URI(fileName))));
 
@@ -40,39 +39,16 @@ public class XMIBasedTyphonQLClientTest {
 		
 		conn.resetDatabases();
 		
-		CommandResult cr = conn.executeUpdate("insert \n" + 
-				"	@pablo User { name: \"Pablo\", reviews: badradio },\n" + 
-				"	@radio Product {name: \"Radio\", description: \"Wireless\", reviews: badradio },\n" + 
-				"	@badradio Review { contents: \"Bad radio\",product: radio,user: pablo}");
-		
-		for (String objLabel : cr.getCreatedUuids().keySet()) {
-			System.out.println(objLabel + " -> " + cr.getCreatedUuids().get(objLabel));
-		}
-		
+		CommandResult cr = conn.executeUpdate(
+				"insert Review { contents: \"Average phone\" }");
 		System.out.println("COMMAND RESULT");
 		WorkingSetJSON.toJSON(cr, System.out);
 		System.out.println("END COMMAND RESULT");
 		
 		
-		//WorkingSet iv = conn.executeQuery("from Product p select p");
-		WorkingSet iv = conn.executeQuery("from Product p select p");
-		System.out.println("JSON");
-		WorkingSetJSON.toJSON(iv, System.out);
-		System.out.println("END JSON");
+		ResultTable iv = conn.executeQuery("from Review r select r.contents");
+		System.out.println("RESULT TABLE");
+		iv.print();
 		
-		//System.out.println("JSON Schema");
-		//System.out.println(WorkingSetJSON.getSchema());
-		//System.out.println("END JSON Schema");
-		
-		String json = "{\"Product\":[{\"uuid\":\"48c5bfe5-04ab-4a62-9106-90d21007ee29\",\"fields\":{\"name\":\"Radio\",\"description\":\"Wireless\"},\"type\":\"Product\"}]}";
-		
-		WorkingSet ws = WorkingSetJSON.fromJSON(new ByteArrayInputStream(json.getBytes()));
-		
-		System.out.println("Parsed WS");
-		System.out.println(ws);
-		System.out.println("END parsed WS");
-		
-		
-
 	}
 }

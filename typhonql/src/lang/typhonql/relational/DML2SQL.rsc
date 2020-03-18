@@ -107,8 +107,10 @@ list[SQLStat] insert2sql((Request)`insert <{Obj ","}* objs>`, Place p, Schema sc
   
   list[Value] aVals({KeyVal ","}* kvs, str entity) 
     = [ *evalKeyVal(kv) | KeyVal kv <- kvs, isAttr(kv, entity, schema) ];
+    
+  list[SQLExpr] aExprs(list[Value] vals) = [ lit(v) | v <- vals];
 
-  result = [ \insert(tableName("<e>"), aCols(kvs, "<e>"), aVals(kvs, "<e>")) | (Obj)`<EId e> {<{KeyVal ","}* kvs>}` <- objs ]; 
+  result = [ \insert(tableName("<e>"), aCols(kvs, "<e>"), aExprs(aVals(kvs, "<e>"))) | (Obj)`<EId e> {<{KeyVal ","}* kvs>}` <- objs ]; 
   
   
   Place placeOf(str entity) = p

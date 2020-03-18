@@ -3,9 +3,10 @@ module lang::typhonql::relational::SQL
 
 data SQLStat
   = create(str table, list[Column] cols, list[TableConstraint] constraints)
-  | \insert(str table, list[str] colNames, list[Value] values)
+  | \insert(str table, list[str] colNames, list[SQLExpr] values)
   | update(str table, list[Set] sets, list[Clause] clauses)
   | delete(str table, list[Clause] clauses)
+  | deleteJoining(list[str] joinTables, list[Clause] clauses)
   | select(list[SQLExpr] exprs, list[As] tables, list[Clause] clauses)
   | alterTable(str table, list[Alter] alters)
   | dropTable(list[str] tableNames, bool ifExists, list[DropOption] options)
@@ -51,11 +52,15 @@ data SQLExpr
   | like(SQLExpr lhs, SQLExpr rhs) 
   | or(SQLExpr lhs, SQLExpr rhs) 
   | and(SQLExpr lhs, SQLExpr rhs) 
+  | notIn(SQLExpr arg, list[Value] vals)
+  | \in(SQLExpr arg, list[Value] vals)
   ;
 
 
 data As
-  = as(str table, str name);
+  = as(str table, str name)
+  | leftOuterJoin(As left, As right, SQLExpr on)
+  ;
 
 data Clause
   = where(list[SQLExpr] exprs)
@@ -108,6 +113,7 @@ data Value
   | integer(int intVal)
   | boolean(bool boolVal)
   | dateTime(datetime dateTimeVal)
+  | placeholder(str name="")
   | null()
   ;
 

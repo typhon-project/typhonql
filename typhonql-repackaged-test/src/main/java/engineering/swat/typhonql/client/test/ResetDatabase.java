@@ -23,7 +23,7 @@ public class ResetDatabase {
 				new DatabaseInfo("localhost", 3306, "Inventory", DBType.relationaldb, new MariaDB().getName(),
 						"root", "example") };
 		
-		String fileName = "file:///Users/pablo/git/typhonql/typhonql/src/lang/typhonml/customdatatypes.xmi";
+		String fileName = "file:///Users/pablo/git/typhonql/typhonql/src/lang/typhonml/user-review-product-bio.tmlx";
 		
 		String xmiString = String.join("\n", Files.readAllLines(Paths.get(new URI(fileName))));
 
@@ -31,10 +31,6 @@ public class ResetDatabase {
 		
 		conn.resetDatabases();
 		
-		conn.executeUpdate("insert \n" + 
-				"	@pablo User { name: \"Pablo\", reviews: badradio },\n" + 
-				"	@radio Product {name: \"Radio\", description: \"Wireless\", reviews: badradio },\n" + 
-				"	@badradio Review { contents: \"Bad radio\",product: radio,user: pablo}");
 	}
 	
 }

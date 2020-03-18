@@ -3,11 +3,12 @@ package engineering.swat.typhonql.server;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+
 import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
+import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 import nl.cwi.swat.typhonql.workingset.JsonSerializableResult;
-import nl.cwi.swat.typhonql.workingset.WorkingSet;
 
 public class QueryEngine {
 	
@@ -25,12 +26,17 @@ public class QueryEngine {
 		return currentBackend;
 	}
 
-	public WorkingSet executeQuery(String query) throws IOException {
+	public ResultTable executeQuery(String query) throws IOException {
 		return getBackend().executeQuery(query);
 	}
 
 	public CommandResult executeCommand(String cmd) throws IOException {
 		return getBackend().executeUpdate(cmd);
+	}
+	
+	public JsonSerializableResult executeDDL(String cmd) throws IOException {
+		getBackend().executeDDLUpdate(cmd);
+		return RESULT_OK;
 	}
 
 	public JsonSerializableResult initialize(String xmi, List<DatabaseInfo> databaseInfo) throws IOException {

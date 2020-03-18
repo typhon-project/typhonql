@@ -10,6 +10,7 @@ import lang::typhonql::Partition;
 import lang::typhonql::TDBC;
 import lang::typhonql::Eval;
 import lang::typhonql::Closure;
+import lang::typhonql::Session;
 
 import lang::typhonql::util::Log;
 
@@ -74,26 +75,26 @@ Schema toSchema(JavaFriendlySchema sch)
 		 placement := {toSchemaPlacementItem(p) | p <- sch.placement};
 		
 
-value run(str src, str polystoreId, JavaFriendlySchema s, Log log = noLog) {
+value run(str src, JavaFriendlySchema s, map[str, Connection] connections, Log log = noLog) {
 	Request req = [Request]src;
 	Schema sch = toSchema(s);
- 	return run(req, polystoreId, sch, log = noLog);
+ 	return run(req, sch, connections, log = noLog);
 }
 
-value run(str src, str polystoreId, Schema s, Log log = noLog) {
+value run(str src, Schema s, map[str, Connection] connections, Log log = noLog) {
   Request req = [Request]src;
-  return run(req, polystoreId, s, log = log);
+  return run(req, s, connections, log = log);
 }
 
 
-value run(str src, str polystoreId, str xmiString, Log log = noLog) {
+value run(str src, str xmiString, map[str, Connection] connections, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   Request req = [Request]src;
-  return run(req, polystoreId, s, log = log);
+  return run(req, s, connectionslog = log);
 }
 
-lrel[int, map[str, str]] runPrepared(str src, str polystoreId, list[str] columnNames, list[list[str]] values, str xmiString, Log log = noLog) {
+lrel[int, map[str, str]] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, map[str, Connection] connections, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   lrel[int, map[str, str]] rs = [];
@@ -110,58 +111,58 @@ lrel[int, map[str, str]] runPrepared(str src, str polystoreId, list[str] columnN
   		}
   	};
   	println(req_);
-  	if (<int n, map[str, str] uuids> := run(req_, polystoreId, s, log = log))
+  	if (<int n, map[str, str] uuids> := run(req_, s, connections, log = log))
   		rs += <n, uuids>;
   }
   return rs;
 }
 
-WorkingSet dumpDB(str polystoreId, Schema s) {
+WorkingSet dumpDB(Schema s, map[str, Connection] connections) {
   //WorkingSet ws = ( e : [] | <_, str e> <- s.placement );
   
   WorkingSet ws = ();
   
   for (<Place p, str e> <- s.placement) {
   	println(p);
-    ws += runGetEntities(p, e, polystoreId, s);
+    ws += runGetEntities(p, e, s, connections);
   }
   
   return ws;
 }
 
-void runSchema(str polystoreId, str xmiString, Log log = noLog) {
+void runSchema(str xmiString, map[str, Connection] connections, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
-  runSchema(polystoreId, s, log = log);
+  runSchema(s, connections, log = log);
 }
 
 
-value run(r:(Request)`create <EId eId> at <Id dbName>`, str polystoreId, Schema s, Log log = noLog) {
+value run(r:(Request)`create <EId eId> at <Id dbName>`, Schema s, map[str, Connection] connections, Log log = noLog) {
 	 if (p:<db, name> <- s.placement<0>, name == "<dbName>") {
-	 	runCreateEntity(p, polystoreId, "<eId>", s, log = log);
+	 	runCreateEntity(p, "<eId>", s, connections, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
-value run(r:(Request)`create <EId eId>.<Id attribute> : <Type ty>`, str polystoreId, Schema s, Log log = noLog) {
+value run(r:(Request)`create <EId eId>.<Id attribute> : <Type ty>`, Schema s, map[str, Connection] connections, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
-	 	return runCreateAttribute(p, polystoreId, "<eId>", "<attribute>", "<ty>", s, log = log);
+	 	return runCreateAttribute(p, "<eId>", "<attribute>", "<ty>", s, connections, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
-value run(r:(Request)`create <EId eId>.<Id relation> ( <Id inverse> ) <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, str polystoreId, Schema s, Log log = noLog) {
+value run(r:(Request)`create <EId eId>.<Id relation> ( <Id inverse> ) <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, Schema s, map[str, Connection] connections, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
-	 	return runCreateRelation(p, polystoreId, "<eId>", "<relation>", "<targetId>", toCardinality("<lower>", "<upper>"), (Arrow) `:-\>` := arrow, just("<inverse>"), s, log = log);
+	 	return runCreateRelation(p, "<eId>", "<relation>", "<targetId>", toCardinality("<lower>", "<upper>"), (Arrow) `:-\>` := arrow, just("<inverse>"), s, connections, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
-value run(r:(Request)`create <EId eId>.<Id relation> <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, str polystoreId, Schema s, Log log = noLog) {
+value run(r:(Request)`create <EId eId>.<Id relation> <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, Schema s, map[str, Connection] connections, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
-	 	return runCreateRelation(p, polystoreId, "<eId>", "<relation>", "<targetId>", toCardinality("<lower>", "<upper>"), (Arrow) `:-\>` := arrow, nothing(), s, log = log);
+	 	return runCreateRelation(p, "<eId>", "<relation>", "<targetId>", toCardinality("<lower>", "<upper>"), (Arrow) `:-\>` := arrow, nothing(), s, connections, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
 Cardinality toCardinality(str from, str to) {
@@ -175,63 +176,63 @@ Cardinality toCardinality(str from, str to) {
 }
 
 
-value run(r:(Request)`drop <EId eId>`, str polystoreId, Schema s, Log log = noLog) {
+value run(r:(Request)`drop <EId eId>`, Schema s, map[str, Connection] connections, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
-	 	return runDropEntity(p, polystoreId, "<eId>", s, log = log);
+	 	return runDropEntity(p, "<eId>", s, connections, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
-value run(r:(Request)`drop attribute  <EId eId>.<Id attribute>`, str polystoreId, Schema s, Log log = noLog) {
+value run(r:(Request)`drop attribute  <EId eId>.<Id attribute>`, Schema s, map[str, Connection] connections, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
-	 	return runDropAttribute(p, polystoreId, "<eId>", "<attribute>", s, log = log);
+	 	return runDropAttribute(p, "<eId>", "<attribute>", s, connections, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
-value run(r:(Request)`drop relation  <EId eId>.<Id relation>`, str polystoreId, Schema s, Log log = noLog) {
+value run(r:(Request)`drop relation  <EId eId>.<Id relation>`, Schema s, map[str, Connection] connections, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
 	 	if (<eId, _, relation, str toRole, _, str to, bool containment> <- s.rels) {
-	 		return runDropRelation(p, polystoreId, "<eId>", "<relation>", to, toRole, containment, s, log = log);
+	 		return runDropRelation(p, "<eId>", "<relation>", to, toRole, containment, s, connections, log = log);
 	 	}
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
-value run(r:(Request)`rename attribute  <EId eId>.<Id name> to <Id newName>`, str polystoreId, Schema s, Log log = noLog) {
+value run(r:(Request)`rename attribute  <EId eId>.<Id name> to <Id newName>`, Schema s, map[str, Connection] connections, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
-	 	return runRenameAttribute(p, polystoreId, "<eId>", "<name>", "<newName>", s, log = log);
+	 	return runRenameAttribute(p, "<eId>", "<name>", "<newName>", s, connections, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
-value run(r:(Request)`rename relation <EId eId>.<Id name> to <Id newName>`, str polystoreId, Schema s, Log log = noLog) {
+value run(r:(Request)`rename relation <EId eId>.<Id name> to <Id newName>`, Schema s, map[str, Connection] connections, Log log = noLog) {
 	 if (<p, entity> <- s.placement, entity == "<eId>") {
-	 	return runRenameRelation(p, polystoreId, "<eId>", "<name>", "<newName>", s, log = log);
+	 	return runRenameRelation(p, "<eId>", "<name>", "<newName>", s, connections, log = log);
 	 }
-	 return -1;
+	 return <-1, ()>;
 }
 
 
-void runSchema(str polystoreId, Schema s, Log log = noLog) {
+void runSchema(Schema s, map[str, Connection] connections, Log log = noLog) {
 	for (Place p <- s.placement<0>) {
     	log("[RUN-schema] executing schema for <p>");
-    	runSchema(p, polystoreId, s, log = log);
+    	runSchema(p, s, connections, log = log);
   	}
 }
 
-value run((Request)`delete <EId e> <VId x>`, str polystoreId, Schema s, Log log = noLog) 
-  = run((Request)`delete <EId e> <VId x> where true`, polystoreId, s, log = log);
+value run((Request)`delete <EId e> <VId x>`, Schema s, map[str, Connection] connections, Log log = noLog) 
+  = run((Request)`delete <EId e> <VId x> where true`, s, connections, log = log);
 
 
-value run((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`, str polystoreId, Schema s, Log log = noLog) {
-  if (WorkingSet ws := run((Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ es>`, polystoreId, s, log = log)) {
+value run((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`, Schema s, map[str, Connection] connections, Log log = noLog) {
+  if (WorkingSet ws := run((Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ es>`, s, log = log)) {
     assert size(ws<0>) == 1: "multiple or zero entity types returned from select implied by delete: <ws>";
   
     if (str entity <- ws, <Place p, entity> <- s.placement) {
       list[Entity] entities = ws[entity];
       for (<entity, str uuid, _> <- ws[entity]) {
         log("[RUN-delete] Deleting <entity> with id <uuid> from <p>");
-        runDeleteById(p, polystoreId, entity, uuid);
+        runDeleteById(p, entity, uuid, connections);
       }
     }
   } 
@@ -239,29 +240,29 @@ value run((Request)`delete <EId e> <VId x> where <{Expr ","}+ es>`, str polystor
     throw "Did not get workingset from select evaluation";
   }
   
-  return -1;
+  return <-1, ()>;
   
   // TODO: cross-db containment cascade semantics
 
 }
 
-value run(r:(Request)`insert <{Obj ","}* objs>`, str polystoreId, Schema s, Log log = noLog) {
+value run(r:(Request)`insert <{Obj ","}* objs>`, Schema s, map[str, Connection] connections, Log log = noLog) {
   // NB: partitioning flattens the object list; and back-ends assume this
   tuple[Partitioning, map[str, str]] partAndIds = partitionForInsert(r, s);
   <part, ids> = partAndIds;
   int affected = 0;
   for (<Place p, Request q> <- part) {
-    affected += runInsert(p, q, polystoreId, s);
+    affected += runInsert(p, q, s, connections);
   }
   return <affected, ids>;
 }
 
 
-value run((Request)`update <Binding b> set {<{KeyVal ","}* kvs>}`, str polystoreId, Schema s, Log log = noLog) 
-  = run((Request)`update <Binding b> where true set {<{KeyVal ","}* kvs>}`, polystoreId, s, log = log);
+value run((Request)`update <Binding b> set {<{KeyVal ","}* kvs>}`, Schema s, Log log = noLog) 
+  = run((Request)`update <Binding b> where true set {<{KeyVal ","}* kvs>}`, s, connections, log = log);
 
 
-value run((Request)`update <EId eid> <VId vid> where <{Expr ","}+ es> set {<{KeyVal ","}* kvs>}`, str polystoreId, Schema s, Log log = noLog) {
+value run((Request)`update <EId eid> <VId vid> where <{Expr ","}+ es> set {<{KeyVal ","}* kvs>}`, Schema s, map[str, Connection] connections, Log log = noLog) {
   // we're gonna reject nested objects and lists in updates for now, because we cannot partition in advance:
   // the required inserts would commit to uuids; the inserts however, needs to be done
   // *per* object that will be updated (the result from the select); this means the whole
@@ -272,7 +273,7 @@ value run((Request)`update <EId eid> <VId vid> where <{Expr ","}+ es> set {<{Key
     throw "Nested objects in update statements are unsupported";
   }  
   
-  if (WorkingSet ws := run((Request)`from <EId eid> <VId vid> select <VId vid>.@id where <{Expr ","}+ es>`, polystoreId, s, log = log)) {
+  if (WorkingSet ws := run((Request)`from <EId eid> <VId vid> select <VId vid>.@id where <{Expr ","}+ es>`, s, log = log)) {
     assert size(ws<0>) == 1: "multiple or zero entity types returned from select implied by update";
   
 
@@ -281,27 +282,27 @@ value run((Request)`update <EId eid> <VId vid> where <{Expr ","}+ es> set {<{Key
       list[Entity] entities = ws[entity];
       for (<entity, str uuid, _> <- ws[entity]) {
         log("[RUN-update] Updating <entity> with id <uuid> from <p> with <kvs>");
-        affected += runUpdateById(p, polystoreId, entity, uuid, kvs);
+        affected += runUpdateById(p, entity, uuid, kvs, connections);
       }
     } 
-    return affected;
+    return <affected, ()>;
   }
   else {
     throw "Did not get workingset from select evaluation";
   }
 }
 
-value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, str polystoreId, Schema s, Log log = noLog) 
-  = run((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, polystoreId, s, log = log);
+value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s, map[str, Connection] connections, Log log = noLog) 
+  = run((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, connections, log = log);
   
 
-value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, str polystoreId, Schema s, Log log = noLog) {
+value run(q:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ es>`, Schema s, map[str, Connection] connections, Log log = noLog) {
   rel[Place, str] cl = closure(q, s);
   
   WorkingSet ws = ( e : [] | <_, str e> <- cl );
   
   for (<Place p, str e> <- cl) {
-    ws[e] += runGetEntities(p, e, polystoreId, s)[e];
+    ws[e] += runGetEntities(p, e, s, connections)[e];
   }
   
   lrel[str, str] lenv = [ <"<x>", "<e>">  | (Binding)`<EId e> <VId x>` <- bs ];
@@ -356,7 +357,7 @@ str navigateTo({Id "."}+ xs, str from, Schema s) {
 
 
 
-WorkingSet runPartitionedQueries(Partitioning part, str polystoreId, Schema s, Log log = noLog) 
-  = ( () | it + runQuery(p, q, polystoreId, s, log = log) | <Place p, Request q> <- part );
+WorkingSet runPartitionedQueries(Partitioning part, Schema s, map[str, Connection] connections, Log log = noLog) 
+  = ( () | it + runQuery(p, q, s, log = log) | <Place p, Request q> <- part );
 
 
