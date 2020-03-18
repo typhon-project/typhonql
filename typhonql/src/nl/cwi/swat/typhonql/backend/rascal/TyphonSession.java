@@ -160,15 +160,17 @@ public class TyphonSession implements Operations {
 	}
 
 	private Path toPath(ITuple path) {
-		IList pathLst = (IList) path.get(2);
+		IList pathLst = (IList) path.get(3);
 		Iterator<IValue> vs = pathLst.iterator();
 		List<String> fields = new ArrayList<String>();
 		while (vs.hasNext()) {
 			fields.add(((IString)(vs.next())).getValue());
 		}
-		String label = ((IString) path.get(0)).getValue();
-		String entityType = ((IString) path.get(1)).getValue();
-		return new Path(label,
+		String dbName = ((IString) path.get(0)).getValue();
+		String var = ((IString) path.get(1)).getValue();
+		String entityType = ((IString) path.get(2)).getValue();
+		return new Path(
+			dbName, var,
 			entityType,
 			fields.toArray(new String[0]));
 	}
