@@ -70,7 +70,6 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 	private XMIPolystoreConnection(List<DatabaseInfo> infos) throws IOException {
 				this.connections = buildConnections(infos);
 				ISourceLocation root = URIUtil.correctLocation("project", "typhonql", null);
-				URIResolverRegistry reg = URIResolverRegistry.getInstance();
 				if (!hasRascalMF(root)) {
 					// project not available, switch to lib
 					root = URIUtil.correctLocation("lib", "typhonql", null);
