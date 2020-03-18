@@ -94,6 +94,11 @@ now, we may further assume, that there's only a single step *per
 back-end* (not per back-end *type*, but per back-end). The script is
 ordered. Let's say we have steps S0 to Sn.
 
+We would then need the following flow of control: execute each step on
+its back-end, iterate over the resulting records and propagate them to
+the next round, effectively creating a cartesian product between
+back-end results.
+
 ```
 for (Record r0: Engine_S0.exec(interpolate(S0.query, S0.params, []))) {
   for (Record r1: Engine_S1.exec(interpolate(S1.query, S1.params, [r0])) {
@@ -106,10 +111,13 @@ for (Record r0: Engine_S0.exec(interpolate(S0.query, S0.params, []))) {
 }
 ```
 
+Note how the "product-ized" records/rows are concatenated as we go
+inwards in the nested loops.
+
 The interpolate function substitutes parameters the query string,
 taking values, from the list of currently produced records.
 
-`appendResultRow` should project out the relevant `Entity.Var.Field`
+In the inner most loop, `appendResultRow` should project out the relevant `Entity.Var.Field`
 components from r0 to rn that are required for constructing the final
 result table, the signature of which derives from the "select" clause
 of the original TyphonQL query.
