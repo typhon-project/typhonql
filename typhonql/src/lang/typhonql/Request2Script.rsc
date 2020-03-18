@@ -40,6 +40,30 @@ TODO:
 */
 
 
+list[Path] results2paths({Result ","}+ rs, Env env, Schema s) 
+  = [ exp2path(e, env, s) | (Result)`<Expr e>` <- rs ];
+
+Path exp2path((Expr)`<VId x>`, Env env, Schema s) 
+  = exp2path((Expr)`<VId x>.@id`, env, s);
+
+
+Path exp2path((Expr)`<VId x>.@id`, Env env, Schema s) 
+  = <p.name, "<x>", ent, ["@id"]>
+  when
+    str ent := env["<x>"], 
+    <Place p, ent> <- s.placement;
+
+Path exp2path((Expr)`<VId x>.<{Id "."}+ fs>`, Env env, Schema s)
+  // should this be the final entity, or where the path starts?
+  // doing the last option now...
+  = <path[-1].place.name, "<x>", ent, [strFs[-1]]>
+  when
+    str ent := env["<x>"], 
+    list[str] strFs := [ "<f>" | Id f <- fs ],
+    DBPath path := navigate(ent, strFs, s);
+
+
+
 Script request2script(Request r, Schema s) {
   println("REQ: <r>");
   
@@ -48,7 +72,9 @@ Script request2script(Request r, Schema s) {
   
     case (Request)`<Query q>`: {
       list[Place] order = orderPlaces(r, s);
-      return script([ *compileQuery(restrict(r, p, order, s), p, s) | Place p <- order]); 
+      Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s) | Place p <- order]);
+      scr.steps += [read(results2paths(q.selected, queryEnv(q), s))];
+      return scr;
     }
 
     case (Request)`update <EId e> <VId x> set {<{KeyVal ","}* kvs>}`: {
