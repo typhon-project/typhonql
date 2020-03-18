@@ -34,12 +34,15 @@ public class TyphonSession implements Operations {
 	private final IValueFactory vf;
 	
 	private ResultTable storedResult = null;
+	private ResultStore store = null;
+	private STATE state = STATE.NOT_INITIALIZED;
 	
 	public TyphonSession(IValueFactory vf) {
 		this.vf = vf;
 	}
 
 	public ITuple newSession(IMap connections, IEvaluatorContext ctx) {
+		checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function type ourself
         ModuleEnvironment aliasModule = ctx.getHeap().getModule("lang::typhonql::Session");
         if (aliasModule == null) {
@@ -78,8 +81,9 @@ public class TyphonSession implements Operations {
 				
 		}
 		// construct the session tuple
-		ResultStore store = new ResultStore();
+		store  = new ResultStore();
 		Map<String, String> uuids = new HashMap<>();
+		state = STATE.ACTIVE;
 		return vf.tuple(
 			makeRead(store, readType, ctx),
 			makeReadAndStore(store, readAndStoreType, ctx),
@@ -91,8 +95,14 @@ public class TyphonSession implements Operations {
 	}
 	
 
+	private void checkIsNotInitialized() {
+		if (state != STATE.NOT_INITIALIZED)
+			throw new RuntimeException("Cannot create session, since it has been already initialized");
+	}
+
 	private IValue makeNewId(Map<String, String> uuids, FunctionType newIdType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, newIdType, args -> {
+			checkIsActive("make new id");
 			String idName = ((IString) args[0]).getValue();
 			String uuid = UUID.randomUUID().toString();
 			uuids.put(idName, uuid);
@@ -100,18 +110,23 @@ public class TyphonSession implements Operations {
 		});
 	}
 
+	private void checkIsActive(String oper) {
+		if (state != STATE.ACTIVE)
+			throw new RuntimeException("Operation " + oper + " cannor be executed on a non-active session");
+	}
+
 	private ICallableValue makeClose(ResultStore store, FunctionType closeType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, closeType, args -> {
-			store.clear();
+			checkIsActive("close");
+			close();
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 	
 	private ResultTable computeResultTable(ResultStore store, IValue[] args) {
-		String resultName = ((IString) args[0]).getValue();
 		List<Path> paths = new ArrayList<>();
 		
-		IList pathsList = (IList) args[1];
+		IList pathsList = (IList) args[0];
 		Iterator<IValue> iter = pathsList.iterator();
 		
 		while (iter.hasNext()) {
@@ -121,12 +136,13 @@ public class TyphonSession implements Operations {
 		
 		//List<EntityModel> models = EntityModelReader.fromRascalRelation(types, modelsRel);
 		//WorkingSet ws = store.computeResult(resultName, labels.toArray(new String[0]), models.toArray(new EntityModel[0]));
-		ResultTable rt = store.computeResultTable(resultName, paths);
+		ResultTable rt = store.computeResultTable(paths);
 		return rt;
 	}
 	
 	private ICallableValue makeRead(ResultStore store, FunctionType readType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, readType, args -> {
+			checkIsActive("read");
 			ResultTable rt = computeResultTable(store, args);
 			// alias ResultTable =  tuple[list[str] columnNames, list[list[value]] values];
  			return ResultFactory.makeResult(TF.tupleType(new Type[] { TF.listType(TF.stringType()), TF.listType(TF.listType(TF.valueType()))}, 
@@ -136,6 +152,7 @@ public class TyphonSession implements Operations {
 	
 	private ICallableValue makeReadAndStore(ResultStore store, FunctionType readAndStoreType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, readAndStoreType, args -> {
+			checkIsActive("read");
 			ResultTable rt = computeResultTable(store, args);
 			this.storedResult = rt;
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
@@ -160,6 +177,13 @@ public class TyphonSession implements Operations {
 		return storedResult;
 	}
 	
-	
+	public void close() {
+		state = STATE.CLOSE;
+		storedResult = null;
+		
+	}
+
+	private static enum STATE { NOT_INITIALIZED, ACTIVE, CLOSE }
+
 
 }
