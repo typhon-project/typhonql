@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Consumer;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -26,6 +27,7 @@ import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import io.usethesource.vallang.type.TypeStore;
+import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
@@ -83,14 +85,15 @@ public class TyphonSession implements Operations {
 		// construct the session tuple
 		store  = new ResultStore();
 		Map<String, String> uuids = new HashMap<>();
+		List<Consumer<List<Record>>> script = new ArrayList<>();
 		state = STATE.ACTIVE;
 		return vf.tuple(
-			makeRead(store, readType, ctx),
-			makeReadAndStore(store, readAndStoreType, ctx),
+			makeRead(store, script, readType, ctx),
+			makeReadAndStore(store, script, readAndStoreType, ctx),
             makeClose(store, closeType, ctx),
             makeNewId(uuids, newIdType, ctx),
-            new MariaDBOperations(mariaDbConnections).newSQLOperations(store, uuids, ctx, vf, TF),
-            new MongoOperations(mongoConnections).newMongoOperations(store, uuids, ctx, vf, TF)
+            new MariaDBOperations(mariaDbConnections).newSQLOperations(store, script, uuids, ctx, vf, TF),
+            new MongoOperations(mongoConnections).newMongoOperations(store, script, uuids, ctx, vf, TF)
 		);
 	}
 	
@@ -123,7 +126,7 @@ public class TyphonSession implements Operations {
 		});
 	}
 	
-	private ResultTable computeResultTable(ResultStore store, IValue[] args) {
+	private ResultTable computeResultTable(List<Consumer<List<Record>>> script, IValue[] args) {
 		List<Path> paths = new ArrayList<>();
 		
 		IList pathsList = (IList) args[0];
@@ -136,24 +139,24 @@ public class TyphonSession implements Operations {
 		
 		//List<EntityModel> models = EntityModelReader.fromRascalRelation(types, modelsRel);
 		//WorkingSet ws = store.computeResult(resultName, labels.toArray(new String[0]), models.toArray(new EntityModel[0]));
-		ResultTable rt = store.computeResultTable(paths);
+		ResultTable rt = store.computeResultTable(script, paths);
 		return rt;
 	}
 	
-	private ICallableValue makeRead(ResultStore store, FunctionType readType, IEvaluatorContext ctx) {
+	private ICallableValue makeRead(ResultStore store, List<Consumer<List<Record>>> script, FunctionType readType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, readType, args -> {
 			checkIsActive("read");
-			ResultTable rt = computeResultTable(store, args);
+			ResultTable rt = computeResultTable(script, args);
 			// alias ResultTable =  tuple[list[str] columnNames, list[list[value]] values];
  			return ResultFactory.makeResult(TF.tupleType(new Type[] { TF.listType(TF.stringType()), TF.listType(TF.listType(TF.valueType()))}, 
  					new String[]{ "columnNames", "values"}), rt.toIValue(), ctx);
 		});
 	}
 	
-	private ICallableValue makeReadAndStore(ResultStore store, FunctionType readAndStoreType, IEvaluatorContext ctx) {
+	private ICallableValue makeReadAndStore(ResultStore store, List<Consumer<List<Record>>> script, FunctionType readAndStoreType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, readAndStoreType, args -> {
 			checkIsActive("read");
-			ResultTable rt = computeResultTable(store, args);
+			ResultTable rt = computeResultTable(script, args);
 			this.storedResult = rt;
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
