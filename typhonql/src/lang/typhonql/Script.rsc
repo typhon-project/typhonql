@@ -13,7 +13,7 @@ data Step
   // TyphonQL: from Person p select p.name
   // SQL: select p.name as x1 from Person  p
   // executeQuery("x", "relational", "select p.name from Person as p", ())
-  = step(str result, Call call, Bindings bindings)
+  = step(str result, Call call, Bindings bindings, list[Path] signature = [])
   | read(list[Path] path)
   | newId(str var)
   ;
