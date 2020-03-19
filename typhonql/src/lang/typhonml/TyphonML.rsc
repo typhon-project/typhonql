@@ -645,8 +645,8 @@ data AddRelation
   = AddRelation(str \name
       , Cardinality \cardinality
       , lang::ecore::Refs::Ref[Entity] \ownerEntity
-      , str \importedNamespace = ""
       , bool \isContainment = false
+      , str \importedNamespace = ""
       , lang::ecore::Refs::Ref[Entity] \type = null()
       , lang::ecore::Refs::Ref[Relation] \opposite = null()
       , lang::ecore::Refs::Id uid = noId())
