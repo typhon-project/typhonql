@@ -384,7 +384,7 @@ data RenameCollection
 
 data RenameAttribute
   = RenameAttribute(lang::ecore::Refs::Ref[Attribute] \attributeToRename
-      , str \newName = ""
+      , str \newName
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -397,13 +397,13 @@ data ChangeRelationContainement
 data MergeEntity
   = MergeEntity(lang::ecore::Refs::Ref[Entity] \firstEntityToMerge
       , lang::ecore::Refs::Ref[Entity] \secondEntityToMerge
-      , str \newEntityName = ""
+      , str \newEntityName
       , lang::ecore::Refs::Id uid = noId())
   ;
 
 data ChangeAttributeType
   = ChangeAttributeType(lang::ecore::Refs::Ref[Attribute] \attributeToChange
-      , lang::ecore::Refs::Ref[DataType] \newType = null()
+      , lang::ecore::Refs::Ref[DataType] \newType
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -624,6 +624,7 @@ data RenameRelation
 data Relation
   = Relation(str \name
       , Cardinality \cardinality
+      , lang::ecore::Refs::Ref[Entity] \ownerEntity = null()
       , str \importedNamespace = ""
       , lang::ecore::Refs::Ref[Entity] \type = null()
       , lang::ecore::Refs::Ref[Relation] \opposite = null()
@@ -645,12 +646,13 @@ data AddRelation
   = AddRelation(str \name
       , Cardinality \cardinality
       , lang::ecore::Refs::Ref[Entity] \ownerEntity
-      , bool \isContainment = false
+      , bool \isContainment
+      , lang::ecore::Refs::Ref[Entity] \type
       , str \importedNamespace = ""
-      , lang::ecore::Refs::Ref[Entity] \type = null()
       , lang::ecore::Refs::Ref[Relation] \opposite = null()
       , lang::ecore::Refs::Id uid = noId())
   ;
+  
 
 data Entity
   = Entity(AddEntity \addEntity
@@ -689,14 +691,15 @@ data Attribute
   | Attribute(str \name
       , str \importedNamespace = ""
       , lang::ecore::Refs::Ref[DataType] \type = null()
+      , lang::ecore::Refs::Ref[Entity] \ownerEntity = null()
       , lang::ecore::Refs::Id uid = noId())
   ;
 
 data AddAttribute
   = AddAttribute(str \name
       , lang::ecore::Refs::Ref[Entity] \ownerEntity
+      , lang::ecore::Refs::Ref[DataType] \type
       , str \importedNamespace = ""
-      , lang::ecore::Refs::Ref[DataType] \type = null()
       , lang::ecore::Refs::Id uid = noId())
   ;
 
