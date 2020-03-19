@@ -51,11 +51,12 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s)
   println("COMPILING: <r>");
   <sqlStat, params> = compile2sql(r, s, p);
   // hack
+  
   if (sqlStat.exprs == []) {
     return [];
   }
   return [step(dbName, sql(executeQuery(dbName, pp(sqlStat))), params
-     , signature=results2paths(q.selected, queryEnv(q), s))];
+     , signature=results2paths(r.qry.selected, queryEnv(q), s))];
 }
 
 list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s) {
