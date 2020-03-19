@@ -1,7 +1,11 @@
 package nl.cwi.swat.typhonql.backend;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+
+import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class MariaDBEngine extends Engine {
 
@@ -11,8 +15,8 @@ public class MariaDBEngine extends Engine {
 	private String user;
 	private String password;
 
-	public MariaDBEngine(ResultStore store, Map<String, String> uuids, String host, int port, String dbName, String user, String password) {
-		super(store, uuids);
+	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, String host, int port, String dbName, String user, String password) {
+		super(store, script, uuids);
 		this.host = host;
 		this.port = port;
 		this.dbName = dbName;
@@ -32,17 +36,13 @@ public class MariaDBEngine extends Engine {
 	private String getConnectionString(String host, int port, String dbName, String user, String password) {
 		return "jdbc:mariadb://" + host + ":" + port + "/" + dbName + "?user=" + user + "&password=" + password;
 	}
+	
+	public void executeSelect(String resultId, String query, List<Path> signature) {
+		new MariaDBQueryExecutor(store, script, uuids, signature, query, new HashMap<String, Binding>(), getConnectionString(host, port, dbName, user, password)).executeSelect(resultId);
+	}
 
-	public void executeSelect(String resultId, String query) {
-		this.storeResults(resultId, executeSelect(query, new HashMap<String, Binding>()));
-	}
-	
-	public void executeSelect(String resultId, String query, Map<String, Binding> bindings) {
-		this.storeResults(resultId, executeSelect(query, bindings));
-	}
-	
-	private ResultIterator executeSelect(String query, Map<String, Binding> bindings) {
-		return new MariaDBQueryExecutor(store, uuids, query, bindings, getConnectionString(host, port, dbName, user, password)).executeSelect();
+	public void executeSelect(String resultId, String query, Map<String, Binding> bindings, List<Path> signature) {
+		new MariaDBQueryExecutor(store, script, uuids, signature, query, bindings, getConnectionString(host, port, dbName, user, password)).executeSelect(resultId);
 	}
 
 	public void executeUpdate(String query, Map<String, Binding> bindings) {

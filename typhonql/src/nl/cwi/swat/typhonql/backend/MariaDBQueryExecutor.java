@@ -9,19 +9,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
 
+import nl.cwi.swat.typhonql.backend.rascal.Path;
+
 public class MariaDBQueryExecutor extends QueryExecutor {
 	
 	private PreparedStatement pstmt;
 	private List<String> vars = new ArrayList<String>();
 	
-	public MariaDBQueryExecutor(ResultStore store, Map<String, String> uuids, String query, Map<String, Binding> bindings, String connectionString) {
-		super(store, uuids, bindings);
+	public MariaDBQueryExecutor(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, List<Path> signature, String query, Map<String, Binding> bindings, String connectionString) {
+		super(store, script, uuids, bindings, signature);
 		System.out.println(query);
 		Pattern pat =  Pattern.compile("\\$\\{(\\w*?)\\}");
 		Matcher m = pat.matcher(query);
@@ -57,7 +60,7 @@ public class MariaDBQueryExecutor extends QueryExecutor {
 				i++;
 			}
 			ResultSet rs = pstmt.executeQuery(); 
-			return new SQLResultIterator(rs);
+			return new MariaDBIterator(rs);
 
 		} catch (SQLException e1) {
 			throw new RuntimeException(e1);
