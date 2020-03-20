@@ -198,10 +198,25 @@ ChangeOps model2changeOperators(Model m) {
   			
   			result += <"addAttribute", [entity.name, chop.name, typ.name, toString(chop.isContainment)]>;
   		}
-  		
-  		
-  		
-  		
+  		case ChangeOperator(SplitEntityHorizontal chop): {
+  			entity = lookup(m, #Entity, chop.sourceEntity);
+  			attr = lookup(m, #Attribute, chop.attrs);
+  			
+  			
+  			result += <"splitEntityHorizontal", [chop.newEntityName, entity.name, attr.name, chop.expression]>;
+  		}
+  		case ChangeOperator(SplitEntityVertical chop): {
+  			entity = lookup(m, #Entity, chop.sourceEntity);
+  			
+  			l_attr = [];
+  			for(lang::ecore::Refs::Ref[Attribute] attr <- chop.attrs){
+  				l_attr += [(lookup(m, #Attribute, attr).name)];
+  			};
+  			
+  			l = [chop.newEntityName, entity.name] + l_attr;
+  			result += <"splitEntityVertical", l>;
+  		}
+	
   	}
   }
   

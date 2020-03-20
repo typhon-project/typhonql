@@ -286,6 +286,19 @@ data ChangeOperator
       , lang::ecore::Refs::Ref[Relation] \relationToRemove = \removeRelation.\relationToRemove
       , lang::ecore::Refs::Id uid = \removeRelation.uid
       , bool _inject = true)
+  | ChangeOperator(SplitEntityHorizontal \splitEntityHorizontal
+      ,str \newEntityName = \splitEntityHorizontal.\newEntityName
+      ,lang::ecore::Refs::Ref[Entity] \sourceEntity = \splitEntityHorizontal.\sourceEntity
+      ,lang::ecore::Refs::Ref[Attribute] \attrs = \splitEntityHorizontal.\attrs
+      ,str \expression = \splitEntityHorizontal.\expression
+      ,str \importedNamespace = \splitEntityHorizontal.\importedNamespace
+      ,lang::ecore::Refs::Id uid = \splitEntityHorizontal.uid)
+  | ChangeOperator(SplitEntityVertical \splitEntityVertical
+      ,str \newEntityName = \splitEntityVertical.\newEntityName
+      ,lang::ecore::Refs::Ref[Entity] \sourceEntity = \splitEntityVertical.\sourceEntity
+      ,list[lang::ecore::Refs::Ref[Attribute]] \attrs = \splitEntityVertical.\attrs
+      ,str \importedNamespace = \splitEntityVertical.\importedNamespace
+      ,lang::ecore::Refs::Id uid = \splitEntityVertical.uid)
   ;
 
 data RemoveGraphEdge
@@ -670,6 +683,21 @@ data Entity
       , str \importedNamespace = ""
       , lang::ecore::Refs::Id uid = noId())
   ;
+  
+data SplitEntityVertical
+  = SplitEntityVertical(str \newEntityName
+      ,lang::ecore::Refs::Ref[Entity] \sourceEntity
+      ,list[lang::ecore::Refs::Ref[Attribute]] \attrs
+      ,str \importedNamespace = ""
+      ,lang::ecore::Refs::Id uid = noId());
+      
+data SplitEntityHorizontal
+  = SplitEntityHorizontal(str \newEntityName
+      ,lang::ecore::Refs::Ref[Entity] \sourceEntity
+      ,lang::ecore::Refs::Ref[Attribute] \attrs
+      ,str \expression
+      ,str \importedNamespace = ""
+      ,lang::ecore::Refs::Id uid = noId());
 
 data AddEntity
   = AddEntity(str \name

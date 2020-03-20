@@ -9,11 +9,12 @@ import lang::typhonml::Util;
 import IO;
 import Node;
 import Type;
+import String;
 
 import util::ValueUI;
 
 void smokeTest() {
-  str xmi = readFile(|project://typhonql/src/test/splitHorizontalEntityChangeOperator.xmi|);
+  str xmi = readFile(|project://typhonql/src/test/splitVerticalEntityChangeOperator.xmi|);
   Model m = xmiString2Model(xmi);
   iprintln(m);
   iprintln(model2schema(m));
@@ -460,6 +461,38 @@ Model xmiNode2Model(node n) {
       		name = get(xcho, "newRelationName");
         	
         	re = realm.new(#RenameRelation, RenameRelation(relref, \newRelationName = name));
+          	chos += [ ChangeOperator(re)];
+        }
+        case "typhonml:SplitEntityVertical":{
+        	name = get(xcho, "entity2name");
+        	
+        	e = get(xcho, "entity1");
+        	toSplit = referTo(#Entity, ensureEntity(e).entity);
+        	
+        	a = get(xcho, "attributeList");
+        	l_a = split(" ", a);
+        	list_attr = [];
+        	
+        	for(str to_do <- l_a){
+        		list_attr += [referTo(#Attribute, ensureAttr(to_do))];
+        	};	
+        	
+        	re = realm.new(#SplitEntityVertical, SplitEntityVertical(name, toSplit, list_attr));
+          	chos += [ ChangeOperator(re)];
+        }
+        
+        case "typhonml:SplitEntityHorizontal":{
+        	name = get(xcho, "entity2name");
+        	
+        	e = get(xcho, "entity1");
+        	toSplit = referTo(#Entity, ensureEntity(e).entity);
+        	
+        	a = get(xcho, "attribute");
+        	ref_attr = referTo(#Attribute, ensureAttr(a));
+        	
+        	expr = get(xcho, "expression");
+        	
+        	re = realm.new(#SplitEntityHorizontal, SplitEntityHorizontal(name, toSplit, ref_attr, expr));
           	chos += [ ChangeOperator(re)];
         }
        	
