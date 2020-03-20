@@ -1,5 +1,7 @@
 Manifest-Version: 0.0.1
 Main-Function: main
 Project-Name: typhonql
-Required-Libraries: |lib://typepal/|
+Require-Libraries: |lib://typepal/|
 Source: src
+
+

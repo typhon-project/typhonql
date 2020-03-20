@@ -2,3 +2,12 @@ test E1 [[ 1 + 1 == 2 ]]
 test E2 [[ 1 + 1.0 == 2.0 ]]
 test E3 [[ "a" + "a" ==  "aa"]]
 test E4 [[ $2020-01-01$ != $2020-01-02$ ]]
+test E5 [[ 1 == 2.0 ]]
+
+test C1 [[ "a" > "b" ]]
+test C2 [[ 4 > 5.0 ]]
+test C3 [[ $2020-01-01$ <= $2020-01-02$ ]]
+
+test EF1 [[ "a" / 1 ]] expect { "/ not supported between `string` and `int`" }
+
+test CF1 [[ "a" > 4 ]] expect { "Cannot compare `string` and `int`" }
