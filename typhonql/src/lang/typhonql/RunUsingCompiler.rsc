@@ -63,9 +63,9 @@ tuple[int, map[str, str]] runUpdate(Request r, Schema s, Session session) {
     throw "Statement should have been provided";
 }
 
-void runQueryAndStore(Request r, Schema sch, map[str, Connection] connections) {
+value runQueryAndGetJava(Request r, Schema sch, map[str, Connection] connections) {
 	Session session = newSession(connections);
-	return runQueryAndStore(r, sch, session);
+	return runQueryAndGetJava(r, sch, session);
 }
 
 void runScriptForQuery(Request r, Schema sch, Session session) {
@@ -78,8 +78,9 @@ void runScriptForQuery(Request r, Schema sch, Session session) {
 		throw "Expected query, given statement";
 }
 
-void runQueryAndStore(Request r, Schema sch, Session session) {
+value runQueryAndGetJava(Request r, Schema sch, Session session) {
 	runScriptForQuery(r, sch, session);
+	return session.getJavaResult();
 }
 
 ResultTable runQuery(Request r, Schema sch, Session session) {
@@ -134,16 +135,16 @@ ResultTable runQuery(str src, str xmiString, Session session) {
   return runQuery(req, s, session);
 }
 
-void runQueryAndStore(str src, str xmiString, map[str, Connection] connections) {
+value runQueryAndGetJava(str src, str xmiString, map[str, Connection] connections) {
   Session session = newSession(connections);
-  runQueryAndStore(src, xmiString, session);
+  return runQueryAndGetJava(src, xmiString, session);
 }
 
-void runQueryAndStore(str src, str xmiString, Session session) {
+value runQueryAndGetJava(str src, str xmiString, Session session) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   Request req = [Request]src;
-  runQueryAndStore(req, s, session);
+  return runQueryAndGetJava(req, s, session);
 }
 
 lrel[int, map[str, str]] runPrepared(Request req, list[str] columnNames, list[list[str]] values, Schema s, map[str, Connection] conns) {
