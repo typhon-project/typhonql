@@ -10,6 +10,7 @@ alias Path = tuple[str dbName, str var, str entityType, list[str] path];
 
 alias Session = tuple[
 	ResultTable () getResult,
+	value () getJavaResult,
 	void (list[Path path] paths) readAndStore,
 	void () done,
 	void (str) newId,
