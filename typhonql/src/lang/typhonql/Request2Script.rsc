@@ -211,5 +211,7 @@ void smokeScript() {
   smokeIt((Request)`from Person p, Cash c select p.name where p.name == "Pablo", p.cash == c, c.amount \> 0`);
   
 
-  smokeIt((Request)`from Person p select p.reviews where p == #victor`);  
+  smokeIt((Request)`from Person p select p.reviews where p == #victor`);
+  
+  smokeIt((Request)`from Person u, Review r select u.name, r.user where u.reviews == r, r.text == ""`);  
 }  

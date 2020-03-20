@@ -20,6 +20,11 @@ import lang::typhonql::mongodb::DBCollection;
 import IO;
 import List;
 
+Env queryEnvAndDyn(Query q) = queryEnvAndDyn(q.bindings);
+
+Env queryEnvAndDyn({Binding ","}+ bs) 
+ = queryEnv(bs) + ("<x>": "<e>" | (Binding)`#dynamic(<EId e> <VId x>)` <- bs );
+
 list[Path] results2paths({Result ","}+ rs, Env env, Schema s) 
   = [ *exp2path(e, env, s) | (Result)`<Expr e>` <- rs ];
 
@@ -28,6 +33,7 @@ list[Path] exp2path((Expr)`<VId x>`, Env env, Schema s)
 
 list[Path] exp2path((Expr)`#needed(<Expr e>)`, Env env, Schema s)
   = [ *exp2path(e2, env, s) | /Expr e2 := e ];
+
 
 list[Path] exp2path((Expr)`<VId x>.@id`, Env env, Schema s) 
   = [<p.name, "<x>", ent, ["@id"]>]
@@ -56,7 +62,7 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s)
     return [];
   }
   return [step(dbName, sql(executeQuery(dbName, pp(sqlStat))), params
-     , signature=results2paths(r.qry.selected, queryEnv(q), s))];
+     , signature=results2paths(r.qry.selected, queryEnvAndDyn(q), s))];
 }
 
 list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s) {
@@ -64,7 +70,7 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schem
   for (str coll <- methods) {
     // TODO: signal if multiple!
     return [step(dbName, mongo(find(dbName, coll, pp(methods[coll].query), pp(methods[coll].projection)))
-      , params, signature=results2paths(q.selected, queryEnv(q), s))];
+      , params, signature=results2paths(q.selected, queryEnvAndDyn(q), s))];
   }
   return [];
 }
