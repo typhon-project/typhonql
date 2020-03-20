@@ -31,30 +31,32 @@ list[Path] results2paths({Result ","}+ rs, Env env, Schema s)
 list[Path] exp2path((Expr)`<VId x>`, Env env, Schema s) 
   = exp2path((Expr)`<VId x>.@id`, env, s);
 
-list[Path] exp2path((Expr)`#needed(<Expr e>)`, Env env, Schema s)
-  = [ *exp2path(e2, env, s) | /Expr e2 := e ];
-
-
 list[Path] exp2path((Expr)`<VId x>.@id`, Env env, Schema s) 
   = [<p.name, "<x>", ent, ["@id"]>]
   when
     str ent := env["<x>"], 
     <Place p, ent> <- s.placement;
 
-list[Path] exp2path((Expr)`<VId x>.<{Id "."}+ fs>`, Env env, Schema s)
-  // should this be the final entity, or where the path starts?
-  // doing the last option now...
-  = [<path[-1].place.name, "<x>", ent, [strFs[-1]]>]
+// this mimicks addProjections in toMongo (or at least tries to)
+list[Path] exp2path((Expr)`#needed(<Expr e>)`, Env env, Schema s) 
+  = exp2path(e, env, s);
+
+// assumes expand navigation normalization
+list[Path] exp2path((Expr)`<VId x>.<Id f>`, Env env, Schema s)
+  = [<p.name, "<x>", ent, ["<f>"]>]
   when
     str ent := env["<x>"], 
-    list[str] strFs := [ "<f>" | Id f <- fs ],
-    DBPath path := navigate(ent, strFs, s);
+    <Place p, ent> <- s.placement;
 
 default list[Path] exp2path(Expr _, Env _, Schema _) = [];
 
+list[Path] filterForBackend(list[Path] paths, Place p)
+  = [ path | Path path <- paths, path.dbName == p.name ];
+
+
 list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s) {
   r = expandNavigation(addWhereIfAbsent(r), s);
-  println("COMPILING: <r>");
+  println("COMPILING2SQL: <r>");
   <sqlStat, params> = compile2sql(r, s, p);
   // hack
   
@@ -62,15 +64,17 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s)
     return [];
   }
   return [step(dbName, sql(executeQuery(dbName, pp(sqlStat))), params
-     , signature=results2paths(r.qry.selected, queryEnvAndDyn(q), s))];
+     , signature=filterForBackend(results2paths(r.qry.selected, queryEnvAndDyn(q), s), p))];
 }
 
 list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s) {
+  println("COMPILING2Mongo: <r>");
   <methods, params> = compile2mongo(r, s, p);
   for (str coll <- methods) {
     // TODO: signal if multiple!
     return [step(dbName, mongo(find(dbName, coll, pp(methods[coll].query), pp(methods[coll].projection)))
-      , params, signature=results2paths(q.selected, queryEnvAndDyn(q), s))];
+      , params, signature=
+         filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s), p))];
   }
   return [];
 }
