@@ -1,7 +1,7 @@
 module lang::typhonql::check::Checker
 
+import lang::typhonml::TyphonML;
 extend analysis::typepal::TypePal;
-extend analysis::typepal::TestFramework;
 
 extend lang::typhonql::DML;
 extend lang::typhonql::Query;
@@ -61,6 +61,22 @@ void collect(current:(Expr)`<Expr lhs> / <Expr rhs>`, Collector c) {
     collectInfix(lhs, rhs, "/", current, c);
 }
 
+void collect(current:(Expr)`<Expr lhs> + <Expr rhs>`, Collector c) {
+    collectInfix(lhs, rhs, "+", current, c);
+}
+
+void collect(current:(Expr)`<Expr lhs> - <Expr rhs>`, Collector c) {
+    collectInfix(lhs, rhs, "-", current, c);
+}
+
+void collect(current:(Expr)`<Expr lhs> == <Expr rhs>`, Collector c) {
+    collectInfix(lhs, rhs, "==", current, c);
+}
+
+void collect(current:(Expr)`<Expr lhs> != <Expr rhs>`, Collector c) {
+    collectInfix(lhs, rhs, "!=", current, c);
+}
+
 void collectInfix(Expr lhs, Expr rhs, str op, Expr current, Collector c) {
     collect(lhs, rhs, c);
     c.calculate("<op>", current, [lhs, rhs], AType (Solver s) {
@@ -93,4 +109,9 @@ AType calcInfix("||", {boolType()}, _) = boolType();
 default AType calcInfix(str op, set[AType] types, Tree current) {
     throw error(current, "%v not supported between %v", op, types);
 }
+
+TModel checkQLTree(Tree t, Model mlModel, bool debug = false) {
+    return collectAndSolve(t);
+}
+
 
