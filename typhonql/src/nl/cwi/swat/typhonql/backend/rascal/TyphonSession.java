@@ -35,10 +35,6 @@ public class TyphonSession implements Operations {
 	private static final TypeFactory TF = TypeFactory.getInstance();
 	private final IValueFactory vf;
 	
-	private ResultTable storedResult = null;
-	private ResultStore store = null;
-	private STATE state = STATE.NOT_INITIALIZED;
-	
 	public TyphonSession(IValueFactory vf) {
 		this.vf = vf;
 	}
@@ -58,6 +54,7 @@ public class TyphonSession implements Operations {
 
 		// get the function types
 		FunctionType getResultType = (FunctionType)aliasedTuple.getFieldType("getResult");
+		FunctionType getJavaResultType = (FunctionType)aliasedTuple.getFieldType("getJavaResult");
 		FunctionType readAndStoreType = (FunctionType)aliasedTuple.getFieldType("readAndStore");
 		FunctionType closeType = (FunctionType)aliasedTuple.getFieldType("done");
 		FunctionType newIdType = (FunctionType)aliasedTuple.getFieldType("newId");
@@ -83,29 +80,23 @@ public class TyphonSession implements Operations {
 				
 		}
 		// construct the session tuple
-		store  = new ResultStore();
+		ResultStore store  = new ResultStore();
 		Map<String, String> uuids = new HashMap<>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
-		state = STATE.ACTIVE;
+		TyphonSessionState state = new TyphonSessionState();
 		return vf.tuple(
-			makeGetResult(store, script, getResultType, ctx),
-			makeReadAndStore(store, script, readAndStoreType, ctx),
-            makeClose(store, closeType, ctx),
-            makeNewId(uuids, newIdType, ctx),
-            new MariaDBOperations(mariaDbConnections).newSQLOperations(store, script, uuids, ctx, vf, TF),
-            new MongoOperations(mongoConnections).newMongoOperations(store, script, uuids, ctx, vf, TF)
+			makeGetResult(store, script, state, getResultType, ctx),
+			makeGetJavaResult(store, script, state, getResultType, ctx),
+			makeReadAndStore(store, script, state, readAndStoreType, ctx),
+            makeClose(store, state, closeType, ctx),
+            makeNewId(uuids, state, newIdType, ctx),
+            new MariaDBOperations(mariaDbConnections).newSQLOperations(store, script, state, uuids, ctx, vf, TF),
+            new MongoOperations(mongoConnections).newMongoOperations(store, script, state, uuids, ctx, vf, TF)
 		);
 	}
 	
-
-	private void checkIsNotInitialized() {
-		if (state != STATE.NOT_INITIALIZED)
-			throw new RuntimeException("Cannot create session, since it has been already initialized");
-	}
-
-	private IValue makeNewId(Map<String, String> uuids, FunctionType newIdType, IEvaluatorContext ctx) {
-		return makeFunction(ctx, newIdType, args -> {
-			checkIsActive("make new id");
+	private IValue makeNewId(Map<String, String> uuids, TyphonSessionState state, FunctionType newIdType, IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, newIdType, args -> {
 			String idName = ((IString) args[0]).getValue();
 			String uuid = UUID.randomUUID().toString();
 			uuids.put(idName, uuid);
@@ -113,20 +104,14 @@ public class TyphonSession implements Operations {
 		});
 	}
 
-	private void checkIsActive(String oper) {
-		if (state != STATE.ACTIVE)
-			throw new RuntimeException("Operation " + oper + " cannor be executed on a non-active session");
-	}
-
-	private ICallableValue makeClose(ResultStore store, FunctionType closeType, IEvaluatorContext ctx) {
-		return makeFunction(ctx, closeType, args -> {
-			checkIsActive("close");
-			close();
+	private ICallableValue makeClose(ResultStore store, TyphonSessionState state, FunctionType closeType, IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, closeType, args -> {
+			close(state);
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 	
-	private ResultTable computeResultTable(List<Consumer<List<Record>>> script, IValue[] args) {
+	private ResultTable computeResultTable(ResultStore store, List<Consumer<List<Record>>> script, IValue[] args) {
 		List<Path> paths = new ArrayList<>();
 		
 		IList pathsList = (IList) args[0];
@@ -143,20 +128,25 @@ public class TyphonSession implements Operations {
 		return rt;
 	}
 	
-	private ICallableValue makeGetResult(ResultStore store, List<Consumer<List<Record>>> script, FunctionType getResultType, IEvaluatorContext ctx) {
-		return makeFunction(ctx, getResultType, args -> {
-			checkIsActive("read");
+	private ICallableValue makeGetResult(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, FunctionType getResultType, IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, getResultType, args -> {
 			// alias ResultTable =  tuple[list[str] columnNames, list[list[value]] values];
  			return ResultFactory.makeResult(TF.tupleType(new Type[] { TF.listType(TF.stringType()), TF.listType(TF.listType(TF.valueType()))}, 
- 					new String[]{ "columnNames", "values"}), storedResult.toIValue(), ctx);
+ 					new String[]{ "columnNames", "values"}), state.getResult().toIValue(), ctx);
 		});
 	}
 	
-	private ICallableValue makeReadAndStore(ResultStore store, List<Consumer<List<Record>>> script, FunctionType readAndStoreType, IEvaluatorContext ctx) {
-		return makeFunction(ctx, readAndStoreType, args -> {
-			checkIsActive("read");
-			ResultTable rt = computeResultTable(script, args);
-			this.storedResult = rt;
+	private ICallableValue makeGetJavaResult(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, FunctionType getResultType, IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, getResultType, args -> {
+			// alias ResultTable =  tuple[list[str] columnNames, list[list[value]] values];
+ 			return ResultFactory.makeResult(TF.externalType(TF.valueType()), state.getResult(), ctx);
+		});
+	}
+	
+	private ICallableValue makeReadAndStore(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, FunctionType readAndStoreType, IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, readAndStoreType, args -> {
+			ResultTable rt = computeResultTable(store, script, args);
+			state.setResult(rt);
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
@@ -177,17 +167,9 @@ public class TyphonSession implements Operations {
 			fields.toArray(new String[0]));
 	}
 
-	public ResultTable getStoredResult() {
-		return storedResult;
-	}
-	
-	public void close() {
-		state = STATE.CLOSE;
-		storedResult = null;
+	public void close(TyphonSessionState state) {
+		state.close();
 		
 	}
-
-	private static enum STATE { NOT_INITIALIZED, ACTIVE, CLOSE }
-
 
 }

@@ -30,8 +30,8 @@ public class MongoOperations implements Operations {
 		this.connections = connections;
 	}
 
-	private ICallableValue makeFind(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
-		return makeFunction(ctx, executeType, args -> {
+	private ICallableValue makeFind(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+		return makeFunction(ctx, state, executeType, args -> {
 			String resultId = ((IString) args[0]).getValue();
 			String dbName = ((IString) args[1]).getValue();
 			String collection = ((IString) args[2]).getValue();
@@ -50,8 +50,8 @@ public class MongoOperations implements Operations {
 		});
 	}
 	
-	private ICallableValue makeFindWithProjection(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
-		return makeFunction(ctx, executeType, args -> {
+	private ICallableValue makeFindWithProjection(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+		return makeFunction(ctx, state, executeType, args -> {
 			String resultId = ((IString) args[0]).getValue();
 			String dbName = ((IString) args[1]).getValue();
 			String collection = ((IString) args[2]).getValue();
@@ -71,8 +71,8 @@ public class MongoOperations implements Operations {
 		});
 	}
 	
-	private ICallableValue makeInsertOne(ResultStore store, List<Consumer<List<Record>>> script,  Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
-		return makeFunction(ctx, executeType, args -> {
+	private ICallableValue makeInsertOne(ResultStore store, List<Consumer<List<Record>>> script,  TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
 			String doc = ((IString) args[2]).getValue();
@@ -88,8 +88,8 @@ public class MongoOperations implements Operations {
 		});
 	}
 	
-	private ICallableValue makeFindAndUpdateOne(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
-		return makeFunction(ctx, executeType, args -> {
+	private ICallableValue makeFindAndUpdateOne(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
 			String query = ((IString) args[2]).getValue();
@@ -107,8 +107,8 @@ public class MongoOperations implements Operations {
 	}
 	
 	
-	private ICallableValue makeDeleteOne(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
-		return makeFunction(ctx, executeType, args -> {
+	private ICallableValue makeDeleteOne(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
 			String query = ((IString) args[2]).getValue();
@@ -124,7 +124,7 @@ public class MongoOperations implements Operations {
 		});
 	}
 	
-	public ITuple newMongoOperations(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+	public ITuple newMongoOperations(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, Map<String, String> uuids, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
 		
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("MongoOperations"));
 		while (aliasedTuple.isAliased()) {
@@ -138,11 +138,11 @@ public class MongoOperations implements Operations {
 		FunctionType executeType5 = (FunctionType)aliasedTuple.getFieldType("deleteOne");
 		
 		return vf.tuple(
-            makeFind(store, script, uuids, executeType1, ctx, vf, tf),
-            makeFindWithProjection(store, script, uuids, executeType2, ctx, vf, tf),
-            makeInsertOne(store, script, uuids, executeType3, ctx, vf, tf),
-            makeFindAndUpdateOne(store, script, uuids, executeType4, ctx, vf, tf),
-            makeDeleteOne(store, script, uuids, executeType5, ctx, vf, tf)
+            makeFind(store, script, state, uuids, executeType1, ctx, vf, tf),
+            makeFindWithProjection(store, script, state, uuids, executeType2, ctx, vf, tf),
+            makeInsertOne(store, script, state, uuids, executeType3, ctx, vf, tf),
+            makeFindAndUpdateOne(store, script, state, uuids, executeType4, ctx, vf, tf),
+            makeDeleteOne(store, script, state, uuids, executeType5, ctx, vf, tf)
 		);
 	}
 }

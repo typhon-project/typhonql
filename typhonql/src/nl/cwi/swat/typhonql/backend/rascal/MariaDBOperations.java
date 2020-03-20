@@ -30,8 +30,8 @@ public class MariaDBOperations implements Operations {
 		this.connections = connections;
 	}
 
-	private ICallableValue makeExecuteQuery(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
-		return makeFunction(ctx, executeType, args -> {
+	private ICallableValue makeExecuteQuery(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+		return makeFunction(ctx, state, executeType, args -> {
 			String resultId = ((IString) args[0]).getValue();
 			String dbName = ((IString) args[1]).getValue();
 			String query = ((IString) args[2]).getValue();
@@ -49,8 +49,8 @@ public class MariaDBOperations implements Operations {
 		});
 	}
 	
-	private ICallableValue makeExecuteStatement(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, FunctionType executeStmtType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
-		return makeFunction(ctx, executeStmtType, args -> {
+	private ICallableValue makeExecuteStatement(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, Map<String, String> uuids, FunctionType executeStmtType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+		return makeFunction(ctx, state, executeStmtType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String query = ((IString) args[1]).getValue();
 			IMap bindings = (IMap) args[2];
@@ -65,7 +65,7 @@ public class MariaDBOperations implements Operations {
 		});
 	}
 
-	public ITuple newSQLOperations(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+	public ITuple newSQLOperations(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, Map<String, String> uuids, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("SQLOperations"));
 		while (aliasedTuple.isAliased()) {
 			aliasedTuple = aliasedTuple.getAliased();
@@ -75,8 +75,8 @@ public class MariaDBOperations implements Operations {
 		FunctionType executeStatementType = (FunctionType)aliasedTuple.getFieldType("executeStatement");
 				
 		return vf.tuple(
-            makeExecuteQuery(store, script, uuids, executeQueryType, ctx, vf, tf),
-            makeExecuteStatement(store, script, uuids, executeStatementType, ctx, vf, tf)
+            makeExecuteQuery(store, script, state, uuids, executeQueryType, ctx, vf, tf),
+            makeExecuteStatement(store, script, state, uuids, executeStatementType, ctx, vf, tf)
 		);
 	}
 }
