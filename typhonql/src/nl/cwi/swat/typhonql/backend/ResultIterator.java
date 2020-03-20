@@ -17,7 +17,9 @@ public interface ResultIterator {
 		Map<Field, Object> vs = new HashMap<Field, Object>();
 		for (Path p : signature) {
 			Field f = toField(p);
-			Object v = getCurrentField(f.getLabel(), f.getType(), f.getAttribute());
+			Object v = (f.getAttribute().equals("@id")) 
+					? getCurrentId(f.getLabel(), f.getType())
+					: getCurrentField(f.getLabel(), f.getType(), f.getAttribute());
 			vs.put(f, v);
 		}
 		return new Record(vs);
