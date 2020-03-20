@@ -31,7 +31,7 @@ import nl.cwi.swat.typhonql.backend.GeneratedIdentifier;
 
 public interface Operations {
 	// no support for kw params yet 
-	default ICallableValue makeFunction(IEvaluatorContext ctx, FunctionType typ, Function<IValue[], Result<IValue>> body) {
+	default ICallableValue makeFunction(IEvaluatorContext ctx, TyphonSessionState state, FunctionType typ, Function<IValue[], Result<IValue>> body) {
 		return new AbstractFunction(ctx.getCurrentAST(), ctx.getEvaluator(), typ, Collections.emptyList(), false, ctx.getCurrentEnvt()) {
 			
 			@Override
@@ -52,10 +52,16 @@ public interface Operations {
 			
 			@Override
 			public Result<IValue> call(Type[] argTypes, IValue[] argValues, Map<String, IValue> keyArgValues) throws MatchFailed {
+				checkIsActive(state);
 				return body.apply(argValues);
 			}
 		};
 		
+	}
+	
+	default void checkIsActive(TyphonSessionState state) {
+		if (state.isFinalized())
+			throw new RuntimeException("Operation cannot be executed on a non-active session");
 	}
 	
 	default Map<String, Binding> rascalToJavaBindings(IMap bindings) {
