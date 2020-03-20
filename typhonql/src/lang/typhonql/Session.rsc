@@ -9,10 +9,11 @@ alias EntityModels = rel[str name, rel[str name, str \type] attributes, rel[str 
 alias Path = tuple[str dbName, str var, str entityType, list[str] path];
 
 alias Session = tuple[
-	ResultTable (list[Path path] paths) read,
+	ResultTable () getResult,
 	void (list[Path path] paths) readAndStore,
+	void () done,
 	void (str) newId,
-   	SQLOperations sql,
+	SQLOperations sql,
    	MongoOperations mongo
 ];
 
@@ -30,13 +31,13 @@ data Param
 alias Bindings = map[str, Param];
 
 alias SQLOperations = tuple[
-	void (str resultId, str dbName, str query, Bindings bindings) executeQuery,
+	void (str resultId, str dbName, str query, Bindings bindings, list[Path] paths) executeQuery,
 	void (str dbName, str query, Bindings bindings) executeStatement 
 ];
 
 alias MongoOperations = tuple[
-	void (str resultId, str dbName, str collection, str query, Bindings bindings) find,
-	void (str resultId, str dbName, str collection, str query, str projection, Bindings bindings) findWithProjection,
+	void (str resultId, str dbName, str collection, str query, Bindings bindings, list[Path] paths) find,
+	void (str resultId, str dbName, str collection, str query, str projection, Bindings bindings, list[Path] paths) findWithProjection,
 	void (str dbName, str coll, str query, Bindings bindings) insertOne,
 	void (str dbName, str coll, str query, str update, Bindings bindings) findAndUpdateOne,
 	void (str dbName, str coll, str query, Bindings bindings) deleteOne

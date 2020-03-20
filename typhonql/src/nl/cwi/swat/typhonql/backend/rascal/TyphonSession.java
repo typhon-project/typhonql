@@ -44,7 +44,7 @@ public class TyphonSession implements Operations {
 	}
 
 	public ITuple newSession(IMap connections, IEvaluatorContext ctx) {
-		checkIsNotInitialized();
+		//checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function type ourself
         ModuleEnvironment aliasModule = ctx.getHeap().getModule("lang::typhonql::Session");
         if (aliasModule == null) {
@@ -57,7 +57,7 @@ public class TyphonSession implements Operations {
 		}
 
 		// get the function types
-		FunctionType readType = (FunctionType)aliasedTuple.getFieldType("read");
+		FunctionType getResultType = (FunctionType)aliasedTuple.getFieldType("getResult");
 		FunctionType readAndStoreType = (FunctionType)aliasedTuple.getFieldType("readAndStore");
 		FunctionType closeType = (FunctionType)aliasedTuple.getFieldType("done");
 		FunctionType newIdType = (FunctionType)aliasedTuple.getFieldType("newId");
@@ -88,7 +88,7 @@ public class TyphonSession implements Operations {
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		state = STATE.ACTIVE;
 		return vf.tuple(
-			makeRead(store, script, readType, ctx),
+			makeGetResult(store, script, getResultType, ctx),
 			makeReadAndStore(store, script, readAndStoreType, ctx),
             makeClose(store, closeType, ctx),
             makeNewId(uuids, newIdType, ctx),
@@ -143,13 +143,12 @@ public class TyphonSession implements Operations {
 		return rt;
 	}
 	
-	private ICallableValue makeRead(ResultStore store, List<Consumer<List<Record>>> script, FunctionType readType, IEvaluatorContext ctx) {
-		return makeFunction(ctx, readType, args -> {
+	private ICallableValue makeGetResult(ResultStore store, List<Consumer<List<Record>>> script, FunctionType getResultType, IEvaluatorContext ctx) {
+		return makeFunction(ctx, getResultType, args -> {
 			checkIsActive("read");
-			ResultTable rt = computeResultTable(script, args);
 			// alias ResultTable =  tuple[list[str] columnNames, list[list[value]] values];
  			return ResultFactory.makeResult(TF.tupleType(new Type[] { TF.listType(TF.stringType()), TF.listType(TF.listType(TF.valueType()))}, 
- 					new String[]{ "columnNames", "values"}), rt.toIValue(), ctx);
+ 					new String[]{ "columnNames", "values"}), storedResult.toIValue(), ctx);
 		});
 	}
 	
