@@ -88,12 +88,12 @@ void smokeScript() {
     <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
     <"Comment", zero_many(), "replies", "owner", \zero_many(), "Comment", true>
   }, {
-    <"Person", "name", "String">,
+    <"Person", "name", "text">,
     <"Person", "age", "int">,
     <"Cash", "amount", "int">,
-    <"Review", "text", "String">,
-    <"Comment", "contents", "String">,
-    <"Reply", "reply", "String">
+    <"Review", "text", "text">,
+    <"Comment", "contents", "text">,
+    <"Reply", "reply", "text">
   },
   placement = {
     <<sql(), "Inventory">, "Person">,
