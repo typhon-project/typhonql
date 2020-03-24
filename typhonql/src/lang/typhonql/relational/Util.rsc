@@ -66,7 +66,7 @@ ColumnType typhonType2SQL("String") = text();
 
 ColumnType typhonType2SQL("Date") = date();
 
-ColumnType typhonType2SQL("Blob") = text();
+ColumnType typhonType2SQL("Blob") = blob();
 
 ColumnType typhonType2SQL("natural_language") = text();
 
