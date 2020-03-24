@@ -25,7 +25,8 @@ list[loc] copiedModels() = [
 |project://typhonql/src/lang/typhonml/complexModelWithChangeOperators.xmi|,
 |project://typhonql/src/lang/typhonml/customdatatypes.xmi|,
 |project://typhonql/src/lang/typhonml/demodb.xmi|,
-|project://typhonql/src/lang/typhonml/mydb4.xmi|
+|project://typhonql/src/lang/typhonml/mydb4.xmi|,
+|project://typhonql/src/lang/typhonml/user-review-product-bio.xmi|
 ];
  
 
