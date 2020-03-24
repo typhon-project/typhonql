@@ -116,6 +116,8 @@ str pp(\in(SQLExpr arg, list[Value] vals))
   = "(<pp(arg)>) in (<intercalate(", ", [ pp(v) | Value v <- vals])>)";
 
 
+str pp(SQLExpr::placeholder(name = str name)) = "${<name>}";
+
 // Clause
 
 str pp(where(list[SQLExpr] es)) = "where <intercalate(" and ", [ pp(e) | SQLExpr e <- es ])>"; 
@@ -153,6 +155,14 @@ str pp(boolean(bool b)) = "<b>";
 
 str pp(dateTime(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
 
+str pp(point(real x, real y)) = "PointFromText(\'POINT(<x> <y>)\')";
+
+str pp(polygon(list[lrel[real, real]] segs)) 
+  = "PolyFromText(\'POLYGON(<intercalate(", ", [ seg2str(s) | s <- segs ])>)\')";
+
+str seg2str(lrel[real,real] seg)  
+  = "(<intercalate(", ", [ "<x> <y>" | <real x, real y> <- seg ])>";
+
 str pp(null()) = "null";
 
 str pp(Value::placeholder(name = str name)) = "${<name>}";
@@ -184,10 +194,12 @@ str pp(unique()) = "unique";
 str pp(char(int size)) = "char(<size>)";
 str pp(varchar(int size)) = "varchar(<size>)";
 str pp(text()) = "text";
-str pp(integer()) = "int";
+str pp(integer()) = "integer";
 str pp(float()) = "float";
 str pp(double()) = "double";
 str pp(blob()) = "blob";
 str pp(date()) = "date";
 str pp(dateTime()) = "datetime";
+str pp(point()) = "point";
+str pp(polygon()) = "polygon";
 

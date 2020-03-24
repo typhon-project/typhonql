@@ -32,14 +32,14 @@ Schema s = schema(
     <"User",zero_one(),"biography","user",\one(),"Biography",true>
   },
   {
-    <"User","address","String">,
+    <"User","address","text">,
     <"Product","price","int">,
-    <"Review","contents","String">,
-    <"Biography","text","String">,
-    <"Product","date","Date">,
-    <"Product","name","String">,
-    <"Product","description","String">,
-    <"User","name","String">
+    <"Review","contents","text">,
+    <"Biography","text","text">,
+    <"Product","date","date">,
+    <"Product","name","text">,
+    <"Product","description","text">,
+    <"User","name","text">
   },
   placement={
     <<mongodb(),"Reviews">,"Review">,
@@ -49,8 +49,8 @@ Schema s = schema(
   },
   elements={
     <"Address","number","int">,
-    <"Address","city","String">,
-    <"Address","street","String">
+    <"Address","city","text">,
+    <"Address","street","text">
   },
   changeOperators=[]);
   

@@ -285,15 +285,22 @@ DBObject obj2dbObj((Expr)`<Bool b>`) = \value("<b>" == "true");
 
 DBObject obj2dbObj((Expr)`<Int n>`) = \value(toInt("<n>"));
 
-DBObject obj2dbObj((Expr)`<DateTime d>`) 
-  = \value(toInt("<n>"));
-  
 DBObject obj2dbObj((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
 
 DBObject obj2dbObj((Expr)`<UUID id>`) = \value("<id>"[1..]);
 
 DBObject obj2DbObj((Expr)`<DateTime d>`) 
   = object([<"$date", \value(readTextValueString(#datetime, "<d>"))>]);
+
+DBObject obj2DbObj((Expr)`#point(<Real x> <Real y>)`) 
+  = object([<"type", \value("Point")>, 
+      <"coordinates", array([\value(toReal("<x>")), \value(toReal("<y>"))])>]);
+
+DBObject obj2DbObj((Expr)`#polygon(<{Segment ","}* segs>)`) 
+  = object([<"$polygon", array([ seg2array(s) | Segment s <- segs ])>]);
+
+DBObject seg2array((Segment)`(<{XY ","}* xys>)`)
+  = array([ array([\value(toReal(x)), \value(toReal(y))]) | (XY)`<Real x> <Real y>` <- xys ]);
 
 
 DBObject obj2dbObj((Expr)`<Real r>`) = \value(toReal("<r>"));
@@ -331,6 +338,14 @@ Value evalExpr((Expr)`<Int n>`) = integer(toInt("<n>"));
 Value evalExpr((Expr)`<Bool b>`) = boolean("<b>" == "true");
 
 Value evalExpr((Expr)`<Real r>`) = decimal(toReal("<r>"));
+
+Value evalExpr((Expr)`#point(<Real x> <Real y>)`) = point(toReal("<x>", toReal("<y>")));
+
+Value evalExpr((Expr)`#polygon(<{Segment ","}* segs>)`)
+  = polygon([ seg2lrel(s) | Segment s <- segs ]);
+  
+lrel[real, real] seg2lrel((Segment)`(<{XY ","}* xys>)`)
+  = [ <toReal("<x>"), toReal("<y>")> | (XY)`<Real x> <Real y>` <- xys ]; 
 
 Value evalExpr((Expr)`<DateTime d>`) = dateTime(readTextValueString(#datetime, "<d>"));
 

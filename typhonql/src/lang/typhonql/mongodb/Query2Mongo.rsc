@@ -68,7 +68,7 @@ tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}
     =  ( "<e>" : localPathToEntity("<e>", s, p) | (Binding)`<EId e> <VId x>` <- bs );
     
   // mapping collection name to methods (i.e. `find`)
-  map[str, CollMethod] result = ( paths["<e>"].root : find(object([]), object([])) | (Binding)`<EId e> <VId x>` <- bs );
+  map[str, CollMethod] result = ( paths["<e>"].root : find(object([]), object([<"_id", \value(1)>])) | (Binding)`<EId e> <VId x>` <- bs );
   
   void addConstraint(str ent, <str path, DBObject val>) {
     // todo: if the path is already in props, create $and obj 
@@ -91,18 +91,44 @@ tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}
     str ent = env["<x>"];
     prePath = paths[ent].path;
     if (prePath != []) {
-      result[paths[ent].root].projection.props += [<"<intercalate(".", paths[ent].path)>.<fields>", \value(1)>];
+      Prop prop = <"<intercalate(".", paths[ent].path)>.<fields>", \value(1)>;
+      if (prop notin result[paths[ent].root].projection.props) {
+        result[paths[ent].root].projection.props += [prop];
+      }
     }
     else {
-      result[paths[ent].root].projection.props += [<fields, \value(1)>];
+      Prop prop = <fields, \value(1)>;
+      if (prop notin result[paths[ent].root].projection.props) {
+        result[paths[ent].root].projection.props += [prop];
+      }
     }
   } 
+  
+  void recordProjections(Expr e) {
+     switch (e) {
+      case x:(Expr)`<VId y>`: {
+         // TODO: there is a difference between y in result and y in where clauses
+         // --> fix normalization to desguar y in where clauses to y.@id, 
+         // and in result to all attrs.
+         addProjection(y, "_id");
+      }
+      case x:(Expr)`<VId y>.@id`:
+         addProjection(y, "_id");
+      case x:(Expr)`<VId y>.<{Id "."}+ fs>`:
+         addProjection(y, "<fs>");
+    }
+  }
 
   // NB: VId x is local, because otherwise it would be dynamic or ignored
   // strong assumption here is that dot-notation is local and only containment
-  for ((Result)`<VId x>.<{Id "."}+ fs>` <- rs) {
-    addProjection(x, "<fs>");
+  for ((Result)`<Expr e>` <- rs) {
+    recordProjections(e);
   }
+
+  for ((Result)`#needed(<Expr e>)` <- rs) {
+    recordProjections(e);
+  }
+
   
   int _vars = -1;
   int vars() {
@@ -124,20 +150,7 @@ tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}
     p>;
   
     
-  void recordProjections(Expr e) {
-     visit (e) {
-      case x:(Expr)`<VId y>`: {
-         // TODO: there is a difference between y in result and y in where clauses
-         // --> fix normalization to desguar y in where clauses to y.@id, 
-         // and in result to all attrs.
-         addProjection(y, "_id");
-      }
-      case x:(Expr)`<VId y>.@id`:
-         addProjection(y, "_id");
-      case x:(Expr)`<VId y>.<{Id "."}+ fs>`:
-         addProjection(y, "<fs>");
-    }
-  }
+  
   
   
   for (Expr e <- ws) {
@@ -233,6 +246,7 @@ tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> \>= <Expr rhs>`, Ctx ctx)
 
 tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> \<= <Expr rhs>`, Ctx ctx)
   = makeComparison("$lte", lhs, rhs, ctx);
+
   
 // TODO: &&, ||, in, like
 

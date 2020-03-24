@@ -62,8 +62,16 @@ void test2() {
 	runUpdate((Request) `insert User { @id: #pablo, name: "Pablo" }`);
 }
 
+void test2b() {
+	runUpdate((Request) `insert User { @id: #davy, name: "Davy" }`);
+}
+
 void test3() {
-	runUpdate((Request) `insert Product {name: "TV", description: "Flat" }`);
+	runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat" }`);
+}
+
+void test3b() {
+	runUpdate((Request) `insert Product {@id: #radio, name: "Radio", description: "Loud" }`);
 }
 
 void test4() {
@@ -100,6 +108,18 @@ void test7() {
 						  [["\"IPhone\"", "\"Cool but expensive\""],
 				           ["\"Samsung S10\"", "\"Less cool and still expensive\""]], s, connections);
 
+}
+
+void test8a() {
+	runUpdate((Request) `insert Review { @id: #rev1, contents: "Good TV", user: #pablo, product: #tv }`);
+	runUpdate((Request) `insert Review { @id: #rev2, contents: "", user: #davy, product: #tv }`);
+	runUpdate((Request) `insert Review { @id: #rev3, contents: "***", user: #davy, product: #radio }`);
+}
+
+
+void test8b() {
+	rs = runQuery((Request) `from User u, Review r select u.name, r.user where u.reviews == r, r.contents == "***"`);
+	println(rs);
 }
 
 void runUpdate(Request req) {

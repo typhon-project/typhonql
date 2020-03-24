@@ -11,6 +11,8 @@ insert Review {
 	product: #2375314f-6949-4fb6-8c9b-a1df69bd0289
 }
 
+from Review r select r.contents
+
 from Review r select r
 
 delete from User
@@ -107,6 +109,26 @@ insert Product {
 	description: "Black and white",
 	price: 300,
 	date: $2019-03-25$
+}
+
+insert User {
+	@id: #davy,
+	name: "Davy"
+}
+
+insert Product {
+	@id: #microwave,
+	name: "Microwave",
+	description: "Hot",
+	price: 200,
+	date: $2019-03-12$
+}
+
+insert Review {
+	user: #davy,
+	product: #microwave,
+	@id: #revwave,
+	contents: "It burns"
 }
 
 from OBLG_GNL u select u

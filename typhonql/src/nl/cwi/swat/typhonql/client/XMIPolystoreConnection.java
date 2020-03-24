@@ -61,16 +61,18 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 	private static final IValueFactory VF = ValueFactoryFactory.getValueFactory();
 	private static final TypeFactory TF = TypeFactory.getInstance();
 	private IMap connections;
+
+	private TyphonSession sessionBuilder;
 	
 	public XMIPolystoreConnection(String xmiModel, List<DatabaseInfo> infos) throws IOException {
 		this(infos);
 		this.xmiModel = VF.string(xmiModel);
+		this.sessionBuilder = new TyphonSession(VF);
 	}
 	
 	private XMIPolystoreConnection(List<DatabaseInfo> infos) throws IOException {
 				this.connections = buildConnections(infos);
 				ISourceLocation root = URIUtil.correctLocation("project", "typhonql", null);
-				URIResolverRegistry reg = URIResolverRegistry.getInstance();
 				if (!hasRascalMF(root)) {
 					// project not available, switch to lib
 					root = URIUtil.correctLocation("lib", "typhonql", null);
@@ -145,17 +147,15 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 		return evaluators.useAndReturn(evaluator -> {
 			try {
 				synchronized (evaluator) {
-					TyphonSession sessionBuilder = new TyphonSession(VF);
 					ITuple session = sessionBuilder.newSession(connections, evaluator);
 					// str src, str xmiString, Session session
-					evaluator.call("runQueryAndStore", 
+					IValue v = evaluator.call("runQueryAndGetJava", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(query), 
 							xmiModel,
 							session);
-					return sessionBuilder.getStoredResult();
-					
+					return (ResultTable) v;
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
@@ -336,7 +336,6 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 	}
 	
 	private ITuple createSession(Evaluator evaluator) {
-		TyphonSession sessionBuilder = new TyphonSession(VF);
 		return sessionBuilder.newSession(connections, evaluator);
 	}
 	

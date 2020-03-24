@@ -1,14 +1,14 @@
 package nl.cwi.swat.typhonql.backend;
 
+import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
-import org.apache.commons.text.StringSubstitutor;
 import org.bson.Document;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
+
+import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class MongoDBEngine extends Engine {
 	private String host;
@@ -17,8 +17,8 @@ public class MongoDBEngine extends Engine {
 	private String user;
 	private String password;
 
-	public MongoDBEngine(ResultStore store, Map<String, String> uuids, String host, int port, String dbName, String user, String password) {
-		super(store, uuids);
+	public MongoDBEngine(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, String host, int port, String dbName, String user, String password) {
+		super(store, script, uuids);
 		this.host = host;
 		this.port = port;
 		this.dbName = dbName;
@@ -30,15 +30,13 @@ public class MongoDBEngine extends Engine {
 		return "mongodb://" + user + ":" + password + "@" + host + ":" + port;
 	}
 
-	public void executeFind(String resultId, String collectionName, String query, Map<String, Binding> bindings) {
-		ResultIterator results = new MongoQueryExecutor(store, uuids, collectionName, query, bindings, getConnectionString(), dbName).executeSelect();
-		storeResults(resultId, results);
+	public void executeFind(String resultId, String collectionName, String query, Map<String, Binding> bindings, List<Path> signature) {
+		new MongoQueryExecutor(store, script, uuids, signature, collectionName, query, bindings, getConnectionString(), dbName).executeSelect(resultId);
 	}
 
 	public void executeFindWithProjection(String resultId, String collectionName, String query, String projection,
-			Map<String, Binding> bindings) {
-		ResultIterator results = new MongoQueryWithProjectionExecutor(store, uuids, collectionName, query, projection, bindings, getConnectionString(), dbName).executeSelect();
-		storeResults(resultId, results);
+			Map<String, Binding> bindings, List<Path> signature) {
+		new MongoQueryWithProjectionExecutor(store, script, uuids, signature, collectionName, query, projection, bindings, getConnectionString(), dbName).executeSelect(resultId);
 		
 	}
 

@@ -13,8 +13,8 @@ data Step
   // TyphonQL: from Person p select p.name
   // SQL: select p.name as x1 from Person  p
   // executeQuery("x", "relational", "select p.name from Person as p", ())
-  = step(str result, Call call, Bindings bindings)
-  | read(str result, list[Path] path)
+  = step(str result, Call call, Bindings bindings, list[Path] signature = [])
+  | read(list[Path] path)
   | newId(str var)
   ;
   
@@ -50,16 +50,16 @@ void runScript(Script scr, Session session, Schema schema) {
   for (Step s <- scr.steps) {
     switch (s) {
       case step(str r, sql(executeQuery(str db, str q)), Bindings ps):
-        session.sql.executeQuery(r, db, q, ps);
+        session.sql.executeQuery(r, db, q, ps, s.signature);
         
       case step(str r, sql(executeStatement(str db, str st)), Bindings ps):
         session.sql.executeStatement(db, st, ps);  
 
       case step(str r, mongo(find(str db, str coll, str json)), Bindings ps):
-        session.mongo.find(r, db, coll, json, ps);
+        session.mongo.find(r, db, coll, json, ps, s.signature);
         
       case step(str r, mongo(find(str db, str coll, str json, str proj)), Bindings ps):
-        session.mongo.findWithProjection(r, db, coll, json, proj, ps);  
+        session.mongo.findWithProjection(r, db, coll, json, proj, ps, s.signature);  
         
       case step(str r, mongo(insertOne(str db, str coll, str doc)), Bindings ps):
         session.mongo.insertOne(db, coll, doc, ps); 
@@ -76,11 +76,9 @@ void runScript(Script scr, Session session, Schema schema) {
       case newId(str var):
         session.newId(var);
           
-      case read(str r, list[Path path] paths): {
-      	session.readAndStore(r, paths);
+      case read(list[Path path] paths): {
+      	session.readAndStore(paths);
       }
-      case done(): 
-  	  	session.done();
   	  	
       default: throw "Unsupported call: <s>";
     }

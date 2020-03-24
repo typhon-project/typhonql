@@ -21,6 +21,9 @@ void smokeTest() {
 }
 
 
+
+
+
 void smokeTest2() {
   str xmi = readFile(|project://typhonql/src/lang/typhonml/removeAttributeChangeOperator.xmi|);
   Model m = xmiString2Model(xmi);
@@ -63,7 +66,7 @@ Model xmiNode2Model(node n) {
   
   DataType ensureEntity(str path) {
     if (path notin typeMap) {
-      typeMap[path] = DataType(realm.new(#Entity, Entity("", [], [], [])));
+      typeMap[path] = DataType(realm.new(#Entity, Entity("", [], [], [], [], [])));
     }
     return typeMap[path];
   }
@@ -152,6 +155,8 @@ Model xmiNode2Model(node n) {
     int dtPos = 0;
     for (xdt:"dataTypes"(list[node] xelts) <- kids) {
        dtPath = "//@dataTypes.<dtPos>";
+       //println("Data type path: <dtPath>");
+       //println(xdt);
            
        switch (get(xdt, "xsi:type")) {
        	 case "typhonml:PrimitiveDataType": {
@@ -179,16 +184,19 @@ Model xmiNode2Model(node n) {
            attrs = [];
            attrPos = 0;
            for (xattr:"attributes"(_) <- xelts) {
-           	 attrPath = "<dtPath>/@attributes.<attrPos>";
-           	 
-           	 attr = ensureAttr(attrPath);
-             attr.name = get(xattr, "name");
-             aPath = get(xattr, "type");
-             attr.\type = referTo(#DataType, ensurePrimitive(aPath));
-             attr.ownerEntity = referTo(#Entity, ensureEntity(dtPath).entity);
-             attrs += [attr];
-             attrPos += 1; 
+             attr = realm.new(#Attribute, Attribute(get(xattr, "name") 
+                , referTo(#DataType, ensurePrimitive(get(xattr, "type")))));
+             attrs += [attr]; 
            }  
+           
+           freeTexts = [];
+           for (xfre:"fretextAttributes"(list[node] taskElts) <- xelts) {
+             myft = realm.new(#FreeText, FreeText(get(xfre, "name"), []));
+             myft.tasks = [ realm.new(#NlpTask, NlpTask(\type=make(#NlpTaskType, get(x, "type"), []))) 
+               | x:"tasks"(_) <- taskElts ];
+             freeTexts += [myft]; 
+           }
+           
          
            rels = [];
            relPos = 0;
@@ -217,11 +225,12 @@ Model xmiNode2Model(node n) {
              rels += [myrel];
              relPos += 1;
            }
+           
 
            entity = ensureEntity(dtPath).entity;
            entity.name = get(xdt, "name");
            entity.attributes = attrs;
-           entity.fretextAttributes = []; // todo;
+           entity.fretextAttributes = freeTexts; ;
            entity.relations = rels;
            dt = DataType(entity);              
            dts += [dt];

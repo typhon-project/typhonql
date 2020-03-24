@@ -37,4 +37,24 @@ public class Field implements Binding {
 	public String getAttribute() {
 		return attribute;
 	}
+	
+	@Override
+	public int hashCode() {
+		return type.hashCode() *3 + label.hashCode() * 7
+				+ reference.hashCode() * 11 + attribute.hashCode() * 13;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj != null) {
+			if (obj instanceof Field) {
+				Field f = (Field) obj;
+				return type.equals(f.type) && label.equals(f.label)
+						&& reference.equals(f.reference) && attribute.equals(f.attribute);
+			}
+			else
+				return false;
+		}
+		return false;
+	}
 }

@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Consumer;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -26,6 +27,7 @@ import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import io.usethesource.vallang.type.TypeStore;
+import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
@@ -33,13 +35,12 @@ public class TyphonSession implements Operations {
 	private static final TypeFactory TF = TypeFactory.getInstance();
 	private final IValueFactory vf;
 	
-	private ResultTable storedResult = null;
-	
 	public TyphonSession(IValueFactory vf) {
 		this.vf = vf;
 	}
 
 	public ITuple newSession(IMap connections, IEvaluatorContext ctx) {
+		//checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function type ourself
         ModuleEnvironment aliasModule = ctx.getHeap().getModule("lang::typhonql::Session");
         if (aliasModule == null) {
@@ -52,7 +53,8 @@ public class TyphonSession implements Operations {
 		}
 
 		// get the function types
-		FunctionType readType = (FunctionType)aliasedTuple.getFieldType("read");
+		FunctionType getResultType = (FunctionType)aliasedTuple.getFieldType("getResult");
+		FunctionType getJavaResultType = (FunctionType)aliasedTuple.getFieldType("getJavaResult");
 		FunctionType readAndStoreType = (FunctionType)aliasedTuple.getFieldType("readAndStore");
 		FunctionType closeType = (FunctionType)aliasedTuple.getFieldType("done");
 		FunctionType newIdType = (FunctionType)aliasedTuple.getFieldType("newId");
@@ -78,21 +80,23 @@ public class TyphonSession implements Operations {
 				
 		}
 		// construct the session tuple
-		ResultStore store = new ResultStore();
+		ResultStore store  = new ResultStore();
 		Map<String, String> uuids = new HashMap<>();
+		List<Consumer<List<Record>>> script = new ArrayList<>();
+		TyphonSessionState state = new TyphonSessionState();
 		return vf.tuple(
-			makeRead(store, readType, ctx),
-			makeReadAndStore(store, readAndStoreType, ctx),
-            makeClose(store, closeType, ctx),
-            makeNewId(uuids, newIdType, ctx),
-            new MariaDBOperations(mariaDbConnections).newSQLOperations(store, uuids, ctx, vf, TF),
-            new MongoOperations(mongoConnections).newMongoOperations(store, uuids, ctx, vf, TF)
+			makeGetResult(store, script, state, getResultType, ctx),
+			makeGetJavaResult(store, script, state, getResultType, ctx),
+			makeReadAndStore(store, script, state, readAndStoreType, ctx),
+            makeClose(store, state, closeType, ctx),
+            makeNewId(uuids, state, newIdType, ctx),
+            new MariaDBOperations(mariaDbConnections).newSQLOperations(store, script, state, uuids, ctx, vf, TF),
+            new MongoOperations(mongoConnections).newMongoOperations(store, script, state, uuids, ctx, vf, TF)
 		);
 	}
 	
-
-	private IValue makeNewId(Map<String, String> uuids, FunctionType newIdType, IEvaluatorContext ctx) {
-		return makeFunction(ctx, newIdType, args -> {
+	private IValue makeNewId(Map<String, String> uuids, TyphonSessionState state, FunctionType newIdType, IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, newIdType, args -> {
 			String idName = ((IString) args[0]).getValue();
 			String uuid = UUID.randomUUID().toString();
 			uuids.put(idName, uuid);
@@ -100,18 +104,17 @@ public class TyphonSession implements Operations {
 		});
 	}
 
-	private ICallableValue makeClose(ResultStore store, FunctionType closeType, IEvaluatorContext ctx) {
-		return makeFunction(ctx, closeType, args -> {
-			store.clear();
+	private ICallableValue makeClose(ResultStore store, TyphonSessionState state, FunctionType closeType, IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, closeType, args -> {
+			close(state);
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 	
-	private ResultTable computeResultTable(ResultStore store, IValue[] args) {
-		String resultName = ((IString) args[0]).getValue();
+	private ResultTable computeResultTable(ResultStore store, List<Consumer<List<Record>>> script, IValue[] args) {
 		List<Path> paths = new ArrayList<>();
 		
-		IList pathsList = (IList) args[1];
+		IList pathsList = (IList) args[0];
 		Iterator<IValue> iter = pathsList.iterator();
 		
 		while (iter.hasNext()) {
@@ -121,45 +124,52 @@ public class TyphonSession implements Operations {
 		
 		//List<EntityModel> models = EntityModelReader.fromRascalRelation(types, modelsRel);
 		//WorkingSet ws = store.computeResult(resultName, labels.toArray(new String[0]), models.toArray(new EntityModel[0]));
-		ResultTable rt = store.computeResultTable(resultName, paths);
+		ResultTable rt = store.computeResultTable(script, paths);
 		return rt;
 	}
 	
-	private ICallableValue makeRead(ResultStore store, FunctionType readType, IEvaluatorContext ctx) {
-		return makeFunction(ctx, readType, args -> {
-			ResultTable rt = computeResultTable(store, args);
+	private ICallableValue makeGetResult(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, FunctionType getResultType, IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, getResultType, args -> {
 			// alias ResultTable =  tuple[list[str] columnNames, list[list[value]] values];
  			return ResultFactory.makeResult(TF.tupleType(new Type[] { TF.listType(TF.stringType()), TF.listType(TF.listType(TF.valueType()))}, 
- 					new String[]{ "columnNames", "values"}), rt.toIValue(), ctx);
+ 					new String[]{ "columnNames", "values"}), state.getResult().toIValue(), ctx);
 		});
 	}
 	
-	private ICallableValue makeReadAndStore(ResultStore store, FunctionType readAndStoreType, IEvaluatorContext ctx) {
-		return makeFunction(ctx, readAndStoreType, args -> {
-			ResultTable rt = computeResultTable(store, args);
-			this.storedResult = rt;
+	private ICallableValue makeGetJavaResult(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, FunctionType getResultType, IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, getResultType, args -> {
+			// alias ResultTable =  tuple[list[str] columnNames, list[list[value]] values];
+ 			return ResultFactory.makeResult(TF.externalType(TF.valueType()), state.getResult(), ctx);
+		});
+	}
+	
+	private ICallableValue makeReadAndStore(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, FunctionType readAndStoreType, IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, readAndStoreType, args -> {
+			ResultTable rt = computeResultTable(store, script, args);
+			state.setResult(rt);
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 
 	private Path toPath(ITuple path) {
-		IList pathLst = (IList) path.get(2);
+		IList pathLst = (IList) path.get(3);
 		Iterator<IValue> vs = pathLst.iterator();
 		List<String> fields = new ArrayList<String>();
 		while (vs.hasNext()) {
 			fields.add(((IString)(vs.next())).getValue());
 		}
-		String label = ((IString) path.get(0)).getValue();
-		String entityType = ((IString) path.get(1)).getValue();
-		return new Path(label,
+		String dbName = ((IString) path.get(0)).getValue();
+		String var = ((IString) path.get(1)).getValue();
+		String entityType = ((IString) path.get(2)).getValue();
+		return new Path(
+			dbName, var,
 			entityType,
 			fields.toArray(new String[0]));
 	}
 
-	public ResultTable getStoredResult() {
-		return storedResult;
+	public void close(TyphonSessionState state) {
+		state.close();
+		
 	}
-	
-	
 
 }

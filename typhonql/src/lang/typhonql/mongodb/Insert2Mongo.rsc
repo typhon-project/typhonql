@@ -49,9 +49,6 @@ DBObject obj2dbObj((Expr)`<Bool b>`) = \value("<b>" == "true");
 
 DBObject obj2dbObj((Expr)`<Int n>`) = \value(toInt("<n>"));
 
-DBObject obj2dbObj((Expr)`<DateTime d>`) 
-  = \value(toInt("<n>"));
-  
 DBObject obj2dbObj((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
 
 DBObject obj2dbObj((Expr)`<UUID id>`) = \value("<id>"[1..]);

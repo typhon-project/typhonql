@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.usethesource.vallang.IBool;
+import io.usethesource.vallang.IExternalValue;
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IListWriter;
@@ -21,11 +22,12 @@ import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
+import io.usethesource.vallang.type.Type;
 import nl.cwi.swat.typhonql.workingset.EntityRef;
 import nl.cwi.swat.typhonql.workingset.JsonSerializableResult;
 
 
-public class ResultTable implements JsonSerializableResult {
+public class ResultTable implements JsonSerializableResult, IExternalValue {
 
 	private static final ObjectMapper mapper;
 	
@@ -176,6 +178,11 @@ public class ResultTable implements JsonSerializableResult {
 			System.out.println(String.join(",", 
 					vs.stream().map(o -> o.toString()).collect(Collectors.toList())));
 		}
+	}
+	
+	@Override
+	public Type getType() {
+		return TF.externalType(TF.valueType());
 	}
 
 }
