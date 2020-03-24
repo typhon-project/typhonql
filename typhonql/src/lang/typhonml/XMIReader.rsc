@@ -19,6 +19,14 @@ list[str] typhonMLexamples() = [
 "it.univaq.disim.typhonml.parent/bundles/it.univaq.disim.typhonml.repository/repository/test/generated_demo.xmi",
 "it.univaq.disim.typhonml.parent/bundles/it.univaq.disim.typhonml.repository/repository/weather_warning/dl/weather_warning_ML.xmi"
 ];
+
+list[loc] copiedModels() = [
+|project://typhonql/src/lang/typhonml/alphabank.xmi|,
+|project://typhonql/src/lang/typhonml/complexModelWithChangeOperators.xmi|,
+|project://typhonql/src/lang/typhonml/customdatatypes.xmi|,
+|project://typhonql/src/lang/typhonml/demodb.xmi|,
+|project://typhonql/src/lang/typhonml/mydb4.xmi|
+];
  
 
 
@@ -27,7 +35,15 @@ void smokeTest(str root = "/Users/tvdstorm/CWI/typhonml") {
     println("TESTING: <ex>");
     str xmi = readFile(|file://<root>/<ex>|);
     Model m = xmiString2Model(xmi);
-    iprintln(m);
+    //iprintln(m);
+    iprintln(model2schema(m));
+  }
+  
+  for (loc ex <- copiedModels()) {
+    println("TESTING (copied model): <ex>");
+    str xmi = readFile(ex);
+    Model m = xmiString2Model(xmi);
+    //iprintln(m);
     iprintln(model2schema(m));
   }
 }
@@ -208,7 +224,7 @@ Model xmiNode2Model(node n) {
            freeTexts = [];
            for (xfre:"fretextAttributes"(list[node] taskElts) <- xelts) {
              myft = realm.new(#FreeText, FreeText(get(xfre, "name"), []));
-             myft.tasks = [ realm.new(#NlpTask, NlpTask(make(#NlpTaskType, get(x, "type"), []))) 
+             myft.tasks = [ realm.new(#NlpTask, NlpTask(\type=make(#NlpTaskType, get(x, "type"), []))) 
                | x:"tasks"(_) <- taskElts ];
              freeTexts += [myft]; 
            }
