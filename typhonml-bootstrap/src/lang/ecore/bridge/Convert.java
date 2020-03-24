@@ -340,8 +340,8 @@ public class Convert {
 			// TODO: enum support does not yet work for the other direction (rascal -> EMF)
 			EEnumLiteral enumLit = (EEnumLiteral)obj;
 			
-			Type t = ts.lookupAbstractDataType(((EEnum)enumLit.eContainer()).getName());
-			return vf.constructor(ts.lookupConstructor(t, enumLit.getName()).iterator().next());
+			return vf.constructor(ts.lookupConstructor(type, "EEnumLiteral").iterator().next(), new IValue[] {}, 
+					Collections.singletonMap("name", vf.string(enumLit.getName())));
 		}
 		
 		if (obj instanceof EObject) {
