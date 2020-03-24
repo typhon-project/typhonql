@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: typhonml_bootstrap
+Bundle-SymbolicName: typhonml_bootstrap
+Bundle-Version: 1.0.0
+Require-Bundle: rascal_eclipse,
+ org.eclipse.emf;bundle-version="2.6.0",
+ org.eclipse.emf.ecore.xmi;bundle-version="2.13.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
