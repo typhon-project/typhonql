@@ -60,5 +60,17 @@ ColumnType typhonType2SQL("point") = point();
 
 ColumnType typhonType2SQL("polygon") = polygon();
 
+// legacy (for temporary backwards compatibility)
+
+ColumnType typhonType2SQL("String") = text();
+
+ColumnType typhonType2SQL("Date") = date();
+
+ColumnType typhonType2SQL("Blob") = text();
+
+ColumnType typhonType2SQL("natural_language") = text();
+
+
+
 
 default ColumnType typhonType2SQL(str t) { throw "Unsupported Typhon type <t>"; }
