@@ -14,7 +14,7 @@ import String;
 import util::ValueUI;
 
 void smokeTest() {
-  str xmi = readFile(|project://typhonql/src/test/splitVerticalEntityChangeOperator.xmi|);
+  str xmi = readFile(|project://typhonql/src/test/splitHorizontalEntityChangeOperator.xmi|);
   Model m = xmiString2Model(xmi);
   iprintln(m);
   iprintln(model2schema(m));
@@ -22,10 +22,8 @@ void smokeTest() {
 
 
 
-
-
 void smokeTest2() {
-  str xmi = readFile(|project://typhonql/src/lang/typhonml/removeAttributeChangeOperator.xmi|);
+  str xmi = readFile(|project://typhonql/src/lang/typhonml/addAttributeChangeOperator.xmi|);
   Model m = xmiString2Model(xmi);
   Schema s = model2schema(m);
   //iprintln(m);
@@ -102,7 +100,7 @@ Model xmiNode2Model(node n) {
   
   Attribute ensureAttr(str path) {
     if (path notin attrMap) {
-      attrMap[path] = realm.new(#Attribute, Attribute(""));
+      attrMap[path] = realm.new(#Attribute, Attribute("", null()));
     }
     return attrMap[path];
   }
@@ -181,12 +179,22 @@ Model xmiNode2Model(node n) {
          }
          
          case "typhonml:Entity": {
+         
+           attrs = [];
+           attrPos = 0;
+           
            attrs = [];
            attrPos = 0;
            for (xattr:"attributes"(_) <- xelts) {
-             attr = realm.new(#Attribute, Attribute(get(xattr, "name") 
-                , referTo(#DataType, ensurePrimitive(get(xattr, "type")))));
-             attrs += [attr]; 
+           	 	attrPath = "<dtPath>/@attributes.<attrPos>";
+           	 	println(attrPath);
+           	 	attr = ensureAttr(attrPath);
+             	attr.name = get(xattr, "name");
+             	aPath = get(xattr, "type");
+             	attr.\type = referTo(#DataType, ensurePrimitive(aPath));
+             	// attr.ownerEntity = referTo(#Entity, ensureEntity(dtPath).entity);
+             	attrs += [attr];
+             	attrPos += 1; 
            }  
            
            freeTexts = [];
@@ -248,7 +256,21 @@ Model xmiNode2Model(node n) {
       	
       	case "typhonml:AddEntity":{
       		
+      		
       		attrs = [];
+            attrPos = 0;
+            for (xattr:"attributes"(_) <- xcho) {
+           	 	attrPath = "<dtPath>/@attributes.<attrPos>";
+           	 	println(attrPath)
+           	 	attr = ensureAttr(attrPath);
+             	attr.name = get(xattr, "name");
+             	aPath = get(xattr, "type");
+             	attr.\type = referTo(#DataType, ensurePrimitive(aPath));
+             	// attr.ownerEntity = referTo(#Entity, ensureEntity(dtPath).entity);
+             	attrs += [attr];
+             	attrPos += 1; 
+           	}  
+      			
            	for (xattr:"attributes"(_) <- xcho) {
              	attr = realm.new(#Attribute, Attribute(get(xattr, "name")));
              	aPath = get(xattr, "type");
@@ -285,7 +307,7 @@ Model xmiNode2Model(node n) {
            	}
            	
            	name = get(xcho, "name");
-      		re = realm.new(#AddEntity, AddEntity(name, attrs, [], rels));
+      		re = realm.new(#AddEntity, AddEntity(name, attrs, [], rels, [], []));
       		chos += [ ChangeOperator(re)];
            	
            	entity = ensureEntity(dtPath).entity;
@@ -327,7 +349,7 @@ Model xmiNode2Model(node n) {
       		
       		name = get(xcho, "name");
       		
-      		re = realm.new(#AddAttribute, AddAttribute(name,entity,ty));
+      		re = realm.new(#AddAttribute, AddAttribute(name,ty, entity, ty));
       		chos += [ ChangeOperator(re)];
       	}
       	
@@ -483,6 +505,7 @@ Model xmiNode2Model(node n) {
         	list_attr = [];
         	
         	for(str to_do <- l_a){
+        		println(to_do);
         		list_attr += [referTo(#Attribute, ensureAttr(to_do))];
         	};	
         	

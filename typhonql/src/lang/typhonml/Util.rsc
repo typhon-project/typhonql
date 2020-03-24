@@ -116,9 +116,13 @@ ChangeOps model2changeOperators(Model m) {
   		}
   		case ChangeOperator(ChangeAttributeType chop):{
   			attr = lookup(m, #Attribute, chop.attributeToChange);
-  			entity = lookup(m, #Entity, attr.ownerEntity);
-  			typ = lookup(m, #DataType, attr.\type);
   			
+  			entity = null();
+  			if (DataType(Entity e) <- m.dataTypes, Attribute a <- e.attributes, a.uid == attr.uid) {
+			  entity = e;
+			}
+  			
+  			typ = lookup(m, #DataType, attr.\type);
   			result += <"changeAttributeType", [entity.name, attr.name, typ.name]>;
   		}
   		case ChangeOperator(DisableRelationContainment chop):{
@@ -147,7 +151,10 @@ ChangeOps model2changeOperators(Model m) {
   		}
 		case ChangeOperator(RemoveAttribute chop):{
 			attr = lookup(m, #Attribute, chop.attributeToRemove);
-  			entity = lookup(m, #Entity, attr.ownerEntity);
+  			entity = null();
+  			if (DataType(Entity e) <- m.dataTypes, Attribute a <- e.attributes, a.uid == attr.uid) {
+			  entity = e;
+			}
 			
   			result += <"removeAttribute", [entity.name, attr.name]>;
   		}
@@ -163,7 +170,10 @@ ChangeOps model2changeOperators(Model m) {
   		}
   		case ChangeOperator(RenameAttribute chop):{
   			attr = lookup(m, #Attribute, chop.attributeToRename);
-  			entity = lookup(m, #Entity, attr.ownerEntity);
+  			entity = null();
+  			if (DataType(Entity e) <- m.dataTypes, Attribute a <- e.attributes, a.uid == attr.uid) {
+			  entity = e;
+			}
   			
   			result += <"renameAttribute", [entity.name, attr.name, chop.newName]>;
   		}
