@@ -116,6 +116,8 @@ str pp(\in(SQLExpr arg, list[Value] vals))
   = "(<pp(arg)>) in (<intercalate(", ", [ pp(v) | Value v <- vals])>)";
 
 
+str pp(SQLExpr::placeholder(name = str name)) = "${<name>}";
+
 // Clause
 
 str pp(where(list[SQLExpr] es)) = "where <intercalate(" and ", [ pp(e) | SQLExpr e <- es ])>"; 
