@@ -12,6 +12,8 @@ syntax Expr
   | @category="Constant" \str: Str strValue
   | @category="Number" \real: Real realValue
   | @category="Constant" \dt: DateTime dtValue
+  | @category="Constant" point: Point pointValue
+  | @category="Constant" polygon: Polygon polygonValue
   | \bool: Bool boolValue
   | uuid: UUID uuidValue
   | bracket "(" Expr arg ")"
