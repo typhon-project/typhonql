@@ -46,7 +46,8 @@ EntityModels schema2entityModels(Schema s)
 
   
   
-void runScript(Script scr, Session session, Schema schema) {
+str runScript(Script scr, Session session, Schema schema) {
+  str result = "";
   for (Step s <- scr.steps) {
     switch (s) {
       case step(str r, sql(executeQuery(str db, str q)), Bindings ps):
@@ -74,7 +75,7 @@ void runScript(Script scr, Session session, Schema schema) {
         println("WARNING: not yet executed: <s>"); 
        
       case newId(str var):
-        session.newId(var);
+        result =session.newId(var);
           
       case read(list[Path path] paths): {
       	session.readAndStore(paths);
@@ -82,6 +83,7 @@ void runScript(Script scr, Session session, Schema schema) {
   	  	
       default: throw "Unsupported call: <s>";
     }
+    return result;
   }
   
   //str (str result, rel[str name, str \type] entities, EntityModels models) read,
