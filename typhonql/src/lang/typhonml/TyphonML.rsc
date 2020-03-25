@@ -1,7 +1,7 @@
 module lang::typhonml::TyphonML
 
 // Generated code; do not edit.
-// Date: $2019-09-10T14:14:14.386+00:00$
+// Date: $2020-03-24T13:31:47.125+00:00$
 
 import lang::ecore::Refs;
 import util::Maybe;
@@ -40,6 +40,11 @@ data NamedElement
       , list[NlpTask] \tasks = \freeText.\tasks
       , lang::ecore::Refs::Id uid = \freeText.uid
       , bool _inject = true)
+  | NamedElement(NFunctionalTag \nFunctionalTag
+      , str \name = \nFunctionalTag.\name
+      , str \importedNamespace = \nFunctionalTag.\importedNamespace
+      , lang::ecore::Refs::Id uid = \nFunctionalTag.uid
+      , bool _inject = true)
   | NamedElement(Collection \collection
       , str \name = \collection.\name
       , str \importedNamespace = \collection.\importedNamespace
@@ -60,6 +65,11 @@ data NamedElement
       , lang::ecore::Refs::Ref[GraphNode] \to = \graphEdge.\to
       , list[GraphEdgeLabel] \labels = \graphEdge.\labels
       , lang::ecore::Refs::Id uid = \graphEdge.uid
+      , bool _inject = true)
+  | NamedElement(FunctionalTag \functionalTag
+      , str \name = \functionalTag.\name
+      , str \importedNamespace = \functionalTag.\importedNamespace
+      , lang::ecore::Refs::Id uid = \functionalTag.uid
       , bool _inject = true)
   | NamedElement(Attribute \attribute
       , str \name = \attribute.\name
@@ -135,11 +145,6 @@ data ChangeOperator
       , list[lang::ecore::Refs::Ref[Attribute]] \attributes = \addAttributesToIndex.\attributes
       , lang::ecore::Refs::Id uid = \addAttributesToIndex.uid
       , bool _inject = true)
-  | ChangeOperator(RenameAttribute \renameAttribute
-      , lang::ecore::Refs::Ref[Attribute] \attributeToRename = \renameAttribute.\attributeToRename
-      , str \newName = \renameAttribute.\newName
-      , lang::ecore::Refs::Id uid = \renameAttribute.uid
-      , bool _inject = true)
   | ChangeOperator(SplitEntity \splitEntity
       , lang::ecore::Refs::Ref[Entity] \entityToBeSplit = \splitEntity.\entityToBeSplit
       , Entity \firstNewEntity = \splitEntity.\firstNewEntity
@@ -185,6 +190,13 @@ data ChangeOperator
       , list[lang::ecore::Refs::Ref[Attribute]] \attributes = \addIndex.\attributes
       , lang::ecore::Refs::Id uid = \addIndex.uid
       , bool _inject = true)
+  | ChangeOperator(SplitEntityHorizontal \splitEntityHorizontal
+      , lang::ecore::Refs::Ref[Entity] \entity1 = \splitEntityHorizontal.\entity1
+      , str \entity2name = \splitEntityHorizontal.\entity2name
+      , lang::ecore::Refs::Ref[Attribute] \attribute = \splitEntityHorizontal.\attribute
+      , str \expression = \splitEntityHorizontal.\expression
+      , lang::ecore::Refs::Id uid = \splitEntityHorizontal.uid
+      , bool _inject = true)
   | ChangeOperator(RenameRelation \renameRelation
       , lang::ecore::Refs::Ref[Relation] \relationToRename = \renameRelation.\relationToRename
       , str \newRelationName = \renameRelation.\newRelationName
@@ -208,6 +220,21 @@ data ChangeOperator
       , str \importedNamespace = \addGraphAttribute.\importedNamespace
       , lang::ecore::Refs::Ref[Attribute] \value = \addGraphAttribute.\value
       , lang::ecore::Refs::Id uid = \addGraphAttribute.uid
+      , bool _inject = true)
+  | ChangeOperator(AddEntity \addEntity
+      , str \name = \addEntity.\name
+      , str \importedNamespace = \addEntity.\importedNamespace
+      , list[Attribute] \attributes = \addEntity.\attributes
+      , list[FreeText] \fretextAttributes = \addEntity.\fretextAttributes
+      , list[Relation] \relations = \addEntity.\relations
+      , list[FunctionalTag] \functionalTags = \addEntity.\functionalTags
+      , list[NFunctionalTag] \nfunctionalTags = \addEntity.\nfunctionalTags
+      , lang::ecore::Refs::Id uid = \addEntity.uid
+      , bool _inject = true)
+  | ChangeOperator(RenameAttribute \renameAttribute
+      , lang::ecore::Refs::Ref[Attribute] \attributeToRename = \renameAttribute.\attributeToRename
+      , str \newName = \renameAttribute.\newName
+      , lang::ecore::Refs::Id uid = \renameAttribute.uid
       , bool _inject = true)
   | ChangeOperator(EnableRelationContainment \enableRelationContainment
       , lang::ecore::Refs::Ref[Relation] \relation = \enableRelationContainment.\relation
@@ -239,6 +266,13 @@ data ChangeOperator
       , str \newEntityName = \mergeEntity.\newEntityName
       , lang::ecore::Refs::Id uid = \mergeEntity.uid
       , bool _inject = true)
+  | ChangeOperator(SplitEntityVertical \splitEntityVertical
+      , lang::ecore::Refs::Ref[Entity] \entity1 = \splitEntityVertical.\entity1
+      , str \entity2name = \splitEntityVertical.\entity2name
+      , list[lang::ecore::Refs::Ref[Attribute]] \attributeList = \splitEntityVertical.\attributeList
+      , list[lang::ecore::Refs::Ref[Relation]] \relationList = \splitEntityVertical.\relationList
+      , lang::ecore::Refs::Id uid = \splitEntityVertical.uid
+      , bool _inject = true)
   | ChangeOperator(RemoveGraphAttribute \removeGraphAttribute
       , lang::ecore::Refs::Ref[GraphNode] \node = \removeGraphAttribute.\node
       , lang::ecore::Refs::Id uid = \removeGraphAttribute.uid
@@ -250,14 +284,6 @@ data ChangeOperator
       , lang::ecore::Refs::Ref[GraphNode] \to = \addGraphEdge.\to
       , list[GraphEdgeLabel] \labels = \addGraphEdge.\labels
       , lang::ecore::Refs::Id uid = \addGraphEdge.uid
-      , bool _inject = true)
-  | ChangeOperator(AddEntity \addEntity
-      , str \name = \addEntity.\name
-      , str \importedNamespace = \addEntity.\importedNamespace
-      , list[Attribute] \attributes = \addEntity.\attributes
-      , list[FreeText] \fretextAttributes = \addEntity.\fretextAttributes
-      , list[Relation] \relations = \addEntity.\relations
-      , lang::ecore::Refs::Id uid = \addEntity.uid
       , bool _inject = true)
   | ChangeOperator(RemoveGraphEdge \removeGraphEdge
       , lang::ecore::Refs::Ref[GraphEdge] \graphEdgeToRemove = \removeGraphEdge.\graphEdgeToRemove
@@ -298,6 +324,20 @@ data RemoveEntity
       , lang::ecore::Refs::Id uid = noId())
   ;
 
+data SplitEntityHorizontal
+  = SplitEntityHorizontal(lang::ecore::Refs::Ref[Entity] \entity1
+      , str \entity2name
+      , lang::ecore::Refs::Ref[Attribute] \attribute
+      , str \expression = ""
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
+data RenameEntity
+  = RenameEntity(lang::ecore::Refs::Ref[Entity] \entityToRename = null()
+      , str \newEntityName = ""
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
 data DropIndex
   = DropIndex(lang::ecore::Refs::Ref[Table] \table
       , lang::ecore::Refs::Id uid = noId())
@@ -333,6 +373,14 @@ data AddIndex
 data RenameTable
   = RenameTable(lang::ecore::Refs::Ref[Table] \tableToRename
       , str \newName = ""
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
+data SplitEntityVertical
+  = SplitEntityVertical(lang::ecore::Refs::Ref[Entity] \entity1
+      , str \entity2name
+      , list[lang::ecore::Refs::Ref[Attribute]] \attributeList
+      , list[lang::ecore::Refs::Ref[Relation]] \relationList
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -404,12 +452,6 @@ data MergeEntity
 data ChangeAttributeType
   = ChangeAttributeType(lang::ecore::Refs::Ref[Attribute] \attributeToChange
       , lang::ecore::Refs::Ref[DataType] \newType = null()
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
-data RenameEntity
-  = RenameEntity(lang::ecore::Refs::Ref[Entity] \entityToRename = null()
-      , str \newEntityName = ""
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -653,20 +695,24 @@ data AddRelation
   ;
 
 data Entity
-  = Entity(AddEntity \addEntity
+  = Entity(str \name
+      , list[Attribute] \attributes
+      , list[FreeText] \fretextAttributes
+      , list[Relation] \relations
+      , list[FunctionalTag] \functionalTags
+      , list[NFunctionalTag] \nfunctionalTags
+      , str \importedNamespace = ""
+      , lang::ecore::Refs::Id uid = noId())
+  | Entity(AddEntity \addEntity
       , str \name = \addEntity.\name
       , str \importedNamespace = \addEntity.\importedNamespace
       , list[Attribute] \attributes = \addEntity.\attributes
       , list[FreeText] \fretextAttributes = \addEntity.\fretextAttributes
       , list[Relation] \relations = \addEntity.\relations
+      , list[FunctionalTag] \functionalTags = \addEntity.\functionalTags
+      , list[NFunctionalTag] \nfunctionalTags = \addEntity.\nfunctionalTags
       , lang::ecore::Refs::Id uid = \addEntity.uid
       , bool _inject = true)
-  | Entity(str \name
-      , list[Attribute] \attributes
-      , list[FreeText] \fretextAttributes
-      , list[Relation] \relations
-      , str \importedNamespace = ""
-      , lang::ecore::Refs::Id uid = noId())
   ;
 
 data AddEntity
@@ -674,6 +720,8 @@ data AddEntity
       , list[Attribute] \attributes
       , list[FreeText] \fretextAttributes
       , list[Relation] \relations
+      , list[FunctionalTag] \functionalTags
+      , list[NFunctionalTag] \nfunctionalTags
       , str \importedNamespace = ""
       , lang::ecore::Refs::Id uid = noId())
   ;
@@ -687,16 +735,16 @@ data Attribute
       , lang::ecore::Refs::Id uid = \addAttribute.uid
       , bool _inject = true)
   | Attribute(str \name
+      , lang::ecore::Refs::Ref[DataType] \type
       , str \importedNamespace = ""
-      , lang::ecore::Refs::Ref[DataType] \type = null()
       , lang::ecore::Refs::Id uid = noId())
   ;
 
 data AddAttribute
   = AddAttribute(str \name
+      , lang::ecore::Refs::Ref[DataType] \type
       , lang::ecore::Refs::Ref[Entity] \ownerEntity
       , str \importedNamespace = ""
-      , lang::ecore::Refs::Ref[DataType] \type = null()
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -718,8 +766,17 @@ data DataType
       , list[Attribute] \attributes = \entity.\attributes
       , list[FreeText] \fretextAttributes = \entity.\fretextAttributes
       , list[Relation] \relations = \entity.\relations
+      , list[FunctionalTag] \functionalTags = \entity.\functionalTags
+      , list[NFunctionalTag] \nfunctionalTags = \entity.\nfunctionalTags
       , lang::ecore::Refs::Id uid = \entity.uid
       , bool _inject = true)
+  ;
+
+data CustomDataType
+  = CustomDataType(str \name
+      , list[DataTypeItem] \elements
+      , str \importedNamespace = ""
+      , lang::ecore::Refs::Id uid = noId())
   ;
 
 data DataTypeItem
@@ -727,13 +784,6 @@ data DataTypeItem
       , DataTypeImplementationPackage \implementation
       , str \importedNamespace = ""
       , lang::ecore::Refs::Ref[DataType] \type = null()
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
-data CustomDataType
-  = CustomDataType(str \name
-      , list[DataTypeItem] \elements
-      , str \importedNamespace = ""
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -748,6 +798,18 @@ data DataTypeImplementationPackage
       , lang::ecore::Refs::Id uid = noId())
   ;
 
+data NFunctionalTag
+  = NFunctionalTag(str \name
+      , str \importedNamespace = ""
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
+data FunctionalTag
+  = FunctionalTag(str \name
+      , str \importedNamespace = ""
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
 data FreeText
   = FreeText(str \name
       , list[NlpTask] \tasks
@@ -756,7 +818,7 @@ data FreeText
   ;
 
 data NlpTask
-  = NlpTask(NlpTaskType \type = None()
+  = NlpTask(NlpTaskType \type = TextClassification()
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -779,7 +841,6 @@ data NlpTaskType
   | ParagraphSegmentation()
   | Lemmatisation()
   | NGramExtractor()
-  | None()
   ;
 
 data Cardinality

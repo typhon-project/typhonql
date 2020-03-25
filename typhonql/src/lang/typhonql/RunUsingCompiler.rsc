@@ -63,37 +63,34 @@ tuple[int, map[str, str]] runUpdate(Request r, Schema s, Session session) {
     throw "Statement should have been provided";
 }
 
-void runQueryAndStore(Request r, Schema sch, map[str, Connection] connections) {
+value runQueryAndGetJava(Request r, Schema sch, map[str, Connection] connections) {
 	Session session = newSession(connections);
-	return runQueryAndStore(r, sch, session);
+	return runQueryAndGetJava(r, sch, session);
 }
 
-tuple[str entryDatabase, list[Path] paths] runScriptForQuery(Request r, Schema sch, Session session) {
+void runScriptForQuery(Request r, Schema sch, Session session) {
 	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
 		scr = request2script(r, sch);
 		println(scr);
 		runScript(scr, session, sch);
-		map[str, str] types = (() | it + ("<var>":"<entity>") | (Binding) `<EId entity> <VId var>` <- bs);
-		list[Path] paths = [buildPath("<s>", types)| s <- selected];
-		str entryDatabase = [r | step(str r, _, _) <- scr.steps][-1];
-		return <entryDatabase, paths>;
 	}
 	else
 		throw "Expected query, given statement";
 }
 
-void runQueryAndStore(Request r, Schema sch, Session session) {
-	<entryDatabase, paths> = runScriptForQuery(r, sch, session);
-	session.readAndStore(entryDatabase, paths); 
+value runQueryAndGetJava(Request r, Schema sch, Session session) {
+	runScriptForQuery(r, sch, session);
+	return session.getJavaResult();
 }
 
 ResultTable runQuery(Request r, Schema sch, Session session) {
-	<entryDatabase, paths> = runScriptForQuery(r, sch, session);
-	ResultTable result = session.read(entryDatabase, paths); 
-	return result;
+	runScriptForQuery(r, sch, session);
+	return session.getResult();
 }
 
 ResultTable runQuery(Request r, Schema sch, map[str, Connection] connections) {
+	scr = request2script(r, sch);
+	println(scr);
 	Session session = newSession(connections);
 	return runQuery(r, sch, session);
 }
@@ -138,16 +135,16 @@ ResultTable runQuery(str src, str xmiString, Session session) {
   return runQuery(req, s, session);
 }
 
-void runQueryAndStore(str src, str xmiString, map[str, Connection] connections) {
+value runQueryAndGetJava(str src, str xmiString, map[str, Connection] connections) {
   Session session = newSession(connections);
-  runQueryAndStore(src, xmiString, session);
+  return runQueryAndGetJava(src, xmiString, session);
 }
 
-void runQueryAndStore(str src, str xmiString, Session session) {
+value runQueryAndGetJava(str src, str xmiString, Session session) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   Request req = [Request]src;
-  runQueryAndStore(req, s, session);
+  return runQueryAndGetJava(req, s, session);
 }
 
 lrel[int, map[str, str]] runPrepared(Request req, list[str] columnNames, list[list[str]] values, Schema s, map[str, Connection] conns) {

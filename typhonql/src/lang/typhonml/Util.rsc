@@ -105,12 +105,16 @@ ChangeOps model2changeOperators(Model m) {
 
 Attrs model2attrs(Model m) {
   Attrs result = {};
-  for (DataType(Entity(str from, list[Attribute] attrs, _, _)) <- m.dataTypes) {
+  for (DataType(Entity(str from, list[Attribute] attrs, list[FreeText] fretextAttributes, _, _, _)) <- m.dataTypes) {
     for (Attribute a <- attrs) {
       DataType dt = lookup(m, #DataType, a.\type);
       assert (DataType(PrimitiveDataType(_)) := dt || DataType(CustomDataType(_,_)) := dt) :
       	 "Only built-in and custom primitives allowed for attributes (for now).";
       result += {<from, a.name, dt.name>};
+    }
+    for (FreeText ft <- fretextAttributes) {
+      // for now we represent the freetext type as a string as well.
+      result += {<from, ft.name, "freetext[<intercalate(",", [ getName(t.\type) | NlpTask t <- ft.tasks ])>]">};
     }
   }
   return result;
@@ -139,7 +143,7 @@ will ease querying later down the line.
 Rels model2rels(Model m) {
   Rels result = {};
   // todo: freetextAttributes
-  for (DataType(Entity(str from, _, _, list[Relation] rels)) <- m.dataTypes) {
+  for (DataType(Entity(str from, _, _, list[Relation] rels, _, _)) <- m.dataTypes) {
     for (r:Relation(str fromRole, Cardinality fromCard) <- rels) {
       Entity target = lookup(m, #Entity, r.\type);
       str to = target.name;

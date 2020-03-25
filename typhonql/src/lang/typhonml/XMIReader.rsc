@@ -12,13 +12,45 @@ import Type;
 
 import util::ValueUI;
 
+list[str] typhonMLexamples() = [
+//"it.univaq.disim.typhonml.parent/bundles/it.univaq.disim.typhonml/model/TyphonECommerceExample.xmi",
+"it.univaq.disim.typhonml.parent/bundles/it.univaq.disim.typhonml.model_analysis/resources/mydb.xmi",
+"it.univaq.disim.typhonml.parent/bundles/it.univaq.disim.typhonml.repository/repository/test/demo.xmi",
+"it.univaq.disim.typhonml.parent/bundles/it.univaq.disim.typhonml.repository/repository/test/generated_demo.xmi",
+"it.univaq.disim.typhonml.parent/bundles/it.univaq.disim.typhonml.repository/repository/weather_warning/dl/weather_warning_ML.xmi"
+];
 
-void smokeTest() {
-  str xmi = readFile(|project://typhonql/src/newmydb4.xmi|);
-  Model m = xmiString2Model(xmi);
-  iprintln(m);
-  iprintln(model2schema(m));
+list[loc] copiedModels() = [
+|project://typhonql/src/lang/typhonml/alphabank.xmi|,
+|project://typhonql/src/lang/typhonml/complexModelWithChangeOperators.xmi|,
+|project://typhonql/src/lang/typhonml/customdatatypes.xmi|,
+|project://typhonql/src/lang/typhonml/demodb.xmi|,
+|project://typhonql/src/lang/typhonml/mydb4.xmi|,
+|project://typhonql/src/lang/typhonml/user-review-product-bio.xmi|
+];
+ 
+
+
+void smokeTest(str root = "/Users/tvdstorm/CWI/typhonml") {
+  for (str ex <- typhonMLexamples()) {
+    println("TESTING: <ex>");
+    str xmi = readFile(|file://<root>/<ex>|);
+    Model m = xmiString2Model(xmi);
+    //iprintln(m);
+    iprintln(model2schema(m));
+  }
+  
+  for (loc ex <- copiedModels()) {
+    println("TESTING (copied model): <ex>");
+    str xmi = readFile(ex);
+    Model m = xmiString2Model(xmi);
+    //iprintln(m);
+    iprintln(model2schema(m));
+  }
 }
+
+
+
 
 
 void smokeTest2() {
@@ -62,7 +94,7 @@ Model xmiNode2Model(node n) {
   
   DataType ensureEntity(str path) {
     if (path notin typeMap) {
-      typeMap[path] = DataType(realm.new(#Entity, Entity("", [], [], [])));
+      typeMap[path] = DataType(realm.new(#Entity, Entity("", [], [], [], [], [])));
     }
     return typeMap[path];
   }
@@ -147,8 +179,9 @@ Model xmiNode2Model(node n) {
         	re = realm.new(#RenameEntity, RenameEntity(\entityToRename = toRename, \newEntityName = newName));
           	chos += [ ChangeOperator(re)];
         }
-        default:
-          throw "Non implemented change operator: <get(xcho, "type")>";
+        default: {
+          println("WARNING: Non implemented change operator: <get(xcho, "type")>");
+        }
       }
       
     }
@@ -156,6 +189,8 @@ Model xmiNode2Model(node n) {
     int dtPos = 0;
     for (xdt:"dataTypes"(list[node] xelts) <- kids) {
        dtPath = "//@dataTypes.<dtPos>";
+       //println("Data type path: <dtPath>");
+       //println(xdt);
            
        switch (get(xdt, "type")) {
        	 case "typhonml:PrimitiveDataType": {
@@ -182,11 +217,19 @@ Model xmiNode2Model(node n) {
          case "typhonml:Entity": {
            attrs = [];
            for (xattr:"attributes"(_) <- xelts) {
-             attr = realm.new(#Attribute, Attribute(get(xattr, "name")));
-             aPath = get(xattr, "type");
-             attr.\type = referTo(#DataType, ensurePrimitive(aPath));
+             attr = realm.new(#Attribute, Attribute(get(xattr, "name") 
+                , referTo(#DataType, ensurePrimitive(get(xattr, "type")))));
              attrs += [attr]; 
            }  
+           
+           freeTexts = [];
+           for (xfre:"fretextAttributes"(list[node] taskElts) <- xelts) {
+             myft = realm.new(#FreeText, FreeText(get(xfre, "name"), []));
+             myft.tasks = [ realm.new(#NlpTask, NlpTask(\type=make(#NlpTaskType, get(x, "type"), []))) 
+               | x:"tasks"(_) <- taskElts ];
+             freeTexts += [myft]; 
+           }
+           
          
            rels = [];
            relPos = 0;
@@ -215,11 +258,12 @@ Model xmiNode2Model(node n) {
              rels += [myrel];
              relPos += 1;
            }
+           
 
            entity = ensureEntity(dtPath).entity;
            entity.name = get(xdt, "name");
            entity.attributes = attrs;
-           entity.fretextAttributes = []; // todo;
+           entity.fretextAttributes = freeTexts; ;
            entity.relations = rels;
            dt = DataType(entity);              
            dts += [dt];

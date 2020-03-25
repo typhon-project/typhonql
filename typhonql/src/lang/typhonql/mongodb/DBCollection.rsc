@@ -27,7 +27,8 @@ str pp(\value(real r)) = "<r>";
 str pp(\value(str s)) = "\"<strEscape(s)>\"";
 
 str pp(\value(bool b)) = "<b>";
-str pp(dateTime(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
+
+str pp(\value(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
 
 str pp(placeholder(name = str x)) = "${<x>}";
 

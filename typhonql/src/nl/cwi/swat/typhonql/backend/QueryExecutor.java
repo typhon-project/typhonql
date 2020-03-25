@@ -1,24 +1,65 @@
 package nl.cwi.swat.typhonql.backend;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+
+import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public abstract class QueryExecutor {
 	
 	private ResultStore store;
+	private List<Consumer<List<Record>>> script;
 	private Map<String, Binding> bindings;
 	private Map<String, String> uuids;
+	private List<Path> signature;
 
-	public QueryExecutor(ResultStore store, Map<String, String> uuids, Map<String, Binding> bindings) {
+	public QueryExecutor(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, Map<String, Binding> bindings, List<Path> signature) {
 		this.store = store;
+		this.script = script;
 		this.bindings = bindings;
 		this.uuids = uuids;
+		this.signature = signature;
 	}
 	
-	public ResultIterator executeSelect() {
-		return executeSelect(new HashMap<String, String>());
+	public void executeSelect(String resultId) {
+		int nxt = script.size() + 1;
+	    script.add((List<Record> rows) -> {
+	       ResultIterator iter = executeSelect(new HashMap<String, String>());
+	       this.storeResults(resultId, iter);
+	       while (iter.hasNextResult()) {
+	    	  iter.nextResult();
+	    	  Record r = iter.buildRecord(signature);
+	    	  List<Record> newRow = horizontalAdd(rows, r);
+	    	  script.get(nxt).accept(newRow);
+	       }
+	    });
+	}
+	
+	private List<Record> horizontalAdd(List<Record> rows, Record r) {
+		List<Record> result = new ArrayList<Record>();
+		if (!rows.isEmpty()) { 
+			for (Record row : rows) {
+				result.add(horizontalAdd(row, r));
+			}
+			return result;
+		}
+		else
+			return Arrays.asList(r);
+	}
+
+	private Record horizontalAdd(Record row, Record r) {
+		Map<Field, Object> map = new HashMap<Field, Object>();
+		map.putAll(row.getObjects());
+		map.putAll(r.getObjects());
+		return new Record(map);
+	}
+
+	public void executeSelect(String resultId, String query) {
+		executeSelect(resultId, query);
 	}
 	
 	protected abstract ResultIterator performSelect(Map<String, String> values);
@@ -50,6 +91,10 @@ public abstract class QueryExecutor {
 			}
 			
 		}
+	}
+	
+	protected void storeResults(String resultId, ResultIterator results) {
+		store.put(resultId,  results);
 	}
 
 	private String serialize(Object obj) {

@@ -2,13 +2,15 @@ package nl.cwi.swat.typhonql.backend;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
-public class SQLResultIterator implements ResultIterator {
+public class MariaDBIterator implements ResultIterator {
 
 	private ResultSet rs;
 	private final boolean isEmpty;
 
-	public SQLResultIterator(ResultSet rs) {
+	public MariaDBIterator(ResultSet rs) {
 		this.rs = rs;
 		try {
 			this.isEmpty = !rs.isBeforeFirst();
@@ -65,4 +67,5 @@ public class SQLResultIterator implements ResultIterator {
 			throw new RuntimeException(e);
 		}
 	}
+
 }
