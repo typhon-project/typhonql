@@ -58,18 +58,18 @@ keyword Primitives
   
 
 syntax Point
-  = "#point" "(" XY ")"
+  = singlePoint: "#point" "(" XY ")"
   ;
 
 syntax XY
-  = Real Real;
+  = coordinate: Real Real;
 
 syntax Polygon
-  = "#polygon" "(" {Segment ","}* ")" 
+  = shape: "#polygon" "(" {Segment ","}* ")" 
   ;
   
 syntax Segment
-  = "(" {XY ","}* ")";
+  = line: "(" {XY ","}* ")";
 
 
 // Variable Ids
