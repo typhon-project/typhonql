@@ -121,9 +121,11 @@ void test12() {
 }
 
 void test13() {
-	cr = runUpdate((Request) `insert User { name: "Tijs" }`);
-	names = cr[1];
-	assertEquals("test13", size(names), 1);
+	<_, names> = runUpdate((Request) `insert User { name: "Tijs" }`);
+	assertEquals("test13a", size(names), 1);
+	uuid = names["uuid"];
+	rs = runQuery([Request] "from User u select u where u.@id == #<uuid>");
+	assertEquals("test13b", rs, <["u.@id"],[["<uuid>"]]>);
 }
 
 tuple[int, map[str,str]] runUpdate(Request req) {
