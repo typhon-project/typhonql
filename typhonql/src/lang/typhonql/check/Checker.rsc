@@ -7,6 +7,10 @@ extend analysis::typepal::TypePal;
 extend lang::typhonql::DML;
 extend lang::typhonql::Query;
 
+/***********
+ *  Types  *
+ ***********/
+
 data AType
     = voidType()
     | intType()
@@ -48,7 +52,6 @@ data AType
 str prettyAType(entityType(str name)) = name;
 str prettyAType(userDefinedType(str name)) = name;
 
-
 bool qlSubType(intType(), bigIntType()) = true;
 bool qlSubType(intType(), floatType()) = true;
 bool qlSubType(bigIntType(), floatType()) = true;
@@ -62,6 +65,16 @@ bool qlSubType(voidType(), _) = true;
 
 default bool qlSubType(AType a, AType b) = false;
 
+data TypePalConfig(map[AType entity, map[str field, AType tp]] mlModel = ());
+
+/***********
+ *  Roles  *
+ ***********/
+ 
+ data IdRole
+    = tableRole()
+    ;
+ 
 
 /****************/
 /** Expression **/
@@ -265,13 +278,43 @@ default AType calcInfix(_, _, _) {
     throw "unsupported";
 }
 
+void collectUserType(EId entityName, Collector c) {
+    tp = userDefinedType("<entityName>");
+    if (tp in c.getConfig().mlModel) {
+        c.fact(entityName, tp);
+    }
+    else {
+        c.calculate("error", entityName, [], AType (Solver s) {
+            s.report(error(entityName, "Missing model in the typepal configuration"));
+            return voidType();
+        });
+    }
+}
+
 
 /***********/
 /** Query **/
 /***********/
 
 void collect(current:(Query)`from <{Binding ","}+ bindings> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>`, Collector c) {
-    reportUnsupported(current, c);
+    c.enterScope(current);
+    collect(bindings, c);
+    collect(selected, c);
+    if (w <- where) {
+        collect(w, c);
+    }
+    if (g <- groupBy) {
+        collect(g, c);
+    }
+    if (or <- orderBy) {
+        collect(or, c);
+    }
+    c.leaveScope(current);
+}
+
+void collect(current:(Binding)`<EId entity> <VId name>`, Collector c) {
+    collectUserType(entity, c);
+    c.define("<name>", tableRole(), name, defType(entity));
 }
 
 void reportUnsupported(Tree current, Collector c) {
