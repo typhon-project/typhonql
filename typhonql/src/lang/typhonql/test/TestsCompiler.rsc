@@ -18,7 +18,7 @@ import lang::typhonql::Run;
 import IO;
 import ParseTree;
 import String;
-
+import Map;
 
 str HOST = "localhost";
 str PORT = "8080";
@@ -109,11 +109,28 @@ void test10() {
 
 }
 
-void runUpdate(Request req) {
+void test11() {
+	rs = runQuery((Request) `from User u select u.name where u.biography == #bio1`);
+	assertEquals("test11", rs, <["u.name"],[["Pablo"]]>);
+}
+
+void test12() {
+	runUpdate((Request) `insert @u1 User { @id: #tijs, name: "Tijs" }`);
+	rs = runQuery((Request) `from User u select u where u.@id = #tijs`);
+	assertEquals("test12", rs, <["u.@id"],[["tijs"]]>);
+}
+
+void test13() {
+	cr = runUpdate((Request) `insert User { name: "Tijs" }`);
+	names = cr[1];
+	assertEquals("test13", size(names), 1);
+}
+
+tuple[int, map[str,str]] runUpdate(Request req) {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
 	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
 	Schema s = loadSchemaFromXMI(modelStr);
-	runUpdate(req, s, connections, log = LOG);
+	return runUpdate(req, s, connections, log = LOG);
 }
 
 void runPreparedUpdate(Request req, list[str] columnNames, list[list[str]] vs) {
@@ -148,12 +165,17 @@ void runTest(void() t, Log log = NO_LOG) {
 	LOG = log;
 	resetDatabases();
 	setup();
-	t();
+	try {
+		t();
+	}
+	catch e: {
+		println ("<t> threw an exception: <e>");
+	}
 }
 
 void assertEquals(str testName, value actual, value expected) {
 	if (actual != expected) {
-		println("<testName> failed. Expected: <expected>, Actual: <actual>");
+		println("Test [ <testName> ] failed. Expected: <expected>, Actual: <actual>");
 	}
 	else {
 		println("<testName> OK");
@@ -162,7 +184,7 @@ void assertEquals(str testName, value actual, value expected) {
 
 void runTests(Log log = NO_LOG) {
 	tests = [test1, test2, test3, test4, test5,
-		test6, test7, test8, test9, test10];
+		test6, test7, test8, test9, test10, test11, test12, test13];
 	for (t <- tests) {
 		runTest(t, log = log);
 	}
