@@ -8,6 +8,12 @@ test C1 [[ "a" > "b" ]]
 test C2 [[ 4 > 5.0 ]]
 test C3 [[ $2020-01-01$ <= $2020-01-02$ ]]
 
+test N1 [[ null == 3.0 ]]
+
 test EF1 [[ "a" / 1 ]] expect { "/ not supported between `string` and `int`" }
 
 test CF1 [[ "a" > 4 ]] expect { "Cannot compare `string` and `int`" }
+
+
+test NF1 [[ null > 3.0 ]] expect { "Cannot compare things of type `void`" }
+test NF2 [[ null + 3.0 ]] expect { "+ not supported between `void` and `float`" }
