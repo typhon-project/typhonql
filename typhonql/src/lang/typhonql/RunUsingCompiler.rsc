@@ -97,22 +97,6 @@ ResultTable runQuery(Request r, Schema sch, map[str, Connection] connections, Lo
 	return runQuery(r, sch, session, log = log);
 }
 
-ResultTable runQuery(Request r, Schema sch, Session session, Log log = noLog) {
-	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
-		map[str, str] types = (() | it + ("<var>":"<entity>") | (Binding) `<EId entity> <VId var>` <- bs);
-		list[Path] paths = [buildPath("<s>", types)| s <- selected];
-		scr = request2script(r, sch, log = log);
-		str entryDatabase = [r | step(str r, _, _) <- scr.steps][-1];
-		log("[runQuery] Script: <scr>");
-		runScript(scr, session, sch);
-		// TODO {<column, "DUMMY">} => [column]
-		ResultTable result = session.read(entryDatabase, paths); 
-		return result;
-	}
-	else
-		throw "Expected query, given statement";
-}
-
 tuple[int, map[str, str]] runUpdate(str src, str xmiString, map[str, Connection] connections, Log log = noLog) {
   Session session = newSession(connections, log = log);
   return runUpdate(src, xmiString, session, log = log);
