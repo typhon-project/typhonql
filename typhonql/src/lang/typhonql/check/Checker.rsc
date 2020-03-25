@@ -63,6 +63,10 @@ bool qlSubType(voidType(), _) = true;
 default bool qlSubType(AType a, AType b) = false;
 
 
+/****************/
+/** Expression **/
+/****************/
+
 void collect(current:(Expr)`<VId var> . <{Id "."}+ attrs>`, Collector c) {
     reportUnsupported(current, c);
 }
@@ -259,6 +263,15 @@ AType calcInfix("+", {stringType(), _}, _) = stringType(); // allow concat on ma
     
 default AType calcInfix(_, _, _) {
     throw "unsupported";
+}
+
+
+/***********/
+/** Query **/
+/***********/
+
+void collect(current:(Query)`from <{Binding ","}+ bindings> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>`, Collector c) {
+    reportUnsupported(current, c);
 }
 
 void reportUnsupported(Tree current, Collector c) {
