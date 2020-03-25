@@ -162,9 +162,9 @@ void resetDatabases() {
 }
 
 void runTest(void() t, Log log = NO_LOG) {
-	LOG = log;
 	resetDatabases();
 	setup();
+	LOG = log;
 	try {
 		t();
 	}
