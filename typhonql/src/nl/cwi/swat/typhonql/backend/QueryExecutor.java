@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.Consumer;
 
 import nl.cwi.swat.typhonql.backend.rascal.Path;
@@ -14,6 +15,7 @@ public abstract class QueryExecutor {
 	private ResultStore store;
 	private List<Consumer<List<Record>>> script;
 	private Map<String, Binding> bindings;
+	private Map<Binding, String> inverseBindings;
 	private Map<String, String> uuids;
 	private List<Path> signature;
 
@@ -23,12 +25,17 @@ public abstract class QueryExecutor {
 		this.bindings = bindings;
 		this.uuids = uuids;
 		this.signature = signature;
+		this.inverseBindings = new HashMap<Binding, String>();
+		for (Entry<String, Binding> e : bindings.entrySet()) {
+			inverseBindings.put(e.getValue(), e.getKey());
+		}
 	}
 	
 	public void executeSelect(String resultId) {
 		int nxt = script.size() + 1;
 	    script.add((List<Record> rows) -> {
-	       ResultIterator iter = executeSelect(new HashMap<String, String>());
+	       Map<String, String> values = rowsToValues(rows);
+	       ResultIterator iter = executeSelect(values);
 	       this.storeResults(resultId, iter);
 	       while (iter.hasNextResult()) {
 	    	  iter.nextResult();
@@ -37,6 +44,19 @@ public abstract class QueryExecutor {
 	    	  script.get(nxt).accept(newRow);
 	       }
 	    });
+	}
+	
+	private Map<String, String> rowsToValues(List<Record> rows) {
+		Map<String, String> values = new HashMap<String, String>();
+		for (Record record : rows) {
+			for (Field f : record.getObjects().keySet()) {
+				if (inverseBindings.containsKey(f)) {
+					String var = inverseBindings.get(f);
+					values.put(var, serialize(record.getObject(f)));
+				}
+			}
+		}
+		return values;
 	}
 	
 	private List<Record> horizontalAdd(List<Record> rows, Record r) {
@@ -98,6 +118,9 @@ public abstract class QueryExecutor {
 	}
 
 	private String serialize(Object obj) {
+		if (obj == null) {
+			return "null";
+		}
 		if (obj instanceof Integer) {
 			return String.valueOf(obj);
 		}

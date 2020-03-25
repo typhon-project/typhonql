@@ -110,7 +110,6 @@ lrel[int, map[str, str]] runPrepared(str src, list[str] columnNames, list[list[s
   			insert e;
   		}
   	};
-  	println(req_);
   	if (<int n, map[str, str] uuids> := run(req_, s, connections, log = log))
   		rs += <n, uuids>;
   }
@@ -123,8 +122,7 @@ WorkingSet dumpDB(Schema s, map[str, Connection] connections) {
   WorkingSet ws = ();
   
   for (<Place p, str e> <- s.placement) {
-  	println(p);
-    ws += runGetEntities(p, e, s, connections);
+  	ws += runGetEntities(p, e, s, connections);
   }
   
   return ws;

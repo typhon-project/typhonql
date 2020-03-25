@@ -92,7 +92,6 @@ Request expandNavigation(req:(Request)`from <{Binding ","}+ bs> select <{Result 
     // iterate over var-role pairs, and find the target entity for each one of them
     for (<str var, str role> <- varRoles, str entity := env[var], <entity, _, role, _, _, str target, _> <- s.rels
           , <entity, role> notin done) {
-      println("DOING: <entity> and <role>");
       done += {<entity, role>};
       str y = newVar(target);
       env[y] = target;

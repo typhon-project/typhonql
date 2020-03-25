@@ -13,7 +13,7 @@ alias Session = tuple[
 	value () getJavaResult,
 	void (list[Path path] paths) readAndStore,
 	void () done,
-	void (str) newId,
+	str (str) newId,
 	SQLOperations sql,
    	MongoOperations mongo
 ];

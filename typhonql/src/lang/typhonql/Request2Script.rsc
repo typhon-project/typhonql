@@ -24,6 +24,8 @@ import lang::typhonql::relational::Query2SQL;
 import lang::typhonql::mongodb::Query2Mongo;
 import lang::typhonql::mongodb::DBCollection;
 
+import lang::typhonql::util::Log;
+
 import IO;
 import List;
 
@@ -42,15 +44,15 @@ TODO:
 
 
 
-Script request2script(Request r, Schema s) {
-  println("REQ: <r>");
+Script request2script(Request r, Schema s, Log log = noLog) {
+  log("REQ: <r>");
   
   
   switch (r) {
   
     case (Request)`<Query q>`: {
       list[Place] order = orderPlaces(r, s);
-      Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s) | Place p <- order]);
+      Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) | Place p <- order]);
       scr.steps += [read(results2paths(q.selected, queryEnv(q), s))];
       return scr;
     }

@@ -12,6 +12,8 @@ syntax Expr
   | @category="Constant" \str: Str strValue
   | @category="Number" \real: Real realValue
   | @category="Constant" \dt: DateTime dtValue
+  | @category="Constant" point: Point pointValue
+  | @category="Constant" polygon: Polygon polygonValue
   | \bool: Bool boolValue
   | uuid: UUID uuidValue
   | bracket "(" Expr arg ")"
@@ -56,18 +58,18 @@ keyword Primitives
   
 
 syntax Point
-  = "#point" "(" XY ")"
+  = singlePoint: "#point" "(" XY ")"
   ;
 
 syntax XY
-  = Real Real;
+  = coordinate: Real Real;
 
 syntax Polygon
-  = "#polygon" "(" {Segment ","}* ")" 
+  = shape: "#polygon" "(" {Segment ","}* ")" 
   ;
   
 syntax Segment
-  = "(" {XY ","}* ")";
+  = line: "(" {XY ","}* ")";
 
 
 // Variable Ids

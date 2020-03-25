@@ -57,4 +57,11 @@ public class Field implements Binding {
 		}
 		return false;
 	}
+	
+	@Override
+	public String toString() {
+		return "field(" +
+				String.join(", ", new String[] {reference, label, type, attribute}) 
+				+ ")";
+	}
 }

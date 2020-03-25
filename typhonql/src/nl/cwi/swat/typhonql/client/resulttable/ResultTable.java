@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import org.rascalmpl.values.ValueFactoryFactory;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -181,6 +182,7 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	}
 	
 	@Override
+	@JsonIgnore
 	public Type getType() {
 		return TF.externalType(TF.valueType());
 	}
