@@ -56,7 +56,7 @@ tuple[int, map[str, str]] runUpdate(Request r, Schema s, Session session, Log lo
 			log("[runUpdate-DDL] Script: <scr>");
 			res = runScript(scr, session, s);
 			if (res != "")
-				return <-1, ("result" : res)>;
+				return <-1, ("uuid" : res)>;
 			else
 				return <-1, ()>;
   		}
