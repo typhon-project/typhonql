@@ -17,6 +17,8 @@ import lang::typhonql::relational::Query2SQL;
 import lang::typhonql::mongodb::Query2Mongo;
 import lang::typhonql::mongodb::DBCollection;
 
+import lang::typhonql::util::Log;
+
 import IO;
 import List;
 
@@ -54,10 +56,10 @@ list[Path] filterForBackend(list[Path] paths, Place p)
   = [ path | Path path <- paths, path.dbName == p.name ];
 
 
-list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s) {
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s, Log log = noLog) {
   r = expandNavigation(addWhereIfAbsent(r), s);
-  println("COMPILING2SQL: <r>");
-  <sqlStat, params> = compile2sql(r, s, p);
+  log("COMPILING2SQL: <r>");
+  <sqlStat, params> = compile2sql(r, s, p, log = log);
   // hack
   
   if (sqlStat.exprs == []) {
@@ -67,8 +69,8 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s)
      , signature=filterForBackend(results2paths(r.qry.selected, queryEnvAndDyn(q), s), p))];
 }
 
-list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s) {
-  println("COMPILING2Mongo: <r>");
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s, Log log = noLog) {
+  log("COMPILING2Mongo: <r>");
   <methods, params> = compile2mongo(r, s, p);
   for (str coll <- methods) {
     // TODO: signal if multiple!

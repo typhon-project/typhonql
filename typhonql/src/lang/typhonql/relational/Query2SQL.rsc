@@ -13,6 +13,7 @@ import lang::typhonql::relational::Util;
 import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
 
+import lang::typhonql::util::Log;
 
 import IO;
 import String;
@@ -66,11 +67,11 @@ alias Ctx
    ];
 
 
-tuple[SQLStat, Bindings] compile2sql((Request)`<Query q>`, Schema s, Place p)
-  = select2sql(q, s, p);
+tuple[SQLStat, Bindings] compile2sql((Request)`<Query q>`, Schema s, Place p, Log log = noLog)
+  = select2sql(q, s, p, log = log);
 
-tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s, Place p) 
-  = select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, p);
+tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s, Place p, Log log = noLog) 
+  = select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, p, log = log);
 
 /*
 
@@ -86,7 +87,7 @@ Steps to compile to SQL
 
 */
 tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`
-  , Schema s, Place p) {
+  , Schema s, Place p, Log log = noLog) {
 
   SQLStat q = select([], [], [where([])]);
   
@@ -155,10 +156,10 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
 
   
   void recordResults(Expr e) {
-    println("##### record results");
+    log("##### record results");
     visit (e) {
       case x:(Expr)`<VId y>`: {
-         println("##### record results: var <y>");
+         log("##### record results: var <y>");
     
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
            addResult(named(expr2sql(x, ctx), "<y>.<ent>.@id"));
@@ -169,14 +170,14 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
          }
        }
       case x:(Expr)`<VId y>.@id`: {
-         println("##### record results: var <y>.@id");
+         log("##### record results: var <y>.@id");
     
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
            addResult(named(expr2sql(x, ctx), "<y>.<ent>.@id"));
          }
       }
       case x:(Expr)`<VId y>.<Id f>`: {
-         println("##### record results: <y>.<f>");
+         log("##### record results: <y>.<f>");
     
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
            addResult(named(expr2sql(x, ctx), "<y>.<ent>.<f>"));
@@ -234,11 +235,11 @@ str varForTarget(Id f, int i) = "<f>$<i>";
 str varForJunction(Id f, int i) = "junction_<f>$<i>";
 
 
-SQLExpr expr2sql(e:(Expr)`<VId x>`, Ctx ctx)
+SQLExpr expr2sql(e:(Expr)`<VId x>`, Ctx ctx, Log log = noLog)
   = expr2sql((Expr)`<VId x>.@id`, ctx);
 
 
-SQLExpr expr2sql(e:(Expr)`<VId x>.@id`, Ctx ctx) {
+SQLExpr expr2sql(e:(Expr)`<VId x>.@id`, Ctx ctx, Log log = noLog) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_<ctx.vars()>";
     ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "@id"));
@@ -249,7 +250,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.@id`, Ctx ctx) {
 }
   
 // only one level of navigation because of normalization
-SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
+SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
   // println("TRANSLATING: <e>");
   str entity = ctx.env["<x>"];
   str role = "<f>"; 
@@ -262,7 +263,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
 
   
   if (<entity, _, role, str toRole, _, str to, true> <- ctx.schema.rels, placeOf(to, ctx.schema) == ctx.place) {
-    println("# local containment <entity> -<role>/<toRole>-\> <to>");
+    log("# local containment <entity> -<role>/<toRole>-\> <to>");
     str tbl1 = "<x>";
     str tbl2 = varForTarget(f, ctx.vars()); // introduce a new table alias
     ctx.addLeftOuterJoin(tbl1,
@@ -274,7 +275,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
     return column(tbl2, typhonId(to));
   }
   else if (<entity, _, role, str toRole, _, str to, _> <- ctx.schema.rels) {
-  	println("# xref, or external containment: <entity> -<role>/<toRole>-\> <to> (`<e>`)  ");
+  	log("# xref, or external containment: <entity> -<role>/<toRole>-\> <to> (`<e>`)  ");
   	tbl1 = "<x>";
     tbl2 = varForJunction(f, ctx.vars());
 
@@ -295,69 +296,69 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx) {
 }  
   
 
-SQLExpr expr2sql((Expr)`?`, Ctx ctx) = placeholder();
+SQLExpr expr2sql((Expr)`?`, Ctx ctx, Log log = noLog) = placeholder();
 
-SQLExpr expr2sql((Expr)`<Int i>`, Ctx ctx) = lit(integer(toInt("<i>")));
+SQLExpr expr2sql((Expr)`<Int i>`, Ctx ctx, Log log = noLog) = lit(integer(toInt("<i>")));
 
-SQLExpr expr2sql((Expr)`<Real r>`, Ctx ctx) = lit(decimal(toReal("<r>")));
+SQLExpr expr2sql((Expr)`<Real r>`, Ctx ctx, Log log = noLog) = lit(decimal(toReal("<r>")));
 
-SQLExpr expr2sql((Expr)`<Str s>`, Ctx ctx) = lit(text("<s>"[1..-1]));
+SQLExpr expr2sql((Expr)`<Str s>`, Ctx ctx, Log log = noLog) = lit(text("<s>"[1..-1]));
 
-SQLExpr expr2sql((Expr)`<DateTime d>`, Ctx ctx) = lit(dateTime(readTextValueString(#datetime, "<d>")));
+SQLExpr expr2sql((Expr)`<DateTime d>`, Ctx ctx, Log log = noLog) = lit(dateTime(readTextValueString(#datetime, "<d>")));
 
-SQLExpr expr2sql((Expr)`<UUID u>`, Ctx ctx) = lit(text("<u>"[1..]));
+SQLExpr expr2sql((Expr)`<UUID u>`, Ctx ctx, Log log = noLog) = lit(text("<u>"[1..]));
 
-SQLExpr expr2sql((Expr)`true`, Ctx ctx) = lit(boolean(true));
+SQLExpr expr2sql((Expr)`true`, Ctx ctx, Log log = noLog) = lit(boolean(true));
 
-SQLExpr expr2sql((Expr)`false`, Ctx ctx) = lit(boolean(false));
+SQLExpr expr2sql((Expr)`false`, Ctx ctx, Log log = noLog) = lit(boolean(false));
 
-SQLExpr expr2sql((Expr)`(<Expr e>)`, Ctx ctx) = expr2sql(e, ctx);
+SQLExpr expr2sql((Expr)`(<Expr e>)`, Ctx ctx, Log log = noLog) = expr2sql(e, ctx);
 
-SQLExpr expr2sql((Expr)`null`, Ctx ctx) = lit(null());
+SQLExpr expr2sql((Expr)`null`, Ctx ctx, Log log = noLog) = lit(null());
 
-SQLExpr expr2sql((Expr)`+<Expr e>`, Ctx ctx) = pos(expr2sql(e, ctx));
+SQLExpr expr2sql((Expr)`+<Expr e>`, Ctx ctx, Log log = noLog) = pos(expr2sql(e, ctx));
 
-SQLExpr expr2sql((Expr)`-<Expr e>`, Ctx ctx) = neg(expr2sql(e, ctx));
+SQLExpr expr2sql((Expr)`-<Expr e>`, Ctx ctx, Log log = noLog) = neg(expr2sql(e, ctx));
 
-SQLExpr expr2sql((Expr)`!<Expr e>`, Ctx ctx) = not(expr2sql(e, ctx));
+SQLExpr expr2sql((Expr)`!<Expr e>`, Ctx ctx, Log log = noLog) = not(expr2sql(e, ctx));
 
-SQLExpr expr2sql((Expr)`<Expr lhs> * <Expr rhs>`, Ctx ctx) 
+SQLExpr expr2sql((Expr)`<Expr lhs> * <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = mul(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
-SQLExpr expr2sql((Expr)`<Expr lhs> / <Expr rhs>`, Ctx ctx) 
+SQLExpr expr2sql((Expr)`<Expr lhs> / <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = div(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
-SQLExpr expr2sql((Expr)`<Expr lhs> + <Expr rhs>`, Ctx ctx) 
+SQLExpr expr2sql((Expr)`<Expr lhs> + <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = add(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
-SQLExpr expr2sql((Expr)`<Expr lhs> - <Expr rhs>`, Ctx ctx) 
+SQLExpr expr2sql((Expr)`<Expr lhs> - <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = sub(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
-SQLExpr expr2sql((Expr)`<Expr lhs> == <Expr rhs>`, Ctx ctx) 
+SQLExpr expr2sql((Expr)`<Expr lhs> == <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = equ(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
-SQLExpr expr2sql((Expr)`<Expr lhs> != <Expr rhs>`, Ctx ctx) 
+SQLExpr expr2sql((Expr)`<Expr lhs> != <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = neq(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
-SQLExpr expr2sql((Expr)`<Expr lhs> \>= <Expr rhs>`, Ctx ctx) 
+SQLExpr expr2sql((Expr)`<Expr lhs> \>= <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = geq(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
-SQLExpr expr2sql((Expr)`<Expr lhs> \<= <Expr rhs>`, Ctx ctx) 
+SQLExpr expr2sql((Expr)`<Expr lhs> \<= <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = leq(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
-SQLExpr expr2sql((Expr)`<Expr lhs> \> <Expr rhs>`, Ctx ctx) 
+SQLExpr expr2sql((Expr)`<Expr lhs> \> <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = gt(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
-SQLExpr expr2sql((Expr)`<Expr lhs> \< <Expr rhs>`, Ctx ctx) 
+SQLExpr expr2sql((Expr)`<Expr lhs> \< <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = lt(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
-SQLExpr expr2sql((Expr)`<Expr lhs> like <Expr rhs>`, Ctx ctx) 
+SQLExpr expr2sql((Expr)`<Expr lhs> like <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = like(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
-SQLExpr expr2sql((Expr)`<Expr lhs> && <Expr rhs>`, Ctx ctx) 
+SQLExpr expr2sql((Expr)`<Expr lhs> && <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = and(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
-SQLExpr expr2sql((Expr)`<Expr lhs> || <Expr rhs>`, Ctx ctx) 
+SQLExpr expr2sql((Expr)`<Expr lhs> || <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = or(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
 
