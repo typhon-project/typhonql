@@ -74,8 +74,9 @@ str runScript(Script scr, Session session, Schema schema) {
       case step(str r, mongo(deleteMany(str db, str coll, str query)), Bindings ps):
         println("WARNING: not yet executed: <s>"); 
        
-      case newId(str var):
-        result =session.newId(var);
+      case newId(str var): {
+        result = session.newId(var);
+      }
           
       case read(list[Path path] paths): {
       	session.readAndStore(paths);
@@ -83,7 +84,6 @@ str runScript(Script scr, Session session, Schema schema) {
   	  	
       default: throw "Unsupported call: <s>";
     }
-    return result;
   }
   
   //str (str result, rel[str name, str \type] entities, EntityModels models) read,
@@ -94,4 +94,5 @@ str runScript(Script scr, Session session, Schema schema) {
   //str result = session.read(scr.steps[-1].result, {<"product", "Product">}, models);
  	//
   //println(result);
+  return result;
 }
