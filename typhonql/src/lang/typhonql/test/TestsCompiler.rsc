@@ -105,7 +105,7 @@ void test10() {
 	rs = runQuery((Request) `from Product p select p.name, p.description`);		    
 	assertEquals("test10", rs,   
 		<["p.name","p.description"],
-		[["IPhone","Apple"],["Samsung S10","Samsung"],["Radio","Loud"],["TV","Flat"]]>);
+		[["Samsung S10","Samsung"],["IPhone","Apple"],["Radio","Loud"],["TV","Flat"]]>);
 
 }
 
@@ -164,6 +164,7 @@ void resetDatabases() {
 void runTest(void() t, Log log = NO_LOG) {
 	resetDatabases();
 	setup();
+	oldLog = LOG;
 	LOG = log;
 	try {
 		t();
@@ -171,6 +172,7 @@ void runTest(void() t, Log log = NO_LOG) {
 	catch e: {
 		println ("<t> threw an exception: <e>");
 	}
+	LOG = oldLog;
 }
 
 void assertEquals(str testName, value actual, value expected) {
