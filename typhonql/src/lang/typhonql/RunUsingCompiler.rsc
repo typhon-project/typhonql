@@ -54,8 +54,11 @@ tuple[int, map[str, str]] runUpdate(Request r, Schema s, Session session, Log lo
   		if (!isDDL(stmt)) {
   			scr = request2script(r, s, log = log);
 			log("[runUpdate-DDL] Script: <scr>");
-			runScript(scr, session, s);
-			return <-1, ()>;
+			res = runScript(scr, session, s);
+			if (res != "")
+				return <-1, ("result" : res)>;
+			else
+				return <-1, ()>;
   		}
   		else {
   			throw "DML statement should have been provided";
