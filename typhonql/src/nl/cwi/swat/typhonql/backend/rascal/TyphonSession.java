@@ -100,7 +100,7 @@ public class TyphonSession implements Operations {
 			String idName = ((IString) args[0]).getValue();
 			String uuid = UUID.randomUUID().toString();
 			uuids.put(idName, uuid);
-			return ResultFactory.makeResult(TF.voidType(), null, ctx);
+			return ResultFactory.makeResult(TF.stringType(), vf.string(uuid), ctx);
 		});
 	}
 
