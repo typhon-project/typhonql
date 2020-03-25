@@ -172,14 +172,14 @@ void runTest(void() t, Log log = NO_LOG) {
 		t();
 	}
 	catch e: {
-		println ("<t> threw an exception: <e>");
+		println ("Test [ <t> ] threw an exception: <e>");
 	}
 	LOG = oldLog;
 }
 
 void assertEquals(str testName, value actual, value expected) {
 	if (actual != expected) {
-		println("Test [ <testName> ] failed. Expected: <expected>, Actual: <actual>");
+		println("<testName> failed. Expected: <expected>, Actual: <actual>");
 	}
 	else {
 		println("<testName> OK");
