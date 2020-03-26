@@ -155,6 +155,13 @@ void printSchema() {
 	iprintln(sch);
 }
 
+Schema getSchema() {
+	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	Schema sch = loadSchemaFromXMI(modelStr);
+	return sch;
+}
+
 
 void resetDatabases() {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
