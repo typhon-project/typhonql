@@ -2,6 +2,7 @@ module lang::typhonql::relational::Util
 
 import lang::typhonql::relational::SQL;
 import List;
+import String;
 
 str tableName(str entity) = "<entity>";
 
