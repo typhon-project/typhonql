@@ -22,12 +22,12 @@
     <collections entity="//@dataTypes.7" name="ReviewsDB"/>
     <collections entity="//@dataTypes.11" name="CommentsDB"/>
   </databases>
-  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="Date"/>
-  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="String"/>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="date"/>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="string"/>
   <dataTypes xsi:type="typhonml:PrimitiveDataType" name="int"/>
-  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="Real"/>
-  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="Blob"/>
-  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="natural_language"/>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="float"/>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="blob"/>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="freetext"/>
   <dataTypes xsi:type="typhonml:CustomDataType" name="jpeg">
     <elements name="date" type="//@dataTypes.0">
       <implementation location="it.univaq.disim.Date"/>

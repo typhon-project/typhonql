@@ -18,9 +18,9 @@
     <collections name="Logs" entity="//@dataTypes.12"/>
     <collections name="Subscriptions" entity="//@dataTypes.14"/>
   </databases>
-  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="String"/>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="text"/>
   <dataTypes xsi:type="typhonml:PrimitiveDataType" name="int"/>
-  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="Date"/>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="date"/>
   <dataTypes xsi:type="typhonml:Entity" name="FinesseLog">
     <attributes name="Log_date" type="//@dataTypes.0"/>
     <attributes name="Log_Branch" type="//@dataTypes.0"/>

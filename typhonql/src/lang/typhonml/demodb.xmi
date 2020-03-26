@@ -7,7 +7,7 @@
   <databases xsi:type="typhonml:DocumentDB" name="Reviews">
     <collections name="ReviewsDB" entity="//@dataTypes.2"/>
   </databases>
-  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="String"/>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="text"/>
   <dataTypes xsi:type="typhonml:PrimitiveDataType" name="int"/>
   <dataTypes xsi:type="typhonml:Entity" name="Review">
     <attributes name="contents" type="//@dataTypes.0"/>
