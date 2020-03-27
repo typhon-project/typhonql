@@ -150,6 +150,39 @@ void collect(current:(Expr)`(<Expr arg>)`, Collector c) {
 }
 
 void collect(current:(Expr)`<Obj objValue>`, Collector c) {
+    collect(objValue, c);
+}
+
+void collect(current:(Obj)`<Label? label> <EId entity> { <{KeyVal ","}* keyVals> }`, Collector c) {
+    collectUserType(entity, c);
+    collectKeyVal(keyVals, entity, c);
+}
+
+void collectKeyVal({KeyVal ","}* keyVals, EId entity, Collector c) {
+    for (kv <- keyVals) {
+        collectKeyVal(kv, entity, c);
+    }
+}
+
+
+void collectKeyVal(current:(KeyVal)`@id : <Expr val>`, EId entity, Collector c) {
+    collect(val, c);
+    c.requireEqual(uuidType(), val, error(current, "Expected uuid but got %t", val));
+}
+
+void collectKeyVal(current:(KeyVal)`<Id key> : <Expr val>`, EId entity, Collector c) {
+    collect(val, c);
+    c.useViaType(entity, key, {fieldRole()});
+    c.require("valid assignment", current, [key, val], void (Solver s) {
+        s.requireTrue(s.equal(key, val) || s.subtype(val, key), error(current, "Expected %t but got %t", key, val));
+    });
+}
+
+void collectKeyVal(current:(KeyVal)`<Id key> +: <Expr val>`, EId entity, Collector c) {
+    reportUnsupported(current, c);
+}
+
+void collectKeyVal(current:(KeyVal)`<Id key> -: <Expr val>`, EId entity, Collector c) {
     reportUnsupported(current, c);
 }
 
@@ -364,6 +397,45 @@ void collect((Having)`having <{Expr ","}+ clauses>`, Collector c) {
 
 void collect((OrderBy)`order <{VId ","}+ vars>`, Collector c) {
     collect(vars, c);
+}
+
+/*******
+ * DML *
+ *******/
+ 
+void collect(current:(Statement)`insert <{Obj ","}* objs>`, Collector c) {
+    c.enterScope(current);
+    collect(objs, c);
+    // todo check that +: and -: aren't used in insert query
+    c.leaveScope(current);
+}
+
+void collect(current:(Statement)`insert <Obj obj> into <Expr parent> . <Id field>`, Collector c) {
+    c.enterScope(current);
+    collect(obj, parent, c);
+    c.useViaType(parent, field, {fieldRole()});
+    c.requireEquals(field, obj, error(obj, "Expected %t but got %t", field, obj));
+    c.leaveScope(current);
+}
+
+
+void collect(current:(Statement)`delete <Binding b> <Where? where>`, Collector c) {
+    c.enterScope(current);
+    collect(b, c);
+    if (w <- where) {
+        collect(w, c);
+    }
+    c.leaveScope(current);
+}
+
+void collect(current:(Statement)`update <Binding b> <Where? where> set { <{KeyVal ","}* keyVals>}`, Collector c) {
+    c.enterScope(current);
+    collect(b, c);
+    if (w <- where) {
+        collect(w, c);
+    }
+    collectKeyVal(keyVals, b.entity, c);
+    c.leaveScope(current);
 }
 
 

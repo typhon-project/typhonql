@@ -24,3 +24,9 @@ test bool runQueryTest(bool debug = false)
             #Query, 
             TModel (t) { return checkQLTree(t, queriesModel, debug); }, 
             runName = "QL Queries");
+
+test bool runDMLTest(bool debug = false) 
+    = runTests([|project://typhonql/src/lang/typhonql/check/dml.ttl|], 
+            #Statement, 
+            TModel (t) { return checkQLTree(t, queriesModel, debug); }, 
+            runName = "QL DML");
