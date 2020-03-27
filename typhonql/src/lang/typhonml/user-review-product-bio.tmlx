@@ -8,9 +8,9 @@
     <collections name="ReviewsDB" entity="//@dataTypes.4"/>
     <collections name="BiographiesDB" entity="//@dataTypes.6"/>
   </databases>
-  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="String"/>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="text"/>
   <dataTypes xsi:type="typhonml:PrimitiveDataType" name="int"/>
-  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="Date"/>
+  <dataTypes xsi:type="typhonml:PrimitiveDataType" name="date"/>
   <dataTypes xsi:type="typhonml:CustomDataType" name="Address">
     <elements name="street" type="//@dataTypes.0"/>
     <elements name="number" type="//@dataTypes.1"/>
