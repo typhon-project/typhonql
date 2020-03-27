@@ -19,6 +19,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.glassfish.jersey.servlet.ServletContainer;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -64,6 +65,7 @@ public class QLRestServer {
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
+        
         context.setMaxFormContentSize(100*1024*1024); // 100MB should be max for parameters
         context.addServlet(jsonGetHandler(r -> handleQuery(engine, r)), "/query");
         context.addServlet(jsonPostHandler(r -> handleCommand(engine, r)), "/update");
@@ -72,7 +74,19 @@ public class QLRestServer {
         context.addServlet(jsonPostHandler(r -> handleInitialize(engine, r)), "/initialize");
         context.addServlet(jsonPostHandler(r -> handleReset(engine, r)), "/reset");
         context.addServlet(jsonPostHandler(r -> handleChangeModel(engine, r)), "/changeModel");
+        
+      
+// 		//REST DAL
+        
+        ServletHolder servletHolder = context.addServlet(ServletContainer.class, "/crud/*");
+        servletHolder.setInitOrder(0);
+        servletHolder.setInitParameter(
+                "jersey.config.server.provider.packages",
+                "engineering.swat.typhonql.server.crud"
+        );
+        
         server.setHandler(context);
+    
         server.start();
         System.err.println("Server is running, press Ctrl-C to terminate");
         server.join();
