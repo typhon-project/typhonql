@@ -1,3 +1,7 @@
-test E1 [[ from User u select u.name ]]
-test EF1 [[ from User u select u.name1 ]] expect { "name1 not defined for `User`" }
-test EF2 [[ from User u select u.name where u.name > 3 ]] expect { "Cannot compare `string` and `int`" }
+test S1 [[ from User u select u.name ]]
+test SF1 [[ from User u select u.name1 ]] expect { "name1 not defined for `User`" }
+
+test WF1 [[ from User u select u.name where u.name > 3 ]] expect { "Cannot compare `string` and `int`" }
+
+test O1 [[ from User u select u order u ]]
+test OF1 [[ from User u select u order u2 ]] expect { "Undefined table role `u2`" }

@@ -99,7 +99,7 @@ void collect(current:(Expr)`<VId var>`, Collector c) {
 }
 
 void collect(VId current, Collector c) {
-    c.use(var, {tableRole()});
+    c.use(current, {tableRole()});
 }
 
 void collect(current:(Expr)`<PlaceHolder p>`, Collector c) {
