@@ -1,9 +1,11 @@
 module lang::typhonql::check::Checker
 
-import IO;
-import lang::typhonml::TyphonML;
+import ParseTree;
+import Exception;
+import lang::typhonml::Util;
 extend analysis::typepal::TypePal;
 
+extend lang::typhonql::DDL;
 extend lang::typhonql::DML;
 extend lang::typhonql::Query;
 
@@ -39,7 +41,7 @@ str prettyAType(polygonType()) = "polygon";
 str prettyAType(boolType()) = "bool";
 str prettyAType(floatType()) = "float";
 str prettyAType(blobType()) = "blob";
-str prettyAType(freeTextType(nlpFeatures)) = "freetext[<intercalate(",", nlpFeatures)>]";
+str prettyAType(freeTextType(nlps)) = "freetext[<intercalate(",", nlps)>]";
 str prettyAType(dateType()) = "date";
 str prettyAType(dateTimeType()) = "datetime";
     
@@ -65,7 +67,8 @@ bool qlSubType(voidType(), _) = true;
 
 default bool qlSubType(AType a, AType b) = false;
 
-data TypePalConfig(map[AType entity, map[str field, AType tp]] mlModel = ());
+alias CheckerMLSchema = map[AType entity, map[str field, AType tp] fields];
+data TypePalConfig(CheckerMLSchema mlSchema = ());
 
 /***********
  *  Roles  *
@@ -73,6 +76,7 @@ data TypePalConfig(map[AType entity, map[str field, AType tp]] mlModel = ());
  
  data IdRole
     = tableRole()
+    | fieldRole()
     ;
  
 
@@ -81,19 +85,30 @@ data TypePalConfig(map[AType entity, map[str field, AType tp]] mlModel = ());
 /****************/
 
 void collect(current:(Expr)`<VId var> . <{Id "."}+ attrs>`, Collector c) {
-    reportUnsupported(current, c);
+    c.use(var, {tableRole()});
+    Tree parent = var;
+    for (a <- attrs) {
+        c.useViaType(parent, a, {fieldRole()});
+        parent = a;
+    }
+    c.fact(current, parent);
 }
 
 void collect(current:(Expr)`<VId var>`, Collector c) {
-    reportUnsupported(current, c);
+    collect(var, c);
+}
+
+void collect(VId current, Collector c) {
+    c.use(var, {tableRole()});
 }
 
 void collect(current:(Expr)`<PlaceHolder p>`, Collector c) {
-    reportUnsupported(current, c);
+    c.fact(p, voidType());
 }
 
 void collect(current:(Expr)`<VId var>. @id`, Collector c) {
-    reportUnsupported(current, c);
+    c.fact(current, uuidType());
+    c.use(var, {tableRole()});
 }
 
 void collect((Expr)`<Int i>`, Collector c) {
@@ -112,6 +127,15 @@ void collect((Expr)`<DateTime dt>`, Collector c) {
     c.fact(dt, dateTimeType());
 }
 
+void collect((Expr)`<Point pt >`, Collector c) {
+    c.fact(pt, pointType());
+}
+
+void collect((Expr)`<Polygon pg>`, Collector c) {
+    c.fact(pg, polygonType());
+}
+
+
 void collect((Expr)`<Bool b>`, Collector c) {
     c.fact(b, boolType());
 }
@@ -126,10 +150,6 @@ void collect(current:(Expr)`(<Expr arg>)`, Collector c) {
 }
 
 void collect(current:(Expr)`<Obj objValue>`, Collector c) {
-    reportUnsupported(current, c);
-}
-
-void collect(current:(Expr)`<Custom customValue>`, Collector c) {
     reportUnsupported(current, c);
 }
 
@@ -280,7 +300,7 @@ default AType calcInfix(_, _, _) {
 
 void collectUserType(EId entityName, Collector c) {
     tp = userDefinedType("<entityName>");
-    if (tp in c.getConfig().mlModel) {
+    if (tp in c.getConfig().mlSchema) {
         c.fact(entityName, tp);
     }
     else {
@@ -298,18 +318,21 @@ void collectUserType(EId entityName, Collector c) {
 
 void collect(current:(Query)`from <{Binding ","}+ bindings> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>`, Collector c) {
     c.enterScope(current);
-    collect(bindings, c);
-    collect(selected, c);
+    collect(bindings, selected, c);
     if (w <- where) {
         collect(w, c);
     }
     if (g <- groupBy) {
         collect(g, c);
     }
-    if (or <- orderBy) {
-        collect(or, c);
+    if (ob <- orderBy) {
+        collect(ob, c);
     }
     c.leaveScope(current);
+}
+
+void collect(Result current, Collector c) {
+    collect(current.expr, c);
 }
 
 void collect(current:(Binding)`<EId entity> <VId name>`, Collector c) {
@@ -317,20 +340,100 @@ void collect(current:(Binding)`<EId entity> <VId name>`, Collector c) {
     c.define("<name>", tableRole(), name, defType(entity));
 }
 
-void reportUnsupported(Tree current, Collector c) {
-    c.report(error(current, "`%v` is not supported the typechecker (yet)", current));
+
+void collect((Where)`where <{Expr ","}+ clauses>`, Collector c) {
+    collect(clauses, c);
+    for (cl <- clauses) {
+        c.requireEqual(boolType(), cl, error(cl, "Where expects a boolean expression"));
+    }
 }
 
-private TypePalConfig buildConfig(bool debug) 
+void collect((GroupBy)`group <{VId ","}+ vars> <Having? having>`, Collector c) {
+    collect(vars, c);
+    if (h <- having) {
+        collect(h, c);
+    }
+}
+
+void collect((Having)`having <{Expr ","}+ clauses>`, Collector c) {
+    collect(clauses, c);
+    for (cl <- clauses) {
+        c.requireEqual(boolType(), cl, error(cl, "Having expects a boolean expression"));
+    }
+}
+
+void collect((OrderBy)`order <{VId ","}+ vars>`, Collector c) {
+    collect(vars, c);
+}
+
+
+void reportUnsupported(Tree current, Collector c) {
+    c.calculate("unsupported", current, [], AType (Solver s) {
+        s.report(error(current, "`%v` is not supported the typechecker (yet)", current));
+        return voidType();
+    });
+}
+
+private TypePalConfig buildConfig(bool debug, CheckerMLSchema mlSchema) 
     = tconfig(
         verbose=debug, logTModel = debug,
-        isSubType = qlSubType
+        isSubType = qlSubType,
+        mlSchema = mlSchema,
+        getTypeNamesAndRole = tuple[list[str] typeNames, set[IdRole] idRoles] (AType tp) {
+            return <[], {}>;
+        },
+        getTypeInNamelessType = 
+            AType(AType utype, Tree fname, loc scope, Solver s) {
+                if (utype in mlSchema) {
+                    if ("<fname>" in mlSchema[utype]) {
+                        return mlSchema[utype]["<fname>"];
+                    }
+                }
+                s.report(error(fname, "<fname> not defined for %t", utype));
+                return voidType();
+            }
+    );
+
+AType calcMLType(str tp) {
+    try {
+        return calcMLType(parse(#Type, tp));
+    } catch ParseError(_) : {
+        return userDefinedType(tp);
+    }
+}
+
+AType calcMLType((Type)`int`) = intType();
+AType calcMLType((Type)`bigint`) = intType();
+AType calcMLType((Type)`string(<Nat _>)`) = stringType();
+AType calcMLType((Type)`text`) = stringType();
+AType calcMLType((Type)`point`) = pointType();
+AType calcMLType((Type)`polygon`) = polygonType();
+AType calcMLType((Type)`bool`) = boolType();
+AType calcMLType((Type)`float`) = floatType();
+AType calcMLType((Type)`blob`) = blobType();
+AType calcMLType((Type)`freetext [ <{Id ","}+ features>]`) = freeTextType(["<f>" | f <- features]);
+AType calcMLType((Type)`date`) = dateType();
+AType calcMLType((Type)`datetime`) = dateTimeType();
+
+default AType calcMLType(Type tp) {
+    throw "Forgot to add support for type <tp>";
+}
+
+
+
+CheckerMLSchema convertModel(Schema mlSchema) 
+    = ( 
+        userDefinedType(tpn) : 
+        ( fn : calcMLType(ftp) | <fn, ftp> <- mlSchema.attrs[tpn])
+    | tpn <- mlSchema.elements.name
     );
 
 
-
-TModel checkQLTree(Tree t, Model mlModel, bool debug = false) {
-    return collectAndSolve(t, config=buildConfig(debug));
+TModel checkQLTree(Tree t, CheckerMLSchema mlSchema, bool debug = false) {
+    return collectAndSolve(t, config=buildConfig(debug, mlSchema));
 }
+
+TModel checkQLTree(Tree t, Schema mlSchema, bool debug = false) 
+    = checkQLTree(t, convertModel(mlSchema), debug = debug);
 
 
