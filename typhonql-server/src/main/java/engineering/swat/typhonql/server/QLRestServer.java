@@ -35,6 +35,9 @@ import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 import nl.cwi.swat.typhonql.workingset.JsonSerializableResult;
 
 public class QLRestServer {
+	
+	public static String QUERY_ENGINE = "queryEngine"; 
+	
 	private static final Logger logger = LogManager.getLogger(QLRestServer.class);
 	private static final ObjectMapper mapper;
 	
@@ -77,6 +80,8 @@ public class QLRestServer {
         
       
 // 		//REST DAL
+        
+        context.setAttribute(QUERY_ENGINE, engine);
         
         ServletHolder servletHolder = context.addServlet(ServletContainer.class, "/crud/*");
         servletHolder.setInitOrder(0);
