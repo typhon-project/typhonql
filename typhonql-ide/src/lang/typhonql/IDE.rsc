@@ -175,7 +175,7 @@ void setupIDE(bool isDevMode = false) {
       	try {
       		<polystoreUri, user, password> = readTyphonConfig(tree@\loc);
       		sch = checkSchema(sch, polystoreUri, user, password);
-        	println(ppSchema(s));
+        	println(ppSchema(sch));
         	text(sch);
         } catch e: {
         	alert("Error: <e> ");
