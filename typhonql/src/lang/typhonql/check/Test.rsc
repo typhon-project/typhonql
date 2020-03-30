@@ -14,7 +14,7 @@ test bool runExprTest(bool debug = false)
             
             
 CheckerMLSchema queriesModel = (
-    userDefinedType("User"): (
+    entityType("User"): (
         "name": stringType()
     )
 );

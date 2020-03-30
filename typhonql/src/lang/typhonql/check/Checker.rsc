@@ -41,7 +41,7 @@ str prettyAType(polygonType()) = "polygon";
 str prettyAType(boolType()) = "bool";
 str prettyAType(floatType()) = "float";
 str prettyAType(blobType()) = "blob";
-str prettyAType(freeTextType(nlps)) = "freetext[<intercalate(",", nlps)>]";
+str prettyAType(freeTextType(nlps)) = "freetext[<intercalate(",", [n | n <- nlps])>]";
 str prettyAType(dateType()) = "date";
 str prettyAType(dateTimeType()) = "datetime";
     
@@ -154,7 +154,7 @@ void collect(current:(Expr)`<Obj objValue>`, Collector c) {
 }
 
 void collect(current:(Obj)`<Label? label> <EId entity> { <{KeyVal ","}* keyVals> }`, Collector c) {
-    collectUserType(entity, c);
+    collectEntityType(entity, c);
     collectKeyVal(keyVals, entity, c);
 }
 
@@ -331,8 +331,8 @@ default AType calcInfix(_, _, _) {
     throw "unsupported";
 }
 
-void collectUserType(EId entityName, Collector c) {
-    tp = userDefinedType("<entityName>");
+void collectEntityType(EId entityName, Collector c) {
+    tp = entityType("<entityName>");
     if (tp in c.getConfig().mlSchema) {
         c.fact(entityName, tp);
     }
@@ -369,7 +369,7 @@ void collect(Result current, Collector c) {
 }
 
 void collect(current:(Binding)`<EId entity> <VId name>`, Collector c) {
-    collectUserType(entity, c);
+    collectEntityType(entity, c);
     c.define("<name>", tableRole(), name, defType(entity));
 }
 
@@ -470,7 +470,7 @@ AType calcMLType(str tp) {
     try {
         return calcMLType(parse(#Type, tp));
     } catch ParseError(_) : {
-        return userDefinedType(tp);
+        return entityType(tp);
     }
 }
 
@@ -495,7 +495,7 @@ default AType calcMLType(Type tp) {
 
 CheckerMLSchema convertModel(Schema mlSchema) 
     = ( 
-        userDefinedType(tpn) : 
+        entityType(tpn) : 
         ( fn : calcMLType(ftp) | <fn, ftp> <- mlSchema.attrs[tpn])
     | tpn <- mlSchema.elements.name
     );
