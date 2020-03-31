@@ -176,6 +176,7 @@ insert CreditCard {
 }
 ```
 
+
 Alternative is:
 ```
 insert CreditCard { 

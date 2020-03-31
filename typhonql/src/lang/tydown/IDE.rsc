@@ -4,7 +4,7 @@ import util::IDE;
 import lang::tydown::TyDown;
 import ParseTree;
 import vis::Figure;
-
+import IO;
 
 //public data FontProperty
 //	= bold()
@@ -46,5 +46,12 @@ void main() {
     return parse(#start[TyDown], src, l);
   });
   
-  registerContributions("TyDown", { myCategories() });
+  registerContributions("TyDown", { myCategories()
+    , builder(set[Message] ((&T<:Tree) tree) {
+      if (start[TyDown] td := tree) {
+        loc l = td@\loc.top;
+        writeFile(l[extension="md"], "<td>");
+      }
+      return {};
+    }) });
 }
