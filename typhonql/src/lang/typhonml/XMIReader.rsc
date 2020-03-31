@@ -106,7 +106,7 @@ Model xmiNode2Model(node n) {
   PrimitiveDataType makePrimitive(str name, list[value] params) {
     switch (<name, params>) {
       case <"IntType", []> : return PrimitiveDataType(realm.new(#IntType, IntType()));
-      case <"BigintType", []> : return PrimitiveDataType(realm.new(#BigintType, Bigint()));
+      case <"BigintType", []> : return PrimitiveDataType(realm.new(#BigintType, BigintType()));
       case <"StringType", [int n]> : return PrimitiveDataType(realm.new(#StringType, StringType(maxSize=n)));
       case <"BlobType", []> : return PrimitiveDataType(realm.new(#BlobType, BlobType()));
       case <"BoolType", []> : return PrimitiveDataType(realm.new(#BoolType, BoolType()));
@@ -146,7 +146,7 @@ Model xmiNode2Model(node n) {
           for (xtbl:"tables"(_) <- xelts) {
             tbl = realm.new(#Table, Table(get(xtbl, "name")));
             ep = get(xtbl, "entity");
-            tbl.entity = referTo(#Entity, ensureEntity(ep).entity);
+            tbl.entity = referTo(#Entity, ensureEntity(ep));
             tbls += [tbl];
           }
           
@@ -158,7 +158,7 @@ Model xmiNode2Model(node n) {
           for (xcoll:"collections"(_) <- xelts) {
             coll = realm.new(#Collection, Collection(get(xcoll, "name")));
             ep = get(xcoll, "entity");
-            coll.entity = referTo(#Entity, ensureEntity(ep).entity);
+            coll.entity = referTo(#Entity, ensureEntity(ep));
             colls += [coll];
           }
           
