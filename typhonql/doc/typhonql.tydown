@@ -118,7 +118,7 @@ Consider the following example:
 entity A { b -> B }
 
 entity B { a -> A."A.b" }
-```typhonML
+```
 
 In this case B declares that a is the opposite of A.b, so it won't be implemented. The entity A does not
 specify the opposite, so it is the side that will be realized. In the case A resides on SQL, it will be a junction table; 
