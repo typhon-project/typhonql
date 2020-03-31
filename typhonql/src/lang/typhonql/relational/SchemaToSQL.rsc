@@ -47,9 +47,9 @@ void printSQLSchema(Schema schema, str dbName) {
  SQLStat attrs2create(str e, rel[str, str] attrs, Schema schema) {
   	return create(tableName(e), [typhonIdColumn(e)]
       + [column(columnName(attr, e), typhonType2SQL(typ), []) | <str attr, str typ> <- attrs, 
-      		typ notin schema.elements<0>]
+      		typ notin schema.customs<0>]
       + [column(columnName(attr, e, typ, element), typhonType2SQL(elementType), []) | <str attr, str typ> <- attrs,
-      	 typ in schema.elements<0>, <str typ, str element, str elementType> <- schema.elements]
+      	 typ in schema.customs<0>, <str typ, str element, str elementType> <- schema.customs]
       , [primaryKey(typhonId(e))]);
 }
  
