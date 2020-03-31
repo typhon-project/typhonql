@@ -79,7 +79,7 @@ documentdb Reviews {
       Comments : Comment 
     }
 }
-```typhonMl
+```
 
 ## Well-formedness of TyphonML models
 
