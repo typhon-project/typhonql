@@ -4,7 +4,39 @@
     <attributes xsi:type="typhonml:Attribute" name="name">
       <type xsi:type="typhonml:StringType" maxSize="255"/>
     </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="someInt">
+      <type xsi:type="typhonml:IntType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="someBigint">
+      <type xsi:type="typhonml:BigintType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="someText">
+      <type xsi:type="typhonml:TextType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="someBlob">
+      <type xsi:type="typhonml:BlobType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="someBool">
+      <type xsi:type="typhonml:BoolType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="someFloat">
+      <type xsi:type="typhonml:FloatType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="someDate">
+      <type xsi:type="typhonml:DateType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="someDateTime">
+      <type xsi:type="typhonml:DatetimeType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="somePoint">
+      <type xsi:type="typhonml:PointType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="somePoly">
+      <type xsi:type="typhonml:PolygonType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:CustomAttribute" name="someCustom" type="//@customDataTypes.0"/>
     <relations name="comments" type="//@entities.1" cardinality="zero_many" isContainment="true"/>
+    <relations name="someXref" type="//@entities.0"/>
   </entities>
   <entities name="Comment">
     <attributes xsi:type="typhonml:Attribute" name="txt">
@@ -16,5 +48,11 @@
     </attributes>
     <relations name="owner" type="//@entities.0" cardinality="one" opposite="//@entities.0/@relations.0"/>
   </entities>
-  <customDataTypes name="bla"/>
+  <databases xsi:type="typhonml:RelationalDB" name="RelationalDatabase">
+    <tables name="OrderDB" entity="//@entities.0"/>
+  </databases>
+  <databases xsi:type="typhonml:DocumentDB" name="DocumentDatabase">
+    <collections name="CommentsDB" entity="//@entities.1"/>
+  </databases>
+  <customDataTypes name="Bla"/>
 </typhonml:Model>
