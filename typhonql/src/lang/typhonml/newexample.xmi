@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="ASCII"?>
+<typhonml:Model xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:typhonml="http://org.typhon.dsls.typhonml.sirius">
+  <entities name="Person">
+    <attributes xsi:type="typhonml:Attribute" name="name">
+      <type xsi:type="typhonml:StringType" maxSize="255"/>
+    </attributes>
+    <relations name="comments" type="//@entities.1" cardinality="zero_many" isContainment="true"/>
+  </entities>
+  <entities name="Comment">
+    <attributes xsi:type="typhonml:Attribute" name="txt">
+      <type xsi:type="typhonml:FreetextType">
+        <tasks workflowName="en" type="Chunking"/>
+        <tasks workflowName="dutch" type="Lemmatisation"/>
+        <tasks workflowName="bla" type="NGramExtractor"/>
+      </type>
+    </attributes>
+    <relations name="owner" type="//@entities.0" cardinality="one" opposite="//@entities.0/@relations.0"/>
+  </entities>
+  <customDataTypes name="bla"/>
+</typhonml:Model>
