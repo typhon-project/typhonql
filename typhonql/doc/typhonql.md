@@ -13,71 +13,83 @@ existing query languages and/or APIs, but not a database engine itself.
 This document aims to cover these assumptions. 
 
 
+## The Language
+
+### Literal expressions
+
+TyphonQL supports the following literal (constant) expressions:
+
+- Booleans: `true`, `false`
+- Integer numbers: `123`, `-34934`
+- Strings: `"this is a string value"`
+- Floating point numbers: `0.123`, `3.14`, `-0.123e10`, `2324.3434e-23`
+- Dates:  `$2020-03-31$`
+- Date and time values:  `$2020-03-31T18:08:28.477+00:00$`
+- Geographical points: `#point(23.4 343.34)`
+- Polygons: `#polygon((23.4 343.34), (2.0 0.0))`;
+
+Furthermore, TyphonQL supports syntax for dealing with objects (instances of entity types):
+
+- Object literals (tagged with the entity type, in this case `Person`): `Person {name: "Pablo", age: 30, reviews: [#879b4559-f590-48ea-968c-ff3b69ec5363, #23275eec-4746-4f23-a854-660160cafed2]}`
+- Reference values (pointers), represented as UUIDs: `#879b4559-f590-48ea-968c-ff3b69ec5363`
+- Collections of pointers to objects:  `[#8bc3f0a0-5cf4-42e5-a664-0617feb2d400, #23275eec-4746-4f23-a854-660160cafed2, #879b4559-f590-48ea-968c-ff3b69ec5363]`
+     
+Note that object literals and collections of object references can only be used in insert and update statements. 
+      
+
+
+
 ### Example TyphonML Model
 
 
 ```typhonML
-datatype String
-datatype int
-datatype Date
-
-entity User {
-    name: String
-    age: int
-    reviews -> Review.[0..*]
-    orders -> Order."Order.user"[0..*]
-    cards :-> CreditCard[0..*]
+entity Review{
+	content: text
+	
+	product -> Product[1]
+	user -> User[1]
 }
 
-entity CreditCard {
-  number: String
-  expires: Date
-  owner -> User."User.cards"[1]
+entity Product{
+	name : string[256]
+	description : string[256]
+	price : int
+	productionDate : date
+		
+	reviews :-> Review."Review.product"[0..*]
 }
 
-entity Product {
-    name : String
-    description : String
-    price : int
-    reviews :-> Review[0..*]
-    orders -> Order."Order.product"[0..*]
+
+entity User{
+	name : string[256]
+	address: string[256]
+	
+	biography :-> Biography[0..1]
+	reviews :-> Review."Review.user"[0..*]
 }
 
-entity Order {
-  user -> User[1]
-  product -> Product[1]
-  amount: int
-  date: Date
-}
-
-entity Review {
-    text : String
-    product -> Product."Product.reviews"[1]
-    author -> User."User.reviews"[1]
-    replies :-> Comment [0..*]
-}
-
-entity Comment {
-  review -> Review."Review.replies"[0..1]
-  text: String
-  replies :-> Comment[0..1]
-  author -> User[0..1]
+entity Biography{
+	content : string[256]
+	
+	user -> User[1]
 }
 
 relationaldb Inventory {
-    tables { 
-      table { User : User }
-      table { Product : Product }
-      table { CreditCard : CreditCard }
-      table { Order : Order }
-    }
-    
+	tables{
+		table {
+			UserDB : User
+		}
+		table {
+			ProductDB : Product
+		}
+	}
 }
+
 documentdb Reviews {
-    collections { 
-      Reviews : Review
-      Comments : Comment 
-    }
+	collections{
+			Review : Review
+			Biography : Biography
+	}
 }
 ```
 
