@@ -36,6 +36,8 @@ data MongoCall
   | findAndUpdateMany(str dbName, str coll, str query, str update)
   | deleteOne(str dbName, str coll, str query)
   | deleteMany(str dbName, str coll, str query)
+  | createCollection(str dbName, str coll)
+  | dropCollection(str dbName, str coll)
   ;
   
 EntityModels schema2entityModels(Schema s) 

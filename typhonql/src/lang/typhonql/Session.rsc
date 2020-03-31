@@ -41,9 +41,10 @@ alias MongoOperations = tuple[
 	void (str resultId, str dbName, str collection, str query, str projection, Bindings bindings, list[Path] paths) findWithProjection,
 	void (str dbName, str coll, str query, Bindings bindings) insertOne,
 	void (str dbName, str coll, str query, str update, Bindings bindings) findAndUpdateOne,
-	void (str dbName, str coll, str query, Bindings bindings) deleteOne
+	void (str dbName, str coll, str query, Bindings bindings) deleteOne,
+	void (str dbName, str coll) createCollection,
+	void (str dbName, str coll) dropCollection
 ];
-
 
 data Connection
  // for now they are the same, but they might be different
