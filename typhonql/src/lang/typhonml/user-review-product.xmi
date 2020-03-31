@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="ASCII"?>
+<typhonml:Model xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:typhonml="http://org.typhon.dsls.typhonml.sirius">
+  <entities name="Review">
+    <attributes xsi:type="typhonml:Attribute" name="content">
+      <type xsi:type="typhonml:TextType"/>
+    </attributes>
+    <relations name="product" type="//@entities.1" cardinality="one"/>
+    <relations name="user" type="//@entities.2" cardinality="one"/>
+  </entities>
+  <entities name="Product">
+    <attributes xsi:type="typhonml:Attribute" name="name">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="description">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="price">
+      <type xsi:type="typhonml:IntType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="productionDate">
+      <type xsi:type="typhonml:DateType"/>
+    </attributes>
+    <relations name="reviews" type="//@entities.0" cardinality="zero_many" opposite="//@entities.0/@relations.0" isContainment="true"/>
+  </entities>
+  <entities name="User">
+    <attributes xsi:type="typhonml:Attribute" name="name">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="address">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </attributes>
+    <relations name="biography" type="//@entities.3" isContainment="true"/>
+    <relations name="reviews" type="//@entities.0" cardinality="zero_many" opposite="//@entities.0/@relations.1" isContainment="true"/>
+  </entities>
+  <entities name="Biography">
+    <attributes xsi:type="typhonml:Attribute" name="content">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </attributes>
+    <relations name="user" type="//@entities.2" cardinality="one"/>
+  </entities>
+  <databases xsi:type="typhonml:RelationalDB" name="Inventory">
+    <tables name="UserDB" entity="//@entities.2"/>
+    <tables name="ProductDB" entity="//@entities.1"/>
+  </databases>
+  <databases xsi:type="typhonml:DocumentDB" name="Reviews">
+    <collections name="Review" entity="//@entities.0"/>
+    <collections name="Biography" entity="//@entities.3"/>
+  </databases>
+</typhonml:Model>
