@@ -86,7 +86,7 @@ public class TyphonSession implements Operations {
 		TyphonSessionState state = new TyphonSessionState();
 		return vf.tuple(
 			makeGetResult(store, script, state, getResultType, ctx),
-			makeGetJavaResult(store, script, state, getResultType, ctx),
+			makeGetJavaResult(store, script, state, getJavaResultType, ctx),
 			makeReadAndStore(store, script, state, readAndStoreType, ctx),
             makeClose(store, state, closeType, ctx),
             makeNewId(uuids, state, newIdType, ctx),
