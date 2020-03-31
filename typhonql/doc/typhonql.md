@@ -1,11 +1,22 @@
 
-# TyphonQL: an Evolving Reference
+# TyphonQL: an Evolving Reference Manual
 
 ## Introduction
 
-## Example TyphonML Model
+Although TyphonQL provides an abstraction layer over different back-ends, and allows users to think
+in terms of TyphonML schemas as much as possible, the compiler imposes some constraints on what can be expressed,
+so as to be able to leverage native capabilities of back-ends. This means that some forms of TyphonQL queries, 
+which are technically supported by the syntax of TyphonQL, are *not* supported by the compiler. In general,
+the underlying design principle is to err on the side of native capabilities; TyphonQL is really a compiler to
+existing query languages and/or APIs, but not a database engine itself. 
 
-```
+This document aims to cover these assumptions. 
+
+
+### Example TyphonML Model
+
+
+```typhonML
 datatype String
 datatype int
 datatype Date
@@ -13,28 +24,28 @@ datatype Date
 entity User {
     name: String
     age: int
-    reviews -> Review."Review.author"[0..*]
+    reviews -> Review.[0..*]
     orders -> Order."Order.user"[0..*]
-    paymentInfo :-> CreditCard."CreditCard.owner"[0..*]
+    cards :-> CreditCard[0..*]
 }
 
 entity CreditCard {
   number: String
   expires: Date
-  owner -> User."User.paymentInfo"[1]
+  owner -> User."User.cards"[1]
 }
 
 entity Product {
     name : String
     description : String
     price : int
-    reviews :-> Review."Review.product"[0..*]
+    reviews :-> Review[0..*]
     orders -> Order."Order.product"[0..*]
 }
 
 entity Order {
-  user -> User."User.orders"[1]
-  product -> Product."Product.orders"[1]
+  user -> User[1]
+  product -> Product[1]
   amount: int
   date: Date
 }
@@ -60,6 +71,7 @@ relationaldb Inventory {
       table { CreditCard : CreditCard }
       table { Order : Order }
     }
+    
 }
 documentdb Reviews {
     collections { 
@@ -67,5 +79,202 @@ documentdb Reviews {
       Comments : Comment 
     }
 }
+```
+
+## Well-formedness of TyphonML models
+
+- containment is uni-directional (e.g. inverses of containment cannot be containment)
+- containment is not many-to-many (i.e. tree shaped)
+- containment is uniquely rooted: every owned entity can be reached from a unique 
+path starting from an entity that is not owned
+
+
+
+## Realizing references 
+
+TyphonML references support bidirectional navigation over relations between entities through inverses (AKA "opposites").
+In the implementation, however, we must choose one particular direction to implement the relation. 
+Technically, we could maintain bidirectional relations in both directions, but this would create a lot of redundancy
+in the various back-ends, and incur a lot of administrative overhead to maintain referential integrity.
+
+Given a TyphonML model, TyphonQL realizes the "canonical" direction of a relation. Which direction is 
+canonical is determined as follows:
+
+If a reference represents containment (ownership), the parent/owner "owns" the reference as well.
+So a containment relation R between A and B will be implemented on the side of A. If A and B are both in 
+the same SQL database, this results in a foreign key on B, pointing to A. If A is on SQL, but B is 
+elsewhere, the reference is realized using a junction table in the database of A.
+
+If both A and B are on MongoDB, the reference is realized by nesting B's directly below A.R.  If A is on MongoDB, 
+but B is elsewhere, A will contain (an array) of ids which correspond to the identities of the outside Bs.
+
+If a relation A-R-B is *not* containment, we need a reliable way to determine which of A or B is the "master" entity.
+To avoid picking some arbitrary side of such a relation, we require the TyphonML author explicitly indicate the "master" side
+of such a relation. This is done by declaring inverses/opposites only on one side of the relation; then *that* side is 
+the "derived" side, and the other one the primary/canonical side which will be realized in the back-end.
+
+Consider the following example:
+```typhonML
+entity A { b -> B }
+
+entity B { a -> A."A.b" }
+```
+
+In this case B declares that a is the opposite of A.b, so it won't be implemented. The entity A does not
+specify the opposite, so it is the side that will be realized. In the case A resides on SQL, it will be a junction table; 
+if A is on Mongo, the cross-reference will be realized using (an array of) id-ref(s). 
+
+As a result, the use of inverses [TODO] will be desugared to using the canonical side:
+```
+from A a, B b select b where b.a == a.@id
+```
+Is equivalent to:
+```
+from A a, B b select b where a.b == b.@id
+```
+
+
+## Querying
+
+Mongo: expression: field op non-field or reverse, but not fields at both sides.
+
 
 ```
+from User u, Product p, Review r select u.name, p.name
+ where u.reviews == r, p.reviews == r, r.text like "bad"
+```
+
+
+## Manipulating Data
+
+
+### Insert
+
+Well-formedness of Insert
+- no inverses, just canonical relations
+- no nested documents (for now)
+
+```
+insert User { name: "John Smith", age: 30 }
+```
+
+
+```
+insert User { name: "John Smith", age: 30, cards: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
+```
+
+```
+insert CreditCard { number: "1762376287", expires:  $2020-02-21T14:03:45.274+00:00$ }
+```
+
+The following is not allowed, because owner is an inverse.
+```
+insert CreditCard { 
+  number: "1762376287", 
+  expires:  $2020-02-21T14:03:45.274+00:00$,
+  owner: #ff704edc-5d85-470b-9ed4-fb8761bbe93a
+}
+```
+
+
+Alternative is:
+```
+insert CreditCard { 
+  number: "1762376287", 
+  expires:  $2020-02-21T14:03:45.274+00:00$
+}
+```
+
+and then:
+```
+update User u where u.@id == #ff704edc-5d85-470b-9ed4-fb8761bbe93a
+set { cards +: [#the-id-of-the-new-creditcard] }
+```
+
+
+Or, (better), inserting into owner directly:
+
+```
+insert CreditCard { number: "1762376287", expires:  $2020-02-21T14:03:45.274+00:00$ }
+  into #751772d3-d378-471a-8d84-555c44e2f822.cards
+```
+
+
+### Update
+
+Well-formedness of Update
+- you cannot update @id fields
+- no nested object literals
+
+
+
+Updating simple-valued attributes
+
+```
+update User u where u.name == "John Smith" set { age: 30 }
+```
+
+Updating custom data types: TODO.
+
+Setting a relation:
+
+```
+update Review r where r.@id == #13245f43-634f-46bf-a73d-6bd30865f5d4
+  set { author: #a129feec-4b92-4ab2-9ef5-d276a7566f56 }
+``` 
+
+This is equivalent to:
+
+```
+update User u where u.@id == #a129feec-4b92-4ab2-9ef5-d276a7566f56
+  set { reviews +: [#13245f43-634f-46bf-a73d-6bd30865f5d4] }
+```
+
+// is this possible? Shouldn't review already have an owner? i.e. the author?
+
+
+Setting a many-valued relation:
+
+```
+update User u where u.name == "John Smith"
+  set { cards: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
+``` 
+
+Adding:
+
+```
+update User u where u.name == "John Smith"
+  set { cards +: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
+``` 
+
+Removing
+```
+update User u where u.name == "John Smith"
+  set { cards -: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
+``` 
+
+
+### Delete
+
+- cascade to owned things, but only one hop across database boundaries.
+
+## Placeholders
+
+
+```
+update User u where u.@id == ?
+  set { cards +: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
+``` 
+
+Named placeholders:
+
+```
+update User u where u.@id == ??param
+  set { cards +: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
+``` 
+
+ 
+ 
+
+
+

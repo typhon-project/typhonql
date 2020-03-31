@@ -202,10 +202,10 @@ Model xmiNode2Model(node n) {
       list[EntityAttribute] attrs = [];
       
       for (xattr:"attributes"(list[node] attrElts) <- xelts) {
-         DataType dt = DataType(PrimitiveDataType(realm.new(#IntType, IntType()))); // dummy;
-         // todo: custom data types!
          
-         if (xtype:"type"(list[node] typeElts) <- attrElts) {
+         if (get(xattr, "type") == "typhonml:Attribute", xtype:"type"(list[node] typeElts) <- attrElts) {
+           DataType dt = DataType(PrimitiveDataType(realm.new(#IntType, IntType()))); // dummy;
+         
            switch (get(xtype, "type")) {
              case "typhonml:FreetextType" : {
                list[NlpTask] tasks = [ realm.new(#NlpTask, NlpTask(get(x, "workflowName"), make(#NlpTaskType, get(x, "type"), []))) 
@@ -220,10 +220,21 @@ Model xmiNode2Model(node n) {
              } 
              default: throw "Unknown attribute type: <xtype>";
            }
+           attr = EntityAttribute(realm.new(#Attribute, Attribute(get(xattr, "name"), dt)));
+           attrs += [attr];
+         }
+         else {
+          // if (get(xattr, "type") == "typhonml:CustomAttribute") {
+           // "type" is unfortunately overloaded and cannot be reused here
+           // the first one is xsi:type (which should be "typhonml:CustomAttribute")
+           // the other one is just type; we thus assume that type
+           // refers to the typhonML type, not the Ecore type. 
+           attr = EntityAttribute(realm.new(#CustomAttribute, 
+              CustomAttribute(get(xattr, "name"), referTo(#CustomDataType, ensureCustom(get(xattr, "type"))))));
+           attrs += [attr];
          }
          
-         EntityAttribute attr = EntityAttribute(realm.new(#Attribute, Attribute(get(xattr, "name"), dt)));
-         attrs += [attr]; 
+          
       }  
        
       list[Relation] rels = [];

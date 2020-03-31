@@ -24,7 +24,7 @@ import Message;
 
 // abstraction over TyphonML, to be extended with back-end specific info in the generic map
 data Schema
-  = schema(Rels rels, Attrs attrs, Placement placement = {}, Attrs elements = {}, ChangeOps changeOperators = {}, map[str, value] config = ());
+  = schema(Rels rels, Attrs attrs, Placement placement = {}, Attrs customs = {}, ChangeOps changeOperators = {}, map[str, value] config = ());
 
 alias Rel = tuple[str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool containment];
 alias Rels = set[Rel];
@@ -92,7 +92,7 @@ default Placement place(Database db, Model m) {
 
 
 Schema model2schema(Model m)
-  = schema(model2rels(m), model2attrs(m), elements = model2elements(m), placement=model2placement(m), changeOperators = model2changeOperators(m));
+  = schema(model2rels(m), model2attrs(m), customs = model2customs(m), placement=model2placement(m), changeOperators = model2changeOperators(m));
 
 
 ChangeOps model2changeOperators(Model m) {
@@ -134,13 +134,13 @@ Attrs model2attrs(Model m) {
   }
   
   for (Entity(str from, list[EntityAttribute] attrs, _, _, _) <- m.entities, EntityAttribute(CustomAttribute a) <- attrs) {
-      DataType dt = lookup(m, #DataType, a.\type);
-      // todo;
+      CustomDataType dt = lookup(m, #CustomDataType, a.\type);
+      result += {<from, a.name, dt.name>};
   }
   return result;
 }
 
-Attrs model2elements(Model m) {
+Attrs model2customs(Model m) {
   Attrs result = {};
   for (CustomDataType(str from, list[CustomDataTypeItem] elements) <- m.customDataTypes) {
   	for (CustomDataTypeItem e <- elements) {
