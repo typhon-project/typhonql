@@ -6,9 +6,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.Consumer;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.env.ModuleEnvironment;
@@ -27,6 +27,11 @@ import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import io.usethesource.vallang.type.TypeStore;
+import nl.cwi.swat.typhonql.ConnectionInfo;
+import nl.cwi.swat.typhonql.Connections;
+import nl.cwi.swat.typhonql.DBType;
+import nl.cwi.swat.typhonql.MariaDB;
+import nl.cwi.swat.typhonql.MongoDB;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
@@ -37,6 +42,32 @@ public class TyphonSession implements Operations {
 	
 	public TyphonSession(IValueFactory vf) {
 		this.vf = vf;
+	}
+	
+	public static void bootConnections(IMap connections) {
+		Iterator<Entry<IValue, IValue>> connIter = connections.entryIterator();
+		List<ConnectionInfo> infos = new ArrayList<>();
+ 		while (connIter.hasNext()) {
+			Entry<IValue, IValue> entry = connIter.next();
+			String dbName = ((IString) entry.getKey()).getValue();
+			IConstructor cons = (IConstructor) entry.getValue();
+			String host = ((IString) cons.get("host")).getValue();
+			int port = ((IInteger) cons.get("port")).intValue();
+			String user = ((IString) cons.get("user")).getValue();
+			String password = ((IString) cons.get("password")).getValue();
+			ConnectionInfo info = new ConnectionInfo("localhost",
+					host, port, dbName,
+					cons.getName().equals("sqlConnection")?DBType.relationaldb
+					: DBType.documentdb,
+					cons.getName().equals("sqlConnection")?new MariaDB().getName()
+							: new MongoDB().getName(),
+					user,
+					password);
+			infos.add(info);
+		}
+		
+		Connections.boot(infos.toArray(new ConnectionInfo[0]));
+		
 	}
 
 	public ITuple newSession(IMap connections, IEvaluatorContext ctx) {
@@ -86,7 +117,7 @@ public class TyphonSession implements Operations {
 		TyphonSessionState state = new TyphonSessionState();
 		return vf.tuple(
 			makeGetResult(store, script, state, getResultType, ctx),
-			makeGetJavaResult(store, script, state, getResultType, ctx),
+			makeGetJavaResult(store, script, state, getJavaResultType, ctx),
 			makeReadAndStore(store, script, state, readAndStoreType, ctx),
             makeClose(store, state, closeType, ctx),
             makeNewId(uuids, state, newIdType, ctx),
