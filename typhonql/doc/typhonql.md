@@ -3,14 +3,6 @@
 
 ## Introduction
 
-Although TyphonQL provides an abstraction layer over different back-ends, and allows users to think
-in terms of TyphonML schemas as much as possible, the compiler imposes some constraints on what can be expressed,
-so as to be able to leverage native capabilities of back-ends. This means that some forms of TyphonQL queries, 
-which are technically supported by the syntax of TyphonQL, are *not* supported by the compiler. In general,
-the underlying design principle is to err on the side of native capabilities; TyphonQL is really a compiler to
-existing query languages and/or APIs, but not a database engine itself. 
-
-This document aims to cover these assumptions. 
 
 
 ## The Language
@@ -39,18 +31,13 @@ Note that object literals and collections of object references can only be used 
 
 
 
-### Example TyphonML Model
+# TyphonQL by Example
+
+
 
 
 ```typhonML
-entity Review{
-	content: text
-	
-	product -> Product[1]
-	user -> User[1]
-}
-
-entity Product{
+entity Product {
 	name : string[256]
 	description : string[256]
 	price : int
@@ -59,8 +46,15 @@ entity Product{
 	reviews :-> Review."Review.product"[0..*]
 }
 
+entity Review {
+	content: text
+	
+	product -> Product[1]
+	user -> User[1]
+}
 
-entity User{
+
+entity User {
 	name : string[256]
 	address: string[256]
 	
@@ -75,20 +69,16 @@ entity Biography{
 }
 
 relationaldb Inventory {
-	tables{
-		table {
-			UserDB : User
-		}
-		table {
-			ProductDB : Product
-		}
+	tables{ 
+	  table { UserDB : User }
+      table { ProductDB : Product }
 	}
 }
 
 documentdb Reviews {
 	collections{
-			Review : Review
-			Biography : Biography
+	  Review : Review
+	  Biography : Biography
 	}
 }
 ```
@@ -99,6 +89,7 @@ documentdb Reviews {
 - containment is not many-to-many (i.e. tree shaped)
 - containment is uniquely rooted: every owned entity can be reached from a unique 
 path starting from an entity that is not owned
+
 
 
 
