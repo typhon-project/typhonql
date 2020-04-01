@@ -14,12 +14,12 @@ This document describes a REST layer that can be uses to perform CRUD operations
 ## Operations
 
 | Operation| Endpoint  | Method  | Description |
-|---|---|---|---|---|
-| List entities | /[Entity] | GET  | List all entities (within a fixed limit)  | 
-| Create entity | /[Entity] | POST  | Create a new entity  |  /User | 
-| Get entity | /[Entity]/[uuid]  | GET  | Get the representation of an existing entity 
-| Update entity | /[Entity]/[uuid]  | PATCH  | Update an existing entity 
-| Delete entity | /[Entity]/[uuid]  | DELETE  | Delete an existing entity 
+|---|---|---|---|
+| List entities | /[Entity] | GET  | List all entities (within a fixed limit) |
+| Create entity | /[Entity] | POST  | Create a new entity |
+| Get entity | /[Entity]/[uuid]  | GET  | Get the representation of an existing entity |
+| Update entity | /[Entity]/[uuid]  | PATCH  | Update an existing entity |
+| Delete entity | /[Entity]/[uuid]  | DELETE  | Delete an existing entity |
 
 ## Examples
 
