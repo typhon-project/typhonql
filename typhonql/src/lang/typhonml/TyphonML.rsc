@@ -1,7 +1,7 @@
 module lang::typhonml::TyphonML
 
 // Generated code; do not edit.
-// Date: $2020-03-24T13:31:47.125+00:00$
+// Date: $2020-03-30T14:32:08.814+00:00$
 
 import lang::ecore::Refs;
 import util::Maybe;
@@ -21,29 +21,28 @@ data NamedElement
       , lang::ecore::Refs::Ref[DataType] \type = \graphEdgeLabel.\type
       , lang::ecore::Refs::Id uid = \graphEdgeLabel.uid
       , bool _inject = true)
-  | NamedElement(DataType \dataType
-      , str \name = \dataType.\name
-      , str \importedNamespace = \dataType.\importedNamespace
-      , lang::ecore::Refs::Id uid = \dataType.uid
+  | NamedElement(EntityAttribute \entityAttribute
+      , str \name = \entityAttribute.\name
+      , str \importedNamespace = \entityAttribute.\importedNamespace
+      , lang::ecore::Refs::Id uid = \entityAttribute.uid
       , bool _inject = true)
-  | NamedElement(IndexSpec \indexSpec
-      , str \name = \indexSpec.\name
-      , str \importedNamespace = \indexSpec.\importedNamespace
-      , list[lang::ecore::Refs::Ref[Attribute]] \attributes = \indexSpec.\attributes
-      , list[lang::ecore::Refs::Ref[Relation]] \references = \indexSpec.\references
-      , lang::ecore::Refs::Ref[Table] \table = \indexSpec.\table
-      , lang::ecore::Refs::Id uid = \indexSpec.uid
-      , bool _inject = true)
-  | NamedElement(FreeText \freeText
-      , str \name = \freeText.\name
-      , str \importedNamespace = \freeText.\importedNamespace
-      , list[NlpTask] \tasks = \freeText.\tasks
-      , lang::ecore::Refs::Id uid = \freeText.uid
+  | NamedElement(CustomDataType \customDataType
+      , str \name = \customDataType.\name
+      , str \importedNamespace = \customDataType.\importedNamespace
+      , list[CustomDataTypeItem] \elements = \customDataType.\elements
+      , lang::ecore::Refs::Id uid = \customDataType.uid
       , bool _inject = true)
   | NamedElement(NFunctionalTag \nFunctionalTag
       , str \name = \nFunctionalTag.\name
       , str \importedNamespace = \nFunctionalTag.\importedNamespace
       , lang::ecore::Refs::Id uid = \nFunctionalTag.uid
+      , bool _inject = true)
+  | NamedElement(CustomDataTypeItem \customDataTypeItem
+      , str \name = \customDataTypeItem.\name
+      , str \importedNamespace = \customDataTypeItem.\importedNamespace
+      , lang::ecore::Refs::Ref[DataType] \type = \customDataTypeItem.\type
+      , CustomDataTypeImplementationPackage \implementation = \customDataTypeItem.\implementation
+      , lang::ecore::Refs::Id uid = \customDataTypeItem.uid
       , bool _inject = true)
   | NamedElement(Collection \collection
       , str \name = \collection.\name
@@ -66,16 +65,16 @@ data NamedElement
       , list[GraphEdgeLabel] \labels = \graphEdge.\labels
       , lang::ecore::Refs::Id uid = \graphEdge.uid
       , bool _inject = true)
+  | NamedElement(GraphAttribute \graphAttribute
+      , str \name = \graphAttribute.\name
+      , str \importedNamespace = \graphAttribute.\importedNamespace
+      , lang::ecore::Refs::Ref[Attribute] \value = \graphAttribute.\value
+      , lang::ecore::Refs::Id uid = \graphAttribute.uid
+      , bool _inject = true)
   | NamedElement(FunctionalTag \functionalTag
       , str \name = \functionalTag.\name
       , str \importedNamespace = \functionalTag.\importedNamespace
       , lang::ecore::Refs::Id uid = \functionalTag.uid
-      , bool _inject = true)
-  | NamedElement(Attribute \attribute
-      , str \name = \attribute.\name
-      , str \importedNamespace = \attribute.\importedNamespace
-      , lang::ecore::Refs::Ref[DataType] \type = \attribute.\type
-      , lang::ecore::Refs::Id uid = \attribute.uid
       , bool _inject = true)
   | NamedElement(KeyValueElement \keyValueElement
       , str \name = \keyValueElement.\name
@@ -94,6 +93,23 @@ data NamedElement
       , lang::ecore::Refs::Ref[Entity] \entity = \table.\entity
       , lang::ecore::Refs::Id uid = \table.uid
       , bool _inject = true)
+  | NamedElement(IndexSpec \indexSpec
+      , str \name = \indexSpec.\name
+      , str \importedNamespace = \indexSpec.\importedNamespace
+      , list[lang::ecore::Refs::Ref[Attribute]] \attributes = \indexSpec.\attributes
+      , list[lang::ecore::Refs::Ref[Relation]] \references = \indexSpec.\references
+      , lang::ecore::Refs::Ref[Table] \table = \indexSpec.\table
+      , lang::ecore::Refs::Id uid = \indexSpec.uid
+      , bool _inject = true)
+  | NamedElement(Entity \entity
+      , str \name = \entity.\name
+      , str \importedNamespace = \entity.\importedNamespace
+      , list[EntityAttribute] \attributes = \entity.\attributes
+      , list[Relation] \relations = \entity.\relations
+      , list[FunctionalTag] \functionalTags = \entity.\functionalTags
+      , list[NFunctionalTag] \nfunctionalTags = \entity.\nfunctionalTags
+      , lang::ecore::Refs::Id uid = \entity.uid
+      , bool _inject = true)
   | NamedElement(Database \database
       , str \name = \database.\name
       , str \importedNamespace = \database.\importedNamespace
@@ -108,24 +124,12 @@ data NamedElement
       , bool \isContainment = \relation.\isContainment
       , lang::ecore::Refs::Id uid = \relation.uid
       , bool _inject = true)
-  | NamedElement(DataTypeItem \dataTypeItem
-      , str \name = \dataTypeItem.\name
-      , str \importedNamespace = \dataTypeItem.\importedNamespace
-      , lang::ecore::Refs::Ref[DataType] \type = \dataTypeItem.\type
-      , DataTypeImplementationPackage \implementation = \dataTypeItem.\implementation
-      , lang::ecore::Refs::Id uid = \dataTypeItem.uid
-      , bool _inject = true)
-  | NamedElement(GraphAttribute \graphAttribute
-      , str \name = \graphAttribute.\name
-      , str \importedNamespace = \graphAttribute.\importedNamespace
-      , lang::ecore::Refs::Ref[Attribute] \value = \graphAttribute.\value
-      , lang::ecore::Refs::Id uid = \graphAttribute.uid
-      , bool _inject = true)
   ;
 
 data Model
-  = Model(list[Database] \databases
-      , list[DataType] \dataTypes
+  = Model(list[Entity] \entities
+      , list[Database] \databases
+      , list[CustomDataType] \customDataTypes
       , list[ChangeOperator] \changeOperators
       , lang::ecore::Refs::Id uid = noId())
   ;
@@ -145,15 +149,18 @@ data ChangeOperator
       , list[lang::ecore::Refs::Ref[Attribute]] \attributes = \addAttributesToIndex.\attributes
       , lang::ecore::Refs::Id uid = \addAttributesToIndex.uid
       , bool _inject = true)
-  | ChangeOperator(SplitEntity \splitEntity
-      , lang::ecore::Refs::Ref[Entity] \entityToBeSplit = \splitEntity.\entityToBeSplit
-      , Entity \firstNewEntity = \splitEntity.\firstNewEntity
-      , Entity \secondNewEntity = \splitEntity.\secondNewEntity
-      , lang::ecore::Refs::Id uid = \splitEntity.uid
+  | ChangeOperator(RenameAttribute \renameAttribute
+      , lang::ecore::Refs::Ref[Attribute] \attributeToRename = \renameAttribute.\attributeToRename
+      , str \newName = \renameAttribute.\newName
+      , lang::ecore::Refs::Id uid = \renameAttribute.uid
       , bool _inject = true)
   | ChangeOperator(RemoveAttribute \removeAttribute
       , lang::ecore::Refs::Ref[Attribute] \attributeToRemove = \removeAttribute.\attributeToRemove
       , lang::ecore::Refs::Id uid = \removeAttribute.uid
+      , bool _inject = true)
+  | ChangeOperator(EnableBidirectionalRelation \enableBidirectionalRelation
+      , lang::ecore::Refs::Ref[Relation] \relation = \enableBidirectionalRelation.\relation
+      , lang::ecore::Refs::Id uid = \enableBidirectionalRelation.uid
       , bool _inject = true)
   | ChangeOperator(DisableBidirectionalRelation \disableBidirectionalRelation
       , lang::ecore::Refs::Ref[Relation] \relation = \disableBidirectionalRelation.\relation
@@ -167,13 +174,6 @@ data ChangeOperator
       , lang::ecore::Refs::Ref[Collection] \collectionToRename = \renameCollection.\collectionToRename
       , str \newName = \renameCollection.\newName
       , lang::ecore::Refs::Id uid = \renameCollection.uid
-      , bool _inject = true)
-  | ChangeOperator(AddAttribute \addAttribute
-      , str \name = \addAttribute.\name
-      , str \importedNamespace = \addAttribute.\importedNamespace
-      , lang::ecore::Refs::Ref[DataType] \type = \addAttribute.\type
-      , lang::ecore::Refs::Ref[Entity] \ownerEntity = \addAttribute.\ownerEntity
-      , lang::ecore::Refs::Id uid = \addAttribute.uid
       , bool _inject = true)
   | ChangeOperator(MigrateEntity \migrateEntity
       , lang::ecore::Refs::Ref[Entity] \entity = \migrateEntity.\entity
@@ -220,21 +220,6 @@ data ChangeOperator
       , str \importedNamespace = \addGraphAttribute.\importedNamespace
       , lang::ecore::Refs::Ref[Attribute] \value = \addGraphAttribute.\value
       , lang::ecore::Refs::Id uid = \addGraphAttribute.uid
-      , bool _inject = true)
-  | ChangeOperator(AddEntity \addEntity
-      , str \name = \addEntity.\name
-      , str \importedNamespace = \addEntity.\importedNamespace
-      , list[Attribute] \attributes = \addEntity.\attributes
-      , list[FreeText] \fretextAttributes = \addEntity.\fretextAttributes
-      , list[Relation] \relations = \addEntity.\relations
-      , list[FunctionalTag] \functionalTags = \addEntity.\functionalTags
-      , list[NFunctionalTag] \nfunctionalTags = \addEntity.\nfunctionalTags
-      , lang::ecore::Refs::Id uid = \addEntity.uid
-      , bool _inject = true)
-  | ChangeOperator(RenameAttribute \renameAttribute
-      , lang::ecore::Refs::Ref[Attribute] \attributeToRename = \renameAttribute.\attributeToRename
-      , str \newName = \renameAttribute.\newName
-      , lang::ecore::Refs::Id uid = \renameAttribute.uid
       , bool _inject = true)
   | ChangeOperator(EnableRelationContainment \enableRelationContainment
       , lang::ecore::Refs::Ref[Relation] \relation = \enableRelationContainment.\relation
@@ -294,14 +279,31 @@ data ChangeOperator
       , list[lang::ecore::Refs::Ref[Attribute]] \attributes = \addCollectionIndex.\attributes
       , lang::ecore::Refs::Id uid = \addCollectionIndex.uid
       , bool _inject = true)
-  | ChangeOperator(EnableBidirectionalRelation \enableBidirectionalRelation
-      , lang::ecore::Refs::Ref[Relation] \relation = \enableBidirectionalRelation.\relation
-      , lang::ecore::Refs::Id uid = \enableBidirectionalRelation.uid
-      , bool _inject = true)
   | ChangeOperator(ChangeAttributeType \changeAttributeType
       , lang::ecore::Refs::Ref[Attribute] \attributeToChange = \changeAttributeType.\attributeToChange
-      , lang::ecore::Refs::Ref[DataType] \newType = \changeAttributeType.\newType
       , lang::ecore::Refs::Id uid = \changeAttributeType.uid
+      , bool _inject = true)
+  | ChangeOperator(AddAttribute \addAttribute
+      , str \name = \addAttribute.\name
+      , str \importedNamespace = \addAttribute.\importedNamespace
+      , DataType \type = \addAttribute.\type
+      , lang::ecore::Refs::Ref[Entity] \ownerEntity = \addAttribute.\ownerEntity
+      , lang::ecore::Refs::Id uid = \addAttribute.uid
+      , bool _inject = true)
+  | ChangeOperator(AddEntity \addEntity
+      , str \name = \addEntity.\name
+      , str \importedNamespace = \addEntity.\importedNamespace
+      , list[EntityAttribute] \attributes = \addEntity.\attributes
+      , list[Relation] \relations = \addEntity.\relations
+      , list[FunctionalTag] \functionalTags = \addEntity.\functionalTags
+      , list[NFunctionalTag] \nfunctionalTags = \addEntity.\nfunctionalTags
+      , lang::ecore::Refs::Id uid = \addEntity.uid
+      , bool _inject = true)
+  | ChangeOperator(SplitEntity \splitEntity
+      , lang::ecore::Refs::Ref[Entity] \entityToBeSplit = \splitEntity.\entityToBeSplit
+      , Entity \firstNewEntity = \splitEntity.\firstNewEntity
+      , Entity \secondNewEntity = \splitEntity.\secondNewEntity
+      , lang::ecore::Refs::Id uid = \splitEntity.uid
       , bool _inject = true)
   | ChangeOperator(RemoveAttributesToIndex \removeAttributesToIndex
       , lang::ecore::Refs::Ref[Table] \table = \removeAttributesToIndex.\table
@@ -359,8 +361,33 @@ data DropCollectionIndex
       , lang::ecore::Refs::Id uid = noId())
   ;
 
+data ChangeAttributeType
+  = ChangeAttributeType(ChangePrimitiveDataTypeAttribute \changePrimitiveDataTypeAttribute
+      , lang::ecore::Refs::Ref[Attribute] \attributeToChange = \changePrimitiveDataTypeAttribute.\attributeToChange
+      , int \maxSize = \changePrimitiveDataTypeAttribute.\maxSize
+      , lang::ecore::Refs::Id uid = \changePrimitiveDataTypeAttribute.uid
+      , bool _inject = true)
+  | ChangeAttributeType(ChangeCustomDataTypeAttribute \changeCustomDataTypeAttribute
+      , lang::ecore::Refs::Ref[Attribute] \attributeToChange = \changeCustomDataTypeAttribute.\attributeToChange
+      , lang::ecore::Refs::Ref[CustomDataType] \newType = \changeCustomDataTypeAttribute.\newType
+      , lang::ecore::Refs::Id uid = \changeCustomDataTypeAttribute.uid
+      , bool _inject = true)
+  ;
+
+data ChangePrimitiveDataTypeAttribute
+  = ChangePrimitiveDataTypeAttribute(lang::ecore::Refs::Ref[Attribute] \attributeToChange
+      , int \maxSize = 0
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
 data DisableBidirectionalRelation
   = DisableBidirectionalRelation(lang::ecore::Refs::Ref[Relation] \relation
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
+data ChangeCustomDataTypeAttribute
+  = ChangeCustomDataTypeAttribute(lang::ecore::Refs::Ref[Attribute] \attributeToChange
+      , lang::ecore::Refs::Ref[CustomDataType] \newType
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -430,6 +457,12 @@ data RenameCollection
       , lang::ecore::Refs::Id uid = noId())
   ;
 
+data AddAttributesToIndex
+  = AddAttributesToIndex(lang::ecore::Refs::Ref[Table] \table
+      , list[lang::ecore::Refs::Ref[Attribute]] \attributes
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
 data RenameAttribute
   = RenameAttribute(lang::ecore::Refs::Ref[Attribute] \attributeToRename
       , str \newName = ""
@@ -449,12 +482,6 @@ data MergeEntity
       , lang::ecore::Refs::Id uid = noId())
   ;
 
-data ChangeAttributeType
-  = ChangeAttributeType(lang::ecore::Refs::Ref[Attribute] \attributeToChange
-      , lang::ecore::Refs::Ref[DataType] \newType = null()
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
 data RemoveRelation
   = RemoveRelation(lang::ecore::Refs::Ref[Relation] \relationToRemove
       , lang::ecore::Refs::Id uid = noId())
@@ -466,9 +493,12 @@ data ChangeRelationCardinality
       , lang::ecore::Refs::Id uid = noId())
   ;
 
-data AddAttributesToIndex
-  = AddAttributesToIndex(lang::ecore::Refs::Ref[Table] \table
+data IndexSpec
+  = IndexSpec(str \name
       , list[lang::ecore::Refs::Ref[Attribute]] \attributes
+      , list[lang::ecore::Refs::Ref[Relation]] \references
+      , lang::ecore::Refs::Ref[Table] \table
+      , str \importedNamespace = ""
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -529,19 +559,48 @@ data IdSpec
       , lang::ecore::Refs::Id uid = noId())
   ;
 
-data IndexSpec
-  = IndexSpec(str \name
-      , list[lang::ecore::Refs::Ref[Attribute]] \attributes
-      , list[lang::ecore::Refs::Ref[Relation]] \references
-      , lang::ecore::Refs::Ref[Table] \table
-      , str \importedNamespace = ""
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
 data KeyValueDB
   = KeyValueDB(str \name
       , list[KeyValueElement] \elements
       , str \importedNamespace = ""
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
+data KeyValueElement
+  = KeyValueElement(str \name
+      , list[lang::ecore::Refs::Ref[Attribute]] \values
+      , str \importedNamespace = ""
+      , str \key = ""
+      , lang::ecore::Refs::Ref[Entity] \entity = null()
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
+data ColumnDB
+  = ColumnDB(str \name
+      , list[Column] \columns
+      , str \importedNamespace = ""
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
+data Column
+  = Column(str \name
+      , list[lang::ecore::Refs::Ref[Attribute]] \attributes
+      , str \importedNamespace = ""
+      , lang::ecore::Refs::Ref[Entity] \entity = null()
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
+data DocumentDB
+  = DocumentDB(str \name
+      , list[Collection] \collections
+      , str \importedNamespace = ""
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
+data Collection
+  = Collection(str \name
+      , str \importedNamespace = ""
+      , lang::ecore::Refs::Ref[Entity] \entity = null()
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -614,44 +673,6 @@ data AddGraphAttribute
       , lang::ecore::Refs::Id uid = noId())
   ;
 
-data KeyValueElement
-  = KeyValueElement(str \name
-      , list[lang::ecore::Refs::Ref[Attribute]] \values
-      , str \importedNamespace = ""
-      , str \key = ""
-      , lang::ecore::Refs::Ref[Entity] \entity = null()
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
-data ColumnDB
-  = ColumnDB(str \name
-      , list[Column] \columns
-      , str \importedNamespace = ""
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
-data Column
-  = Column(str \name
-      , list[lang::ecore::Refs::Ref[Attribute]] \attributes
-      , str \importedNamespace = ""
-      , lang::ecore::Refs::Ref[Entity] \entity = null()
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
-data DocumentDB
-  = DocumentDB(str \name
-      , list[Collection] \collections
-      , str \importedNamespace = ""
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
-data Collection
-  = Collection(str \name
-      , str \importedNamespace = ""
-      , lang::ecore::Refs::Ref[Entity] \entity = null()
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
 data RemoveAttribute
   = RemoveAttribute(lang::ecore::Refs::Ref[Attribute] \attributeToRemove
       , lang::ecore::Refs::Id uid = noId())
@@ -695,30 +716,17 @@ data AddRelation
   ;
 
 data Entity
-  = Entity(str \name
-      , list[Attribute] \attributes
-      , list[FreeText] \fretextAttributes
-      , list[Relation] \relations
-      , list[FunctionalTag] \functionalTags
-      , list[NFunctionalTag] \nfunctionalTags
-      , str \importedNamespace = ""
-      , lang::ecore::Refs::Id uid = noId())
-  | Entity(AddEntity \addEntity
+  = Entity(AddEntity \addEntity
       , str \name = \addEntity.\name
       , str \importedNamespace = \addEntity.\importedNamespace
-      , list[Attribute] \attributes = \addEntity.\attributes
-      , list[FreeText] \fretextAttributes = \addEntity.\fretextAttributes
+      , list[EntityAttribute] \attributes = \addEntity.\attributes
       , list[Relation] \relations = \addEntity.\relations
       , list[FunctionalTag] \functionalTags = \addEntity.\functionalTags
       , list[NFunctionalTag] \nfunctionalTags = \addEntity.\nfunctionalTags
       , lang::ecore::Refs::Id uid = \addEntity.uid
       , bool _inject = true)
-  ;
-
-data AddEntity
-  = AddEntity(str \name
-      , list[Attribute] \attributes
-      , list[FreeText] \fretextAttributes
+  | Entity(str \name
+      , list[EntityAttribute] \attributes
       , list[Relation] \relations
       , list[FunctionalTag] \functionalTags
       , list[NFunctionalTag] \nfunctionalTags
@@ -726,75 +734,60 @@ data AddEntity
       , lang::ecore::Refs::Id uid = noId())
   ;
 
+data EntityAttribute
+  = EntityAttribute(Attribute \attribute
+      , str \name = \attribute.\name
+      , str \importedNamespace = \attribute.\importedNamespace
+      , DataType \type = \attribute.\type
+      , lang::ecore::Refs::Id uid = \attribute.uid
+      , bool _inject = true)
+  | EntityAttribute(CustomAttribute \customAttribute
+      , str \name = \customAttribute.\name
+      , str \importedNamespace = \customAttribute.\importedNamespace
+      , lang::ecore::Refs::Ref[CustomDataType] \type = \customAttribute.\type
+      , lang::ecore::Refs::Id uid = \customAttribute.uid
+      , bool _inject = true)
+  ;
+
 data Attribute
-  = Attribute(AddAttribute \addAttribute
+  = Attribute(str \name
+      , DataType \type
+      , str \importedNamespace = ""
+      , lang::ecore::Refs::Id uid = noId())
+  | Attribute(AddAttribute \addAttribute
       , str \name = \addAttribute.\name
       , str \importedNamespace = \addAttribute.\importedNamespace
-      , lang::ecore::Refs::Ref[DataType] \type = \addAttribute.\type
+      , DataType \type = \addAttribute.\type
       , lang::ecore::Refs::Ref[Entity] \ownerEntity = \addAttribute.\ownerEntity
       , lang::ecore::Refs::Id uid = \addAttribute.uid
       , bool _inject = true)
-  | Attribute(str \name
-      , lang::ecore::Refs::Ref[DataType] \type
-      , str \importedNamespace = ""
-      , lang::ecore::Refs::Id uid = noId())
   ;
 
 data AddAttribute
-  = AddAttribute(str \name
-      , lang::ecore::Refs::Ref[DataType] \type
+  = AddAttribute(AddCustomDataTypeAttribute \addCustomDataTypeAttribute
+      , str \name = \addCustomDataTypeAttribute.\name
+      , str \importedNamespace = \addCustomDataTypeAttribute.\importedNamespace
+      , DataType \type = \addCustomDataTypeAttribute.\type
+      , lang::ecore::Refs::Ref[Entity] \ownerEntity = \addCustomDataTypeAttribute.\ownerEntity
+      , lang::ecore::Refs::Id uid = \addCustomDataTypeAttribute.uid
+      , bool _inject = true)
+  ;
+
+data AddCustomDataTypeAttribute
+  = AddCustomDataTypeAttribute(str \name
+      , DataType \type
       , lang::ecore::Refs::Ref[Entity] \ownerEntity
       , str \importedNamespace = ""
       , lang::ecore::Refs::Id uid = noId())
   ;
 
-data DataType
-  = DataType(PrimitiveDataType \primitiveDataType
-      , str \name = \primitiveDataType.\name
-      , str \importedNamespace = \primitiveDataType.\importedNamespace
-      , lang::ecore::Refs::Id uid = \primitiveDataType.uid
-      , bool _inject = true)
-  | DataType(CustomDataType \customDataType
-      , str \name = \customDataType.\name
-      , str \importedNamespace = \customDataType.\importedNamespace
-      , list[DataTypeItem] \elements = \customDataType.\elements
-      , lang::ecore::Refs::Id uid = \customDataType.uid
-      , bool _inject = true)
-  | DataType(Entity \entity
-      , str \name = \entity.\name
-      , str \importedNamespace = \entity.\importedNamespace
-      , list[Attribute] \attributes = \entity.\attributes
-      , list[FreeText] \fretextAttributes = \entity.\fretextAttributes
-      , list[Relation] \relations = \entity.\relations
-      , list[FunctionalTag] \functionalTags = \entity.\functionalTags
-      , list[NFunctionalTag] \nfunctionalTags = \entity.\nfunctionalTags
-      , lang::ecore::Refs::Id uid = \entity.uid
-      , bool _inject = true)
-  ;
-
-data CustomDataType
-  = CustomDataType(str \name
-      , list[DataTypeItem] \elements
+data AddEntity
+  = AddEntity(str \name
+      , list[EntityAttribute] \attributes
+      , list[Relation] \relations
+      , list[FunctionalTag] \functionalTags
+      , list[NFunctionalTag] \nfunctionalTags
       , str \importedNamespace = ""
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
-data DataTypeItem
-  = DataTypeItem(str \name
-      , DataTypeImplementationPackage \implementation
-      , str \importedNamespace = ""
-      , lang::ecore::Refs::Ref[DataType] \type = null()
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
-data PrimitiveDataType
-  = PrimitiveDataType(str \name
-      , str \importedNamespace = ""
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
-data DataTypeImplementationPackage
-  = DataTypeImplementationPackage(str \location = ""
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -810,26 +803,144 @@ data FunctionalTag
       , lang::ecore::Refs::Id uid = noId())
   ;
 
-data FreeText
-  = FreeText(str \name
-      , list[NlpTask] \tasks
+data CustomAttribute
+  = CustomAttribute(str \name
+      , lang::ecore::Refs::Ref[CustomDataType] \type
       , str \importedNamespace = ""
       , lang::ecore::Refs::Id uid = noId())
   ;
 
+data DataType
+  = DataType(CustomDataType \customDataType
+      , str \name = \customDataType.\name
+      , str \importedNamespace = \customDataType.\importedNamespace
+      , list[CustomDataTypeItem] \elements = \customDataType.\elements
+      , lang::ecore::Refs::Id uid = \customDataType.uid
+      , bool _inject = true)
+  | DataType(PrimitiveDataType \primitiveDataType
+      , lang::ecore::Refs::Id uid = \primitiveDataType.uid
+      , bool _inject = true)
+  ;
+
+data CustomDataType
+  = CustomDataType(str \name
+      , list[CustomDataTypeItem] \elements
+      , str \importedNamespace = ""
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
+data CustomDataTypeItem
+  = CustomDataTypeItem(str \name
+      , CustomDataTypeImplementationPackage \implementation
+      , str \importedNamespace = ""
+      , lang::ecore::Refs::Ref[DataType] \type = null()
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
+data PrimitiveDataType
+  = PrimitiveDataType(FreetextType \freetextType
+      , list[NlpTask] \tasks = \freetextType.\tasks
+      , lang::ecore::Refs::Id uid = \freetextType.uid
+      , bool _inject = true)
+  | PrimitiveDataType(PolygonType \polygonType
+      , lang::ecore::Refs::Id uid = \polygonType.uid
+      , bool _inject = true)
+  | PrimitiveDataType(FloatType \floatType
+      , lang::ecore::Refs::Id uid = \floatType.uid
+      , bool _inject = true)
+  | PrimitiveDataType(BigintType \bigintType
+      , lang::ecore::Refs::Id uid = \bigintType.uid
+      , bool _inject = true)
+  | PrimitiveDataType(PointType \pointType
+      , lang::ecore::Refs::Id uid = \pointType.uid
+      , bool _inject = true)
+  | PrimitiveDataType(StringType \stringType
+      , int \maxSize = \stringType.\maxSize
+      , lang::ecore::Refs::Id uid = \stringType.uid
+      , bool _inject = true)
+  | PrimitiveDataType(BlobType \blobType
+      , lang::ecore::Refs::Id uid = \blobType.uid
+      , bool _inject = true)
+  | PrimitiveDataType(TextType \textType
+      , lang::ecore::Refs::Id uid = \textType.uid
+      , bool _inject = true)
+  | PrimitiveDataType(IntType \intType
+      , lang::ecore::Refs::Id uid = \intType.uid
+      , bool _inject = true)
+  | PrimitiveDataType(DateType \dateType
+      , lang::ecore::Refs::Id uid = \dateType.uid
+      , bool _inject = true)
+  | PrimitiveDataType(BoolType \boolType
+      , lang::ecore::Refs::Id uid = \boolType.uid
+      , bool _inject = true)
+  | PrimitiveDataType(DatetimeType \datetimeType
+      , lang::ecore::Refs::Id uid = \datetimeType.uid
+      , bool _inject = true)
+  ;
+
+data IntType
+  = IntType(lang::ecore::Refs::Id uid = noId())
+  ;
+
+data BigintType
+  = BigintType(lang::ecore::Refs::Id uid = noId())
+  ;
+
+data StringType
+  = StringType(int \maxSize = 0
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
+data BlobType
+  = BlobType(lang::ecore::Refs::Id uid = noId())
+  ;
+
+data BoolType
+  = BoolType(lang::ecore::Refs::Id uid = noId())
+  ;
+
+data TextType
+  = TextType(lang::ecore::Refs::Id uid = noId())
+  ;
+
+data DateType
+  = DateType(lang::ecore::Refs::Id uid = noId())
+  ;
+
+data PointType
+  = PointType(lang::ecore::Refs::Id uid = noId())
+  ;
+
+data DatetimeType
+  = DatetimeType(lang::ecore::Refs::Id uid = noId())
+  ;
+
+data PolygonType
+  = PolygonType(lang::ecore::Refs::Id uid = noId())
+  ;
+
+data FloatType
+  = FloatType(lang::ecore::Refs::Id uid = noId())
+  ;
+
+data FreetextType
+  = FreetextType(list[NlpTask] \tasks
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
 data NlpTask
-  = NlpTask(NlpTaskType \type = TextClassification()
+  = NlpTask(str \workflowName
+      , NlpTaskType \type
       , lang::ecore::Refs::Id uid = noId())
   ;
 
 data NlpTaskType
   = RelationExtraction()
+  | POSTagging()
   | Tokenisation()
   | Chunking()
   | NamedEntityRecognition()
   | Stemming()
-  | POSTagging()
-  | EventExtraction()
   | SentenceSegmentation()
   | DependencyParsing()
   | PhraseExtractor()
@@ -841,6 +952,11 @@ data NlpTaskType
   | ParagraphSegmentation()
   | Lemmatisation()
   | NGramExtractor()
+  ;
+
+data CustomDataTypeImplementationPackage
+  = CustomDataTypeImplementationPackage(str \location = ""
+      , lang::ecore::Refs::Id uid = noId())
   ;
 
 data Cardinality

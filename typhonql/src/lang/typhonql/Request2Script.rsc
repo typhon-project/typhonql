@@ -46,12 +46,14 @@ TODO:
 
 Script request2script(Request r, Schema s, Log log = noLog) {
   log("REQ: <r>");
-  
-  
+
+
   switch (r) {
-  
+
     case (Request)`<Query q>`: {
       list[Place] order = orderPlaces(r, s);
+      r = expandNavigation(addWhereIfAbsent(r), s);
+      println("NORMALIZED: <r>");
       Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) | Place p <- order]);
       scr.steps += [read(results2paths(q.selected, queryEnv(q), s))];
       return scr;
@@ -60,24 +62,24 @@ Script request2script(Request r, Schema s, Log log = noLog) {
     case (Request)`update <EId e> <VId x> set {<{KeyVal ","}* kvs>}`: {
       return request2script((Request)`update <EId e> <VId x> where true set {<{KeyVal ","}* kvs>}`, s);
     }
-    
+
     case (Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set {<{KeyVal ","}* kvs>}`:
-      return update2script(r, s); 
-    
+      return update2script(r, s);
+
 
     case (Request)`delete <EId e> <VId x>`: {
 	  return request2script((Request)`delete <EId e> <VId x> where true`, s);
 	}
-	
-	case (Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`: 
+
+	case (Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`:
 	  return delete2script(r, s);
-	
+
     case (Request)`insert <EId e> { <{KeyVal ","}* kvs> }`:
-       return insert2script(r, s); 
-    
-    default: 
+       return insert2script(r, s);
+
+    default:
       throw "Unsupported request: `<r>`";
-  }    
+  }
 }
 
 
@@ -102,28 +104,28 @@ void smokeScript() {
     <<sql(), "Inventory">, "Cash">,
     <<mongodb(), "Reviews">, "Review">,
     <<mongodb(), "Reviews">, "Comment">
-  } 
+  }
   );
-  
+
   void smokeIt(Request q) {
     println("REQUEST: `<q>`");
     iprintln(request2script(q, s));
   }
-  
-  
-  
+
+
+
 
   smokeIt((Request)`delete Review r`);
 
-  
+
   smokeIt((Request)`delete Review r where r.text == "Bad"`);
-  
+
   smokeIt((Request)`delete Comment c where c.contents == "Bad"`);
-  
+
   smokeIt((Request)`delete Person p`);
 
   smokeIt((Request)`delete Person p where p.name == "Pablo"`);
-  
+
   smokeIt((Request)`update Person p set {name: "Pablo"}`);
 
   smokeIt((Request)`update Person p set {name: "Pablo", age: 23}`);
@@ -146,41 +148,41 @@ void smokeScript() {
   smokeIt((Request)`update Person p set {name: "Pablo", cash -: [#abc, #cde]}`);
 
   smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde]}`);
-  
+
   smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews +: [#abc, #cde], reviews -: [#xyz]}`);
 
   smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde], name: "Pete"}`);
 
   smokeIt((Request)`update Person p where p.name == "Pablo" set {reviews -: [#abc, #cde], age: 32, name: "Bla"}`);
-  
+
   smokeIt((Request)`update Person p where p.name == "Pablo" set {cash: [#dollar]}`);
   smokeIt((Request)`update Person p where p.name == "Pablo" set {cash +: [#dollar]}`);
   smokeIt((Request)`update Person p where p.name == "Pablo" set {cash -: [#dollar]}`);
 
   smokeIt((Request)`update Cash c where c.amount \> 0 set {owner: #pablo}`);
-  
+
   smokeIt((Request)`update Cash c where c.@id == #dollar  set {owner: #pablo}`);
-  
+
   smokeIt((Request)`update Comment c where c.@id == #stupid set { replies: [#abc1, #cdef2] }`);
 
   smokeIt((Request)`update Comment c where c.@id == #stupid set { replies +: [#abc1, #cdef2] }`);
 
   smokeIt((Request)`update Comment c where c.@id == #stupid set { replies -: [#abc1, #cdef2] }`);
-  
-  
+
+
 
   smokeIt((Request)`delete Person p where p.name == "Pablo"`);
-  
+
   smokeIt((Request)`insert Person {name: "Pablo", age: 23}`);
   smokeIt((Request)`insert Person {name: "Pablo", age: 23, reviews: #abc, reviews: #cdef}`);
 
   smokeIt((Request)`insert Review {text: "Bad"}`);
 
   smokeIt((Request)`insert Person {name: "Pablo", age: 23, @id: #pablo}`);
-  
+
   smokeIt((Request)`insert Review {text: "Bad", user: #pablo}`);
-  
-  
+
+
   smokeIt((Request)`insert Person {name: "Pablo", age: 23}`);
   smokeIt((Request)`insert Person {name: "Pablo", age: 23, reviews: [#abc, #cdef]}`);
 
@@ -190,30 +192,31 @@ void smokeScript() {
 
   smokeIt((Request)`update Person p set {name: "Pablo", age: 23}`);
 
-  
-  
+
+
   smokeIt((Request)`delete Comment c where c.contents == "Bad"`);
-  
+
   smokeIt((Request)`delete Person p`);
 
   smokeIt((Request)`delete Person p where p.name == "Pablo"`);
-  
+
   smokeIt((Request)`delete Review r`);
-  
+
   smokeIt((Request)`delete Review r where r.text == "Bad"`);
-  
-  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);  
-  
-  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);  
+
+  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
+
+  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
 
   smokeIt((Request)`from Person u, Review r select r where r.user == u, u.name == "Pablo"`);
-  
+
   smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
-  
+
   smokeIt((Request)`from Person p, Cash c select p.name where p.name == "Pablo", p.cash == c, c.amount \> 0`);
-  
+
+
+  smokeIt((Request)`from Person u, Review r select u.name, r.user where u.reviews == r, r.text == ""`);
 
   smokeIt((Request)`from Person p select p.reviews where p == #victor`);
-  
-  smokeIt((Request)`from Person u, Review r select u.name, r.user where u.reviews == r, r.text == ""`);  
-}  
+
+}

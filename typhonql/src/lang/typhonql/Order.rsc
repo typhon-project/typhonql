@@ -121,7 +121,7 @@ set[DBPath] dbPaths(Expr e, map[str, str] env, Schema s) {
   set[DBPath] paths = {};
   visit (e) {
     case (Expr)`<VId x>.<{Id "."}+ xs>`: 
-       paths += {navigate(env["<x>"], [ "<f>" | Id f <- xs ], s)};
+       paths += {navigate(env["<x>"], [ "<f>" | Id f <- xs ][0..-1], s)};
     case (Expr)`<VId x>` :
        paths += {navigate(env["<x>"], [], s)};
     case (Expr)`<VId x>.@id` :

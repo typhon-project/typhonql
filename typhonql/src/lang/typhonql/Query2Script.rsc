@@ -24,30 +24,30 @@ import List;
 
 Env queryEnvAndDyn(Query q) = queryEnvAndDyn(q.bindings);
 
-Env queryEnvAndDyn({Binding ","}+ bs) 
+Env queryEnvAndDyn({Binding ","}+ bs)
  = queryEnv(bs) + ("<x>": "<e>" | (Binding)`#dynamic(<EId e> <VId x>)` <- bs );
 
-list[Path] results2paths({Result ","}+ rs, Env env, Schema s) 
+list[Path] results2paths({Result ","}+ rs, Env env, Schema s)
   = [ *exp2path(e, env, s) | (Result)`<Expr e>` <- rs ];
 
-list[Path] exp2path((Expr)`<VId x>`, Env env, Schema s) 
+list[Path] exp2path((Expr)`<VId x>`, Env env, Schema s)
   = exp2path((Expr)`<VId x>.@id`, env, s);
 
-list[Path] exp2path((Expr)`<VId x>.@id`, Env env, Schema s) 
+list[Path] exp2path((Expr)`<VId x>.@id`, Env env, Schema s)
   = [<p.name, "<x>", ent, ["@id"]>]
   when
-    str ent := env["<x>"], 
+    str ent := env["<x>"],
     <Place p, ent> <- s.placement;
 
 // this mimicks addProjections in toMongo (or at least tries to)
-list[Path] exp2path((Expr)`#needed(<Expr e>)`, Env env, Schema s) 
+list[Path] exp2path((Expr)`#needed(<Expr e>)`, Env env, Schema s)
   = exp2path(e, env, s);
 
 // assumes expand navigation normalization
 list[Path] exp2path((Expr)`<VId x>.<Id f>`, Env env, Schema s)
   = [<p.name, "<x>", ent, ["<f>"]>]
   when
-    str ent := env["<x>"], 
+    str ent := env["<x>"],
     <Place p, ent> <- s.placement;
 
 default list[Path] exp2path(Expr _, Env _, Schema _) = [];
@@ -57,11 +57,11 @@ list[Path] filterForBackend(list[Path] paths, Place p)
 
 
 list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s, Log log = noLog) {
-  r = expandNavigation(addWhereIfAbsent(r), s);
-  log("COMPILING2SQL: <r>");
-  <sqlStat, params> = compile2sql(r, s, p, log = log);
+  //r = expandNavigation(addWhereIfAbsent(r), s);
+  println("COMPILING: <r>");
+  <sqlStat, params> = compile2sql(r, s, p);
   // hack
-  
+
   if (sqlStat.exprs == []) {
     return [];
   }

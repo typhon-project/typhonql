@@ -2,6 +2,7 @@ module lang::typhonql::mongodb::Query2Mongo
 
 import lang::typhonql::TDBC;
 import lang::typhonql::Order;
+import lang::typhonql::Normalize;
 
 import lang::typhonql::Session;
 import lang::typhonml::TyphonML;
@@ -10,6 +11,7 @@ import lang::typhonql::mongodb::DBCollection;
 
 import List;
 import IO;
+import String;
 
 ////////
 /////// TODO: normalization (e.g. expandNavigation) is SQL specific
@@ -39,13 +41,68 @@ alias Ctx = tuple[
     Env env,
     set[str] dyns,
     int() vars,
-    Place place];
+    Place place,
+    str root];
     
+    
+Request unjoinWheres(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
+  // replace #join expressions with .-navigations, basically undoing expandNavigation
+  
+  Expr unjoin(Expr e, VId x) {
+    return top-down-break visit (e) {
+       case (Expr)`#done(<Expr _>)`: ;
+       case (Expr)`#needed(<Expr _>)`: ;
+       case (Expr)`#delayed(<Expr _>)`: ;
+       
+       case (Expr)`<Expr lhs> #join <Expr rhs>` => (Expr)`<Expr lhs2> #join <Expr rhs>` 
+          when Expr lhs2 := unjoin(lhs, x)
+        
+       case (Expr)`<VId x1>.<Id f>` => (Expr)`<VId var>.<{Id "."}+ fs2>.<Id f>`
+         when x1 == x, bprintln("Rewriting <x>"), (Expr)`<VId var>.<{Id "."}+ fs2> #join <VId x2>` <- ws, x2 == x
+    }
+  }
+  
+  for ((Binding)`<EId e> <VId x>` <- bs) { // skipping dynamic ones
+    // everywhere x occurs, and a  `E #join x` exists, replace x with E (but not in rhs of #join itself)
+    println("Trying to unjoin <e> <x>");
+    req = top-down-break visit (req) {
+       case Expr e => unjoin(e, x)
+    }
+  }
+  
+  bool isLocalHashJoin(Expr w) {
+     if (!(w is hashjoin)) {
+       return false;
+     }
+     // only return false for the outermost join
+     // from a dynamic variable, that's why we
+     // don't match on a seq of {Id ","}+
+    
+     if ((Expr)`<VId x>.<Id _> #join <Expr rhs>` := w) {
+       if ((Binding)`#dynamic(<EId _> <VId x2>)` <- bs, x == x2) {
+         return false;
+       }
+     }
+     return true;
+  }
+  
+  if ((Request)`from <{Binding ","}+ bs2> select <{Result ","}+ rs2> where <{Expr ","}+ ws2>` := req) {
+    q = buildQuery([ b | Binding b <- bs2 ], [ r | Result r <- rs2 ], 
+       [ w | Expr w <- ws2, !isLocalHashJoin(w) ]);
+    return (Request)`<Query q>`;
+  }
+  throw "Bad pattern match on request: <req>";
+}
 
 tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s, Place p) 
   = select2mongo((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, p); 
+
+tuple[map[str, CollMethod], Bindings] select2mongo(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s, Place p) 
+  = select2mongo_(unjoinWheres(req, s), s, p)
+  when bprintln("BEFORE UNJOIN: <req>");  
     
-tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s, Place p) {
+tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s, Place p) {
+  println("TOMONGO: <req>");
   
   Env env = (); 
   set[str] dyns = {};
@@ -85,11 +142,37 @@ tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}
   bool isLocal(VId x) = (str ent := env["<x>"] && <p, ent> <- s.placement);
     
   void addProjection(VId x, str fields) {
-    if (!isLocal(x)) {
-      return;
-    }
+    /*
+     Here we are assuming the non-annotated result clauses are in fact
+     on the collection we're querying, so we have to strip of the
+     path from the front up-till the entity that we're querying on
+     so p.reviews.contents becomes a projection "contents", because
+     the current collection is Review, and p.reviews leads to that.
+    */
+    
     str ent = env["<x>"];
+    
+    if (!isLocal(x)) {
+      list[str] fs = split(".", fields); // ugh
+      
+      while (ent notin paths) {
+         if (fs == []) {
+           throw "Could not find entity in current maps of collections";
+         }
+         role = fs[0];
+         if (<ent, _, role, _, _, str to, _> <- s.rels) {
+           ent = to;
+           fs = fs[1..];
+         }
+         else {
+           throw "No such role <role> for <ent> in schema";
+         }
+      }
+      fields = intercalate(".", fs);
+    }
+    
     prePath = paths[ent].path;
+    
     if (prePath != []) {
       Prop prop = <"<intercalate(".", paths[ent].path)>.<fields>", \value(1)>;
       if (prop notin result[paths[ent].root].projection.props) {
@@ -140,6 +223,25 @@ tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}
     params[x] = field;
   }
   
+  /*
+  // the root entity is the entity that corresponds to a collection
+  // in Mongo; there can only be one, all other non dynamic bindings should
+  // be reachable via containment paths,
+   
+  So for instance
+  
+  from Review r select r.comments.contents where r.comments.contents == ""
+  normalizes into
+  from Review r, Comment c select c.contents where r.comments == c, c.contents == "";
+   
+  this will have to add a constraint (TODO: with $exists somehow because there are multiple comments)
+  {"comments.contents": ""}
+  
+  So we have evaluate the joining where clauses to find the path from root
+  to the entity that has the constraint on the attribute 
+  */
+  root = "";
+   
   
   Ctx ctx = <
     addParam,
@@ -147,7 +249,8 @@ tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}
     env,
     dyns,
     vars,
-    p>;
+    p, 
+    root>;
   
     
   
@@ -169,6 +272,9 @@ tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}
     }
       
   }
+  
+  println("*****RESULT ****");
+  iprintln(result);
   
   return <result, params>;
 }
@@ -225,8 +331,10 @@ void smokeQuery2Mongo() {
    
 }
 
-    
 
+tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> #join <Expr rhs>`, Ctx ctx)
+  = expr2pattern((Expr)`<Expr lhs> == <Expr rhs>`, ctx);
+  
 tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> == <Expr rhs>`, Ctx ctx)
   = <ent, <path, expr2obj(other, ctx)>> 
   when
