@@ -1,0 +1,6 @@
+dbtype Mongo {
+	default image = mongo:latest;
+}
+dbtype MariaDB {
+	default image = mariadb:latest;
+}
