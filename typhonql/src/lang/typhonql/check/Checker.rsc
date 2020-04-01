@@ -5,9 +5,7 @@ import Exception;
 import lang::typhonml::Util;
 extend analysis::typepal::TypePal;
 
-extend lang::typhonql::DDL;
-extend lang::typhonql::DML;
-extend lang::typhonql::Query;
+extend lang::typhonql::TDBC;
 
 /***********
  *  Types  *
@@ -414,7 +412,7 @@ void collect(current:(Statement)`insert <Obj obj> into <Expr parent> . <Id field
     c.enterScope(current);
     collect(obj, parent, c);
     c.useViaType(parent, field, {fieldRole()});
-    c.requireEquals(field, obj, error(obj, "Expected %t but got %t", field, obj));
+    c.requireEqual(field, obj, error(obj, "Expected %t but got %t", field, obj));
     c.leaveScope(current);
 }
 
@@ -438,6 +436,26 @@ void collect(current:(Statement)`update <Binding b> <Where? where> set { <{KeyVa
     c.leaveScope(current);
 }
 
+
+/**********
+ * Script *
+ **********/
+ 
+void collect(current:(Script)`<Scratch scratch>`, Collector c) {
+    collect(scratch, c);
+ }
+
+void collect(current:(Scratch)`<Request* requests>`, Collector c) {
+    collect(requests, c);
+}
+
+void collect(current:(Request)`<Query qry>`, Collector c) {
+    collect(qry, c);
+}
+
+void collect(current:(Request)`<Statement stm>`, Collector c) {
+    collect(stm, c);
+}
 
 void reportUnsupported(Tree current, Collector c) {
     c.calculate("unsupported", current, [], AType (Solver s) {
@@ -502,6 +520,9 @@ CheckerMLSchema convertModel(Schema mlSchema)
 
 
 TModel checkQLTree(Tree t, CheckerMLSchema mlSchema, bool debug = false) {
+    if (t has top) {
+        t = t.top;
+    }
     return collectAndSolve(t, config=buildConfig(debug, mlSchema));
 }
 
