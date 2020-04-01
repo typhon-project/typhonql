@@ -1,4 +1,4 @@
-#Typhon - REST Data Acces Layer
+# Typhon - REST Data Acces Layer
 ## Proposal
 
 This document describes a REST layer that can be uses to perform CRUD operations on Typhon entities.
