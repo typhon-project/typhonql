@@ -9,6 +9,7 @@ This document describes a REST layer that can be uses to perform CRUD operations
 * The entity representation is a JSON object whose fields correspond to the entity attributes, including the uuid and the entity type, e.g. `{"type": "User", id: "#918df0bc", "name": "\"Bob\"", "age": "19" }`
 * N-ary relations are represented by a JSON array of strings, each of it corresponding to the related entity uuid, e.g. `"users" : [ "#918df0bc", "#7ba3681b"]`.
 * 1-ary relations are represented by a JSON string corresponding to the related entity uuid, e.g. `"user" : "#918df0bc"`.
+* Fields have to be encoded like a query, so a string value should have nested qoutes, and a UUID should be prefixed with a pound (`#`).
 
 
 ## Operations
