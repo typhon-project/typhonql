@@ -29,7 +29,7 @@ node {
     stage('Build typhonql') {
 	    configFileProvider(
         	[configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
-        	sh 'mvn -U -B -gs $MAVEN_SETTINGS clean install'
+        	sh 'mvn -X -U -B -gs $MAVEN_SETTINGS clean install'
         	sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean test'
         }
     }
