@@ -10,6 +10,7 @@ This document describes a REST layer that can be uses to perform CRUD operations
 * N-ary relations are represented by a JSON array of strings, each of it corresponding to the related entity uuid, e.g. `"users" : [ "#918df0bc", "#7ba3681b"]`.
 * 1-ary relations are represented by a JSON string corresponding to the related entity uuid, e.g. `"user" : "#918df0bc"`.
 * Fields have to be encoded like a query, so a string value should have nested qoutes, and a UUID should be prefixed with a pound (`#`).
+* It should be possible to generate corresponding swagger files based on an ML model.
 
 
 ## Operations
