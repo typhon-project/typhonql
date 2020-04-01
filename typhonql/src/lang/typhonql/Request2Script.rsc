@@ -53,6 +53,7 @@ Script request2script(Request r, Schema s, Log log = noLog) {
     case (Request)`<Query q>`: {
       list[Place] order = orderPlaces(r, s);
       r = expandNavigation(addWhereIfAbsent(r), s);
+      println("NORMALIZED: <r>");
       Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) | Place p <- order]);
       scr.steps += [read(results2paths(q.selected, queryEnv(q), s))];
       return scr;
@@ -213,7 +214,9 @@ void smokeScript() {
 
   smokeIt((Request)`from Person p, Cash c select p.name where p.name == "Pablo", p.cash == c, c.amount \> 0`);
 
-  smokeIt((Request)`from Person p select p.reviews where p == #victor`);
 
   smokeIt((Request)`from Person u, Review r select u.name, r.user where u.reviews == r, r.text == ""`);
+
+  smokeIt((Request)`from Person p select p.reviews where p == #victor`);
+
 }
