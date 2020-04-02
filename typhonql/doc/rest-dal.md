@@ -1,5 +1,4 @@
-# Typhon - REST Data Acces Layer
-## Proposal
+# Typhon - REST Data Access Layer (Proposal)
 
 This document describes a REST layer that can be uses to perform CRUD operations on Typhon entities.
 
@@ -24,15 +23,19 @@ This document describes a REST layer that can be uses to perform CRUD operations
 
 ## Examples
  
-### Create entity
+## *Create entity*
 
+```
 POST `/User/`
+```
 
-**HTTP status codes**
+**HTTP status codes:**
 
+```
 201 Created
 404 Entity not found 
 500 Error
+```
 
 **Request:**
 
@@ -54,11 +57,13 @@ The corresponding body:
 { "@id": "b58f8848" }
 ```
  
-### Get entity
+## *Get entity*
 
+```
 GET `/User/b58f8848`
+```
 
-**HTTP status codes**
+**HTTP status codes:**
 
 200 OK
 404 Entity not found 
@@ -70,15 +75,19 @@ GET `/User/b58f8848`
 { "@id": "b58f8848", "name": "\"Patrick\"", "age": "39" }
 ```
  
-### Update entity
+## *Update entity*
 
+```
 PATCH `/User/b58f8848`
+```
 
-**HTTP status codes**
+**HTTP status codes:**
 
+```
 200 OK
 404 Entity not found 
 500 Error
+```
 
 **Request:**
 
@@ -86,12 +95,16 @@ PATCH `/User/b58f8848`
 { "age": "40" }
 ```
 
-### Delete entity
+## *Delete entity*
 
+```
 DELETE `/User/b58f8848`
+```
 
-**HTTP status codes**
+**HTTP status codes:**
 
+```
 200 OK
 404 Entity not found
 500 Error
+```
