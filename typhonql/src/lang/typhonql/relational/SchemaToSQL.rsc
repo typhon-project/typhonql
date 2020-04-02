@@ -147,13 +147,15 @@ void printSQLSchema(Schema schema, str dbName) {
   }
 
 list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bool doForeignKeys = true, Stats stats = initializeStats()) {
-  schema.rels = symmetricReduction(schema.rels);
+  //schema.rels = symmetricReduction(schema.rels);
   
-  for (str e <- placedEntities) 
+  for (str e <- placedEntities) {
      stats.add(dropTable([tableName(e)], true, []) );
+  }
      
-  for (str e <- placedEntities)    
+  for (str e <- placedEntities) {    
   	 stats.add(attrs2create(e, schema.attrs[e], schema));
+  }
   
 
   

@@ -20,10 +20,16 @@ import ParseTree;
 import String;
 import Map;
 
-str HOST = "localhost";
+/*
+ * These tests are meant to be run on a Typhon Polystore deployed according to the
+ * resources/user-reviews-product folder
+ */
+ 
+ 
+str HOST = "localhost"; // "192.168.178.78";
 str PORT = "8080";
-str user = "pablo";
-str password = "antonio";
+str USER = "admin";
+str PASSWORD = "admin1@";
 
 Log NO_LOG = void(value v){ return; };
 
@@ -71,7 +77,7 @@ void test4() {
 
 void test5() {
 	rs = runQuery((Request) `from User u select u.biography.text where u == #pablo`);
-	assertEquals("test5", rs,  <["b.text"],[["Chilean"]]>);
+	assertEquals("test5", rs,  <["biography_0.text"],[["Chilean"]]>);
 }
 
 void test6() {
@@ -129,43 +135,43 @@ void test13() {
 }
 
 tuple[int, map[str,str]] runUpdate(Request req) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema s = loadSchemaFromXMI(modelStr);
 	return runUpdate(req, s, connections, log = LOG);
 }
 
 void runPreparedUpdate(Request req, list[str] columnNames, list[list[str]] vs) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema s = loadSchemaFromXMI(modelStr);
 	runPrepared(req, columnNames, vs, s, connections, log = LOG);
 }
 
 value runQuery(Request req) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema s = loadSchemaFromXMI(modelStr);
 	return runQuery(req, s, connections, log = LOG);
 }
 
 void printSchema() {
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	iprintln(sch);
 }
 
 Schema getSchema() {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	return sch;
 }
 
 
 void resetDatabases() {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	runSchema(sch, connections);
 }
@@ -193,9 +199,22 @@ void assertEquals(str testName, value actual, value expected) {
 	}	
 }
 
-void runTests(Log log = NO_LOG) {
-	tests = [test1, test2, test3, test4, test5,
-		test6, test7, test8, test9, test10, test11, test12, test13];
+void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
+	tests = [
+	   test1
+	   , test2
+	   , test3
+	   , test4
+	   , test5
+	   , test6
+		, test7
+		, test8
+		, test9
+		, test10
+		, test11
+		, test12
+		, test13
+		];
 	for (t <- tests) {
 		runTest(t, log = log);
 	}
