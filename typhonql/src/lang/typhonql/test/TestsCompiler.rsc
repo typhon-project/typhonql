@@ -26,7 +26,7 @@ import Map;
  */
  
  
-str HOST = "localhost";
+str HOST = "localhost"; // "192.168.178.78";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
