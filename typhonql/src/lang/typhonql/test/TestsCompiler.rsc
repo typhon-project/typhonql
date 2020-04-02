@@ -31,7 +31,7 @@ str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
 
-Log NO_LOG = void(value v){ println("LOG: <v>"); };
+Log NO_LOG = void(value v){ return; };
 
 Log LOG = NO_LOG;
 
@@ -42,7 +42,6 @@ java str readHttpModel(loc polystoreUri, str user, str password);
 java map[str, Connection] readConnectionsInfo(str host, int port, str user, str password);
 
 void setup() {
-    println("user = <USER> password = <PASSWORD>");
 	runUpdate((Request) `insert User { @id: #pablo, name: "Pablo" }`);
 	runUpdate((Request) `insert User { @id: #davy, name: "Davy" }`);
 	
@@ -78,7 +77,7 @@ void test4() {
 
 void test5() {
 	rs = runQuery((Request) `from User u select u.biography.text where u == #pablo`);
-	assertEquals("test5", rs,  <["b.text"],[["Chilean"]]>);
+	assertEquals("test5", rs,  <["biography_0.text"],[["Chilean"]]>);
 }
 
 void test6() {
@@ -174,7 +173,6 @@ void resetDatabases() {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
 	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
-	iprintln(sch);
 	runSchema(sch, connections);
 }
 
@@ -201,9 +199,22 @@ void assertEquals(str testName, value actual, value expected) {
 	}	
 }
 
-void runTests(Log log = void(value v) {println(v);}) {
-	tests = [test1, test2, test3, test4, test5,
-		test6, test7, test8, test9, test10, test11, test12, test13];
+void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
+	tests = [
+	   test1
+	   , test2
+	   , test3
+	   , test4
+	   , test5
+	   , test6
+		, test7
+		, test8
+		, test9
+		, test10
+		, test11
+		, test12
+		, test13
+		];
 	for (t <- tests) {
 		runTest(t, log = log);
 	}
