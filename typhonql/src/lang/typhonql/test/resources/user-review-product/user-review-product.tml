@@ -19,14 +19,14 @@ entity User{
 	name : string[256]
 	address: string[256]
 	
-	biography :-> Biography[0..1]
+	biography :-> Biography."Biography.user"[0..1]
 	reviews :-> Review."Review.user"[0..*]
 }
 
 entity Biography{
 	content : string[256]
 	
-	user -> User[1]
+	user -> User."User.biography"[1]
 }
 
 relationaldb Inventory {
