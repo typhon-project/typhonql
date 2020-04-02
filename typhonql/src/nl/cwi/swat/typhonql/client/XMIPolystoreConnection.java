@@ -175,13 +175,14 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 		evaluators.useAndReturn(evaluator -> {
 			try {
 				synchronized (evaluator) {
-					// str src, str xmiString, Session sessions
+					ITuple session = sessionBuilder.newSession(connections, evaluator);
+					
 					return evaluator.call("runDDL", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(update), 
 							xmiModel,
-							connections);
+							session);
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);

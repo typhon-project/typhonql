@@ -27,11 +27,16 @@ import util::Maybe;
 import String;
 
 void runDDL(Request r, Schema s, map[str, Connection] connections, Log log = noLog) {
+	Session session = newSession(connections, log = log);
+	return runDDL(r, s, session, log = log);
+}
+
+void runDDL(Request r, Schema s, Session session, Log log = noLog) {
 	if ((Request) `<Statement stmt>` := r) {
 		// TODO This is needed because we do not have an explicit way to distinguish
 		// DDL updates from DML updates. Perhaps we should consider it
   		if (isDDL(stmt)) {
-  			run(r, s, connections, log = log);
+  			runUpdate(r, s, session, log = log);
   		}
   		else {
   			throw "DDL statement should have been provided";
@@ -53,7 +58,7 @@ tuple[int, map[str, str]] runUpdate(Request r, Schema s, Session session, Log lo
 		// DDL updates from DML updates. Perhaps we should consider it
   		if (!isDDL(stmt)) {
   			scr = request2script(r, s, log = log);
-			log("[runUpdate-DDL] Script: <scr>");
+			log("[runUpdate] Script: <scr>");
 			res = runScript(scr, session, s);
 			if (res != "")
 				return <-1, ("uuid" : res)>;
@@ -61,7 +66,10 @@ tuple[int, map[str, str]] runUpdate(Request r, Schema s, Session session, Log lo
 				return <-1, ()>;
   		}
   		else {
-  			throw "DML statement should have been provided";
+  			scr = request2script(r, s, log = log);
+			log("[runUpdate-DDL] Script: <scr>");
+			res = runScript(scr, session, s);
+			return <-1, ()>;
   		}
   	}
     throw "Statement should have been provided";
@@ -168,10 +176,15 @@ lrel[int, map[str, str]] runPrepared(str src, list[str] columnNames, list[list[s
  	return runPrepared(src, columnNames, values, xmiString, session, log = log);
 }
 
-void runDDL(str src,  str xmiString, map[str, Connection] connections, Log log = noLog) {
+void runDDL(str src,  str xmiString, Session session, Log log = noLog) {
 	Model m = xmiString2Model(xmiString);
   	Schema s = model2schema(m);	
-	runDDL([Request] src, s, connections, log = log);
+	runDDL([Request] src, s, session, log = log);
+}
+
+void runDDL(str src,  str xmiString, map[str, Connection] connections, Log log = noLog) {
+	Session session = newSession(connections, log = log);
+	runDDL(src, xmiString, session, log = log);
 }
 
 Path buildPath(str selector, map[str, str] entityTypes) {

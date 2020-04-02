@@ -134,35 +134,69 @@ void test13() {
 	assertEquals("test13b", rs, <["u.@id"],[["<uuid>"]]>);
 }
 
-tuple[int, map[str,str]] runUpdate(Request req) {
+// DDL
+
+void test14() {
+	 runDDL((Request) `create CreditCard at Inventory`);
+	 s = fetchSchema();
+	 
+	 // We need to fake the schema update
+	 s += <"CreditCard", "foo", "string">;
+	 rs = runQuery((Request) `from CreditCard c select c`, s);
+	 assertEquals("test14", rs,  <["c.@id"],[]>);
+}
+
+void test15() {
+	 runUpdate((Request) `drop Product at Inventory`);
+	 rs = runQuery((Request) `from Product p select p`);
+	 assertEquals("test15", rs,  <["r.@id"],[]>);
+}
+
+tuple[int, map[str,str]] runDDL(Request req) {
+	Schema s = fetchSchema();
+	return runDDL(req, s);
+}
+
+tuple[int, map[str,str]] runDDL(Request req, Schema s) {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
-	Schema s = loadSchemaFromXMI(modelStr);
+	runDDL(req, s, connections, log = LOG);
+	return <-1, ()>;
+}
+
+tuple[int, map[str,str]] runUpdate(Request req) {
+	Schema s = fetchSchema();
+	return runUpdate(req, s);
+}
+
+tuple[int, map[str,str]] runUpdate(Request req, Schema s) {
+	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
 	return runUpdate(req, s, connections, log = LOG);
 }
 
 void runPreparedUpdate(Request req, list[str] columnNames, list[list[str]] vs) {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
-	Schema s = loadSchemaFromXMI(modelStr);
+	Schema s = fetchSchema();
 	runPrepared(req, columnNames, vs, s, connections, log = LOG);
 }
 
 value runQuery(Request req) {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
-	Schema s = loadSchemaFromXMI(modelStr);
+	Schema s = fetchSchema();
 	return runQuery(req, s, connections, log = LOG);
 }
 
+
+value runQuery(Request req, Schema s) {
+	return runQuery(req, s, connections, log = LOG);
+}
+
+
 void printSchema() {
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
-	Schema sch = loadSchemaFromXMI(modelStr);
+	Schema sch = fetchSchema();
 	iprintln(sch);
 }
 
-Schema getSchema() {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
+Schema fetchSchema() {
 	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
 	Schema sch = loadSchemaFromXMI(modelStr);
 	return sch;
