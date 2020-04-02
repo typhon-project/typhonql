@@ -76,7 +76,7 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s,
   return [step(dbName, sql(executeQuery(dbName, pp(sqlStat))), params
      , signature=
          filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s)
-           +  + where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];
+           +  where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];
 }
 
 list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s, Log log = noLog) {
