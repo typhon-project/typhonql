@@ -55,7 +55,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
         str from = "<e>";
         str fromRole = "<x>";
         str uuid = "<ref>"[1..];
-        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
+        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, !isImplicitRole(toRole)) {
             // this keyval is updating ref to have me as a foreign key
             
           switch (placeOf(to, s)) {
@@ -83,7 +83,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
             
           }
         }
-        else if (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels) {
+        else if (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels, !isImplicitRole(parentRole)) {
            // this is the case that the current KeyVal pair is actually
            // setting the currently inserted object as being owned by ref
            
@@ -106,7 +106,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
         } 
         
         // xrefs are symmetric, so both directions are done in one go. 
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels), !isImplicitRole(toRole)) {
            // save the cross ref
            steps += insertIntoJunction(dbName, from, fromRole, to, toRole, sqlMe, [lit(text(uuid))], myParams);
            
@@ -135,7 +135,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
       for ((KeyVal)`<Id x>: [<{UUID ","}+ refs>]` <- kvs) {
         str from = "<e>";
         str fromRole = "<x>";
-        if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
+        if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, !isImplicitRole(toRole)) {
             // this keyval is updating ref to have me as a foreign key
             
           switch (placeOf(to, s)) {
@@ -163,14 +163,14 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
             
           }
         }
-        else if (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels) {
+        else if (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels, !isImplicitRole(parentRole)) {
            // this is the case that the current KeyVal pair is actually
            // setting the currently inserted object as being owned by each ref which is illegal
            throw "Cannot have multiple parents <refs> for inserted object";
         } 
         
         // xrefs are symmetric, so both directions are done in one go. 
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels), !isImplicitRole(toRole)) {
            // save the cross ref
            steps += [ *insertIntoJunction(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams) ];
            
@@ -217,7 +217,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
         str uuid = "<ref>"[1..];
         
 
-        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, _> <- s.rels) {
+        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, _> <- s.rels, !isImplicitRole(toRole)) {
           switch (placeOf(to, s)) {
           
             case <mongodb(), dbName> : {  
@@ -244,7 +244,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
         str fromRole = "<x>";
 
 
-        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, _> <- s.rels) {
+        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, _> <- s.rels, !isImplicitRole(toRole)) {
           switch (placeOf(to, s)) {
           
             case <mongodb(), dbName> : {  

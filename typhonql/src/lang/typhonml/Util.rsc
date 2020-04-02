@@ -66,6 +66,8 @@ Rels myDbToRels() = model2rels(load(#Model, |project://typhonql/src/lang/newmydb
 
 set[str] entities(Schema s) = s.rels<0> + s.attrs<0>;
 
+bool isImplicitRole(str role) = endsWith(role, "^");
+
 set[Message] schemaSanity(Schema s, loc src) {
   set[Message] msgs = {};
   

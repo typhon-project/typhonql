@@ -28,10 +28,10 @@ import Map;
  
 str HOST = "localhost";
 str PORT = "8080";
-str user = "pablo";
-str password = "antonio";
+str USER = "admin";
+str PASSWORD = "admin1@";
 
-Log NO_LOG = void(value v){ return; };
+Log NO_LOG = void(value v){ println("LOG: <v>"); };
 
 Log LOG = NO_LOG;
 
@@ -42,6 +42,7 @@ java str readHttpModel(loc polystoreUri, str user, str password);
 java map[str, Connection] readConnectionsInfo(str host, int port, str user, str password);
 
 void setup() {
+    println("user = <USER> password = <PASSWORD>");
 	runUpdate((Request) `insert User { @id: #pablo, name: "Pablo" }`);
 	runUpdate((Request) `insert User { @id: #davy, name: "Davy" }`);
 	
@@ -175,7 +176,6 @@ tuple[int, map[str,str]] runUpdate(Request req, Schema s) {
 
 void runPreparedUpdate(Request req, list[str] columnNames, list[list[str]] vs) {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
-	Schema s = fetchSchema();
 	runPrepared(req, columnNames, vs, s, connections, log = LOG);
 }
 
@@ -197,16 +197,17 @@ void printSchema() {
 }
 
 Schema fetchSchema() {
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	return sch;
 }
 
 
 void resetDatabases() {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), user, password);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
+	iprintln(sch);
 	runSchema(sch, connections);
 }
 
@@ -233,7 +234,7 @@ void assertEquals(str testName, value actual, value expected) {
 	}	
 }
 
-void runTests(Log log = NO_LOG) {
+void runTests(Log log = void(value v) {println(v);}) {
 	tests = [test1, test2, test3, test4, test5,
 		test6, test7, test8, test9, test10, test11, test12, test13];
 	for (t <- tests) {
