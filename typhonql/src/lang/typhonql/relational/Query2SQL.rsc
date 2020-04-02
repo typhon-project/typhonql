@@ -101,9 +101,17 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
     q.tables += [as];
   }
   
+  bool hasTableRight(As as, str tbl) {
+    if (as has name) {
+      return as.name == tbl;
+    }
+    return hasTableRight(as.right, tbl);
+  }
+  
   void addLeftOuterJoin(str this, As other, SQLExpr on) {
     for (int i <- [0..size(q.tables)]) {
-      if (me:as(_, this) := q.tables[i]) {
+      // me:as(_, this)
+      if (As me := q.tables[i], hasTableRight(me, this)) {
         q.tables[i] = leftOuterJoin(me, other, on);
         return;
       } 

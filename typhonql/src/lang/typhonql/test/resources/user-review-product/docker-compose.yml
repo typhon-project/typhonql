@@ -1,0 +1,57 @@
+version: '3.7'
+
+services:
+  Reviews:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+      - target: 27017
+        published: 27018
+    hostname: Reviews
+    container_name : Reviews
+  Inventory:
+    image: mariadb:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+    ports:
+      - target: 3306
+        published: 3306
+    hostname: Inventory
+    container_name : Inventory
+  polystore-mongo:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+      - published: 27017
+        target: 27017
+    hostname: polystore-mongo
+    container_name : polystore-mongo
+  typhon-polystore-service:
+    image: clms/typhon-polystore-api:latest
+    depends_on: 
+      - polystore-mongo
+    ports:
+      - published: 8080
+        target: 8080
+    hostname: polystore-api
+    container_name : typhon-polystore-service
+  polystore-ui:
+    image: clms/typhon-polystore-ui:latest
+    environment:
+      API_PORT: 8080
+      API_HOST: localhost
+    depends_on: 
+      - typhon-polystore-service
+    ports:
+      - published: 4200
+        target: 4200
+    hostname: polystore-ui
+    container_name : polystore-ui
+  typhonql-server:
+    image: swatengineering/typhonql-server
+    hostname: typhonql-server
+    container_name : typhonql-server

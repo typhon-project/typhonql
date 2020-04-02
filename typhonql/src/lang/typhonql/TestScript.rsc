@@ -47,7 +47,7 @@ Schema s = schema(
     <<sql(),"Inventory">,"User">,
     <<sql(),"Inventory">,"Product">
   },
-  elements={
+  customs={
     <"Address","number","int">,
     <"Address","city","text">,
     <"Address","street","text">
