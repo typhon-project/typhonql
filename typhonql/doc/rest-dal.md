@@ -28,6 +28,12 @@ This document describes a REST layer that can be uses to perform CRUD operations
 
 POST `/User/`
 
+**HTTP status codes**
+
+201 Created
+404 Entity not found 
+500 Error
+
 **Request:**
 
 ```
@@ -36,23 +42,43 @@ POST `/User/`
 
 **Result:**
 
+The HTTP header of the result contains link to newly created entity. E.g.:
+
 ```
-{ "uuid": "#b58f8848" },
+Location: http://polystore.somewhere.com/crud/User/b58f8848
+```
+
+The corresponding body:
+
+```
+{ "@id": "b58f8848" }
 ```
  
 ### Get entity
 
 GET `/User/b58f8848`
 
+**HTTP status codes**
+
+200 OK
+404 Entity not found 
+500 Error
+
 **Result:**
 
 ```
-{ "type": "User", "name": "\"Patrick\"", "age": "39" }
+{ "@id": "b58f8848", "name": "\"Patrick\"", "age": "39" }
 ```
  
 ### Update entity
 
 PATCH `/User/b58f8848`
+
+**HTTP status codes**
+
+200 OK
+404 Entity not found 
+500 Error
 
 **Request:**
 
@@ -60,18 +86,12 @@ PATCH `/User/b58f8848`
 { "age": "40" }
 ```
 
-**Result:**
-
-```
-{ "type": "User", "name": "\"Patrick\"", "age": "40" }
-```
-
 ### Delete entity
 
 DELETE `/User/b58f8848`
 
-**Result:**
+**HTTP status codes**
 
-```
-{ "result": "ok" }
-```
+200 OK
+404 Entity not found
+500 Error
