@@ -28,33 +28,31 @@ import IO;
 import List;
 
 Script ddl2script((Request) `create <EId eId> at <Id dbName>`, Schema s) {
-  Script scr = script([]);
   if (p:<db, name> <- s.placement<0>, name == "<dbName>") {
 	switch(db) {
 		case sql(): {
 			SQLStat stat = create(tableName("<eId>"), [typhonIdColumn("<eId>")], []);
-			scr += step(name, sql(stat), ());
+			return script([step(name, sql(executeStatement(name, pp(stat))), ())]);
 		}
 		case mongodb(): {
-			scr += step(name, mongo(createCollection(name, "<eId>")), ());
+			return script([step(name, mongo(createCollection(name, "<eId>")), ())]);
 		}
 	}
   }
-  return scr;
+  return script([]);
 }
 
 Script ddl2script((Request) `drop <EId eId>`, Schema s) {
-  Script scr = script([]);
   if (p:<db, name> <- s.placement<0>, name == "<dbName>") {
 	switch(db) {
 		case sql(): {
 			SQLStat stat = dropTable([tableName("<eId>")], true, []);
-			scr += step(name, sql(stat), ());
+			return script([step(name, sql(executeStatement(name, pp(stat))), ())]);
 		}
 		case mongodb(): {
-			scr += step(name, mongo(dropCollection(name, "<eId>")), ());
+			return script([step(name, mongo(dropCollection(name, "<eId>")), ())]);
 		}
 	}
   }
-  return scr;
+  return script([]);
 }
