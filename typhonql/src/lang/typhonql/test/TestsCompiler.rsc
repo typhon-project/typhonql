@@ -20,6 +20,12 @@ import ParseTree;
 import String;
 import Map;
 
+/*
+ * These tests are meant to be run on a Typhon Polystore deployed according to the
+ * resources/user-reviews-product folder
+ */
+ 
+ 
 str HOST = "localhost";
 str PORT = "8080";
 str user = "pablo";

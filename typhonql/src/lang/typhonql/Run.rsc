@@ -46,6 +46,9 @@ import util::Maybe;
 	
 	*/
 	
+@javaClass{nl.cwi.swat.typhonql.backend.rascal.TyphonSession}
+java void bootConnections(map[str, Connection] connections);
+	
 alias JavaFriendlySchema = tuple[rel[str from, str fromCard, str fromRole, str toRole, str toCard, str to, bool containment] rels, 
 	rel[str from, str name, str \type] attrs, rel[str dbEngineType, str dbName, str entity] placement];
 
@@ -212,6 +215,7 @@ value run(r:(Request)`rename relation <EId eId>.<Id name> to <Id newName>`, Sche
 
 
 void runSchema(Schema s, map[str, Connection] connections, Log log = noLog) {
+	bootConnections(connections);
 	for (Place p <- s.placement<0>) {
     	log("[RUN-schema] executing schema for <p>");
     	runSchema(p, s, connections, log = log);

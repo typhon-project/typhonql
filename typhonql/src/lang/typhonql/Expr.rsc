@@ -35,7 +35,8 @@ syntax Expr
     | left sub: Expr lhs "-" Expr rhs
   )
   > non-assoc (
-      non-assoc eq: Expr lhs "==" Expr rhs
+      non-assoc hashjoin: Expr lhs "#join" Expr rhs
+    | non-assoc eq: Expr lhs "==" Expr rhs
     | non-assoc neq: Expr lhs "!=" Expr rhs
     | non-assoc geq: Expr lhs "\>=" Expr rhs
     | non-assoc leq: Expr lhs "\<=" Expr rhs
