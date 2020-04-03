@@ -27,7 +27,7 @@ This document describes a REST layer that can be uses to perform CRUD operations
 ## *Create entity*
 
 ```
-POST `/User/`
+POST /User/
 ```
 
 **Request:**
@@ -53,7 +53,7 @@ The corresponding body:
 ## *Get entity*
 
 ```
-GET `/User/b58f8848`
+GET /User/b58f8848
 ```
 
 **Result:**
@@ -65,7 +65,7 @@ GET `/User/b58f8848`
 ## *Update entity*
 
 ```
-PATCH `/User/b58f8848`
+PATCH /User/b58f8848
 ```
 
 **Request:**
@@ -77,5 +77,5 @@ PATCH `/User/b58f8848`
 ## *Delete entity*
 
 ```
-DELETE `/User/b58f8848`
+DELETE /User/b58f8848
 ```
