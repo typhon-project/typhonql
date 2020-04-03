@@ -26,12 +26,12 @@ import Map;
  */
  
  
-str HOST = "localhost";
+str HOST = "localhost"; // "192.168.178.78";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
 
-Log NO_LOG = void(value v){ ; };
+Log NO_LOG = void(value v){ return; };
 
 Log LOG = NO_LOG;
 
@@ -42,7 +42,7 @@ java str readHttpModel(loc polystoreUri, str user, str password);
 java map[str, Connection] readConnectionsInfo(str host, int port, str user, str password);
 
 void setup() {
-    runUpdate((Request) `insert User { @id: #pablo, name: "Pablo" }`);
+	runUpdate((Request) `insert User { @id: #pablo, name: "Pablo" }`);
 	runUpdate((Request) `insert User { @id: #davy, name: "Davy" }`);
 	
 	runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat" }`);
@@ -77,7 +77,7 @@ void test4() {
 
 void test5() {
 	rs = runQuery((Request) `from User u select u.biography.text where u == #pablo`);
-	assertEquals("test5", rs,  <["b.text"],[["Chilean"]]>);
+	assertEquals("test5", rs,  <["biography_0.text"],[["Chilean"]]>);
 }
 
 void test6() {
@@ -242,9 +242,22 @@ void assertEquals(str testName, value actual, value expected) {
 	}	
 }
 
-void runTests(Log log = NO_LOG) {
-	tests = [test1, test2, test3, test4, test5,
-		test6, test7, test8, test9, test10, test11, test12, test13];
+void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
+	tests = [
+	   test1
+	   , test2
+	   , test3
+	   , test4
+	   , test5
+	   , test6
+		, test7
+		, test8
+		, test9
+		, test10
+		, test11
+		, test12
+		, test13
+		];
 	for (t <- tests) {
 		runTest(t, log = log);
 	}

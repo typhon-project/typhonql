@@ -53,9 +53,9 @@ Script request2script(Request r, Schema s, Log log = noLog) {
     case (Request)`<Query q>`: {
       list[Place] order = orderPlaces(r, s);
       r = expandNavigation(addWhereIfAbsent(r), s);
-      println("NORMALIZED: <r>");
+      log("NORMALIZED: <r>");
       Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) | Place p <- order]);
-      scr.steps += [read(results2paths(q.selected, queryEnv(q), s))];
+      scr.steps += [read(results2paths(r.qry.selected, queryEnv(r.qry), s))];
       return scr;
     }
 

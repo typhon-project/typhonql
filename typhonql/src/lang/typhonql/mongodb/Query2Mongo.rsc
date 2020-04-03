@@ -58,13 +58,13 @@ Request unjoinWheres(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}
           when Expr lhs2 := unjoin(lhs, x)
         
        case (Expr)`<VId x1>.<Id f>` => (Expr)`<VId var>.<{Id "."}+ fs2>.<Id f>`
-         when x1 == x, bprintln("Rewriting <x>"), (Expr)`<VId var>.<{Id "."}+ fs2> #join <VId x2>` <- ws, x2 == x
+         when x1 == x, (Expr)`<VId var>.<{Id "."}+ fs2> #join <VId x2>` <- ws, x2 == x
     }
   }
   
   for ((Binding)`<EId e> <VId x>` <- bs) { // skipping dynamic ones
     // everywhere x occurs, and a  `E #join x` exists, replace x with E (but not in rhs of #join itself)
-    println("Trying to unjoin <e> <x>");
+    //println("Trying to unjoin <e> <x>");
     req = top-down-break visit (req) {
        case Expr e => unjoin(e, x)
     }
@@ -98,11 +98,10 @@ tuple[map[str, CollMethod], Bindings] select2mongo((Request)`from <{Binding ","}
   = select2mongo((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, p); 
 
 tuple[map[str, CollMethod], Bindings] select2mongo(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s, Place p) 
-  = select2mongo_(unjoinWheres(req, s), s, p)
-  when bprintln("BEFORE UNJOIN: <req>");  
+  = select2mongo_(unjoinWheres(req, s), s, p);  
     
 tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s, Place p) {
-  println("TOMONGO: <req>");
+  //println("TOMONGO: <req>");
   
   Env env = (); 
   set[str] dyns = {};
@@ -273,8 +272,8 @@ tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding
       
   }
   
-  println("*****RESULT ****");
-  iprintln(result);
+  //println("*****RESULT ****");
+  //iprintln(result);
   
   return <result, params>;
 }
