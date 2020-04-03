@@ -14,12 +14,12 @@ This document describes a REST layer that can be uses to perform CRUD operations
 
 ## Operations
 
-| Operation| Endpoint  | Method  | Description |
-|---|---|---|---|
-| Create entity | /[Entity] | POST  | Create a new entity |
-| Get entity | /[Entity]/[uuid]  | GET  | Get the representation of an existing entity |
-| Update entity | /[Entity]/[uuid]  | PATCH  | Update an existing entity |
-| Delete entity | /[Entity]/[uuid]  | DELETE  | Delete an existing entity |
+| Operation| Endpoint  | Method  | Description | HTTP Status codes |
+|---|---|---|---|---|
+| Create entity | /[Entity] | POST  | Create a new entity | 201 Created<br>500 Error |
+| Get entity | /[Entity]/[uuid]  | GET  | Get the representation of an existing entity | 200 Ok<br>404 Entity not found<br>500 Error|
+| Update entity | /[Entity]/[uuid]  | PATCH  | Update an existing entity | 200 Ok<br>404 Entity not found<br>500 Error|
+| Delete entity | /[Entity]/[uuid]  | DELETE  | Delete an existing entity | 200 Ok<br>404 Entity not found<br>500 Error|
 
 ## Examples
  
@@ -27,14 +27,6 @@ This document describes a REST layer that can be uses to perform CRUD operations
 
 ```
 POST `/User/`
-```
-
-**HTTP status codes:**
-
-```
-201 Created
-404 Entity not found 
-500 Error
 ```
 
 **Request:**
@@ -63,12 +55,6 @@ The corresponding body:
 GET `/User/b58f8848`
 ```
 
-**HTTP status codes:**
-
-200 OK
-404 Entity not found 
-500 Error
-
 **Result:**
 
 ```
@@ -81,14 +67,6 @@ GET `/User/b58f8848`
 PATCH `/User/b58f8848`
 ```
 
-**HTTP status codes:**
-
-```
-200 OK
-404 Entity not found 
-500 Error
-```
-
 **Request:**
 
 ```
@@ -99,12 +77,4 @@ PATCH `/User/b58f8848`
 
 ```
 DELETE `/User/b58f8848`
-```
-
-**HTTP status codes:**
-
-```
-200 OK
-404 Entity not found
-500 Error
 ```
