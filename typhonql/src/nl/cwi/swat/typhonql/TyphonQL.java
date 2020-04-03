@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
@@ -36,12 +34,12 @@ import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IMapWriter;
 import io.usethesource.vallang.ISourceLocation;
 import io.usethesource.vallang.IString;
+import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import io.usethesource.vallang.type.TypeStore;
-import nl.cwi.swat.typhonql.workingset.WorkingSet;
-import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
+import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class TyphonQL {
 
@@ -73,7 +71,7 @@ public class TyphonQL {
 		return vf.bool(Boolean.parseBoolean(isReset));
 	}
 	
-	public IMap executeQuery(ISourceLocation path, IString user, IString password, IString query) {
+	public ITuple executeQuery(ISourceLocation path, IString user, IString password, IString query) {
 		URI uri = buildUri(path.getURI(), "/api/query");
 		String json = doPost(uri, user.getValue(), password.getValue(), query.getValue());
 		//Document doc = Document.parse(json);
@@ -81,14 +79,14 @@ public class TyphonQL {
 		// TODO this is a workaround
 		// The response object does not escape quotes, then it is not parseable
 		String contents = json.substring(15,  json.length()-3);
-		WorkingSet ws;
+		ResultTable rt;
 		try {
-			ws = WorkingSetJSON.fromJSON(new ByteArrayInputStream(contents.getBytes()));
+			rt = ResultTable.fromJSON(new ByteArrayInputStream(contents.getBytes()));
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw RuntimeExceptionFactory.io(vf.string("Problem parsing HTTP response"), null, null);
 		}
-		return ws.toIValue();
+		return rt.toIValue();
 	}
 	
 	public void executeDDLUpdate(ISourceLocation path, IString user, IString password, IString query) {
@@ -256,7 +254,10 @@ public class TyphonQL {
 		
 		IMap  m = ql.readConnectionsInfo(vf.string("localhost"), vf.integer(8080), vf.string("pablo"), vf.string("antonio"));
 		System.out.println(m);
+		ITuple t = ql.executeQuery(vf.sourceLocation(new URI("http://localhost:8080")),
+				vf.string("pablo"), vf.string("antonio"), vf.string("from User u select u"));
 		
+		System.out.println(t);
 	}
 
 }
