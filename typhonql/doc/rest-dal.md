@@ -33,7 +33,7 @@ POST /User/
 **Request:**
 
 ```
-{ "type": "User", "name": "\"Patrick\"", "age": "39" }
+{ "name": "\"Patrick\"", "age": "39" }
 ```
 
 **Result:**
