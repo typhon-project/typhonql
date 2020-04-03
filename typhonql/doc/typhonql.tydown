@@ -3,83 +3,85 @@
 
 ## Introduction
 
-Although TyphonQL provides an abstraction layer over different back-ends, and allows users to think
-in terms of TyphonML schemas as much as possible, the compiler imposes some constraints on what can be expressed,
-so as to be able to leverage native capabilities of back-ends. This means that some forms of TyphonQL queries, 
-which are technically supported by the syntax of TyphonQL, are *not* supported by the compiler. In general,
-the underlying design principle is to err on the side of native capabilities; TyphonQL is really a compiler to
-existing query languages and/or APIs, but not a database engine itself. 
-
-This document aims to cover these assumptions. 
 
 
-### Example TyphonML Model
+## The Language
+
+### Literal expressions
+
+TyphonQL supports the following literal (constant) expressions:
+
+- Booleans: `true`, `false`
+- Integer numbers: `123`, `-34934`
+- Strings: `"this is a string value"`
+- Floating point numbers: `0.123`, `3.14`, `-0.123e10`, `2324.3434e-23`
+- Dates:  `$2020-03-31$`
+- Date and time values:  `$2020-03-31T18:08:28.477+00:00$`
+- Geographical points: `#point(23.4 343.34)`
+- Polygons: `#polygon((23.4 343.34), (2.0 0.0))`;
+
+Furthermore, TyphonQL supports syntax for dealing with objects (instances of entity types):
+
+- Object literals (tagged with the entity type, in this case `Person`): `Person {name: "Pablo", age: 30, reviews: [#879b4559-f590-48ea-968c-ff3b69ec5363, #23275eec-4746-4f23-a854-660160cafed2]}`
+- Reference values (pointers), represented as UUIDs: `#879b4559-f590-48ea-968c-ff3b69ec5363`
+- Collections of pointers to objects:  `[#8bc3f0a0-5cf4-42e5-a664-0617feb2d400, #23275eec-4746-4f23-a854-660160cafed2, #879b4559-f590-48ea-968c-ff3b69ec5363]`
+     
+Note that object literals and collections of object references can only be used in insert and update statements. 
+      
+
+
+
+# TyphonQL by Example
+
+
 
 
 ```typhonML
-datatype String
-datatype int
-datatype Date
-
-entity User {
-    name: String
-    age: int
-    reviews -> Review.[0..*]
-    orders -> Order."Order.user"[0..*]
-    cards :-> CreditCard[0..*]
-}
-
-entity CreditCard {
-  number: String
-  expires: Date
-  owner -> User."User.cards"[1]
-}
-
 entity Product {
-    name : String
-    description : String
-    price : int
-    reviews :-> Review[0..*]
-    orders -> Order."Order.product"[0..*]
-}
-
-entity Order {
-  user -> User[1]
-  product -> Product[1]
-  amount: int
-  date: Date
+	name : string[256]
+	description : string[256]
+	price : int
+	productionDate : date
+		
+	reviews :-> Review."Review.product"[0..*]
 }
 
 entity Review {
-    text : String
-    product -> Product."Product.reviews"[1]
-    author -> User."User.reviews"[1]
-    replies :-> Comment [0..*]
+	content: text
+	
+	product -> Product[1]
+	user -> User[1]
 }
 
-entity Comment {
-  review -> Review."Review.replies"[0..1]
-  text: String
-  replies :-> Comment[0..1]
-  author -> User[0..1]
+
+entity User {
+	name : string[256]
+	address: string[256]
+	
+	biography :-> Biography[0..1]
+	reviews :-> Review."Review.user"[0..*]
+}
+
+entity Biography{
+	content : string[256]
+	
+	user -> User[1]
 }
 
 relationaldb Inventory {
-    tables { 
-      table { User : User }
-      table { Product : Product }
-      table { CreditCard : CreditCard }
-      table { Order : Order }
-    }
-    
+	tables{ 
+	  table { UserDB : User }
+      table { ProductDB : Product }
+	}
 }
+
 documentdb Reviews {
-    collections { 
-      Reviews : Review
-      Comments : Comment 
-    }
+	collections{
+	  Review : Review
+	  Biography : Biography
+	}
 }
-```typhonMl
+```
 
 ## Well-formedness of TyphonML models
 
@@ -87,6 +89,7 @@ documentdb Reviews {
 - containment is not many-to-many (i.e. tree shaped)
 - containment is uniquely rooted: every owned entity can be reached from a unique 
 path starting from an entity that is not owned
+
 
 
 
@@ -118,7 +121,7 @@ Consider the following example:
 entity A { b -> B }
 
 entity B { a -> A."A.b" }
-```typhonML
+```
 
 In this case B declares that a is the opposite of A.b, so it won't be implemented. The entity A does not
 specify the opposite, so it is the side that will be realized. In the case A resides on SQL, it will be a junction table; 
@@ -175,6 +178,7 @@ insert CreditCard {
   owner: #ff704edc-5d85-470b-9ed4-fb8761bbe93a
 }
 ```
+
 
 Alternative is:
 ```

@@ -24,7 +24,7 @@ import Message;
 
 // abstraction over TyphonML, to be extended with back-end specific info in the generic map
 data Schema
-  = schema(Rels rels, Attrs attrs, Placement placement = {}, Attrs elements = {}, ChangeOps changeOperators = {}, map[str, value] config = ());
+  = schema(Rels rels, Attrs attrs, Placement placement = {}, Attrs customs = {}, ChangeOps changeOperators = {}, map[str, value] config = ());
 
 alias Rel = tuple[str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool containment];
 alias Rels = set[Rel];
@@ -66,6 +66,8 @@ Rels myDbToRels() = model2rels(load(#Model, |project://typhonql/src/lang/newmydb
 
 set[str] entities(Schema s) = s.rels<0> + s.attrs<0>;
 
+bool isImplicitRole(str role) = endsWith(role, "^");
+
 set[Message] schemaSanity(Schema s, loc src) {
   set[Message] msgs = {};
   
@@ -92,7 +94,7 @@ default Placement place(Database db, Model m) {
 
 
 Schema model2schema(Model m)
-  = schema(model2rels(m), model2attrs(m), elements = model2elements(m), placement=model2placement(m), changeOperators = model2changeOperators(m));
+  = schema(model2rels(m), model2attrs(m), customs = model2customs(m), placement=model2placement(m), changeOperators = model2changeOperators(m));
 
 
 ChangeOps model2changeOperators(Model m) {
@@ -105,25 +107,45 @@ ChangeOps model2changeOperators(Model m) {
 
 Attrs model2attrs(Model m) {
   Attrs result = {};
-  for (DataType(Entity(str from, list[Attribute] attrs, list[FreeText] fretextAttributes, _, _, _)) <- m.dataTypes) {
-    for (Attribute a <- attrs) {
-      DataType dt = lookup(m, #DataType, a.\type);
-      assert (DataType(PrimitiveDataType(_)) := dt || DataType(CustomDataType(_,_)) := dt) :
-      	 "Only built-in and custom primitives allowed for attributes (for now).";
+  for (Entity(str from, list[EntityAttribute] attrs, _, _, _) <- m.entities, EntityAttribute(Attribute a) <- attrs) {
+      DataType dt = a.\type; //lookup(m, #DataType, a.\type);
+      
+      str typeName = "";
+      
+      switch (dt) {
+        case DataType(PrimitiveDataType(IntType())): typeName = "int";
+        case DataType(PrimitiveDataType(BigintType())): typeName = "bigint";
+        case DataType(PrimitiveDataType(StringType(maxSize = int n))): typeName = "string(<n>)";
+        case DataType(PrimitiveDataType(BlobType())): typeName = "blob";
+        case DataType(PrimitiveDataType(BoolType())): typeName = "bool";
+        case DataType(PrimitiveDataType(TextType())): typeName = "text";
+        case DataType(PrimitiveDataType(DateType())): typeName = "date";
+        case DataType(PrimitiveDataType(PointType())): typeName = "point";
+        case DataType(PrimitiveDataType(DatetimeType())): typeName = "datetime";
+        case DataType(PrimitiveDataType(PolygonType())): typeName = "polygon";
+        case DataType(PrimitiveDataType(FloatType())): typeName = "float";
+        case DataType(PrimitiveDataType(ft:FreetextType(list[NlpTask] tasks))):  {
+          typeName = "freetext[";
+          typeName += intercalate(", ",  [ "<getName(t.\type)>[<t.workflowName>]" | NlpTask t <- tasks ]);
+          typeName += "]";
+        }
+        default: throw "Unknown primitive data type: <dt>";
+        
+      }
+      result += {<from, a.name, typeName>};
+  }
+  
+  for (Entity(str from, list[EntityAttribute] attrs, _, _, _) <- m.entities, EntityAttribute(CustomAttribute a) <- attrs) {
+      CustomDataType dt = lookup(m, #CustomDataType, a.\type);
       result += {<from, a.name, dt.name>};
-    }
-    for (FreeText ft <- fretextAttributes) {
-      // for now we represent the freetext type as a string as well.
-      result += {<from, ft.name, "freetext[<intercalate(",", [ getName(t.\type) | NlpTask t <- ft.tasks ])>]">};
-    }
   }
   return result;
 }
 
-Attrs model2elements(Model m) {
+Attrs model2customs(Model m) {
   Attrs result = {};
-  for (DataType(CustomDataType(str from, list[DataTypeItem] elements)) <- m.dataTypes) {
-  	for (DataTypeItem e <- elements) {
+  for (CustomDataType(str from, list[CustomDataTypeItem] elements) <- m.customDataTypes) {
+  	for (CustomDataTypeItem e <- elements) {
       DataType dt = lookup(m, #DataType, e.\type);
       assert (DataType(PrimitiveDataType(_)) := dt || DataType(CustomDataType, _(_)) := dt) :
       	 "Only built-in and custom primitives allowed for elements (for now).";
@@ -142,8 +164,7 @@ will ease querying later down the line.
 }
 Rels model2rels(Model m) {
   Rels result = {};
-  // todo: freetextAttributes
-  for (DataType(Entity(str from, _, _, list[Relation] rels, _, _)) <- m.dataTypes) {
+  for (Entity(str from, _, list[Relation] rels, _, _) <- m.entities) {
     for (r:Relation(str fromRole, Cardinality fromCard) <- rels) {
       Entity target = lookup(m, #Entity, r.\type);
       str to = target.name;

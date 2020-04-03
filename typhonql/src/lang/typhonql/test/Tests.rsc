@@ -12,8 +12,8 @@ import String;
 
 str HOST = "localhost";
 str PORT = "8080";
-str USER = "pablo";
-str PASSWORD = "antonio";
+str USER = "admin";
+str PASSWORD = "admin1@";
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java str readHttpModel(loc polystoreUri, str user, str password);
@@ -24,7 +24,7 @@ java map[str, Connection] readConnectionsInfo(str host, int port, str user, str 
 void test1() {
 	str cmd = "insert Order {totalAmount: 32, products: [Product { name: \"TV\" } ]}";
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	run(cmd, sch, connections);
 }
@@ -32,7 +32,7 @@ void test1() {
 void test2() {
 	str cmd = "from Product p select p";
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	r = run(cmd, sch, connections);
 	println(r);
@@ -41,7 +41,7 @@ void test2() {
 void test3() {
 	str cmd = "insert User {name: \"Pablo\" }";
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	run(cmd, sch, connections);
 }
@@ -49,7 +49,7 @@ void test3() {
 void test3b() {
 	str cmd = "insert Product {name: \"TV\", description: \"Flat\" }";
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	run(cmd, sch, connections);
 }
@@ -61,7 +61,7 @@ void test4() {
 			  '@radio Product {name: \"TV\", description: \"Flat\", reviews: badradio },
 			  '@badradio Review { contents: \"Good TV\",product: radio,user: pablo}";
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	value v = run(cmd, sch, connections);
 	println(v);
@@ -70,7 +70,7 @@ void test4() {
 void test5() {
 	str cmd = "insert Product { name: ??name, description: ??description }";
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	rs = runPrepared(cmd, ["name", "description"], [["\"IPhone\"", "\"Cool but expensive\""],
 													["\"Samsung S10\"", "\"Less cool and still expensive\""]], modelStr, connections);
@@ -78,7 +78,7 @@ void test5() {
 }
 
 void printSchema() {
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	iprintln(sch);
 }
@@ -86,7 +86,7 @@ void printSchema() {
 
 void resetDatabase() {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, "pablo", "antonio");
+	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	runSchema(sch, connections);
 }
