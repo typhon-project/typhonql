@@ -47,7 +47,7 @@ Location: http://polystore.somewhere.com/crud/User/b58f8848
 The corresponding body:
 
 ```
-{ "@id": "b58f8848" }
+{ "@id": "#b58f8848" }
 ```
  
 ## *Get entity*
@@ -59,7 +59,7 @@ GET /User/b58f8848
 **Result:**
 
 ```
-{ "@id": "b58f8848", "name": "\"Patrick\"", "age": "39" }
+{ "@id": "#b58f8848", "name": "\"Patrick\"", "age": "39" }
 ```
  
 ## *Update entity*
