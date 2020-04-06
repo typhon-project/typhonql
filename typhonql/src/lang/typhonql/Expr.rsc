@@ -12,6 +12,8 @@ syntax Expr
   | @category="Constant" \str: Str strValue
   | @category="Number" \real: Real realValue
   | @category="Constant" \dt: DateTime dtValue
+  | @category="Constant" point: Point pointValue
+  | @category="Constant" polygon: Polygon polygonValue
   | \bool: Bool boolValue
   | uuid: UUID uuidValue
   | bracket "(" Expr arg ")"
@@ -33,7 +35,8 @@ syntax Expr
     | left sub: Expr lhs "-" Expr rhs
   )
   > non-assoc (
-      non-assoc eq: Expr lhs "==" Expr rhs
+      non-assoc hashjoin: Expr lhs "#join" Expr rhs
+    | non-assoc eq: Expr lhs "==" Expr rhs
     | non-assoc neq: Expr lhs "!=" Expr rhs
     | non-assoc geq: Expr lhs "\>=" Expr rhs
     | non-assoc leq: Expr lhs "\<=" Expr rhs
@@ -56,18 +59,18 @@ keyword Primitives
   
 
 syntax Point
-  = "#point" "(" XY ")"
+  = singlePoint: "#point" "(" XY ")"
   ;
 
 syntax XY
-  = Real Real;
+  = coordinate: Real Real;
 
 syntax Polygon
-  = "#polygon" "(" {Segment ","}* ")" 
+  = shape: "#polygon" "(" {Segment ","}* ")" 
   ;
   
 syntax Segment
-  = "(" {XY ","}* ")";
+  = line: "(" {XY ","}* ")";
 
 
 // Variable Ids

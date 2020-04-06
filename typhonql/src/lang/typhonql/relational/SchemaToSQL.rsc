@@ -45,15 +45,11 @@ void printSQLSchema(Schema schema, str dbName) {
 }
 
  SQLStat attrs2create(str e, rel[str, str] attrs, Schema schema) {
-  	println([column(columnName(attr, e), typhonType2SQL(typ), []) | <str attr, str typ> <- attrs, 
-      		typ notin schema.elements<0>]
-      + [column(columnName(attr, e, typ, element), typhonType2SQL(elementType), []) | <str attr, str typ> <- attrs,
-      	typ in schema.elements<0>, <str typ, str element, str elementType> <- schema.elements]);
-    return create(tableName(e), [typhonIdColumn(e)]
+  	return create(tableName(e), [typhonIdColumn(e)]
       + [column(columnName(attr, e), typhonType2SQL(typ), []) | <str attr, str typ> <- attrs, 
-      		typ notin schema.elements<0>]
+      		typ notin schema.customs<0>]
       + [column(columnName(attr, e, typ, element), typhonType2SQL(elementType), []) | <str attr, str typ> <- attrs,
-      	 typ in schema.elements<0>, <str typ, str element, str elementType> <- schema.elements]
+      	 typ in schema.customs<0>, <str typ, str element, str elementType> <- schema.customs]
       , [primaryKey(typhonId(e))]);
 }
  
@@ -151,13 +147,15 @@ void printSQLSchema(Schema schema, str dbName) {
   }
 
 list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bool doForeignKeys = true, Stats stats = initializeStats()) {
-  schema.rels = symmetricReduction(schema.rels);
+  //schema.rels = symmetricReduction(schema.rels);
   
-  for (str e <- placedEntities) 
+  for (str e <- placedEntities) {
      stats.add(dropTable([tableName(e)], true, []) );
+  }
      
-  for (str e <- placedEntities)    
+  for (str e <- placedEntities) {    
   	 stats.add(attrs2create(e, schema.attrs[e], schema));
+  }
   
 
   

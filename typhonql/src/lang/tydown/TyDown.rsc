@@ -27,7 +27,7 @@ syntax Element
   | @category="H3" h3: ^ "###" Words $
   | line: ^ [#`\>⇨≫⚠\ \t] !<< Words $
   | code: QQQ Request+ QQQ
-  | otherCode: QQQOther Stuff QQQOther
+  | otherCode: QQQOther Stuff QQQ
   | request: ^ [\>] Request
   | @category="Result" resultOutput: "⇨" ![\n\r]* [\n] 
   | @category="StdOut" stdoutOutput: ^ "≫" ![\n\r]* [\n]

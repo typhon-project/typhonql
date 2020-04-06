@@ -2,6 +2,7 @@ module lang::typhonql::relational::Util
 
 import lang::typhonql::relational::SQL;
 import List;
+import String;
 
 str tableName(str entity) = "<entity>";
 
@@ -62,7 +63,11 @@ ColumnType typhonType2SQL("polygon") = polygon();
 
 // legacy (for temporary backwards compatibility)
 
+ColumnType typhonType2SQL("Real") = float();
+
 ColumnType typhonType2SQL("String") = text();
+
+ColumnType typhonType2SQL("string") = text();
 
 ColumnType typhonType2SQL("Date") = date();
 

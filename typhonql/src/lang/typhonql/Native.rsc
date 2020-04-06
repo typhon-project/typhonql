@@ -67,7 +67,6 @@ int runDropEntity(p:<mongodb(), str db>, str entity, Schema s, map[str, Connecti
 
 int runCreateAttribute(p:<sql(), str db>, str entity, str attribute, str ty, Schema s, map[str, Connection] connections, Log log = noLog) {
 	SQLStat stat = alterTable(tableName(entity), [addColumn(column(columnName(attribute, entity), typhonType2SQL(ty), []))]);
-	println(pp(stat));
 	return executeUpdate(db, pp(stat), connections[db]);     
 }
 
@@ -111,7 +110,6 @@ int runDropAttribute(p:<mongodb(), str db>, str entity, str attribute, Schema s,
 
 int runDropAttribute(p:<sql(), str db>, str entity, str attribute, Schema s, map[str, Connection] connections, Log log = noLog) {
 	SQLStat stat = alterTable(tableName(entity), [dropColumn(columnName(attribute, entity))]);
-	println(pp(stat));
 	return executeUpdate(db, pp(stat), connections[db]);    
 }
 
@@ -123,7 +121,6 @@ int runRenameAttribute(p:<mongodb(), str db>, str entity, str name, str newName,
 int runRenameAttribute(p:<sql(), str db>, str entity, str name, str newName, Schema s, map[str, Connection] connections, Log log = noLog) {
 	if (<entity, name, str ty> <- s.attrs) {
 		SQLStat stat = alterTable(tableName(entity), [renameColumn(column(columnName(name, entity), typhonType2SQL(ty), []), columnName(newName, entity))]);
-		println(pp(stat));
 		return executeUpdate(db, pp(stat), connections[db]);
 	}
 	return -1;;    
@@ -157,14 +154,12 @@ int runDropRelation(p:<sql(), str db>, str from, str fromRole, str to, str toRol
     	stats += alterTable(tableName(to), [dropColumn(fk)]);	
     		
     	for (SQLStat stat <- stats) {
-    		println(pp(stat));
     		executeUpdate(db, pp(stat), connections[db]);
     	}  
     	return -1;
 	} else {
 		str tbl = junctionTableName(from, fromRole, to, toRole);
 		SQLStat stat = dropTable([tbl], true, []);
-		println(pp(stat));
 		return executeUpdate(db, pp(stat), connections[db]);	
 	}
 }
