@@ -408,14 +408,6 @@ void collect(current:(Statement)`insert <{Obj ","}* objs>`, Collector c) {
     c.leaveScope(current);
 }
 
-void collect(current:(Statement)`insert <Obj obj> into <Expr parent> . <Id field>`, Collector c) {
-    c.enterScope(current);
-    collect(obj, parent, c);
-    c.useViaType(parent, field, {fieldRole()});
-    c.requireEqual(field, obj, error(obj, "Expected %t but got %t", field, obj));
-    c.leaveScope(current);
-}
-
 
 void collect(current:(Statement)`delete <Binding b> <Where? where>`, Collector c) {
     c.enterScope(current);
@@ -457,12 +449,42 @@ void collect(current:(Request)`<Statement stm>`, Collector c) {
     collect(stm, c);
 }
 
+/*******
+ * DDL *
+ *******/
+ 
+void collect(current: (Statement)`create <EId _> at <Id _>`, Collector c) {
+    reportUnsupported(current, c);
+}
+void collect(current: (Statement)`create <EId _> . <Id _> : <Type _>`, Collector c) {
+    reportUnsupported(current, c);
+} 
+void collect(current: (Statement)`create <EId _> . <Id _> <Inverse? _> <Arrow _> <EId _> [ <CardinalityEnd _> .. <CardinalityEnd _> ]`, Collector c) {
+    reportUnsupported(current, c);
+}
+void collect(current: (Statement)`drop <EId _>`, Collector c) {
+    reportUnsupported(current, c);
+}
+void collect(current: (Statement)`drop attribute <EId _> . <Id _>`, Collector c) {
+    reportUnsupported(current, c);
+}
+void collect(current: (Statement)`drop relation <EId _> . <Id _>`, Collector c) {
+    reportUnsupported(current, c);
+}
+void collect(current: (Statement)`rename attribute <EId _> . <Id _> to <Id _>`, Collector c) {  
+    reportUnsupported(current, c);
+}
+void collect(current: (Statement)`rename relation <EId _> . <Id _> to <Id _>`, Collector c) {  
+    reportUnsupported(current, c);
+}
+
 void reportUnsupported(Tree current, Collector c) {
     c.calculate("unsupported", current, [], AType (Solver s) {
         s.report(error(current, "`%v` is not supported the typechecker (yet)", current));
         return voidType();
     });
 }
+
 
 private TypePalConfig buildConfig(bool debug, CheckerMLSchema mlSchema) 
     = tconfig(
@@ -484,38 +506,33 @@ private TypePalConfig buildConfig(bool debug, CheckerMLSchema mlSchema)
             }
     );
 
-AType calcMLType(str tp) {
-    try {
-        return calcMLType(parse(#Type, tp));
-    } catch ParseError(_) : {
-        return entityType(tp);
-    }
-}
+AType calcMLType("int") = intType();
+AType calcMLType("bigint") = intType();
+AType calcMLType(/^string[\[\(]/) = stringType();
+AType calcMLType("text") = stringType();
+AType calcMLType("point") = pointType();
+AType calcMLType("polygon") = polygonType();
+AType calcMLType("bool") = boolType();
+AType calcMLType("float") = floatType();
+AType calcMLType("blob") = blobType();
+AType calcMLType(/^freetext\[<features:.*>\]$/) = freeTextType([trim(f) | f <- split(",", features)]);
+AType calcMLType("date") = dateType();
+AType calcMLType("datetime") = dateTimeType();
 
-AType calcMLType((Type)`int`) = intType();
-AType calcMLType((Type)`bigint`) = intType();
-AType calcMLType((Type)`string(<Nat _>)`) = stringType();
-AType calcMLType((Type)`text`) = stringType();
-AType calcMLType((Type)`point`) = pointType();
-AType calcMLType((Type)`polygon`) = polygonType();
-AType calcMLType((Type)`bool`) = boolType();
-AType calcMLType((Type)`float`) = floatType();
-AType calcMLType((Type)`blob`) = blobType();
-AType calcMLType((Type)`freetext [ <{Id ","}+ features>]`) = freeTextType(["<f>" | f <- features]);
-AType calcMLType((Type)`date`) = dateType();
-AType calcMLType((Type)`datetime`) = dateTimeType();
-
-default AType calcMLType(Type tp) {
+default AType calcMLType(str tp) {
     throw "Forgot to add support for type <tp>";
 }
 
 
 
+// TODO: correctly support inverses
+// TODO: model cardinality
 CheckerMLSchema convertModel(Schema mlSchema) 
     = ( 
         entityType(tpn) : 
-        ( fn : calcMLType(ftp) | <fn, ftp> <- mlSchema.attrs[tpn])
-    | tpn <- mlSchema.elements.name
+        (( fn : calcMLType(ftp) | <fn, ftp> <- mlSchema.attrs[tpn])
+        + (fr : entityType(to) | <fc, fr, tr, tc, to, _> <- mlSchema.rels[tpn]))
+    | tpn <- entities(mlSchema)
     );
 
 
