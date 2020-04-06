@@ -52,6 +52,9 @@ void smokeTest(str root = "/Users/tvdstorm/CWI/typhonml") {
 }
 
 
+
+
+
 void smokeTest2() {
   str xmi = readFile(|project://typhonql/src/lang/typhonml/customdatatypes.xmi|);
   Model m = xmiString2Model(xmi);
@@ -67,11 +70,9 @@ Model xmiString2Model(str s) = xmiNode2Model(readXML(s));
 Schema loadSchemaFromXMI(str s) = model2schema(m)
 	when Model m := xmiString2Model(s);
 
-
 @doc{
 Convert a node representation of the XMI serialization of a TyphonML model
 to a `lang::typhoml::TyphonML::Model` value.
-
 Omissions for now:
  - evolution operators
  - database types other than document and relation
@@ -92,8 +93,7 @@ Model xmiNode2Model(node n) {
   map[str, Entity] entityMap = ();
   map[str, CustomDataType] customMap = ();
   map[str, Relation] relMap = ();
-  map[str, Database] dbMap = ();
-  map[str, Attribute] attrMap = ();
+  
   
   Entity ensureEntity(str path) {
     if (path notin entityMap) {
@@ -128,6 +128,7 @@ Model xmiNode2Model(node n) {
   }
   
   
+  
   Relation ensureRel(str path) {
     if (path notin relMap) {
       relMap[path] = realm.new(#Relation, Relation("", zero_one()));
@@ -135,21 +136,10 @@ Model xmiNode2Model(node n) {
     return relMap[path];
   }
   
-  Attribute ensureAttr(str path) {
-    if (path notin attrMap) {
-      attrMap[path] = realm.new(#Attribute, Attribute("", null()));
-    }
-    return attrMap[path];
-  }
-  
-  if ("typhonml:Model"(list[node] kids) := n) {
+  if ("Model"(list[node] kids) := n) {
 
-	int dbPos = 0;
-	
     for (xdb:"databases"(list[node] xelts) <- kids) {
-      dbPath = "//@databases.<dbPos>";
-    	
-      switch (get(xdb, "xsi:type")) {
+      switch (get(xdb, "type")) {
         case "typhonml:RelationalDB": {
           tbls = [];
           for (xtbl:"tables"(_) <- xelts) {
@@ -159,10 +149,7 @@ Model xmiNode2Model(node n) {
             tbls += [tbl];
           }
           
-          db = realm.new(#Database, Database(RelationalDB(get(xdb, "name"), tbls)));
-          
-          dbMap[dbPath] = db;
-          dbs += [db];
+          dbs += [ realm.new(#Database, Database(RelationalDB(get(xdb, "name"), tbls)))];
         }
         
         case "typhonml:DocumentDB": {
@@ -174,132 +161,19 @@ Model xmiNode2Model(node n) {
             colls += [coll];
           }
           
-          db = realm.new(#Database, Database(DocumentDB(get(xdb, "name"), colls)));
-          
-          dbMap[dbPath] = db;
-          dbs += [db];
+          dbs += [ realm.new(#Database, Database(DocumentDB(get(xdb, "name"), colls))) ];
         }
         
         default:
           throw "Non implemented database type: <xdb.\type>";
       }
-      dbPos += 1;
+      
     }
     
-    
-    int entPos = 0;
-    
-    for (xen:"entities"(list[node] xelts) <- kids) {
-      entPath = "//@entities.<entPos>";
-      
-      list[EntityAttribute] attrs = [];
-      
-      for (xattr:"attributes"(list[node] attrElts) <- xelts) {
-         
-         if (get(xattr, "type") == "typhonml:Attribute", xtype:"type"(list[node] typeElts) <- attrElts) {
-           DataType dt = DataType(PrimitiveDataType(realm.new(#IntType, IntType()))); // dummy;
-         
-           switch (get(xtype, "type")) {
-             case "typhonml:FreetextType" : {
-               list[NlpTask] tasks = [ realm.new(#NlpTask, NlpTask(get(x, "workflowName"), make(#NlpTaskType, get(x, "type"), []))) 
-                                          | x:"tasks"(_) <- typeElts ];
-               dt = DataType(makePrimitive("FreetextType", [tasks]));
-             }
-             case "typhonml:StringType" : {
-               dt = DataType(makePrimitive("StringType", [has(xtype, "maxSize") ? toInt(get(xtype, "maxSize")) : 0])); 
-             }
-             case /^typhonml:<rest:.*>$/: {
-               dt = DataType(makePrimitive(rest, []));
-             } 
-             default: throw "Unknown attribute type: <xtype>";
-           }
-           attr = EntityAttribute(realm.new(#Attribute, Attribute(get(xattr, "name"), dt)));
-           attrs += [attr];
-         }
-         else {
-          // if (get(xattr, "type") == "typhonml:CustomAttribute") {
-           // "type" is unfortunately overloaded and cannot be reused here
-           // the first one is xsi:type (which should be "typhonml:CustomAttribute")
-           // the other one is just type; we thus assume that type
-           // refers to the typhonML type, not the Ecore type. 
-           attr = EntityAttribute(realm.new(#CustomAttribute, 
-              CustomAttribute(get(xattr, "name"), referTo(#CustomDataType, ensureCustom(get(xattr, "type"))))));
-           attrs += [attr];
-         }
-         
-          
-      }  
-       
-      list[Relation] rels = [];
-      relPos = 0;
-      for (xrel:"relations"(_) <- xelts) {
-         relPath = "<entPath>/@relations.<relPos>";
-         myrel = ensureRel(relPath);
-         myrel.name = get(xrel, "name");
-         if (has(xrel, "cardinality")) {
-         	myrel.cardinality = make(#Cardinality, get(xrel, "cardinality"), []);
-         }
-         else {
-         	myrel.cardinality =  make(#Cardinality, "zero_one", []);
-         }
-         
-         ePath = get(xrel, "type");
-         myrel.\type = referTo(#Entity, ensureEntity(ePath));
-         
-         if ("opposite" in getKeywordParameters(xrel)) {
-           oppPath = get(xrel, "opposite");
-           myrel.opposite = referTo(#Relation, ensureRel(oppPath));
-         }
-         
-         if ("isContainment" in getKeywordParameters(xrel)) {
-           myrel.isContainment = get(xrel, "isContainment") == "true";
-         } 
-         
-         
-         rels += [myrel];
-         relPos += 1;
-      }
-       
-
-      entity = ensureEntity(entPath);
-      entity.name = get(xen, "name");
-      entity.attributes = attrs;
-      entity.relations = rels;
-      es += [entity];
-      
-      entPos += 1;
-    }
-    
-    int dtPos = 0;
-    for (xdt:"customDataTypes"(list[node] xelts) <- kids) {
-       dtPath = "//@customDataTypes.<dtPos>";
-       //println("Data type path: <dtPath>");
-       //println(xdt);
-           
-       list[CustomDataTypeItem] elements = [];
-       for (xattr:"elements"(_) <- xelts) {
-         el = realm.new(#DataTypeItem, DataTypeItem(get(xattr, "name"), DataTypeImplementationPackage()));
-         aPath = get(xattr, "type");
-         el.\type = referTo(#DataType, ensurePrimitive(aPath));
-         elements += [el]; 
-       }
-       custom = ensureCustom(dtPath);
-       custom.name = get(xdt, "name");
-       custom.elements = elements;   
-       cdts += [custom];
-
-       dtPos += 1;
-    }
-    
-    int chOpPos = 0;
     for (xcho:"changeOperators"(list[node] xelts) <- kids) {
-      dtPath = "//@changeOperators.<chOpPos>";
+      switch (get(xcho, "type")) {
       
-      switch (get(xcho, "xsi:type")) {
-      	
-      	case "typhonml:AddEntity":{
-      		
-      		
+        case "typhonml:AddEntity":{
       		attrs = [];
             attrPos = 0;
             for (xattr:"attributes"(_) <- xcho) {
@@ -570,16 +444,118 @@ Model xmiNode2Model(node n) {
         	re = realm.new(#SplitEntityHorizontal, SplitEntityHorizontal(name, toSplit, ref_attr, expr));
           	chos += [ ChangeOperator(re)];
         }
-       	
-        
-        default:
-          throw "Non implemented change operator: <get(xcho, "xsi:type")>";
+        default: {
+          println("WARNING: Non implemented change operator: <get(xcho, "type")>");
+        }
       }
       
-      chOpPos += 1;
-      
     }
-    return  realm.new(#Model, Model(dbs, dts, chos));
+    
+    int entPos = 0;
+    
+    for (xen:"entities"(list[node] xelts) <- kids) {
+      entPath = "//@entities.<entPos>";
+      
+      list[EntityAttribute] attrs = [];
+      
+      for (xattr:"attributes"(list[node] attrElts) <- xelts) {
+         
+         if (get(xattr, "type") == "typhonml:Attribute", xtype:"type"(list[node] typeElts) <- attrElts) {
+           DataType dt = DataType(PrimitiveDataType(realm.new(#IntType, IntType()))); // dummy;
+         
+           switch (get(xtype, "type")) {
+             case "typhonml:FreetextType" : {
+               list[NlpTask] tasks = [ realm.new(#NlpTask, NlpTask(get(x, "workflowName"), make(#NlpTaskType, get(x, "type"), []))) 
+                                          | x:"tasks"(_) <- typeElts ];
+               dt = DataType(makePrimitive("FreetextType", [tasks]));
+             }
+             case "typhonml:StringType" : {
+               dt = DataType(makePrimitive("StringType", [has(xtype, "maxSize") ? toInt(get(xtype, "maxSize")) : 0])); 
+             }
+             case /^typhonml:<rest:.*>$/: {
+               dt = DataType(makePrimitive(rest, []));
+             } 
+             default: throw "Unknown attribute type: <xtype>";
+           }
+           attr = EntityAttribute(realm.new(#Attribute, Attribute(get(xattr, "name"), dt)));
+           attrs += [attr];
+         }
+         else {
+          // if (get(xattr, "type") == "typhonml:CustomAttribute") {
+           // "type" is unfortunately overloaded and cannot be reused here
+           // the first one is xsi:type (which should be "typhonml:CustomAttribute")
+           // the other one is just type; we thus assume that type
+           // refers to the typhonML type, not the Ecore type. 
+           attr = EntityAttribute(realm.new(#CustomAttribute, 
+              CustomAttribute(get(xattr, "name"), referTo(#CustomDataType, ensureCustom(get(xattr, "type"))))));
+           attrs += [attr];
+         }
+         
+          
+      }  
+       
+      list[Relation] rels = [];
+      relPos = 0;
+      for (xrel:"relations"(_) <- xelts) {
+         relPath = "<entPath>/@relations.<relPos>";
+         myrel = ensureRel(relPath);
+         myrel.name = get(xrel, "name");
+         if (has(xrel, "cardinality")) {
+         	myrel.cardinality = make(#Cardinality, get(xrel, "cardinality"), []);
+         }
+         else {
+         	myrel.cardinality =  make(#Cardinality, "zero_one", []);
+         }
+         
+         ePath = get(xrel, "type");
+         myrel.\type = referTo(#Entity, ensureEntity(ePath));
+         
+         if ("opposite" in getKeywordParameters(xrel)) {
+           oppPath = get(xrel, "opposite");
+           myrel.opposite = referTo(#Relation, ensureRel(oppPath));
+         }
+         
+         if ("isContainment" in getKeywordParameters(xrel)) {
+           myrel.isContainment = get(xrel, "isContainment") == "true";
+         } 
+         
+         
+         rels += [myrel];
+         relPos += 1;
+      }
+       
+
+      entity = ensureEntity(entPath);
+      entity.name = get(xen, "name");
+      entity.attributes = attrs;
+      entity.relations = rels;
+      es += [entity];
+      
+      entPos += 1;
+    }
+    
+    int dtPos = 0;
+    for (xdt:"customDataTypes"(list[node] xelts) <- kids) {
+       dtPath = "//@customDataTypes.<dtPos>";
+       //println("Data type path: <dtPath>");
+       //println(xdt);
+           
+       list[CustomDataTypeItem] elements = [];
+       for (xattr:"elements"(_) <- xelts) {
+         el = realm.new(#DataTypeItem, DataTypeItem(get(xattr, "name"), DataTypeImplementationPackage()));
+         aPath = get(xattr, "type");
+         el.\type = referTo(#DataType, ensurePrimitive(aPath));
+         elements += [el]; 
+       }
+       custom = ensureCustom(dtPath);
+       custom.name = get(xdt, "name");
+       custom.elements = elements;   
+       cdts += [custom];
+
+       dtPos += 1;
+    }
+    
+    return  realm.new(#Model, Model(es, dbs, cdts, chos));
   }
   else {
     throw "Invalid Typhon ML XMI node <n>";
