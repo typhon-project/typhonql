@@ -52,9 +52,8 @@ void smokeTest(str root = "/Users/tvdstorm/CWI/typhonml") {
 }
 
 
-
 void smokeTest2() {
-  str xmi = readFile(|project://typhonql/src/lang/typhonml/addAttributeChangeOperator.xmi|);
+  str xmi = readFile(|project://typhonql/src/lang/typhonml/customdatatypes.xmi|);
   Model m = xmiString2Model(xmi);
   Schema s = model2schema(m);
   //iprintln(m);
@@ -63,10 +62,11 @@ void smokeTest2() {
 
 Model loadTyphonML(loc l) = xmiString2Model(readFile(l));
 
-Model xmiString2Model(str s) = xmiNode2Model(readXML(s, fullyQualify=true));
+Model xmiString2Model(str s) = xmiNode2Model(readXML(s));
 
 Schema loadSchemaFromXMI(str s) = model2schema(m)
 	when Model m := xmiString2Model(s);
+
 
 @doc{
 Convert a node representation of the XMI serialization of a TyphonML model

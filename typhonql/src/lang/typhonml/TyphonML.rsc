@@ -314,19 +314,6 @@ data ChangeOperator
       , lang::ecore::Refs::Ref[Relation] \relationToRemove = \removeRelation.\relationToRemove
       , lang::ecore::Refs::Id uid = \removeRelation.uid
       , bool _inject = true)
-  | ChangeOperator(SplitEntityHorizontal \splitEntityHorizontal
-      ,str \newEntityName = \splitEntityHorizontal.\newEntityName
-      ,lang::ecore::Refs::Ref[Entity] \sourceEntity = \splitEntityHorizontal.\sourceEntity
-      ,lang::ecore::Refs::Ref[Attribute] \attrs = \splitEntityHorizontal.\attrs
-      ,str \expression = \splitEntityHorizontal.\expression
-      ,str \importedNamespace = \splitEntityHorizontal.\importedNamespace
-      ,lang::ecore::Refs::Id uid = \splitEntityHorizontal.uid)
-  | ChangeOperator(SplitEntityVertical \splitEntityVertical
-      ,str \newEntityName = \splitEntityVertical.\newEntityName
-      ,lang::ecore::Refs::Ref[Entity] \sourceEntity = \splitEntityVertical.\sourceEntity
-      ,list[lang::ecore::Refs::Ref[Attribute]] \attrs = \splitEntityVertical.\attrs
-      ,str \importedNamespace = \splitEntityVertical.\importedNamespace
-      ,lang::ecore::Refs::Id uid = \splitEntityVertical.uid)
   ;
 
 data RemoveGraphEdge
@@ -478,7 +465,7 @@ data AddAttributesToIndex
 
 data RenameAttribute
   = RenameAttribute(lang::ecore::Refs::Ref[Attribute] \attributeToRename
-      , str \newName
+      , str \newName = ""
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -491,7 +478,7 @@ data ChangeRelationContainement
 data MergeEntity
   = MergeEntity(lang::ecore::Refs::Ref[Entity] \firstEntityToMerge
       , lang::ecore::Refs::Ref[Entity] \secondEntityToMerge
-      , str \newEntityName
+      , str \newEntityName = ""
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -700,7 +687,6 @@ data RenameRelation
 data Relation
   = Relation(str \name
       , Cardinality \cardinality
-      , lang::ecore::Refs::Ref[Entity] \ownerEntity = null()
       , str \importedNamespace = ""
       , lang::ecore::Refs::Ref[Entity] \type = null()
       , lang::ecore::Refs::Ref[Relation] \opposite = null()
@@ -722,13 +708,12 @@ data AddRelation
   = AddRelation(str \name
       , Cardinality \cardinality
       , lang::ecore::Refs::Ref[Entity] \ownerEntity
-      , bool \isContainment
-      , lang::ecore::Refs::Ref[Entity] \type
       , str \importedNamespace = ""
+      , bool \isContainment = false
+      , lang::ecore::Refs::Ref[Entity] \type = null()
       , lang::ecore::Refs::Ref[Relation] \opposite = null()
       , lang::ecore::Refs::Id uid = noId())
   ;
-  
 
 data Entity
   = Entity(AddEntity \addEntity
@@ -792,7 +777,6 @@ data AddCustomDataTypeAttribute
   = AddCustomDataTypeAttribute(str \name
       , DataType \type
       , lang::ecore::Refs::Ref[Entity] \ownerEntity
-      , lang::ecore::Refs::Ref[DataType] \type
       , str \importedNamespace = ""
       , lang::ecore::Refs::Id uid = noId())
   ;
