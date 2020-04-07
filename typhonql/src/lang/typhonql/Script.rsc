@@ -38,6 +38,7 @@ data MongoCall
   | deleteMany(str dbName, str coll, str query)
   | createCollection(str dbName, str coll)
   | dropCollection(str dbName, str coll)
+  | dropDatabase(str dbName)
   ;
   
 EntityModels schema2entityModels(Schema s) 
@@ -75,6 +76,15 @@ str runScript(Script scr, Session session, Schema schema) {
       
       case step(str r, mongo(deleteMany(str db, str coll, str query)), Bindings ps):
         println("WARNING: not yet executed: <s>"); 
+        
+      case step(str r, mongo(createCollection(str db, str coll)), Bindings ps):
+        session.mongo.createCollection(db, coll); 
+        
+      case step(str r, mongo(dropCollection(str db, str coll)), Bindings ps):
+        session.mongo.dropCollection(db, coll); 
+        
+      case step(str r, mongo(dropDatabase(str db)), Bindings ps):
+        session.mongo.dropDatabase(db);   
        
       case newId(str var): {
         result = session.newId(var);
