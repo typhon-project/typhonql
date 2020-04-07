@@ -15,8 +15,6 @@ import lang::typhonql::Session;
 import lang::typhonql::Request2Script;
 import lang::typhonql::Schema2Script;
 import lang::typhonql::Script;
-// TODO for now only for the DDL. Modularize better
-import lang::typhonql::Run;
 import lang::typhonml::XMIReader;
 
 import lang::typhonql::util::Log;
@@ -176,7 +174,7 @@ void runSchema(str xmiString, Session session, Log log = noLog) {
 
 void runSchema(str xmiString, map[str, Connection] connections, Log log = noLog) {
 	Session session = newSession(connections, log = log);
-	runSchema(src, xmiString, session, log = log);
+	runSchema(xmiString, session, log = log);
 }
 
 Path buildPath(str selector, map[str, str] entityTypes) {

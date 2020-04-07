@@ -8,7 +8,6 @@ import lang::typhonml::XMIReader;
 import lang::typhonql::TDBC;
 import lang::typhonql::DDL;
 import lang::typhonql::WorkingSet;
-import lang::typhonql::Run;
 import lang::typhonql::RunUsingCompiler;
 
 
@@ -118,20 +117,21 @@ void setupIDE(bool isDevMode = false) {
       		<polystoreUri, user, password> = readTyphonConfig(tree@\loc);
       		sch = checkSchema(sch, polystoreUri, user, password);
       		map[str, Connection] connections = readConnectionsInfo(polystoreUri, user, password);
+      		Session session = newSession(connections);
         	if (isDevMode) {
 	          try {
 	          	if ((Request) `<Query q>` := req) {
-	          		ResultTable result = runQuery(req, sch, connections);
+	          		ResultTable result = runQuery(req, sch, session);
 	            	text(result);
 	          	}
 	          	else if ((Request) `<Statement s>` := req)  {
 	          		if (isDDL(s)) {
 	          			// use interpreter
-	          			 runDDL(req, sch, connections);
+	          			runDDL(req, sch, session);
 	          		}
 	          		else {
 	          			// use compiler
-	          			runUpdate(req, sch, connections);
+	          			runUpdate(req, sch, session);
 	          		}
 	            	alert("Operation succesfully executed");
 	          	}
@@ -188,8 +188,9 @@ void setupIDE(bool isDevMode = false) {
       		if (isDevMode) {        		
         		try {
           			map[str, Connection] connections = readConnectionsInfo(polystoreUri, user, password);
+          			Session session = newSession(connections);
           			sch = checkSchema(sch, polystoreUri, user, password);
-          			runSchema(sch, connections);
+          			runSchema(sch, session);
           			alert("Polystore successfully reset");
           		} catch e: {
 	        		alert("Error: <e> ");

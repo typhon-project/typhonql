@@ -130,7 +130,6 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 					System.out.flush();
 					// now we are ready to import our main module
 					result.doImport(null, "lang::typhonql::RunUsingCompiler");
-					result.doImport(null, "lang::typhonql::Run");
 					result.doImport(null, "lang::typhonql::Session");
 					System.out.println("Finished initializing evaluator: " + Integer.toHexString(System.identityHashCode(result)));
 					System.out.flush();
@@ -276,7 +275,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 				synchronized (evaluator) {
 					// str src, str polystoreId, Schema s,
 					return evaluator.call("runSchema", 
-							"lang::typhonql::Run",
+							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
                     		xmiModel, connections);
 				}
