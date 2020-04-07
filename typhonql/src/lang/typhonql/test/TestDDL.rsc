@@ -12,12 +12,12 @@ extend lang::typhonql::util::Testing;
  */
  
  
-str HOST = "localhost";
-str PORT = "8080";
-str USER = "admin";
-str PASSWORD = "admin1@";
-Log LOG = NO_LOG;
+str host() = "localhost";
+str port() = "8080";
+str user() = "admin";
+str password() = "admin1@";
 
+Log LOG = NO_LOG;
 
 void setup() {
 	runUpdate((Request) `insert User { @id: #pablo, name: "Pablo" }`);

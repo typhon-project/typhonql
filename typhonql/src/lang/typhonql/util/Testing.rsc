@@ -16,6 +16,15 @@ import ParseTree;
 import String;
 import Map;
 
+default str host() = notImplemented;
+default str port() = notImplemented;
+default str user() = notImplemented;
+default str password() = notImplemented;
+
+str notImplemented() {
+	throw "Operation not implemented";
+}
+
 Log NO_LOG = void(value v){ return; };
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
@@ -31,7 +40,7 @@ void printSchema() {
 }
 
 Schema fetchSchema() {
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
+	str modelStr = readHttpModel(|http://<host()>:<port()>|, user(), password());
 	Schema sch = loadSchemaFromXMI(modelStr);
 	return sch;
 }
@@ -42,7 +51,7 @@ tuple[int, map[str,str]] runDDL(Request req) {
 }
 
 tuple[int, map[str,str]] runDDL(Request req, Schema s) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
+	map[str, Connection] connections =  readConnectionsInfo(host(), toInt(port()), user(), password());
 	runDDL(req, s, connections, log = LOG);
 	return <-1, ()>;
 }
@@ -53,35 +62,35 @@ tuple[int, map[str,str]] runUpdate(Request req) {
 }
 
 tuple[int, map[str,str]] runUpdate(Request req, Schema s) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	Session session = newSession(connections, log = log);
+	map[str, Connection] connections =  readConnectionsInfo(host(), toInt(port()), user(), password());
+	Session session = newSession(connections, log = LOG);
 	return runUpdate(req, s, session, log = LOG);
 }
 
 void runPreparedUpdate(Request req, list[str] columnNames, list[list[str]] vs) {
 	Schema s = fetchSchema();
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	Session session = newSession(connections, log = log);
+	map[str, Connection] connections =  readConnectionsInfo(host(), toInt(port()), user(), password());
+	Session session = newSession(connections, log = LOG);
 	runPrepared(req, columnNames, vs, s, session, log = LOG);
 }
 
 value runQuery(Request req) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	Session session = newSession(connections, log = log);
+	map[str, Connection] connections =  readConnectionsInfo(host(), toInt(port()), user(), password());
+	Session session = newSession(connections, log = LOG);
 	Schema s = fetchSchema();
 	return runQuery(req, s, session, log = LOG);
 }
 
 
 value runQuery(Request req, Schema s) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	Session session = newSession(connections, log = log);
+	map[str, Connection] connections =  readConnectionsInfo(host(), toInt(port()), user(), password());
+	Session session = newSession(connections, log = LOG);
 	return runQuery(req, s, session, log = LOG);
 }
 
 void resetDatabases(Log log = NO_LOG) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
+	map[str, Connection] connections =  readConnectionsInfo(host(), toInt(port()), user(), password());
+	str modelStr = readHttpModel(|http://<host()>:<port()>|, user(), password());
 	Schema sch = loadSchemaFromXMI(modelStr);
 	Session session = newSession(connections, log = log);
 	runSchema(sch, session, log = LOG);

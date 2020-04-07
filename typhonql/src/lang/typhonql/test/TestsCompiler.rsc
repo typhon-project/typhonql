@@ -12,10 +12,11 @@ extend lang::typhonql::util::Testing;
  */
  
  
-str HOST = "localhost";
-str PORT = "8080";
-str USER = "admin";
-str PASSWORD = "admin1@";
+str host() = "localhost";
+str port() = "8080";
+str user() = "admin";
+str password() = "admin1@";
+
 Log LOG = NO_LOG;
 
 
@@ -118,49 +119,10 @@ void test14() {
 	assertEquals("test14", rs,  <["u.@id"],[[ "tijs" ]]>);
 }
 
-
-// DDL
-
-void test15() {
-	 s = fetchSchema();
-	 
-	 // We need to fake the schema update
-	 s.rels += { <"CreditCard", zero_one(), "foo", "bar", zero_one(), "User", false> };
-	 s.placement += { << sql(), "Inventory" >,  "CreditCard"> };
-	
-     runDDL((Request) `create CreditCard at Inventory`);
-	 
-	 rs = runQuery((Request) `from CreditCard c select c`, s);
-	 assertEquals("test15", rs,  <["c.@id"],[]>);
-	 
-}
-
-void test16() {
-	 runUpdate((Request) `drop Product`);
-	 assertException("test16",
-	 	void() { runQuery((Request) `from Product p select p`);});
-	 
-}
-
-void test17() {
-	 s = fetchSchema();
-	 
-	 // We need to fake the schema update
-	 s.rels += { <"User", zero_one(), "foo", "bar", zero_one(), "Comment", false> };
-	 s.placement += { << sql(), "Reviews" >,  "Comment"> };
-	
-     runDDL((Request) `create Comment at Reviews`);
-	 
-	 rs = runQuery((Request) `from Comment c select c`, s);
-	 assertEquals("test17", rs,  <["c.@id"],[]>);
-	 
-}
-
-void test18() {
-	 runUpdate((Request) `drop Biography`);
-	 assertException("test18",
-	 	void() { runQuery((Request) `from Biography b select b`);});
-	 
+void runAll() {
+	runTests([test1, test2, test3, test4, test5, test6,
+		test7, test8, test9, test10, test11,
+		test13, test14]);
 }
 
 
