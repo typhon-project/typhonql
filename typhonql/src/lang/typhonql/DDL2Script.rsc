@@ -43,14 +43,14 @@ Script ddl2script((Request) `create <EId eId> at <Id dbName>`, Schema s) {
 }
 
 Script ddl2script((Request) `drop <EId eId>`, Schema s) {
-  if (p:<db, name> <- s.placement<0>, name == "<dbName>") {
+  if (<<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	switch(db) {
 		case sql(): {
 			SQLStat stat = dropTable([tableName("<eId>")], true, []);
-			return script([step(name, sql(executeStatement(name, pp(stat))), ())]);
+			return script([step(dbName, sql(executeStatement(dbName, pp(stat))), ())]);
 		}
 		case mongodb(): {
-			return script([step(name, mongo(dropCollection(name, "<eId>")), ())]);
+			return script([step(dbName, mongo(dropCollection(dbName, "<eId>")), ())]);
 		}
 	}
   }
