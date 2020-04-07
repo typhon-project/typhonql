@@ -212,7 +212,8 @@ void setupIDE(bool isDevMode = false) {
       })
       
     ];
-  
+    
+  /*
   if (isDevMode) {
   	actions += action("Dump database",  void (Tree tree, loc selection) {
   		try {
@@ -226,6 +227,7 @@ void setupIDE(bool isDevMode = false) {
       });
       
   }
+  */
   
   registerContributions(TYPHONQL, {
     builder(set[Message] (start[Script] s) {
