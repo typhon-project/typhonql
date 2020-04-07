@@ -1,24 +1,10 @@
 module lang::typhonql::\test::TestsCompiler
 
-import util::Eval;
-
 import lang::typhonql::util::Log;
 
-
-import lang::typhonql::TDBC;
-import lang::typhonql::Session;
-import lang::typhonql::Script;
-import lang::typhonql::Request2Script;
-import lang::typhonml::Util;
-import lang::typhonml::TyphonML;
-import lang::typhonml::XMIReader;
-import lang::typhonql::RunUsingCompiler;
-import lang::typhonql::Run;
-
 import IO;
-import ParseTree;
-import String;
-import Map;
+
+extend lang::typhonql::util::Testing;
 
 /*
  * These tests are meant to be run on a Typhon Polystore deployed according to the
@@ -26,20 +12,12 @@ import Map;
  */
  
  
-str HOST = "localhost"; // "192.168.178.78";
+str HOST = "localhost";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
-
-Log NO_LOG = void(value v){ return; };
-
 Log LOG = NO_LOG;
 
-@javaClass{nl.cwi.swat.typhonql.TyphonQL}
-java str readHttpModel(loc polystoreUri, str user, str password);
-
-@javaClass{nl.cwi.swat.typhonql.TyphonQL}
-java map[str, Connection] readConnectionsInfo(str host, int port, str user, str password);
 
 void setup() {
 	runUpdate((Request) `insert User { @id: #pablo, name: "Pablo" }`);
@@ -134,131 +112,55 @@ void test13() {
 	assertEquals("test13b", rs, <["u.@id"],[["<uuid>"]]>);
 }
 
+void test14() {
+	runUpdate((Request) `insert User { @id: #tijs, name: "Tijs" }`);
+	rs = runQuery((Request) `from User u select u where u.@id == #tijs`);
+	assertEquals("test14", rs,  <["u.@id"],[[ "tijs" ]]>);
+}
+
+
 // DDL
 
-void test14() {
+void test15() {
 	 s = fetchSchema();
 	 
 	 // We need to fake the schema update
 	 s.rels += { <"CreditCard", zero_one(), "foo", "bar", zero_one(), "User", false> };
 	 s.placement += { << sql(), "Inventory" >,  "CreditCard"> };
 	
-	 rs = runQuery((Request) `from CreditCard c select c`, s);
+     runDDL((Request) `create CreditCard at Inventory`);
 	 
-	 runDDL((Request) `create CreditCard at Inventory`);
+	 rs = runQuery((Request) `from CreditCard c select c`, s);
+	 assertEquals("test15", rs,  <["c.@id"],[]>);
+	 
+}
+
+void test16() {
+	 runUpdate((Request) `drop Product`);
+	 assertException("test16",
+	 	void() { runQuery((Request) `from Product p select p`);});
+	 
+}
+
+void test17() {
+	 s = fetchSchema();
+	 
+	 // We need to fake the schema update
+	 s.rels += { <"User", zero_one(), "foo", "bar", zero_one(), "Comment", false> };
+	 s.placement += { << sql(), "Reviews" >,  "Comment"> };
 	
+     runDDL((Request) `create Comment at Reviews`);
 	 
-	 rs = runQuery((Request) `from CreditCard c select c`, s);
-	 assertEquals("test14", rs,  <["c.@id"],[]>);
+	 rs = runQuery((Request) `from Comment c select c`, s);
+	 assertEquals("test17", rs,  <["c.@id"],[]>);
 	 
+}
+
+void test18() {
+	 runUpdate((Request) `drop Biography`);
+	 assertException("test18",
+	 	void() { runQuery((Request) `from Biography b select b`);});
 	 
 }
 
-void test15() {
-	 runUpdate((Request) `drop Product at Inventory`);
-	 rs = runQuery((Request) `from Product p select p`);
-	 assertEquals("test15", rs,  <["r.@id"],[]>);
-}
 
-tuple[int, map[str,str]] runDDL(Request req) {
-	Schema s = fetchSchema();
-	return runDDL(req, s);
-}
-
-tuple[int, map[str,str]] runDDL(Request req, Schema s) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	runDDL(req, s, connections, log = LOG);
-	return <-1, ()>;
-}
-
-tuple[int, map[str,str]] runUpdate(Request req) {
-	Schema s = fetchSchema();
-	return runUpdate(req, s);
-}
-
-tuple[int, map[str,str]] runUpdate(Request req, Schema s) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	return runUpdate(req, s, connections, log = LOG);
-}
-
-void runPreparedUpdate(Request req, list[str] columnNames, list[list[str]] vs) {
-	Schema s = fetchSchema();
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	runPrepared(req, columnNames, vs, s, connections, log = LOG);
-}
-
-value runQuery(Request req) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	Schema s = fetchSchema();
-	return runQuery(req, s, connections, log = LOG);
-}
-
-
-value runQuery(Request req, Schema s) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	return runQuery(req, s, connections, log = LOG);
-}
-
-
-void printSchema() {
-	Schema sch = fetchSchema();
-	iprintln(sch);
-}
-
-Schema fetchSchema() {
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
-	Schema sch = loadSchemaFromXMI(modelStr);
-	return sch;
-}
-
-
-void resetDatabases() {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
-	Schema sch = loadSchemaFromXMI(modelStr);
-	runSchema(sch, connections);
-}
-
-void runTest(void() t, Log log = NO_LOG) {
-	resetDatabases();
-	setup();
-	oldLog = LOG;
-	LOG = log;
-	try {
-		t();
-	}
-	catch e: {
-		println ("Test [ <t> ] threw an exception: <e>");
-	}
-	LOG = oldLog;
-}
-
-void assertEquals(str testName, value actual, value expected) {
-	if (actual != expected) {
-		println("<testName> failed. Expected: <expected>, Actual: <actual>");
-	}
-	else {
-		println("<testName> OK");
-	}	
-}
-
-void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
-	tests = [
-	   test1
-	   , test2
-	   , test3
-	   , test4
-	   , test5
-	   , test6
-		, test7
-		, test8
-		, test9
-		, test10
-		, test11
-		, test12
-		, test13
-		];
-	for (t <- tests) {
-		runTest(t, log = log);
-	}
-}
