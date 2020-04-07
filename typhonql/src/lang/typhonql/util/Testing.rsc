@@ -10,7 +10,6 @@ import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
 import lang::typhonml::XMIReader;
 import lang::typhonql::RunUsingCompiler;
-import lang::typhonql::Run;
 
 import IO;
 import ParseTree;
@@ -55,32 +54,37 @@ tuple[int, map[str,str]] runUpdate(Request req) {
 
 tuple[int, map[str,str]] runUpdate(Request req, Schema s) {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	return runUpdate(req, s, connections, log = LOG);
+	Session session = newSession(connections, log = log);
+	return runUpdate(req, s, session, log = LOG);
 }
 
 void runPreparedUpdate(Request req, list[str] columnNames, list[list[str]] vs) {
 	Schema s = fetchSchema();
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	runPrepared(req, columnNames, vs, s, connections, log = LOG);
+	Session session = newSession(connections, log = log);
+	runPrepared(req, columnNames, vs, s, session, log = LOG);
 }
 
 value runQuery(Request req) {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
+	Session session = newSession(connections, log = log);
 	Schema s = fetchSchema();
-	return runQuery(req, s, connections, log = LOG);
+	return runQuery(req, s, session, log = LOG);
 }
 
 
 value runQuery(Request req, Schema s) {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	return runQuery(req, s, connections, log = LOG);
+	Session session = newSession(connections, log = log);
+	return runQuery(req, s, session, log = LOG);
 }
 
-void resetDatabases() {
+void resetDatabases(Log log = NO_LOG) {
 	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
 	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
-	runSchema(sch, connections);
+	Session session = newSession(connections, log = log);
+	runSchema(sch, session, log = LOG);
 }
 
 void runTest(void() t, Log log = NO_LOG) {
