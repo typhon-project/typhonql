@@ -26,6 +26,7 @@ data Call
 data SQLCall
   = executeQuery(str dbName, str query)
   | executeStatement(str dbName, str stat)
+  | executeGlobalStatement(str dbName, str stat)
   ;
   
 data MongoCall
@@ -57,7 +58,10 @@ str runScript(Script scr, Session session, Schema schema) {
         session.sql.executeQuery(r, db, q, ps, s.signature);
         
       case step(str r, sql(executeStatement(str db, str st)), Bindings ps):
-        session.sql.executeStatement(db, st, ps);  
+        session.sql.executeStatement(db, st, ps);
+      
+      case step(str r, sql(executeGlobalStatement(str db, str st)), Bindings ps):
+        session.sql.executeGlobalStatement(db, st, ps);  
 
       case step(str r, mongo(find(str db, str coll, str json)), Bindings ps):
         session.mongo.find(r, db, coll, json, ps, s.signature);

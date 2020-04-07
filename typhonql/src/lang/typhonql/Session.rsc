@@ -33,7 +33,8 @@ alias Bindings = map[str, Param];
 
 alias SQLOperations = tuple[
 	void (str resultId, str dbName, str query, Bindings bindings, list[Path] paths) executeQuery,
-	void (str dbName, str query, Bindings bindings) executeStatement 
+	void (str dbName, str query, Bindings bindings) executeStatement,
+	void (str dbName, str query, Bindings bindings) executeGlobalStatement
 ];
 
 alias MongoOperations = tuple[
