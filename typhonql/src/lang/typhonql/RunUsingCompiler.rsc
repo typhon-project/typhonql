@@ -13,6 +13,7 @@ import lang::typhonql::Eval;
 import lang::typhonql::Closure;
 import lang::typhonql::Session;
 import lang::typhonql::Request2Script;
+import lang::typhonql::Schema2Script;
 import lang::typhonql::Script;
 // TODO for now only for the DDL. Modularize better
 import lang::typhonql::Run;
@@ -25,11 +26,6 @@ import Set;
 import List;
 import util::Maybe;
 import String;
-
-void runDDL(Request r, Schema s, map[str, Connection] connections, Log log = noLog) {
-	Session session = newSession(connections, log = log);
-	return runDDL(r, s, session, log = log);
-}
 
 void runDDL(Request r, Schema s, Session session, Log log = noLog) {
 	if ((Request) `<Statement stmt>` := r) {
@@ -45,11 +41,6 @@ void runDDL(Request r, Schema s, Session session, Log log = noLog) {
   	else {
   		throw "Statement should have been provided";
   	}
-}
-
-tuple[int, map[str, str]] runUpdate(Request r, Schema s, map[str, Connection] connections, Log log = noLog) {
-	Session session = newSession(connections, log = log);
-	return runUpdate(r, s, session, log = log);
 }
 
 tuple[int, map[str, str]] runUpdate(Request r, Schema s, Session session, Log log = noLog) {
@@ -75,11 +66,6 @@ tuple[int, map[str, str]] runUpdate(Request r, Schema s, Session session, Log lo
     throw "Statement should have been provided";
 }
 
-value runQueryAndGetJava(Request r, Schema sch, map[str, Connection] connections, Log log = noLog) {
-	Session session = newSession(connections, log = log);
-	return runQueryAndGetJava(r, sch, session, log = log);
-}
-
 void runScriptForQuery(Request r, Schema sch, Session session, Log log = noLog) {
 	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
 		scr = request2script(r, sch, log = log);
@@ -100,9 +86,28 @@ ResultTable runQuery(Request r, Schema sch, Session session, Log log = noLog) {
 	return session.getResult();
 }
 
-ResultTable runQuery(Request r, Schema sch, map[str, Connection] connections, Log log = noLog) {
-	Session session = newSession(connections, log = log);
-	return runQuery(r, sch, session, log = log);
+lrel[int, map[str, str]] runPrepared(Request req, list[str] columnNames, list[list[str]] values, Schema s, Session session, Log log = noLog) {
+  lrel[int, map[str, str]] rs = [];
+  int numberOfVars = size(columnNames);
+  for (list[str] vs <- values) {
+  	map[str, str] labeled = (() | it + (columnNames[i] : vs[i]) | i <-[0 .. numberOfVars]);
+  	int i = 0;
+  	Request req_ = visit(req) {
+  		case (Expr) `<PlaceHolder ph>`: {
+  			valStr = labeled["<ph.name>"];
+  			e = [Expr] valStr; 
+  			insert e;
+  		}
+  	};
+  	<n, uuids> = runUpdate(req_, s, session, log = log);
+  	rs += <n, uuids>;
+  }
+  return rs;
+}
+
+void runSchema(Schema sch, Session session, Log log = noLog) {
+	scr = schema2script(sch, log = log);
+	runScript(scr, session, sch);
 }
 
 tuple[int, map[str, str]] runUpdate(str src, str xmiString, map[str, Connection] connections, Log log = noLog) {
@@ -141,30 +146,6 @@ value runQueryAndGetJava(str src, str xmiString, Session session, Log log = noLo
   return runQueryAndGetJava(req, s, session, log = log);
 }
 
-lrel[int, map[str, str]] runPrepared(Request req, list[str] columnNames, list[list[str]] values, Schema s, map[str, Connection] connections, Log log = noLog) {
-	Session session = newSession(connections, log = log);
-	return runPrepared(req, columnNames, values, s, session, log = log);
-}
-
-lrel[int, map[str, str]] runPrepared(Request req, list[str] columnNames, list[list[str]] values, Schema s, Session session, Log log = noLog) {
-  lrel[int, map[str, str]] rs = [];
-  int numberOfVars = size(columnNames);
-  for (list[str] vs <- values) {
-  	map[str, str] labeled = (() | it + (columnNames[i] : vs[i]) | i <-[0 .. numberOfVars]);
-  	int i = 0;
-  	Request req_ = visit(req) {
-  		case (Expr) `<PlaceHolder ph>`: {
-  			valStr = labeled["<ph.name>"];
-  			e = [Expr] valStr; 
-  			insert e;
-  		}
-  	};
-  	<n, uuids> = runUpdate(req_, s, session, log = log);
-  	rs += <n, uuids>;
-  }
-  return rs;
-}
-
 lrel[int, map[str, str]] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, Session session, Log log = noLog) {
  	Model m = xmiString2Model(xmiString);
   	Schema s = model2schema(m);	
@@ -185,6 +166,17 @@ void runDDL(str src,  str xmiString, Session session, Log log = noLog) {
 void runDDL(str src,  str xmiString, map[str, Connection] connections, Log log = noLog) {
 	Session session = newSession(connections, log = log);
 	runDDL(src, xmiString, session, log = log);
+}
+
+void runSchema(str xmiString, Session session, Log log = noLog) {
+	Model m = xmiString2Model(xmiString);
+  	Schema s = model2schema(m);	
+	runSchema(s, session, log = log);
+}
+
+void runSchema(str xmiString, map[str, Connection] connections, Log log = noLog) {
+	Session session = newSession(connections, log = log);
+	runSchema(src, xmiString, session, log = log);
 }
 
 Path buildPath(str selector, map[str, str] entityTypes) {
