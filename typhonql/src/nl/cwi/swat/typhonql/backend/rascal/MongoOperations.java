@@ -149,6 +149,19 @@ public class MongoOperations implements Operations {
 		});
 	}
 	
+	
+	private ICallableValue makeDropDatabase(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+		return makeFunction(ctx, state, executeType, args -> {
+			String dbName = ((IString) args[0]).getValue();
+			
+			ConnectionData data = connections.get(dbName);
+			new MongoDBEngine(store, script, uuids, data.getHost(), data.getPort(), dbName, data.getUser(), data.getPassword()).executeDropDatabase(dbName);
+			
+			//sessionData.put(resultName, query);
+			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+		});
+	}
+	
 	public ITuple newMongoOperations(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, Map<String, String> uuids, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
 		
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("MongoOperations"));
@@ -163,6 +176,7 @@ public class MongoOperations implements Operations {
 		FunctionType executeType5 = (FunctionType)aliasedTuple.getFieldType("deleteOne");
 		FunctionType executeType6 = (FunctionType)aliasedTuple.getFieldType("createCollection");
 		FunctionType executeType7 = (FunctionType)aliasedTuple.getFieldType("dropCollection");
+		FunctionType executeType8 = (FunctionType)aliasedTuple.getFieldType("dropDatabase");
 		
 		return vf.tuple(
             makeFind(store, script, state, uuids, executeType1, ctx, vf, tf),
@@ -171,7 +185,8 @@ public class MongoOperations implements Operations {
             makeFindAndUpdateOne(store, script, state, uuids, executeType4, ctx, vf, tf),
             makeDeleteOne(store, script, state, uuids, executeType5, ctx, vf, tf),
             makeCreateCollection(store, script, state, uuids, executeType6, ctx, vf, tf),
-            makeDropCollection(store, script, state, uuids, executeType7, ctx, vf, tf)
+            makeDropCollection(store, script, state, uuids, executeType7, ctx, vf, tf),
+            makeDropDatabase(store, script, state, uuids, executeType8, ctx, vf, tf)
         );
 	}
 }

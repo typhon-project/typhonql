@@ -75,4 +75,10 @@ public class MongoDBEngine extends Engine {
 		coll.drop();
 	}
 
+	public void executeDropDatabase(String dbName) {
+		MongoClient mongoClient = MongoClients.create(getConnectionString());
+		MongoDatabase db = mongoClient.getDatabase(dbName);
+		db.drop();
+	}
+
 }
