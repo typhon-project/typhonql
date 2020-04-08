@@ -41,7 +41,7 @@ java str readHttpModel(loc polystoreUri, str user, str password);
 java bool executeResetDatabases(loc polystoreUri, str user, str password);
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
-java WorkingSet executeQuery(loc polystoreUri, str user, str password, str query);
+java ResultTable executeQuery(loc polystoreUri, str user, str password, str query);
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java void executeDDLUpdate(loc polystoreUri, str user, str password, str query);

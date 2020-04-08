@@ -1,6 +1,7 @@
 package nl.cwi.swat.typhonql.client.resulttable;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	static {
 		//mapper.configure(DeserializationFeature.
 		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+
 	}
 				
 	private List<String> columnNames;
@@ -57,6 +59,7 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		return values;
 	}
 
+	@JsonIgnore
 	public static ResultTable fromIValue(IValue v) {
 		// map[str entity, list[Entity] entities];
 		if (v instanceof ITuple) {
@@ -90,6 +93,7 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 
 	}
 	
+	@JsonIgnore
 	public static Object toJava(IValue object) {
 		if (object instanceof IInteger) {
 			return ((IInteger) object).intValue();
@@ -122,7 +126,8 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		
 		throw new RuntimeException("Unknown conversion for Rascal value of type " + object.getClass());
 	}
-
+	
+	@JsonIgnore
 	public ITuple toIValue() {
 		IValueFactory vf = ValueFactoryFactory.getValueFactory();
 		IListWriter cnw = vf.listWriter();
@@ -142,6 +147,7 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		
 	}
 	
+	@JsonIgnore
 	public static IValue toIValue(IValueFactory vf, Object v) {
 		if (v == null) {
 			return vf.tuple(vf.bool(false), vf.string(""));
@@ -168,11 +174,12 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		throw new RuntimeException("Unknown conversion for Java type " + v.getClass());
 	}
 
-
+	@JsonIgnore
 	public void serializeJSON(OutputStream target) throws IOException {
 		mapper.writeValue(target, this);
 	}
 	
+	@JsonIgnore
 	public void print() {
 		System.out.println(String.join(", ", columnNames));
 		for (List<Object> vs : values) {
@@ -185,6 +192,18 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	@JsonIgnore
 	public Type getType() {
 		return TF.externalType(TF.valueType());
+	}
+	
+	@Override
+	@JsonIgnore
+	public boolean isAnnotatable() {
+        return false;
+    }
+
+	@JsonIgnore
+	public static ResultTable fromJSON(InputStream is) throws IOException {
+		ResultTable rt = mapper.readValue(is, ResultTable.class);
+		return rt;
 	}
 
 }
