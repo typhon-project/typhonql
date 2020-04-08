@@ -1,7 +1,7 @@
 module lang::typhonql::check::Checker
 
 import ParseTree;
-import Exception;
+import String;
 import lang::typhonml::Util;
 extend analysis::typepal::TypePal;
 
