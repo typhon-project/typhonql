@@ -12,21 +12,13 @@
       ?
    </copyright>
 
-
-<!--
-   <includes
-         id="TyphondlFeature"
-         version="0.0.0"
-         search-location="both"/>
-
-   <includes
-         id="TyphonmlFeature"
-         version="0.0.0"
-         search-location="both"/>
-         -->
-
    <includes
          id="rascal-feature"
+         version="0.0.0"
+         search-location="both"/>
+
+   <plugin
+         id="typepal"
          version="0.0.0"
          search-location="both"/>
 
@@ -36,6 +28,8 @@
          install-size="0"
          version="0.0.0"
          unpack="false"/>
+
+
 
    <plugin
          id="typhonql-ide"
@@ -51,17 +45,4 @@
          version="0.0.0"
          unpack="false"/>         
 
-   <!--
-
-		<plugin id="it.univaq.disim.typhon.acceleo" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
-		<plugin id="it.univaq.disim.typhonml" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
-		<plugin id="it.univaq.disim.typhonml.design" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
-		<plugin id="it.univaq.disim.typhonml.edit" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
-		<plugin id="it.univaq.disim.typhonml.editor" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
-		<plugin id="it.univaq.disim.typhonml.evaluator" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
-		<plugin id="it.univaq.disim.typhonml.ui" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
-		<plugin id="it.univaq.disim.typhonml.xtext" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
-		<plugin id="it.univaq.disim.typhonml.xtext.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
-		<plugin id="it.univaq.disim.typhonml.xtext.ui" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
-   -->
 </feature>
