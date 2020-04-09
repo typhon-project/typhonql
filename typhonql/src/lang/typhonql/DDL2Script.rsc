@@ -9,6 +9,8 @@ import lang::typhonql::TDBC;
 import lang::typhonql::Order;
 import lang::typhonql::Normalize;
 
+import lang::typhonql::util::Log;
+
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::Util;
 import lang::typhonql::relational::SQL2Text;
@@ -36,7 +38,7 @@ Script createEntity(p:<sql(), str dbName>, str entity, Schema s, Log log = noLog
 }
 
 Script createEntity(p:<mongodb(), str dbName>, str entity, Schema s, Log log = noLog) {
-	return script([step(name, mongo(createCollection(dbName, entity)), ())]);
+	return script([step(dbName, mongo(createCollection(dbName, entity)), ())]);
 }
 
 default Script createEntity(p:<db, str dbName>, str entity, Schema s, Log log = noLog) {
