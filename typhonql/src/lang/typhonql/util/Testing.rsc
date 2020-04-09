@@ -16,10 +16,70 @@ import ParseTree;
 import String;
 import Map;
 
-default str host() = notImplemented;
-default str port() = notImplemented;
-default str user() = notImplemented;
-default str password() = notImplemented;
+alias Conn = tuple[str host, str port, str user, str password];
+
+alias TestProxy =
+	tuple[
+		void() resetDatabases,
+		ResultTable(Request req) runQuery,
+		ResultTable(Request req, Schema s) runQueryForSchema,
+		CommandResult(Request req) runUpdate,
+		CommandResult(Request req) runDDL,
+		list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs)
+			runPreparedStatement,
+		Schema() fetchSchema,
+		void() printSchema];
+
+alias TestExecutor =
+	tuple[
+		void(void(TestProxy proxy)) runTest,
+		void(list[void(TestProxy proxy)]) runTests];
+		
+TestExecutor initTest(void(TestProxy) setup, str host, str port, str user, str password) {
+	Conn conn = <host, port, user, password>;
+	void() myResetDatabases = void() {
+		resetDatabases(conn);
+	};
+	ResultTable(Request req) myRunQuery = ResultTable(Request req) {
+		return runQuery(req, conn);
+	};
+	ResultTable(Request req, Schema s) myRunQueryForSchema = ResultTable(Request req, Schema s) {
+		return runQuery(req, s, conn);
+	};
+	CommandResult(Request req) myRunUpdate = CommandResult(Request req) {
+		return runUpdate(req, conn);
+	};
+	CommandResult(Request req) myRunDDL = CommandResult(Request req) {
+		return runDDL(req, conn);
+	};
+	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) 
+		myRunPreparedStatement = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
+			return runPreparedStatement(req, columnNames, vs, conn);
+	};
+	Schema() myFetchSchema = Schema() {
+		return fetchSchema(conn);
+	};
+	
+	void() myPrintSchema = void() {
+		printSchema(conn);
+	};
+	
+	TestProxy proxy = <myResetDatabases, myRunQuery, myRunQueryForSchema,
+		myRunUpdate, myRunDDL, myRunPreparedStatement, myFetchSchema, myPrintSchema>;
+	
+	void(void(TestProxy proxy)) myRunTest = void(void(TestProxy proxy) t) {
+		runTest(proxy, setup, t);
+	};
+	
+	void(list[void(TestProxy proxy)]) myRunTests = void(list[void(TestProxy proxy)] ts) {
+		runTests(proxy, setup, ts);
+	};
+	
+	return <myRunTest, myRunTests>;
+	
+}
+
+default void setup() { }
 
 str notImplemented() {
 	throw "Operation not implemented";
@@ -34,75 +94,77 @@ java str readHttpModel(loc polystoreUri, str user, str password);
 java map[str, Connection] readConnectionsInfo(str host, int port, str user, str password);
 
 
-void printSchema() {
-	Schema sch = fetchSchema();
+void printSchema(Conn c) {
+	Schema sch = fetchSchema(c);
 	iprintln(sch);
 }
 
-Schema fetchSchema() {
-	str modelStr = readHttpModel(|http://<host()>:<port()>|, user(), password());
+Schema fetchSchema(Conn c) {
+	str modelStr = readHttpModel(|http://<c.host>:<c.port>|, c.user, c.password);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	return sch;
 }
 
-tuple[int, map[str,str]] runDDL(Request req) {
-	Schema s = fetchSchema();
-	return runDDL(req, s);
+CommandResult runDDL(Request req, Conn c) {
+	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
+	Schema s = fetchSchema(c);
+	return runDDL(req, s, c);
 }
 
-tuple[int, map[str,str]] runDDL(Request req, Schema s) {
-	map[str, Connection] connections =  readConnectionsInfo(host(), toInt(port()), user(), password());
-	runDDL(req, s, connections, log = LOG);
+CommandResult runDDL(Request req, Schema s, Conn c) {
+	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
+	Session session = newSession(connections, log = LOG);
+	runDDL(req, s, session, log = LOG);
 	return <-1, ()>;
 }
 
-tuple[int, map[str,str]] runUpdate(Request req) {
-	Schema s = fetchSchema();
-	return runUpdate(req, s);
+CommandResult runUpdate(Request req, Conn c) {
+	Schema s = fetchSchema(c);
+	return runUpdate(req, s, c);
 }
 
-tuple[int, map[str,str]] runUpdate(Request req, Schema s) {
-	map[str, Connection] connections =  readConnectionsInfo(host(), toInt(port()), user(), password());
+CommandResult runUpdate(Request req, Schema s, Conn c) {
+	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
 	Session session = newSession(connections, log = LOG);
 	return runUpdate(req, s, session, log = LOG);
 }
 
-void runPreparedUpdate(Request req, list[str] columnNames, list[list[str]] vs) {
-	Schema s = fetchSchema();
-	map[str, Connection] connections =  readConnectionsInfo(host(), toInt(port()), user(), password());
+list[CommandResult] runPreparedUpdate(Request req, list[str] columnNames, list[list[str]] vs, Conn c) {
+	Schema s = fetchSchema(c);
+	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
 	Session session = newSession(connections, log = LOG);
-	runPrepared(req, columnNames, vs, s, session, log = LOG);
+	return runPrepared(req, columnNames, vs, s, session, log = LOG);
 }
 
-value runQuery(Request req) {
-	map[str, Connection] connections =  readConnectionsInfo(host(), toInt(port()), user(), password());
+ResultTable runQuery(Request req, Conn c) {
+	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
 	Session session = newSession(connections, log = LOG);
-	Schema s = fetchSchema();
+	Schema s = fetchSchema(c);
 	return runQuery(req, s, session, log = LOG);
 }
 
 
-value runQuery(Request req, Schema s) {
-	map[str, Connection] connections =  readConnectionsInfo(host(), toInt(port()), user(), password());
+ResultTable runQuery(Request req, Schema s, Conn c) {
+	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
 	Session session = newSession(connections, log = LOG);
 	return runQuery(req, s, session, log = LOG);
 }
 
-void resetDatabases(Log log = NO_LOG) {
-	map[str, Connection] connections =  readConnectionsInfo(host(), toInt(port()), user(), password());
-	str modelStr = readHttpModel(|http://<host()>:<port()>|, user(), password());
+void resetDatabases(Conn c, Log log = NO_LOG) {
+	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
+	str modelStr = readHttpModel(|http://<c.host>:<c.port>|, c.user, c.password);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	Session session = newSession(connections, log = log);
 	runSchema(sch, session, log = LOG);
 }
 
-void runTest(void() t, Log log = NO_LOG) {
-	resetDatabases();
-	setup();
+void runTest(TestProxy proxy, void(TestProxy) setup, void(TestProxy) t, Log log = NO_LOG) {
+	proxy.resetDatabases();
+	setup(proxy);
 	oldLog = LOG;
 	LOG = log;
 	try {
-		t();
+		t(proxy);
 	}
 	catch e: {
 		println ("Test [ <t> ] threw an exception: <e>");
@@ -129,8 +191,8 @@ void assertException(str testName, void() block) {
 	}
 }
 
-void runTests(list[void()] tests, Log log = NO_LOG /*void(value v) {println(v);}*/) {
+void runTests(TestProxy proxy, void(TestProxy) setup, list[void(TestProxy)] tests, Log log = NO_LOG /*void(value v) {println(v);}*/) {
 	for (t <- tests) {
-		runTest(t, log = log);
+		runTest(proxy, setup, t, log = log);
 	}
 }

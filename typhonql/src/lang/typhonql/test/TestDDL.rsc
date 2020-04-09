@@ -12,81 +12,98 @@ extend lang::typhonql::util::Testing;
  */
  
  
-str host() = "localhost";
-str port() = "8080";
-str user() = "admin";
-str password() = "admin1@";
+str HOST = "localhost";
+str PORT = "8080";
+str USER = "admin";
+str PASSWORD = "admin1@";
 
-Log LOG = NO_LOG;
+Log LOG = void(value v) {;};
 
-void setup() {
-	runUpdate((Request) `insert User { @id: #pablo, name: "Pablo" }`);
-	runUpdate((Request) `insert User { @id: #davy, name: "Davy" }`);
-	
-	runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat" }`);
-	runUpdate((Request) `insert Product {@id: #radio, name: "Radio", description: "Loud" }`);
-	
-	runUpdate((Request) `insert Review { @id: #rev1, contents: "Good TV", user: #pablo, product: #tv }`);
-	runUpdate((Request) `insert Review { @id: #rev2, contents: "", user: #davy, product: #tv }`);
-	runUpdate((Request) `insert Review { @id: #rev3, contents: "***", user: #davy, product: #radio }`);
-	
-	runUpdate((Request) `insert Biography { @id: #bio1, text: "Chilean", user: #pablo }`);
+void setup(TestProxy p) {
 }
 
 // DDL
-
-void test1() {
-	 s = fetchSchema();
+ 
+// create entity (relational)
+void test1(TestProxy p) {
+	 s = p.fetchSchema();
 	 
 	 // We need to fake the schema update
 	 s.rels += { <"CreditCard", zero_one(), "foo", "bar", zero_one(), "User", false> };
 	 s.placement += { << sql(), "Inventory" >,  "CreditCard"> };
 	
-     runDDL((Request) `create CreditCard at Inventory`);
+     p.runDDL((Request) `create CreditCard at Inventory`);
 	 
-	 rs = runQuery((Request) `from CreditCard c select c`, s);
-	 assertEquals("test15", rs,  <["c.@id"],[]>);
-	 
-}
-
-void test2() {
-	 runUpdate((Request) `drop Product`);
-	 assertException("test16",
-	 	void() { runQuery((Request) `from Product p select p`);});
+	 rs = p.runQueryForSchema((Request) `from CreditCard c select c`, s);
+	 assertEquals("test1", rs,  <["c.@id"],[]>);
 	 
 }
 
-void test3() {
-	 s = fetchSchema();
+// drop entity (relational)
+void test2(TestProxy p) {
+	 p.runUpdate((Request) `drop Product`);
+	 assertException("test2",
+	 	void() { p.runQuery((Request) `from Product p select p`);});
+	 
+}
+
+// create entity (document)
+void test3(TestProxy p) {
+	 s = p.fetchSchema();
 	 
 	 // We need to fake the schema update
 	 s.rels += { <"User", zero_one(), "foo", "bar", zero_one(), "Comment", false> };
 	 s.placement += { << mongodb(), "Reviews" >,  "Comment"> };
-	 runDDL((Request) `create Comment at Reviews`);
-	 rs = runQuery((Request) `from Comment c select c`, s);
-	 assertEquals("test17", rs,  <["c.@id"],[]>);
+	 p.runDDL((Request) `create Comment at Reviews`);
+	 rs = p.runQueryForSchema((Request) `from Comment c select c`, s);
+	 assertEquals("test3", rs,  <["c.@id"],[]>);
 	 
 }
 
-void test4() {
-	 runUpdate((Request) `drop Biography`);
-	 assertException("test18",
-	 void() { runQuery((Request) `from Biography b select b`);});
+// drop entity (document)
+void test4(TestProxy p) {
+	 p.runUpdate((Request) `drop Biography`);
+	 assertException("test4",
+	 void() { p.runQuery((Request) `from Biography b select b`);});
 	 
 }
 
-void test5() {
-	 s = fetchSchema();
+// create attribute (relational)
+void test5(TestProxy p) {
+	 s = p.fetchSchema();
 	 
 	 // We need to fake the schema update
 	 s.rels += { <"Product", zero_one(), "bio", "product", zero_one(), "Biography", false> };
-	 runDDL((Request) `create attribute bio at Inventory`);
+	 p.runDDL((Request) `create attribute bio at Inventory`);
 	 
-	 rs = runQuery((Request) `from CreditCard c select c`, s);
-	 assertEquals("test15", rs,  <["c.@id"],[]>);
+	 rs = p.runQueryForSchema((Request) `from CreditCard c select c`, s);
+	 assertEquals("test5", rs,  <["c.@id"],[]>);
+}
+
+// create attribute (document)
+void test6() {
+	 s = p.fetchSchema();
+	 
+	 // We need to fake the schema update
+	 s.rels += { <"Biography", zero_one(), "product", "bio", zero_one(), "Product", false> };
+	 p.runDDL((Request) `create relation bio at Inventory`);
+	 
+	 rs = p.runQuery((Request) `from CreditCard c select c`, s);
+	 assertEquals("test6", rs,  <["c.@id"],[]>);
+}
+
+
+
+TestExecutor getExecutor() = initTest(setup, HOST, PORT, USER, PASSWORD);
+
+void runTest(void(TestProxy) t) {
+	getExecutor().runTest(t); 
+}
+
+void runTests(list[void(TestProxy)] ts) {
+	getExecutor().runTests(ts); 
 }
 
 void runAll() {
 	runTests([test1, test2, test3, test4]);
 }
-
