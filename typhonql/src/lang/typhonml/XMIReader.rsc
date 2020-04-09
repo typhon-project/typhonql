@@ -63,6 +63,15 @@ void smokeTest2() {
   iprintln(s);
 }
 
+void smokeTest3() {
+  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product/user-review-product.xmi|);
+  Model m = xmiString2Model(xmi);
+  Schema s = model2schema(m);
+  iprintln(m);
+  iprintln(s);
+}
+
+
 Model loadTyphonML(loc l) = xmiString2Model(readFile(l));
 
 Model xmiString2Model(str s) = xmiNode2Model(readXML(s));
