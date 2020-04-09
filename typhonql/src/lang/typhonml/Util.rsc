@@ -117,10 +117,10 @@ ChangeOps model2changeOperators(Model m) {
   			result += <"changeRelationContainement", [lookup(m, #Relation, chop.relation).name, toString(chop.newContainment)]>;
   		}
   		case ChangeOperator(ChangeAttributeType chop):{
-  			attr = lookup(m, #Attribute, chop.attributeToChange);
+  			attr = lookup(m, #EntityAttribute, chop.attributeToChange);
   			
   			entity = null();
-  			if (DataType(Entity e) <- m.dataTypes, Attribute a <- e.attributes, a.uid == attr.uid) {
+  			if (Entity e <- m.entities, EntityAttribute a <- e.attributes, a.uid == attr.uid) {
 			  entity = e;
 			}
   			
@@ -152,9 +152,9 @@ ChangeOps model2changeOperators(Model m) {
   			result += <"migrateEntity", [e1.name, db.name]>;
   		}
 		case ChangeOperator(RemoveAttribute chop):{
-			attr = lookup(m, #Attribute, chop.attributeToRemove);
+			attr = lookup(m, #EntityAttribute, chop.attributeToRemove);
   			entity = null();
-  			if (DataType(Entity e) <- m.dataTypes, Attribute a <- e.attributes, a.uid == attr.uid) {
+  			if (Entity e <- m.entities, EntityAttribute a <- e.attributes, a.uid == attr.uid) {
 			  entity = e;
 			}
 			
@@ -166,14 +166,14 @@ ChangeOps model2changeOperators(Model m) {
   		}
   		case ChangeOperator(RemoveRelation chop):{
   			rela = lookup(m, #Relation, chop.relationToRemove);
-  			entity = lookup(m, #Entity, rela.ownerEntity);
+  			entity = lookup(m, #Entity, rela.\type);
   			
   			result += <"removeRelation", [entity.name, rela.name]>;
   		}
   		case ChangeOperator(RenameAttribute chop):{
-  			attr = lookup(m, #Attribute, chop.attributeToRename);
+  			attr = lookup(m, #EntityAttribute, chop.attributeToRename);
   			entity = null();
-  			if (DataType(Entity e) <- m.dataTypes, Attribute a <- e.attributes, a.uid == attr.uid) {
+  			if (Entity e <- m.entities, EntityAttribute a <- e.attributes, a.uid == attr.uid) {
 			  entity = e;
 			}
   			
@@ -185,17 +185,11 @@ ChangeOps model2changeOperators(Model m) {
   		}
   		case ChangeOperator(RenameRelation chop): {
   			rela = lookup(m, #Relation, chop.relationToRename);
-  			entity = lookup(m, #Entity, rela.ownerEntity);
+  			entity = lookup(m, #Entity, rela.\type);
   			
   			result += <"renameRelation", [entity.name, rela.name, chop.newRelationName]>;
   		}
   		
-  		case ChangeOperator(RenameRelation chop): {
-  			rela = lookup(m, #Relation, chop.relationToRename);
-  			entity = lookup(m, #Entity, rela.ownerEntity);
-  			
-  			result += <"renameRelation", [entity.name, rela.name, chop.newRelationName]>;
-  		}
   		
   		case ChangeOperator(AddAttribute chop): {
   			entity = lookup(m, #Entity, chop.ownerEntity);
@@ -206,9 +200,9 @@ ChangeOps model2changeOperators(Model m) {
   		
   		case ChangeOperator(AddRelation chop): {
   			entity = lookup(m, #Entity, chop.ownerEntity);
-  			typ = lookup(m, #DataType, chop.\type);
+  			typ = lookup(m, #Entity, chop.\type);
   			
-  			result += <"addAttribute", [entity.name, chop.name, typ.name, toString(chop.isContainment)]>;
+  			result += <"addAttribute", [entity.name, chop.name, typ.name]>;
   		}
   		case ChangeOperator(SplitEntityHorizontal chop): {
   			entity = lookup(m, #Entity, chop.sourceEntity);
@@ -218,14 +212,14 @@ ChangeOps model2changeOperators(Model m) {
   			result += <"splitEntityHorizontal", [chop.newEntityName, entity.name, attr.name, chop.expression]>;
   		}
   		case ChangeOperator(SplitEntityVertical chop): {
-  			entity = lookup(m, #Entity, chop.sourceEntity);
+  			entity = lookup(m, #Entity, chop.entity1);
   			
   			l_attr = [];
-  			for(lang::ecore::Refs::Ref[Attribute] attr <- chop.attrs){
-  				l_attr += [(lookup(m, #Attribute, attr).name)];
+  			for(lang::ecore::Refs::Ref[Attribute] attr <- chop.attributeList){
+  				l_attr += [(lookup(m, #EntityAttribute, attr).name)];
   			};
   			
-  			l = [chop.newEntityName, entity.name] + l_attr;
+  			l = [chop.entity2name, entity.name] + l_attr;
   			result += <"splitEntityVertical", l>;
   		}
 	
