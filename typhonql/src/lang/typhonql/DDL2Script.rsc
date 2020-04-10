@@ -47,7 +47,7 @@ default Script createEntity(p:<db, str dbName>, str entity, Schema s, Log log = 
 
 Script ddl2script((Request) `create <EId eId>.<Id attribute> : <Type ty>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
-	return createAttribute(p, entity, "<attribute>", s, log = log);
+	return createAttribute(p, entity, "<attribute>", "<ty>", s, log = log);
   }
   throw "Not found entity <eId>";
 }
@@ -57,13 +57,13 @@ Script createAttribute(p:<sql(), str dbName>, str entity, str attribute, str ty,
 	return script([step(dbName, sql(executeStatement(dbName, pp(stat))), ())]);
 }
 
-Script createAttribute(p:<mongodb(), str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
+Script createAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
 	Call call = mongo(
 				findAndUpdateMany(dbName, entity, "", "{$set: { \"<attribute>\" : null}}"));
 	return script([step(dbName, call, ())]);
 }
 
-default Script createAttribute(p:<db, str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
+default Script createAttribute(p:<db, str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
 }
 
