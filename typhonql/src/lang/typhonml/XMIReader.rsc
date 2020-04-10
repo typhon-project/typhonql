@@ -56,10 +56,10 @@ void smokeTest(str root = "/Users/tvdstorm/CWI/typhonml") {
 
 
 void smokeTest2() {
-  str xmi = readFile(|project://typhonql/src/lang/typhonml/customdatatypes.xmi|);
+  str xmi = readFile(|project://typhonql/src/test/RemoveAttributes.xmi|);
   Model m = xmiString2Model(xmi);
   Schema s = model2schema(m);
-  //iprintln(m);
+  iprintln(m);
   iprintln(s);
 }
 
@@ -74,7 +74,7 @@ void smokeTest3() {
 
 Model loadTyphonML(loc l) = xmiString2Model(readFile(l));
 
-Model xmiString2Model(str s) = xmiNode2Model(readXML(s));
+Model xmiString2Model(str s) = xmiNode2Model(readXML(s, fullyQualify=true));
 
 Schema loadSchemaFromXMI(str s) = model2schema(m)
 	when Model m := xmiString2Model(s);
@@ -82,7 +82,6 @@ Schema loadSchemaFromXMI(str s) = model2schema(m)
 @doc{
 Convert a node representation of the XMI serialization of a TyphonML model
 to a `lang::typhoml::TyphonML::Model` value.
-
 Omissions for now:
  - evolution operators
  - database types other than document and relation
@@ -103,6 +102,8 @@ Model xmiNode2Model(node n) {
   map[str, Entity] entityMap = ();
   map[str, CustomDataType] customMap = ();
   map[str, Relation] relMap = ();
+  map[str, Database] dbMap = ();
+  map[str, EntityAttribute] attrMap = ();
   
   
   Entity ensureEntity(str path) {
@@ -146,10 +147,21 @@ Model xmiNode2Model(node n) {
     return relMap[path];
   }
   
-  if ("Model"(list[node] kids) := n) {
-
+  EntityAttribute ensureAttr(str path) {
+    if (path notin attrMap) {
+      DataType dt = DataType(PrimitiveDataType(realm.new(#IntType, IntType()))); // dummy;
+      attrMap[path] = EntityAttribute(realm.new(#Attribute, Attribute("", dt)));
+    }
+    return attrMap[path];
+  }
+  
+  if ("typhonml:Model"(list[node] kids) := n) {
+	int dbPos = 0;
     for (xdb:"databases"(list[node] xelts) <- kids) {
-      switch (get(xdb, "type")) {
+    
+      dbPath = "//@databases.<dbPos>";
+      
+      switch (get(xdb, "xsi:type")) {
         case "typhonml:RelationalDB": {
           tbls = [];
           for (xtbl:"tables"(_) <- xelts) {
@@ -158,8 +170,10 @@ Model xmiNode2Model(node n) {
             tbl.entity = referTo(#Entity, ensureEntity(ep));
             tbls += [tbl];
           }
+          db = realm.new(#Database, Database(RelationalDB(get(xdb, "name"), tbls)));
           
-          dbs += [ realm.new(#Database, Database(RelationalDB(get(xdb, "name"), tbls)))];
+          dbMap[dbPath] = db;
+          dbs += [db];
         }
         
         case "typhonml:DocumentDB": {
@@ -171,35 +185,15 @@ Model xmiNode2Model(node n) {
             colls += [coll];
           }
           
-          dbs += [ realm.new(#Database, Database(DocumentDB(get(xdb, "name"), colls))) ];
+          db = realm.new(#Database, Database(DocumentDB(get(xdb, "name"), colls)));
+          dbMap[dbPath] = db;
+          dbs += [db];
         }
         
         default:
           throw "Non implemented database type: <xdb.\type>";
       }
-      
-    }
-    
-    for (xcho:"changeOperators"(list[node] xelts) <- kids) {
-      switch (get(xcho, "type")) {
-        case "typhonml:RemoveEntity": {
-        	e = get(xcho, "entityToRemove");
-        	toRemove = referTo(#Entity, ensureEntity(e).entity);
-        	re = realm.new(#RemoveEntity, RemoveEntity(toRemove));
-          	chos += [ ChangeOperator(re)];
-        } // ChangeOperator(RemoveEntity \removeEntity, lang::ecore::Refs::Ref[Entity] \entityToRemove = \removeEntity.\entityToRemove, lang::ecore::Refs::Id uid = \removeEntity.uid, bool _inject = true) ];
-        
-         case "typhonml:RenameEntity": {
-        	e = get(xcho, "entityToRename");
-        	newName = get(xcho, "newEntityName");
-        	toRename = referTo(#Entity, ensureEntity(e).entity);
-        	re = realm.new(#RenameEntity, RenameEntity(\entityToRename = toRename, \newEntityName = newName));
-          	chos += [ ChangeOperator(re)];
-        }
-        default: {
-          println("WARNING: Non implemented change operator: <get(xcho, "type")>");
-        }
-      }
+      dbPos += 1;
       
     }
     
@@ -209,13 +203,14 @@ Model xmiNode2Model(node n) {
       entPath = "//@entities.<entPos>";
       
       list[EntityAttribute] attrs = [];
+      attrPos = 0;
       
       for (xattr:"attributes"(list[node] attrElts) <- xelts) {
-         
-         if (get(xattr, "type") == "typhonml:Attribute", xtype:"type"(list[node] typeElts) <- attrElts) {
+         attrPath = "<entPath>/@attributes.<attrPos>";
+         if (get(xattr, "xsi:type") == "typhonml:Attribute", xtype:"type"(list[node] typeElts) <- attrElts) {
            DataType dt = DataType(PrimitiveDataType(realm.new(#IntType, IntType()))); // dummy;
          
-           switch (get(xtype, "type")) {
+           switch (get(xtype, "xsi:type")) {
              case "typhonml:FreetextType" : {
                list[NlpTask] tasks = [ realm.new(#NlpTask, NlpTask(get(x, "workflowName"), make(#NlpTaskType, get(x, "type"), []))) 
                                           | x:"tasks"(_) <- typeElts ];
@@ -229,8 +224,11 @@ Model xmiNode2Model(node n) {
              } 
              default: throw "Unknown attribute type: <xtype>";
            }
+
            attr = EntityAttribute(realm.new(#Attribute, Attribute(get(xattr, "name"), dt)));
            attrs += [attr];
+           attrMap[attrPath] = attr;
+           attrPos += 1;
          }
          else {
           // if (get(xattr, "type") == "typhonml:CustomAttribute") {
@@ -305,6 +303,285 @@ Model xmiNode2Model(node n) {
        cdts += [custom];
 
        dtPos += 1;
+    }
+    
+    for (xcho:"changeOperators"(list[node] xelts) <- kids) {
+      switch (get(xcho, "xsi:type")) {
+      
+        case "typhonml:AddEntity":{
+        	entPath = "//@entities.<entPos>";
+      		attrs = [];
+            attrPos = 0;
+            for (xattr:"attributes"(_) <- xcho) {
+           	 	attrPath = "<dtPath>/@attributes.<attrPos>";
+           	 	println(attrPath)
+           	 	attr = ensureAttr(attrPath);
+             	attr.name = get(xattr, "name");
+             	aPath = get(xattr, "type");
+             	attr.\type = referTo(#DataType, ensurePrimitive(aPath));
+             	// attr.ownerEntity = referTo(#Entity, ensureEntity(dtPath).entity);
+             	attrs += [attr];
+             	attrPos += 1; 
+           	}  
+      			
+           	for (xattr:"attributes"(_) <- xcho) {
+             	attr = realm.new(#Attribute, Attribute(get(xattr, "name")));
+             	aPath = get(xattr, "type");
+             	attr.\type = referTo(#DataType, ensurePrimitive(aPath));
+             	attrs += [attr]; 
+           	}  
+           	
+           	
+           	rels = [];
+           	relPos = 0;
+          	for (xrel:"relations"(_) <- xcho) {
+             	relPath = "<entPath>/@relations.<relPos>";
+             	myrel = ensureRel(relPath);
+             	myrel.name = get(xrel, "name");
+             	if (has(xrel, "cardinality"))
+             		myrel.cardinality = make(#Cardinality, get(xrel, "cardinality"), []);
+             	else
+             		myrel.cardinality =  make(#Cardinality, "zero_one", []);
+             
+             	ePath = get(xrel, "type");
+             	myrel.\type = referTo(#Entity, ensureEntity(ePath).entity);
+             
+             	if ("opposite" in getKeywordParameters(xrel)) {
+               		oppPath = get(xrel, "opposite");
+               		myrel.opposite = referTo(#Relation, ensureRel(oppPath));
+             	}
+             
+             	if ("isContainment" in getKeywordParameters(xrel)) {
+               		myrel.isContainment = get(xrel, "isContainment") == "true";
+             	} 
+           
+             	rels += [myrel];
+             	relPos += 1;
+           	}
+           	
+           	name = get(xcho, "name");
+      		re = realm.new(#AddEntity, AddEntity(name, attrs, rels,[], []));
+      		chos += [ ChangeOperator(re)];
+           	
+           	entity = ensureEntity(entPath);
+           	entity.name = name;
+           	entity.attributes = attrs;
+           	entity.relations = rels;
+           	
+      		es += [entity];
+      		entPos = entPos + 1;
+      	}
+      	
+      	case "typhonml:AddRelation":{
+      		e = get(xcho, "ownerEntity");
+      		entity = referTo(#Entity, ensureEntity(e));
+      		
+      		cardinality = make(#Cardinality, "zero_one", []);
+      		if (has(xcho, "cardinality"))
+             	cardinality = make(#Cardinality, get(xcho, "cardinality"), []);
+
+      		name = get(xcho, "name");
+      		
+      		t = get(xcho, "type");
+      		ty = referTo(#Entity, ensureEntity(t));
+      		
+      		re = realm.new(#AddRelation, AddRelation(name, cardinality, entity));
+      		re.\type = ty;	
+      		chos += [ChangeOperator(re)];
+      	}
+      	
+      	case "typhonml:AddAttribute":{
+      		t = get(xcho, "type");
+      		ty = referTo(#DataType, ensurePrimitive(t));
+      		
+      		e = get(xcho, "ownerEntity");
+      		entity = referTo(#Entity, ensureEntity(e).entity);
+      		
+      		name = get(xcho, "name");
+      		
+      		re = realm.new(#AddAttribute, AddAttribute(name,ty, entity, ty));
+      		chos += [ ChangeOperator(re)];
+      	}
+      	
+      	case "typhonml:ChangeRelationCardinality":{
+      		relPath = get(xcho, "relation");
+      		
+      		relref = referTo(#Relation ,ensureRel(relPath));
+      		cardinality = make(#Cardinality, get(xcho, "newCardinality"), []);
+      		
+      		re = realm.new(#ChangeRelationCardinality, ChangeRelationCardinality(relref, cardinality));
+      		chos += [ChangeOperator(re)];
+      	}
+      	
+      	case "typhonml:ChangeRelationContainement": {
+      		relPath = get(xcho, "relation");
+      		
+      		relref = referTo(#Relation ,ensureRel(relPath));
+      		containement = get(xcho, "newContainment") == "true";
+      		
+      		re = realm.new(#ChangeRelationContainement, ChangeRelationContainement(relref, containement));
+      		chos += [ChangeOperator(re)];
+      	}
+      	
+      	case "typhonml:ChangeAttributeType": {
+      		attr_path = get(xcho, "attributeToChange");
+      		type_path = get(xcho, "newType");
+      		
+      		ty = referTo(#DataType, ensurePrimitive(type_path));
+      		attr = referTo(#Attribute, ensureAttr(attr_path));
+      		
+      		re = realm.new(#ChangeAttributeType, ChangeAttributeType(attr, ty));
+      		chos += [ChangeOperator(re)];
+      	}
+      	
+      	case "typhonml:DisableRelationContainment": {
+      		relPath = get(xcho, "relation");
+      		relref = referTo(#Relation ,ensureRel(relPath));
+      		
+      		re = realm.new(#DisableRelationContainment, DisableRelationContainment(relref));
+      		chos += [ChangeOperator(re)];
+      	}
+      	
+      	case "typhonml:DisableBidirectionalRelation": {
+      		relPath = get(xcho, "relation");
+      		relref = referTo(#Relation ,ensureRel(relPath));
+      		
+      		re = realm.new(#DisableBidirectionalRelation, DisableBidirectionalRelation(relref));
+      		chos += [ChangeOperator(re)];
+      	}
+      	
+      	case "typhonml:EnableRelationContainment": {
+      		relPath = get(xcho, "relation");
+      		relref = referTo(#Relation ,ensureRel(relPath));
+      		
+      		re = realm.new(#EnableRelationContainment, EnableRelationContainment(relref));
+      		chos += [ChangeOperator(re)];
+      	}
+      	
+      	case "typhonml:EnableBidirectionalRelation": {
+      		relPath = get(xcho, "relation");
+      		relref = referTo(#Relation ,ensureRel(relPath));
+      		
+      		re = realm.new(#EnableBidirectionalRelation, EnableBidirectionalRelation(relref));
+      		chos += [ChangeOperator(re)];
+      	}
+      	
+      	case "typhonml:MergeEntity" : {
+      	
+      		e1 = get(xcho, "firstEntityToMerge");
+      		firstEntityToMerge = referTo(#Entity, ensureEntity(e1));
+      		
+      		e2 = get(xcho, "secondEntityToMerge");
+      		secondEntityToMerge = referTo(#Entity, ensureEntity(e2));
+      		
+      		newEntityName = get(xcho, "newEntityName");
+      		
+      		re = realm.new(#MergeEntity, MergeEntity(firstEntityToMerge, secondEntityToMerge));
+      		re.\newEntityName = newEntityName;
+      		chos += [ChangeOperator(re)];
+      	}
+      	
+      	case "typhonml:MigrateEntity": {
+      		e1 = get(xcho, "entity");
+      		entity = referTo(#Entity, ensureEntity(e1));
+      		
+      		db_name = get(xcho, "newDatabase");
+      		db = referTo(#Database, dbMap[db_name]);
+      		
+      		re = realm.new(#MigrateEntity, MigrateEntity(entity, db));
+      		chos += [ChangeOperator(re)];
+      	}
+      	
+      	case "typhonml:RemoveAttribute":{
+      		attr = get(xcho, "attributeToRemove");
+      		ref_attr = referTo(#Attribute, ensureAttr(attr));
+      		
+      		re = realm.new(#RemoveAttribute, RemoveAttribute(ref_attr));
+      		chos += [ChangeOperator(re)];
+      	}
+      	
+        case "typhonml:RemoveEntity": {
+        	e = get(xcho, "entityToRemove");
+        	toRemove = referTo(#Entity, ensureEntity(e));
+        	re = realm.new(#RemoveEntity, RemoveEntity(toRemove));
+          	chos += [ ChangeOperator(re)];
+        }
+        
+        case "typhonml:RemoveRelation":{
+        	relPath = get(xcho, "relationToRemove");
+      		relref = referTo(#Relation ,ensureRel(relPath));
+      		
+      		re = realm.new(#RemoveRelation, RemoveRelation(relref));
+          	chos += [ ChangeOperator(re)];
+        }
+        
+        case "typhonml:RenameAttribute": {
+        
+        	attr = get(xcho, "attributeToRename");
+      		ref_attr = referTo(#Attribute, ensureAttr(attr));
+      		
+      		name = get(xcho, "newName");
+        	
+        	re = realm.new(#RenameAttribute, RenameAttribute(ref_attr));
+        	re.\newName = name;
+          	chos += [ ChangeOperator(re)];
+        }
+   
+        case "typhonml:RenameEntity": {
+        	e = get(xcho, "entityToRename");
+        	
+        	newName = get(xcho, "newEntityName");
+        	toRename = referTo(#Entity, ensureEntity(e));
+        	re = realm.new(#RenameEntity, RenameEntity(\entityToRename = toRename, \newEntityName = newName));
+          	chos += [ ChangeOperator(re)];
+        }
+        
+        case "typhonml:RenameRelation":{
+        
+        	relPath = get(xcho, "relationToRename");
+      		relref = referTo(#Relation ,ensureRel(relPath));
+      		
+      		name = get(xcho, "newRelationName");
+        	
+        	re = realm.new(#RenameRelation, RenameRelation(relref, \newRelationName = name));
+          	chos += [ ChangeOperator(re)];
+        }
+        case "typhonml:SplitEntityVertical":{
+        	name = get(xcho, "entity2name");
+        	
+        	e = get(xcho, "entity1");
+        	toSplit = referTo(#Entity, ensureEntity(e));
+        	
+        	a = get(xcho, "attributeList");
+        	l_a = split(" ", a);
+        	list_attr = [];
+
+        	for(str to_do <- l_a){
+        		list_attr += [referTo(#Attribute, ensureAttr(to_do))];
+        	};	
+        	re = realm.new(#SplitEntityVertical, SplitEntityVertical(toSplit, name, list_attr, []));
+          	chos += [ ChangeOperator(re)];
+        }
+        
+        case "typhonml:SplitEntityHorizontal":{
+        	name = get(xcho, "entity2name");
+        	
+        	e = get(xcho, "entity1");
+        	toSplit = referTo(#Entity, ensureEntity(e));
+        	
+        	a = get(xcho, "attribute");
+        	ref_attr = referTo(#Attribute, ensureAttr(a));
+        	
+        	expr = get(xcho, "expression");
+        	
+        	re = realm.new(#SplitEntityHorizontal, SplitEntityHorizontal(name, toSplit, ref_attr, expr));
+          	chos += [ ChangeOperator(re)];
+        }
+        default: {
+          println("WARNING: Non implemented change operator: <get(xcho, "type")>");
+        }
+      }
+      
     }
     
     return  realm.new(#Model, Model(es, dbs, cdts, chos));

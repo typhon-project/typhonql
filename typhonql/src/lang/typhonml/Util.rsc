@@ -15,6 +15,7 @@ import List;
 import String;
 import Node;
 import Message;
+import Boolean;
 
 /*
  Consistency checks (for TyphonML)
@@ -99,9 +100,133 @@ Schema model2schema(Model m)
 
 ChangeOps model2changeOperators(Model m) {
   ChangeOps result = [];
-  for (ChangeOperator(RenameEntity(entityToRename = toRename, newEntityName = newName)) <- m.changeOperators) {
-    result += <"renameEntity", [lookup(m, #Entity, toRename).name, newName]>;
+  
+  for(ChangeOperator op <- m.changeOperators){
+  	switch(op){
+  		case ChangeOperator(AddEntity a):{
+  			result += <"addEntity", [a.name]>;
+  		}
+  		case ChangeOperator(RenameEntity chop):{
+  			result += <"renameEntity", [lookup(m, #Entity, chop.entityToRename).name, chop.newEntityName]>;
+  		}
+  		case ChangeOperator(ChangeRelationCardinality chop):{
+  			card = cardToText(chop.newCardinality);
+  			result += <"changeRelationCardinality", [lookup(m, #Relation, chop.relation).name, card]>;
+  		}
+  		case ChangeOperator(ChangeRelationContainement chop):{
+  			result += <"changeRelationContainement", [lookup(m, #Relation, chop.relation).name, toString(chop.newContainment)]>;
+  		}
+  		case ChangeOperator(ChangeAttributeType chop):{
+  			attr = lookup(m, #EntityAttribute, chop.attributeToChange);
+  			
+  			entity = null();
+  			if (Entity e <- m.entities, EntityAttribute a <- e.attributes, a.uid == attr.uid) {
+			  entity = e;
+			}
+  			
+  			typ = lookup(m, #DataType, attr.\type);
+  			result += <"changeAttributeType", [entity.name, attr.name, typ.name]>;
+  		}
+  		case ChangeOperator(DisableRelationContainment chop):{
+  			result += <"disableRelationContainment", [lookup(m, #Relation, chop.relation).name]>;
+  		}
+  		case ChangeOperator(DisableBidirectionalRelation chop):{
+  			result += <"disableBidirectionalRelation", [lookup(m, #Relation, chop.relation).name]>;
+  		}
+  		case ChangeOperator(EnableRelationContainment chop):{
+  			result += <"enableRelationContainment", [lookup(m, #Relation, chop.relation).name]>;
+  		}
+  		case ChangeOperator(EnableBidirectionalRelation chop):{
+  			result += <"enableBidirectionalRelation", [lookup(m, #Relation, chop.relation).name]>;
+  		}
+		case ChangeOperator(MergeEntity chop):{
+			e1 = lookup(m, #Entity, chop.firstEntityToMerge);
+			e2 = lookup(m, #Entity, chop.secondEntityToMerge);
+			
+  			result += <"mergeEntity", [e1.name, e2.name, chop.newEntityName]>;
+  		}
+  		case ChangeOperator(MigrateEntity chop):{
+			e1 = lookup(m, #Entity, chop.entity);
+			db = lookup(m, #Database, chop.newDatabase);
+			
+  			result += <"migrateEntity", [e1.name, db.name]>;
+  		}
+		case ChangeOperator(RemoveAttribute chop):{
+			attr = lookup(m, #EntityAttribute, chop.attributeToRemove);
+  			entity = null();
+  			if (Entity e <- m.entities, EntityAttribute a <- e.attributes, a.uid == attr.uid) {
+			  entity = e;
+			}
+			
+  			result += <"removeAttribute", [entity.name, attr.name]>;
+  		}
+  		case ChangeOperator(RemoveEntity chop):{
+  			entity = lookup(m, #Entity, chop.entityToRemove);
+  			result += <"removeEntity", [entity.name]>;
+  		}
+  		case ChangeOperator(RemoveRelation chop):{
+  			rela = lookup(m, #Relation, chop.relationToRemove);
+  			entity = lookup(m, #Entity, rela.\type);
+  			
+  			result += <"removeRelation", [entity.name, rela.name]>;
+  		}
+  		case ChangeOperator(RenameAttribute chop):{
+  			attr = lookup(m, #EntityAttribute, chop.attributeToRename);
+  			entity = null();
+  			if (Entity e <- m.entities, EntityAttribute a <- e.attributes, a.uid == attr.uid) {
+			  entity = e;
+			}
+  			
+  			result += <"renameAttribute", [entity.name, attr.name, chop.newName]>;
+  		}
+  		case ChangeOperator(RenameEntity chop): {
+  			entity = lookup(m, #Entity, chop.entityToRename);
+  			result += <"renameEntity", [entity.name, chop.newEntityName]>;
+  		}
+  		case ChangeOperator(RenameRelation chop): {
+  			rela = lookup(m, #Relation, chop.relationToRename);
+  			entity = lookup(m, #Entity, rela.\type);
+  			
+  			result += <"renameRelation", [entity.name, rela.name, chop.newRelationName]>;
+  		}
+  		
+  		
+  		case ChangeOperator(AddAttribute chop): {
+  			entity = lookup(m, #Entity, chop.ownerEntity);
+  			typ = lookup(m, #DataType, chop.\type);
+  			
+  			result += <"addAttribute", [entity.name, chop.name, typ.name]>;
+  		}
+  		
+  		case ChangeOperator(AddRelation chop): {
+  			entity = lookup(m, #Entity, chop.ownerEntity);
+  			typ = lookup(m, #Entity, chop.\type);
+  			
+  			result += <"addAttribute", [entity.name, chop.name, typ.name]>;
+  		}
+  		case ChangeOperator(SplitEntityHorizontal chop): {
+  			entity = lookup(m, #Entity, chop.sourceEntity);
+  			attr = lookup(m, #Attribute, chop.attrs);
+  			
+  			
+  			result += <"splitEntityHorizontal", [chop.newEntityName, entity.name, attr.name, chop.expression]>;
+  		}
+  		case ChangeOperator(SplitEntityVertical chop): {
+  			entity = lookup(m, #Entity, chop.entity1);
+  			
+  			l_attr = [];
+  			for(lang::ecore::Refs::Ref[Attribute] attr <- chop.attributeList){
+  				l_attr += [(lookup(m, #EntityAttribute, attr).name)];
+  			};
+  			
+  			l = [chop.entity2name, entity.name] + l_attr;
+  			result += <"splitEntityVertical", l>;
+  		}
+	
+  	}
   }
+  
+  
   return result;
 }
 
@@ -308,4 +433,12 @@ void printOutPossibleRelations() {
   iprintln(sort(toList(combs)));     
 }
 
+str cardToText(Cardinality c){
+	switch(c){
+  		case one_many(): return "one_many";
+  		case zero_many(): return "zero_many";
+  		case zero_one() : return "zero_one";
+  		case \one() : return "one";
+  	}
+}
 
