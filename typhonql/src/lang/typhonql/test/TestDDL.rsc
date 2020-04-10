@@ -19,13 +19,13 @@ str PASSWORD = "admin1@";
 
 Log LOG = void(value v) {;};
 
-void setup(TestProxy p) {
+void setup(PolystoreInstance p) {
 }
 
 // DDL
  
 // create entity (relational)
-void test1(TestProxy p) {
+void test1(PolystoreInstance p) {
 	 s = p.fetchSchema();
 	 
 	 // We need to fake the schema update
@@ -40,7 +40,7 @@ void test1(TestProxy p) {
 }
 
 // drop entity (relational)
-void test2(TestProxy p) {
+void test2(PolystoreInstance p) {
 	 p.runUpdate((Request) `drop Product`);
 	 assertException("test2",
 	 	void() { p.runQuery((Request) `from Product p select p`);});
@@ -48,7 +48,7 @@ void test2(TestProxy p) {
 }
 
 // create entity (document)
-void test3(TestProxy p) {
+void test3(PolystoreInstance p) {
 	 s = p.fetchSchema();
 	 
 	 // We need to fake the schema update
@@ -61,7 +61,7 @@ void test3(TestProxy p) {
 }
 
 // drop entity (document)
-void test4(TestProxy p) {
+void test4(PolystoreInstance p) {
 	 p.runUpdate((Request) `drop Biography`);
 	 assertException("test4",
 	 void() { p.runQuery((Request) `from Biography b select b`);});
@@ -69,7 +69,7 @@ void test4(TestProxy p) {
 }
 
 // create attribute (relational)
-void test5(TestProxy p) {
+void test5(PolystoreInstance p) {
 	 s = p.fetchSchema();
 	 
 	 // We need to fake the schema update
@@ -96,11 +96,11 @@ void test6() {
 
 TestExecutor getExecutor() = initTest(setup, HOST, PORT, USER, PASSWORD);
 
-void runTest(void(TestProxy) t) {
+void runTest(void(PolystoreInstance) t) {
 	getExecutor().runTest(t); 
 }
 
-void runTests(list[void(TestProxy)] ts) {
+void runTests(list[void(PolystoreInstance)] ts) {
 	getExecutor().runTests(ts); 
 }
 

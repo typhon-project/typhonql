@@ -18,7 +18,7 @@ import Map;
 
 alias Conn = tuple[str host, str port, str user, str password];
 
-alias TestProxy =
+alias PolystoreInstance =
 	tuple[
 		void() resetDatabases,
 		ResultTable(Request req) runQuery,
@@ -32,10 +32,10 @@ alias TestProxy =
 
 alias TestExecutor =
 	tuple[
-		void(void(TestProxy proxy)) runTest,
-		void(list[void(TestProxy proxy)]) runTests];
+		void(void(PolystoreInstance proxy)) runTest,
+		void(list[void(PolystoreInstance proxy)]) runTests];
 		
-TestExecutor initTest(void(TestProxy) setup, str host, str port, str user, str password) {
+TestExecutor initTest(void(PolystoreInstance) setup, str host, str port, str user, str password) {
 	Conn conn = <host, port, user, password>;
 	void() myResetDatabases = void() {
 		resetDatabases(conn);
@@ -64,14 +64,14 @@ TestExecutor initTest(void(TestProxy) setup, str host, str port, str user, str p
 		printSchema(conn);
 	};
 	
-	TestProxy proxy = <myResetDatabases, myRunQuery, myRunQueryForSchema,
+	PolystoreInstance proxy = <myResetDatabases, myRunQuery, myRunQueryForSchema,
 		myRunUpdate, myRunDDL, myRunPreparedStatement, myFetchSchema, myPrintSchema>;
 	
-	void(void(TestProxy proxy)) myRunTest = void(void(TestProxy proxy) t) {
+	void(void(PolystoreInstance proxy)) myRunTest = void(void(PolystoreInstance proxy) t) {
 		runTest(proxy, setup, t);
 	};
 	
-	void(list[void(TestProxy proxy)]) myRunTests = void(list[void(TestProxy proxy)] ts) {
+	void(list[void(PolystoreInstance proxy)]) myRunTests = void(list[void(PolystoreInstance proxy)] ts) {
 		runTests(proxy, setup, ts);
 	};
 	
@@ -158,7 +158,7 @@ void resetDatabases(Conn c, Log log = NO_LOG) {
 	runSchema(sch, session, log = LOG);
 }
 
-void runTest(TestProxy proxy, void(TestProxy) setup, void(TestProxy) t, Log log = NO_LOG) {
+void runTest(PolystoreInstance proxy, void(PolystoreInstance) setup, void(PolystoreInstance) t, Log log = NO_LOG) {
 	proxy.resetDatabases();
 	setup(proxy);
 	oldLog = LOG;
@@ -191,7 +191,7 @@ void assertException(str testName, void() block) {
 	}
 }
 
-void runTests(TestProxy proxy, void(TestProxy) setup, list[void(TestProxy)] tests, Log log = NO_LOG /*void(value v) {println(v);}*/) {
+void runTests(PolystoreInstance proxy, void(PolystoreInstance) setup, list[void(PolystoreInstance)] tests, Log log = NO_LOG /*void(value v) {println(v);}*/) {
 	for (t <- tests) {
 		runTest(proxy, setup, t, log = log);
 	}
