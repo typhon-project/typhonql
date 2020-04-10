@@ -12,7 +12,6 @@ import lang::typhonql::RunUsingCompiler;
 
 import lang::typhonql::check::Checker;
 
-
 import lang::typhonql::Session;
 import lang::typhonql::Script;
 import lang::typhonql::Request2Script;
@@ -107,7 +106,7 @@ map[str, Connection] getConnections(Tree tree) {
   return readConnectionsInfo(polystoreUri, user, password);
 }
 
-Schema getSession(Tree tree) {
+Session getSession(Tree tree) {
   map[str, Connection] connections =  getConnections(tree);
   return newSession(connections);
 }
