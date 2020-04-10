@@ -56,7 +56,7 @@ void smokeTest(str root = "/Users/tvdstorm/CWI/typhonml") {
 
 
 void smokeTest2() {
-  str xmi = readFile(|project://typhonql/src/test/RemoveEntity.xmi|);
+  str xmi = readFile(|project://typhonql/src/test/RemoveAttributes.xmi|);
   Model m = xmiString2Model(xmi);
   Schema s = model2schema(m);
   iprintln(m);
@@ -215,15 +215,11 @@ Model xmiNode2Model(node n) {
              } 
              default: throw "Unknown attribute type: <xtype>";
            }
-           
-           attr = ensureAttr(attrPath);
-           attr.name = get(xattr, "name");
-           attr.\type = dt;
+
+           attr = EntityAttribute(realm.new(#Attribute, Attribute(get(xattr, "name"), dt)));
            attrs += [attr];
-           attrPos += 1; 
-           
-           // attr = EntityAttribute(realm.new(#Attribute, Attribute(get(xattr, "name"), dt)));
-           // attrs += [attr];
+           attrMap[attrPath] = attr;
+           attrPos += 1;
          }
          else {
           // if (get(xattr, "type") == "typhonml:CustomAttribute") {
