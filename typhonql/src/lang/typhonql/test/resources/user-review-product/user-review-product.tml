@@ -12,6 +12,18 @@ entity Product {
 	productionDate : date
 		
 	reviews :-> Review."Review.product"[0..*]
+	tags -> Tag[0..*]
+	inventory :-> Item[0..*]
+}
+
+entity Item {
+	shelf: int
+	product -> Product."Product.inventory"[1]
+}
+
+
+entity Tag {
+	name: string[64]
 }
 
 
@@ -37,6 +49,8 @@ relationaldb Inventory {
 		table {
 			ProductDB : Product
 		}
+		table { TagDB: Tag }
+		table { ItemDB: Item }
 	}
 }
 
