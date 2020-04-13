@@ -320,7 +320,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
             }
             
             case <sql(), str other> : {
-              scr.steps +=  removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
+              scr.steps +=  removeFromJunction(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
                  , myParams);
               // NB: ownership is never many to many, so if fromRole is many, toRole cannot be
               scr.steps +=  [ *removeFromJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
@@ -345,7 +345,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
         // xrefs are symmetric, so both directions are done in one go. 
         else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
            // save the cross ref
-           scr.steps +=  removeFromJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
+           scr.steps +=  removeFromJunction(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
            
            // and the opposite sides
            switch (placeOf(to, s)) {
@@ -354,13 +354,13 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
                // for both directions.
              }
              case <sql(), str other>: {
-               scr.steps +=  removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
+               scr.steps +=  removeFromJunction(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
                  , myParams);
                scr.steps +=  [ removeJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
                  | UUID ref <- refs ];
              }
              case <mongodb(), str other>: {
-				scr.steps +=  removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
+				scr.steps +=  removeFromJunction(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
                  , myParams);
                 scr.steps +=  deleteManyMongo(other, to, [ \value("<ref>"[1..]) | UUID ref <- refs ], myParams);
              }

@@ -82,6 +82,15 @@ void testUpdateManyXrefSQLLocal() {
   assertResultEquals("updateManyXrefsSQLLocal", rs, <["p.name"], [["TV"], ["Radio"]]>);
 }
 
+void testUpdateManyXrefSQLLocalRemove() {
+  runUpdate((Request)`update Product p where p.@id == #tv set {tags -: [#fun]}`);
+  runUpdate((Request)`update Product p where p.@id == #radio set {tags -: [#fun]}`);
+  
+  rs = runQuery((Request)`from Product p select p.name where p.tags == #social`);
+  assertResultEquals("updateManyXrefsSQLLocal", rs, <["p.name"], [["TV"]]>);
+}
+
+
 void testSelectViaSQLInverseLocal() {
   rs = runQuery((Request)`from Item i select i.shelf where i.product == #tv`);
   assertResultEquals("selectViaSQLInverseLocal", rs, <["i.shelf"], [[1], [1], [3], [3]]>);
