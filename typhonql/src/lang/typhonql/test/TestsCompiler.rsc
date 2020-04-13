@@ -137,10 +137,13 @@ void setup(bool doTest=false) {
 }
 
 
-void testSetup() {
+void testSetup(Log log = NO_LOG) {
+  Log oldLog = LOG;
+  LOG = log;
   println("Doing sanity check on setup");
   resetDatabases();
   setup(doTest=true);
+  LOG = oldLog;
 }
 
 
@@ -170,7 +173,6 @@ void testDeleteKidsRemovesParentLinksSQLLocal() {
   rs = runQuery((Request)`from Product p select p.inventory`);
   assertResultEquals("delete items removes from inventory", <["p.inventory"], []>);
 }
-
 void testDeleteKidsRemovesParentLinksSQLCross() {
   runUpdate((Request)`delete Review r where r.product == #tv`);
   
@@ -403,7 +405,7 @@ void runTest(void() t, Log log = NO_LOG) {
 		t();
 	}
 	catch e: {
-		println ("Test [ <t> ] threw an exception: <e>");
+		println (" ⚠:  exception for `<t> : <e>");
 	}
 	LOG = oldLog;
 }
@@ -419,23 +421,30 @@ void assertEquals(str testName, value actual, value expected) {
 
 void assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected) {
   if (actual.sig != expected.sig) {
-    println(" - `<testName>` failed; expected: <expected>, actual: <actual>");
+    println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
   }
   else if (toSet(actual.vals) != toSet(expected.vals)) {
-    println(" - `<testName>` failed; expected: <expected>, actual: <actual>");
+    println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
   }
   else {
-    println(" - `<testName>` OK");
+    println(" ✔: `<testName>`");
   }
 }
 
 
 void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
 	tests = [
-	  testInsertManyXrefsSQLLocal
+	    testDeleteAllSQLBasic
+	  , testDeleteAllWithCascade
+	  , testDeleteKidsRemovesParentLinksSQLLocal
+	  , testDeleteKidsRemovesParentLinksSQLCross
+
+	  , testInsertManyXrefsSQLLocal
 	  , testInsertManyContainSQLtoExternal
+
 	  , testSelectViaSQLKidLocal
 	  , testSelectViaSQLInverseLocal 
+
 	  , testUpdateManyXrefSQLLocal
 	  , testUpdateManyXrefSQLLocalRemove
 	  , testUpdateManyXrefSQLLocalSet
