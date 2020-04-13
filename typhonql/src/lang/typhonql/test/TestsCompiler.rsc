@@ -172,6 +172,11 @@ void testSelectViaSQLKidLocal() {
 }
 
 
+void testSQLDateEquals() {
+  rs = runQuery((Request)`from Product p select p.name where p.productionDate == $2020-04-13$`);
+  assertResultEquals("sqlDateEquals", rs, <["p.name"], [["Radio"],["TV"]]>);
+}
+
 void test1() {
 	rs = runQuery((Request) `from Product p select p.name`);
 	assertResultEquals("test1", rs, <["p.name"],[["Radio"],["TV"]]>);
@@ -333,6 +338,9 @@ void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
 	  , testUpdateManyContainSQLtoExternalRemove
 	  , testUpdateManyContainSQLtoExternalSet
 	  , testUpdateManyContainSQLtoExternalSetToEmpty	  
+	  
+	  , testSQLDateEquals
+	  
 	  , test1
 	   , test2
 	   , test3

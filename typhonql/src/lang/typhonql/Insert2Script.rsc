@@ -349,7 +349,9 @@ Value evalExpr((Expr)`#polygon(<{Segment ","}* segs>)`)
 lrel[real, real] seg2lrel((Segment)`(<{XY ","}* xys>)`)
   = [ <toReal("<x>"), toReal("<y>")> | (XY)`<Real x> <Real y>` <- xys ]; 
 
-Value evalExpr((Expr)`<DateTime d>`) = dateTime(readTextValueString(#datetime, "<d>"));
+Value evalExpr((Expr)`<DateAndTime d>`) = dateTime(readTextValueString(#datetime, "<d>"));
+
+Value evalExpr((Expr)`<JustDate d>`) = date(readTextValueString(#datetime, "<d>"));
 
 // should only happen for @id field (because refs should be done via keys etc.)
 Value evalExpr((Expr)`<UUID u>`) = text("<u>"[1..]);

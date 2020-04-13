@@ -16,6 +16,7 @@ import lang::typhonml::Util;
 import lang::typhonql::util::Log;
 
 import IO;
+import ValueIO;
 import String;
 import List;
 
@@ -312,7 +313,9 @@ SQLExpr expr2sql((Expr)`<Real r>`, Ctx ctx, Log log = noLog) = lit(decimal(toRea
 
 SQLExpr expr2sql((Expr)`<Str s>`, Ctx ctx, Log log = noLog) = lit(text("<s>"[1..-1]));
 
-SQLExpr expr2sql((Expr)`<DateTime d>`, Ctx ctx, Log log = noLog) = lit(dateTime(readTextValueString(#datetime, "<d>")));
+SQLExpr expr2sql((Expr)`<DateAndTime d>`, Ctx ctx, Log log = noLog) = lit(dateTime(readTextValueString(#datetime, "<d>")));
+
+SQLExpr expr2sql((Expr)`<JustDate d>`, Ctx ctx, Log log = noLog) = lit(date(readTextValueString(#datetime, "<d>")));
 
 SQLExpr expr2sql((Expr)`<UUID u>`, Ctx ctx, Log log = noLog) = lit(text("<u>"[1..]));
 
