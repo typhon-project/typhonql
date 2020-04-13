@@ -41,26 +41,71 @@ java str readHttpModel(loc polystoreUri, str user, str password);
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java map[str, Connection] readConnectionsInfo(str host, int port, str user, str password);
 
-void setup() {
+void setup(bool doTest=false) {
 	runUpdate((Request) `insert User { @id: #pablo, name: "Pablo" }`);
 	runUpdate((Request) `insert User { @id: #davy, name: "Davy" }`);
-
-
+	
+	if (doTest) {
+	  rs = runQuery((Request)`from User u select u.@id, u.name`);
+	  assertResultEquals("users were inserted", rs, <["u.@id", "u.name"], [["pablo", "Pablo"], ["davy", "Davy"]]>);
+	}
 	
 	runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat", productionDate:  $2020-04-13$ }`);
 	runUpdate((Request) `insert Product {@id: #radio, name: "Radio", description: "Loud" , productionDate:  $2020-04-13$ }`);
+	
+	if (doTest) {
+	  rs = runQuery((Request)`from Product p select p.@id, p.name, p.description, p.productionDate`);
+	  assertResultEquals("products were inserted", rs, <["p.@id", "p.name", "p.description", "p.productionDate"], 
+	     [["tv", "TV", "Flat", $2020-04-12T22:00:00.000+00:00$], ["radio", "Radio", "Loud", $2020-04-12T22:00:00.000+00:00$]]>);
+	}
 	
 	
 	runUpdate((Request) `insert Review { @id: #rev1, contents: "Good TV", user: #pablo, product: #tv }`);
 	runUpdate((Request) `insert Review { @id: #rev2, contents: "", user: #davy, product: #tv }`);
 	runUpdate((Request) `insert Review { @id: #rev3, contents: "***", user: #davy, product: #radio }`);
 	
+	if (doTest) {
+	  rs = runQuery((Request)`from Review r select r.@id, r.contents, r.user, r.product`);
+	  assertResultEquals("reviews were inserted", rs, <["r.@id", "r.contents", "r.user", "r.product"], 
+	     [["rev1", "Good TV", "pablo", "tv"], 
+	      ["rev2", "", "davy", "tv"],
+	      ["rev3", "***", "davy", "radio"]
+	      ]>);
+	      
+	  rs = runQuery((Request)`from Product p select p.reviews`);
+	  assertResultEquals("reviews obtained from product", rs, <["p.reviews"], [["rev1"], ["rev2"], ["rev3"]]>);
+
+	  rs = runQuery((Request)`from User u select u.reviews`);
+	  assertResultEquals("reviews obtained from user", rs, <["u.reviews"], [["rev1"], ["rev2"], ["rev3"]]>);
+	}
+	
+	
+	
 	runUpdate((Request) `insert Biography { @id: #bio1, text: "Chilean", user: #pablo }`);
+	
+	if (doTest) {
+	  rs = runQuery((Request)`from Biography b select b.@id, b.text, b.user`);
+	  assertResultEquals("bios were inserted", rs, <["b.@id", "b.text", "b.user"], 
+	    [["bio1", "Chilean", "pablo"]]>);
+	    
+	  rs = runQuery((Request)`from User u select u.biography`);
+	  assertResultEquals("bio obtained from user", rs, <["u.biography"], [["bio1"]]>);  
+	}
 	
 	runUpdate((Request) `insert Tag { @id: #fun, name: "fun" }`);
 	runUpdate((Request) `insert Tag { @id: #kitchen, name: "kitchen" }`);
 	runUpdate((Request) `insert Tag { @id: #music, name: "music" }`);
 	runUpdate((Request) `insert Tag { @id: #social, name: "social" }`);
+
+    if (doTest) {
+      rs = runQuery((Request)`from Tag t select t.@id, t.name`);
+      assertResultEquals("tags were inserted", rs, <["t.@id", "t.name"], [
+        ["fun", "fun"],
+        ["kitchen", "kitchen"],
+        ["music", "music"],
+        ["social", "social"]
+      ]>);
+    }
 
 
 	runUpdate((Request) `insert Item { @id: #tv1, shelf: 1, product: #tv }`);	
@@ -69,9 +114,70 @@ void setup() {
 	runUpdate((Request) `insert Item { @id: #tv4, shelf: 3, product: #tv }`);
 	
 	runUpdate((Request) `insert Item { @id: #radio1, shelf: 2, product: #radio }`);	
-	runUpdate((Request) `insert Item { @id: #radio2, shelf: 2, product: #radio }`);	
+	runUpdate((Request) `insert Item { @id: #radio2, shelf: 2, product: #radio }`);
+	
+	if (doTest) {
+	  rs = runQuery((Request)`from Item i select i.@id, i.shelf, i.product`);
+	  assertResultEquals("items were inserted", rs, <["i.@id", "i.shelf", "i.product"], [
+	    ["tv1", 1, "tv"],
+	    ["tv2", 1, "tv"],
+	    ["tv3", 3, "tv"],
+	    ["tv4", 3, "tv"],
+	    ["radio1", 2, "radio"],
+	    ["radio2", 2, "radio"]
+	  ]>);
+	  
+	  rs = runQuery((Request)`from Product p select p.inventory where p.@id == #tv`);
+	  assertResultEquals("tv inventory obtained", rs, <["p.inventory"], [["tv1"], ["tv2"], ["tv3"], ["tv4"]]>);
+	  
+	  rs = runQuery((Request)`from Product p select p.inventory where p.@id == #radio`);
+	  assertResultEquals("radio inventory obtained", rs, <["p.inventory"], [["radio1"], ["radio2"]]>);
+	}	
 		
 }
+
+
+void testSetup() {
+  println("Doing sanity check on setup");
+  resetDatabases();
+  setup(doTest=true);
+}
+
+
+void testDeleteAllSQLBasic() {
+  runUpdate((Request)`delete Tag t`);
+  rs = runQuery((Request)`from Tag t select t`);
+  assertResultEquals("deleteAllSQLBasic", rs, <["t.@id"], []>);
+}
+
+void testDeleteAllWithCascade() {
+  runUpdate((Request)`delete Product p where p.@id == #tv`);
+  
+  rs = runQuery((Request)`from Item i select i.@id where i.product == #tv`);
+  assertResultEquals("deleting products deletes items", rs, <["i.@id"], []>);
+  
+  rs = runQuery((Request)`from Review r select r.@id where r.product == #tv`);
+  assertResultEquals("deleting products deletes reviews", rs, <["t.@id"], []>);
+
+  rs = runQuery((Request)`from Tag t select t.@id`);
+  assertResultEquals("deleting products does not delete tags", rs, <["t.@id"], [["fun"], ["kitchen"], ["music"], ["social"]]>);
+}
+
+
+void testDeleteKidsRemovesParentLinksSQLLocal() {
+  runUpdate((Request)`delete Item i where i.product == #tv`);
+  
+  rs = runQuery((Request)`from Product p select p.inventory`);
+  assertResultEquals("delete items removes from inventory", <["p.inventory"], []>);
+}
+
+void testDeleteKidsRemovesParentLinksSQLCross() {
+  runUpdate((Request)`delete Review r where r.product == #tv`);
+  
+  rs = runQuery((Request)`from Product p select p.reviews`);
+  assertResultEquals("delete reviews removes from product reviews", <["p.reviews"], []>);
+}
+
 
 
 void testInsertManyXrefsSQLLocal() {
@@ -288,6 +394,7 @@ void resetDatabases() {
 }
 
 void runTest(void() t, Log log = NO_LOG) {
+	println("Running test: <t>");
 	resetDatabases();
 	setup();
 	oldLog = LOG;
@@ -312,13 +419,13 @@ void assertEquals(str testName, value actual, value expected) {
 
 void assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected) {
   if (actual.sig != expected.sig) {
-    println("<testName> failed because of different result signatures. Expected: <expected>, Actual: <actual>");
+    println(" - `<testName>` failed; expected: <expected>, actual: <actual>");
   }
   else if (toSet(actual.vals) != toSet(expected.vals)) {
-    println("<testName> failed because of different result sets. Expected: <expected>, Actual: <actual>");
+    println(" - `<testName>` failed; expected: <expected>, actual: <actual>");
   }
   else {
-    println("<testName> OK");
+    println(" - `<testName>` OK");
   }
 }
 
@@ -356,6 +463,6 @@ void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
 		, test13
 		];
 	for (t <- tests) {
-		runTest(t, log = log);
+	    runTest(t, log = log);
 	}
 }
