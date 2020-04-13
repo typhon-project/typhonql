@@ -287,49 +287,49 @@ void testSQLDateEquals() {
 
 void test1() {
 	rs = runQuery((Request) `from Product p select p.name`);
-	assertResultEquals("test1", rs, <["p.name"],[["Radio"],["TV"]]>);
+	assertResultEquals("name is selected from product", rs, <["p.name"],[["Radio"],["TV"]]>);
 }
 
 void test2() {
 	rs = runQuery((Request) `from Product p select p`);
-	assertResultEquals("test2", rs, <["p.@id"],[["radio"],["tv"]]>);
+	assertResultEquals("product ids are selected", rs, <["p.@id"],[["radio"],["tv"]]>);
 }
 
 void test3() {
 	rs = runQuery((Request) `from Review r select r.contents`);
-	assertResultEquals("test3", rs,  <["r.contents"],[["Good TV"],[""],["***"]]>);
+	assertResultEquals("review contents is selected", rs,  <["r.contents"],[["Good TV"],[""],["***"]]>);
 }
 
 void test4() {
 	rs = runQuery((Request) `from Review r select r`);
-	assertResultEquals("test4", rs,  <["r.@id"],[["rev1"],["rev2"],["rev3"]]>);
+	assertResultEquals("review ids are selected", rs,  <["r.@id"],[["rev1"],["rev2"],["rev3"]]>);
 }
 
 void test5() {
 	rs = runQuery((Request) `from User u select u.biography.text where u == #pablo`);
-	assertResultEquals("test5", rs,  <["biography_0.text"],[["Chilean"]]>);
+	assertResultEquals("two-level navigation to attribute", rs,  <["biography_0.text"],[["Chilean"]]>);
 }
 
 void test6() {
 	rs = runQuery((Request) `from User u, Biography b select b.text where u.biography == b, u == #pablo`);
-	assertResultEquals("test6", rs,   <["b.text"],[["Chilean"]]>);
+	assertResultEquals("navigatin via where-clauses", rs,   <["b.text"],[["Chilean"]]>);
 }
 
 void test7() {
 	rs = runQuery((Request) `from User u, Review r select u.name, r.user where u.reviews == r, r.contents == "***"`);
-	assertResultEquals("test7", rs, <["u.name","r.user"],[["Davy","davy"]]>);
+	assertResultEquals("fields from different entities", rs, <["u.name","r.user"],[["Davy","davy"]]>);
 }
 
 void test8() {
 	runUpdate((Request) `update Biography b where b.@id == #bio1 set { text:  "Simple" }`);
 	rs = runQuery((Request) `from Biography b select b.text where b.@id == #bio1`);
-	assertResultEquals("test8", rs, <["b.text"],[["Simple"]]>);
+	assertResultEquals("basic update of attribute on mongo", rs, <["b.text"],[["Simple"]]>);
 }
 
 void test9() {
 	runUpdate((Request) `update User u where u.@id == #pablo set { address:  "Fresia 8" }`);
 	rs = runQuery((Request) `from User u select u.address where u.@id == #pablo`);
-	assertResultEquals("test9", rs, <["u.address"],[["Fresia 8"]]>);
+	assertResultEquals("basic update of attribute on sql", rs, <["u.address"],[["Fresia 8"]]>);
 }
 
 
@@ -339,7 +339,7 @@ void test10() {
 						  [["\"IPhone\"", "\"Apple\""],
 				           ["\"Samsung S10\"", "\"Samsung\""]]);
 	rs = runQuery((Request) `from Product p select p.name, p.description`);		    
-	assertResultEquals("test10", rs,   
+	assertResultEquals("prepared insert statement on sql", rs,   
 		<["p.name","p.description"],
 		[["Samsung S10","Samsung"],["IPhone","Apple"],["Radio","Loud"],["TV","Flat"]]>);
 
@@ -347,21 +347,21 @@ void test10() {
 
 void test11() {
 	rs = runQuery((Request) `from User u select u.name where u.biography == #bio1`);
-	assertResultEquals("test11", rs, <["u.name"],[["Pablo"]]>);
+	assertResultEquals("filter on external relation in sql", rs, <["u.name"],[["Pablo"]]>);
 }
 
 void test12() {
 	runUpdate((Request) `insert User { @id: #tijs, name: "Tijs" }`);
 	rs = runQuery((Request) `from User u select u where u.@id == #tijs`);
-	assertResultEquals("test12", rs, <["u.@id"],[["tijs"]]>);
+	assertResultEquals("basic insert in sql", rs, <["u.@id"],[["tijs"]]>);
 }
 
 void test13() {
 	<_, names> = runUpdate((Request) `insert User { name: "Tijs" }`);
-	assertEquals("test13a", size(names), 1);
+	assertEquals("one insert is one object inserted", size(names), 1);
 	uuid = names["uuid"];
 	rs = runQuery([Request] "from User u select u where u.@id == #<uuid>");
-	assertResultEquals("test13b", rs, <["u.@id"],[["<uuid>"]]>);
+	assertResultEquals("generated id is in the result", rs, <["u.@id"],[["<uuid>"]]>);
 }
 
 tuple[int, map[str,str]] runUpdate(Request req) {
@@ -412,10 +412,10 @@ void runTest(void() t, Log log = NO_LOG) {
 
 void assertEquals(str testName, value actual, value expected) {
 	if (actual != expected) {
-		println("<testName> failed. Expected: <expected>, Actual: <actual>");
+		println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
 	}
 	else {
-		println("<testName> OK");
+		 println(" ✔: `<testName>`");
 	}	
 }
 
