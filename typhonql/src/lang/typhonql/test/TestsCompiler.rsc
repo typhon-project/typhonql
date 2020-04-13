@@ -44,15 +44,33 @@ java map[str, Connection] readConnectionsInfo(str host, int port, str user, str 
 void setup() {
 	runUpdate((Request) `insert User { @id: #pablo, name: "Pablo" }`);
 	runUpdate((Request) `insert User { @id: #davy, name: "Davy" }`);
+
+
 	
 	runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat" }`);
 	runUpdate((Request) `insert Product {@id: #radio, name: "Radio", description: "Loud" }`);
+	
 	
 	runUpdate((Request) `insert Review { @id: #rev1, contents: "Good TV", user: #pablo, product: #tv }`);
 	runUpdate((Request) `insert Review { @id: #rev2, contents: "", user: #davy, product: #tv }`);
 	runUpdate((Request) `insert Review { @id: #rev3, contents: "***", user: #davy, product: #radio }`);
 	
 	runUpdate((Request) `insert Biography { @id: #bio1, text: "Chilean", user: #pablo }`);
+	
+	runUpdate((Request) `insert Tag { @id: #fun, name: "fun" }`);
+	runUpdate((Request) `insert Tag { @id: #kitchen, name: "kitchen" }`);
+	runUpdate((Request) `insert Tag { @id: #music, name: "music" }`);
+	runUpdate((Request) `insert Tag { @id: #social, name: "social" }`);
+
+
+	runUpdate((Request) `insert Item { @id: #tv1, shelf: 1, product: #tv }`);	
+	runUpdate((Request) `insert Item { @id: #tv2, shelf: 1, product: #tv }`);	
+	runUpdate((Request) `insert Item { @id: #tv3, shelf: 3, product: #tv }`);	
+	runUpdate((Request) `insert Item { @id: #tv4, shelf: 3, product: #tv }`);
+	
+	runUpdate((Request) `insert Item { @id: #radio1, shelf: 2, product: #radio }`);	
+	runUpdate((Request) `insert Item { @id: #radio2, shelf: 2, product: #radio }`);	
+		
 }
 
 void test1() {
@@ -104,7 +122,7 @@ void test9() {
 
 
 void test10() {
-	res = runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description }`,
+	runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description }`,
 						  ["name", "description"],
 						  [["\"IPhone\"", "\"Apple\""],
 				           ["\"Samsung S10\"", "\"Samsung\""]]);
@@ -135,34 +153,26 @@ void test13() {
 }
 
 tuple[int, map[str,str]] runUpdate(Request req) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
-	Schema s = loadSchemaFromXMI(modelStr);
-	return runUpdate(req, s, connections, log = LOG);
+	return runUpdate(req, loadTestSchema(), testConnections(), log = LOG);
 }
 
 void runPreparedUpdate(Request req, list[str] columnNames, list[list[str]] vs) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
-	Schema s = loadSchemaFromXMI(modelStr);
-	runPrepared(req, columnNames, vs, s, connections, log = LOG);
+	runPrepared(req, columnNames, vs, loadTestSchema(), testConnections(), log = LOG);
 }
 
 value runQuery(Request req) {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
-	Schema s = loadSchemaFromXMI(modelStr);
-	return runQuery(req, s, connections, log = LOG);
+	return runQuery(req, loadTestSchema(), testConnections(), log = LOG);
 }
 
 void printSchema() {
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
-	Schema sch = loadSchemaFromXMI(modelStr);
-	iprintln(sch);
+	iprintln(loadTestSchema());
 }
 
-Schema getSchema() {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
+
+map[str, Connection] testConnections() 
+  = readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
+
+Schema loadTestSchema() {
 	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	return sch;
@@ -170,10 +180,7 @@ Schema getSchema() {
 
 
 void resetDatabases() {
-	map[str, Connection] connections =  readConnectionsInfo(HOST, toInt(PORT), USER, PASSWORD);
-	str modelStr = readHttpModel(|http://<HOST>:<PORT>|, USER, PASSWORD);
-	Schema sch = loadSchemaFromXMI(modelStr);
-	runSchema(sch, connections);
+	runSchema(loadTestSchema(), testConnections());
 }
 
 void runTest(void() t, Log log = NO_LOG) {
