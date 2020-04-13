@@ -380,7 +380,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
     
     case <mongodb(), str dbName>: {
       DBObject q = object([<"_id", mongoMe>]);
-      DBObject u = object([ keyVal2prop(kv) | KeyVal kv <- kvs, !isDelta(kv) ]);
+      DBObject u = object([ <"$set", object([keyVal2prop(kv)])> | KeyVal kv <- kvs, !isDelta(kv) ]);
       if (u.props != []) {
         scr.steps += [step(dbName, mongo(findAndUpdateOne(dbName, ent, pp(q), pp(u))), myParams)];
       }
