@@ -26,7 +26,7 @@ import Map;
  */
  
  
-str HOST = "localhost"; // "192.168.178.78";
+str HOST = "192.168.178.78";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
@@ -57,49 +57,49 @@ void setup() {
 
 void test1() {
 	rs = runQuery((Request) `from Product p select p.name`);
-	assertEquals("test1", rs, <["p.name"],[["Radio"],["TV"]]>);
+	assertResultEquals("test1", rs, <["p.name"],[["Radio"],["TV"]]>);
 }
 
 void test2() {
 	rs = runQuery((Request) `from Product p select p`);
-	assertEquals("test2", rs, <["p.@id"],[["radio"],["tv"]]>);
+	assertResultEquals("test2", rs, <["p.@id"],[["radio"],["tv"]]>);
 }
 
 void test3() {
 	rs = runQuery((Request) `from Review r select r.contents`);
-	assertEquals("test3", rs,  <["r.contents"],[["Good TV"],[""],["***"]]>);
+	assertResultEquals("test3", rs,  <["r.contents"],[["Good TV"],[""],["***"]]>);
 }
 
 void test4() {
 	rs = runQuery((Request) `from Review r select r`);
-	assertEquals("test4", rs,  <["r.@id"],[["rev1"],["rev2"],["rev3"]]>);
+	assertResultEquals("test4", rs,  <["r.@id"],[["rev1"],["rev2"],["rev3"]]>);
 }
 
 void test5() {
 	rs = runQuery((Request) `from User u select u.biography.text where u == #pablo`);
-	assertEquals("test5", rs,  <["biography_0.text"],[["Chilean"]]>);
+	assertResultEquals("test5", rs,  <["biography_0.text"],[["Chilean"]]>);
 }
 
 void test6() {
 	rs = runQuery((Request) `from User u, Biography b select b.text where u.biography == b, u == #pablo`);
-	assertEquals("test6", rs,   <["b.text"],[["Chilean"]]>);
+	assertResultEquals("test6", rs,   <["b.text"],[["Chilean"]]>);
 }
 
 void test7() {
 	rs = runQuery((Request) `from User u, Review r select u.name, r.user where u.reviews == r, r.contents == "***"`);
-	assertEquals("test7", rs, <["u.name","r.user"],[["Davy","davy"]]>);
+	assertResultEquals("test7", rs, <["u.name","r.user"],[["Davy","davy"]]>);
 }
 
 void test8() {
 	runUpdate((Request) `update Biography b where b.@id == #bio1 set { text:  "Simple" }`);
 	rs = runQuery((Request) `from Biography b select b.text where b.@id == #bio1`);
-	assertEquals("test8", rs, <["b.text"],[["Simple"]]>);
+	assertResultEquals("test8", rs, <["b.text"],[["Simple"]]>);
 }
 
 void test9() {
 	runUpdate((Request) `update User u where u.@id == #pablo set { address:  "Fresia 8" }`);
 	rs = runQuery((Request) `from User u select u.address where u.@id == #pablo`);
-	assertEquals("test9", rs, <["u.address"],[["Fresia 8"]]>);
+	assertResultEquals("test9", rs, <["u.address"],[["Fresia 8"]]>);
 }
 
 
@@ -109,7 +109,7 @@ void test10() {
 						  [["\"IPhone\"", "\"Apple\""],
 				           ["\"Samsung S10\"", "\"Samsung\""]]);
 	rs = runQuery((Request) `from Product p select p.name, p.description`);		    
-	assertEquals("test10", rs,   
+	assertResultEquals("test10", rs,   
 		<["p.name","p.description"],
 		[["Samsung S10","Samsung"],["IPhone","Apple"],["Radio","Loud"],["TV","Flat"]]>);
 
@@ -117,13 +117,13 @@ void test10() {
 
 void test11() {
 	rs = runQuery((Request) `from User u select u.name where u.biography == #bio1`);
-	assertEquals("test11", rs, <["u.name"],[["Pablo"]]>);
+	assertResultEquals("test11", rs, <["u.name"],[["Pablo"]]>);
 }
 
 void test12() {
 	runUpdate((Request) `insert @u1 User { @id: #tijs, name: "Tijs" }`);
 	rs = runQuery((Request) `from User u select u where u.@id = #tijs`);
-	assertEquals("test12", rs, <["u.@id"],[["tijs"]]>);
+	assertResultEquals("test12", rs, <["u.@id"],[["tijs"]]>);
 }
 
 void test13() {
@@ -131,7 +131,7 @@ void test13() {
 	assertEquals("test13a", size(names), 1);
 	uuid = names["uuid"];
 	rs = runQuery([Request] "from User u select u where u.@id == #<uuid>");
-	assertEquals("test13b", rs, <["u.@id"],[["<uuid>"]]>);
+	assertResultEquals("test13b", rs, <["u.@id"],[["<uuid>"]]>);
 }
 
 tuple[int, map[str,str]] runUpdate(Request req) {
@@ -197,6 +197,18 @@ void assertEquals(str testName, value actual, value expected) {
 	else {
 		println("<testName> OK");
 	}	
+}
+
+void assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected) {
+  if (actual.sig != expected.sig) {
+    println("<testName> failed because of different result signatures. Expected: <expected>, Actual: <actual>");
+  }
+  else if (toSet(actual.vals) != toSet(expected.vals)) {
+    println("<testName> failed because of different result sets. Expected: <expected>, Actual: <actual>");
+  }
+  else {
+    println("<testName> OK");
+  }
 }
 
 void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
