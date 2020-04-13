@@ -31,8 +31,8 @@ str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
 
-Log NO_LOG = void(value v){ return; /*println("LOG: <v>");*/ };
-
+Log NO_LOG = void(value v){ return; /*println("LOG: <v>"); */};
+public Log PRINT() = void(value v) { println("LOG: <v>"); };
 Log LOG = NO_LOG;
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
@@ -102,6 +102,7 @@ void testUpdateManyXrefSQLLocalSet() {
   assertResultEquals("updateManyXrefsSQLLocalSet", rs, <["p.name"], [["TV"]]>);
 }
 
+
 void testUpdateManyXrefSQLLocalSetToEmpty() {
   runUpdate((Request)`update Product p where p.@id == #tv set {tags: [#social]}`);
   runUpdate((Request)`update Product p where p.@id == #radio set {tags: [#music]}`);
@@ -112,6 +113,50 @@ void testUpdateManyXrefSQLLocalSetToEmpty() {
   rs = runQuery((Request)`from Product p select p.name where p.tags == #social`);
   assertResultEquals("updateManyXrefsSQLLocalSetToEmpty", rs, <["p.name"], []>);
 }
+
+
+void testUpdateManyContainSQLtoExternal() {
+  runUpdate((Request)`insert Review { @id: #newReview, contents: "super!", user: #davy}`);
+  runUpdate((Request)`update Product p where p.@id == #tv set {reviews +: [#newReview]}`);
+  
+  rs = runQuery((Request)`from Product p, Review r select r.content where p.@id == #tv, p.reviews == r`);
+  assertResultEquals("updateManyContainSQLtoExternal", rs, <["r.content"], [["super!"], [""], ["Good TV"]]>);
+}
+
+void testUpdateManyContainSQLtoExternalRemove() {
+  runUpdate((Request)`update Product p where p.@id == #tv set {reviews -: [#rev2]}`);
+  
+  rs = runQuery((Request)`from Product p, Review r select r.content where p.reviews == r, p.@id == #tv`);
+  assertResultEquals("updateManyContainSQLtoExternalRemove", rs, <["r.content"], [["Good TV"]]>);
+}
+
+
+void testUpdateManyContainSQLtoExternalSet() {
+  runUpdate((Request)`insert Review { @id: #newReview, contents: "super!", user: #davy}`);
+  runUpdate((Request)`update Product p where p.@id == #tv set {reviews: [#newReview]}`);
+  
+  rs = runQuery((Request)`from Product p, Review r select r.content where p.@id == #tv, p.reviews == r`);
+  assertResultEquals("updateManyContainSQLtoExternalSet", rs, <["r.content"], [["super!"]]>);
+}
+
+void testUpdateManyContainSQLtoExternalSetToEmpty() {
+  runUpdate((Request)`update Product p where p.@id == #tv set {reviews: []}`);
+  
+  rs = runQuery((Request)`from Product p, Review r select r.content where p.reviews == r, p.@id == #tv`);
+  assertResultEquals("updateManyContainSQLtoExternalSet", rs, <["r.content"], []>);
+}
+
+
+//void testUpdateManyXrefSQLtoExternalSetToEmpty() {
+//  runUpdate((Request)`update Product p where p.@id == #tv set {tags: [#social]}`);
+//  runUpdate((Request)`update Product p where p.@id == #radio set {tags: [#music]}`);
+//
+//  runUpdate((Request)`update Product p where p.@id == #tv set {tags: []}`);
+//  runUpdate((Request)`update Product p where p.@id == #radio set {tags: []}`);
+//  
+//  rs = runQuery((Request)`from Product p select p.name where p.tags == #social`);
+//  assertResultEquals("updateManyXrefsSQLtoExternalSetToEmpty", rs, <["p.name"], []>);
+//}
 
 
 void testSelectViaSQLInverseLocal() {
@@ -270,6 +315,7 @@ void assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] val
   }
 }
 
+
 void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
 	tests = [
 	  testSelectViaSQLKidLocal
@@ -278,6 +324,11 @@ void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
 	  , testUpdateManyXrefSQLLocalRemove
 	  , testUpdateManyXrefSQLLocalSet
 	  , testUpdateManyXrefSQLLocalSetToEmpty
+	  
+	  , testUpdateManyContainSQLtoExternal
+	  , testUpdateManyContainSQLtoExternalRemove
+	  , testUpdateManyContainSQLtoExternalSet
+	  , testUpdateManyContainSQLtoExternalSetToEmpty	  
 	  , test1
 	   , test2
 	   , test3
