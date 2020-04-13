@@ -47,8 +47,8 @@ void setup() {
 
 
 	
-	runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat" }`);
-	runUpdate((Request) `insert Product {@id: #radio, name: "Radio", description: "Loud" }`);
+	runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat", productionDate:  $2020-04-13$ }`);
+	runUpdate((Request) `insert Product {@id: #radio, name: "Radio", description: "Loud" , productionDate:  $2020-04-13$ }`);
 	
 	
 	runUpdate((Request) `insert Review { @id: #rev1, contents: "Good TV", user: #pablo, product: #tv }`);
