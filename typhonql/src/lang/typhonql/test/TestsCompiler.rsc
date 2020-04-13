@@ -31,7 +31,7 @@ str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
 
-Log NO_LOG = void(value v){ return; };
+Log NO_LOG = void(value v){ println("LOG: <v>"); };
 
 Log LOG = NO_LOG;
 
@@ -72,6 +72,26 @@ void setup() {
 	runUpdate((Request) `insert Item { @id: #radio2, shelf: 2, product: #radio }`);	
 		
 }
+
+
+void testUpdateManyXrefSQLLocal() {
+  runUpdate((Request)`update Product p where p.@id == #tv set {tags +: [#fun, #social]}`);
+  runUpdate((Request)`update Product p where p.@id == #radio set {tags +: [#fun, #music]}`);
+  
+  rs = runQuery((Request)`from Product p select p.name where p.tags == #fun`);
+  assertResultEquals("updateManyXrefsSQLLocal", rs, <["p.name"], [["TV"], ["Radio"]]>);
+}
+
+void testSelectViaSQLInverseLocal() {
+  rs = runQuery((Request)`from Item i select i.shelf where i.product == #tv`);
+  assertResultEquals("selectViaSQLInverseLocal", rs, <["i.shelf"], [[1], [1], [3], [3]]>);
+}
+
+void testSelectViaSQLKidLocal() {
+  rs = runQuery((Request)`from Item i, Product p select i.shelf where p.@id == #tv, p.inventory == i`);
+  assertResultEquals("selectViaSQLKidLocal", rs, <["i.shelf"], [[1], [1], [3], [3]]>);
+}
+
 
 void test1() {
 	rs = runQuery((Request) `from Product p select p.name`);
@@ -139,7 +159,7 @@ void test11() {
 }
 
 void test12() {
-	runUpdate((Request) `insert @u1 User { @id: #tijs, name: "Tijs" }`);
+	runUpdate((Request) `insert User { @id: #tijs, name: "Tijs" }`);
 	rs = runQuery((Request) `from User u select u where u.@id = #tijs`);
 	assertResultEquals("test12", rs, <["u.@id"],[["tijs"]]>);
 }
@@ -220,7 +240,9 @@ void assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] val
 
 void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
 	tests = [
-	   test1
+	  testSelectViaSQLKidLocal
+	  , testSelectViaSQLInverseLocal 
+	  , test1
 	   , test2
 	   , test3
 	   , test4

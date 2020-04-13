@@ -271,7 +271,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
         // xrefs are symmetric, so both directions are done in one go. 
         else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
            // save the cross ref
-           scr.steps +=  insertIntoJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
+           scr.steps +=  insertIntoJunction(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
            
            // and the opposite sides
            switch (placeOf(to, s)) {
