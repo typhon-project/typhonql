@@ -74,6 +74,20 @@ void setup() {
 }
 
 
+void testInsertManyXrefsSQLLocal() {
+  runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", tags: [#fun, #social]}`);
+  rs = runQuery((Request)`from Product p select p.name where p.tags == #fun`);
+  assertResultEquals("insertManyXrefsSQLLocal", rs, <["p.name"], [["iPhone"]]>);
+}
+
+void testInsertManyContainSQLtoExternal() {
+  runUpdate((Request)`insert Review { @id: #newReview, contents: "expensive", user: #davy}`);
+  runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", reviews: [#newReview]}`);
+  rs = runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, p.reviews == #newReview`);
+  assertResultEquals("InsertManyContainSQLtoExternal", rs, <["r.content"], [["iPhone"]]>);
+}
+
+
 void testUpdateManyXrefSQLLocal() {
   runUpdate((Request)`update Product p where p.@id == #tv set {tags +: [#fun, #social]}`);
   runUpdate((Request)`update Product p where p.@id == #radio set {tags +: [#fun, #music]}`);
@@ -145,18 +159,6 @@ void testUpdateManyContainSQLtoExternalSetToEmpty() {
   rs = runQuery((Request)`from Product p, Review r select r.content where p.reviews == r, p.@id == #tv`);
   assertResultEquals("updateManyContainSQLtoExternalSet", rs, <["r.content"], []>);
 }
-
-
-//void testUpdateManyXrefSQLtoExternalSetToEmpty() {
-//  runUpdate((Request)`update Product p where p.@id == #tv set {tags: [#social]}`);
-//  runUpdate((Request)`update Product p where p.@id == #radio set {tags: [#music]}`);
-//
-//  runUpdate((Request)`update Product p where p.@id == #tv set {tags: []}`);
-//  runUpdate((Request)`update Product p where p.@id == #radio set {tags: []}`);
-//  
-//  rs = runQuery((Request)`from Product p select p.name where p.tags == #social`);
-//  assertResultEquals("updateManyXrefsSQLtoExternalSetToEmpty", rs, <["p.name"], []>);
-//}
 
 
 void testSelectViaSQLInverseLocal() {
@@ -318,7 +320,9 @@ void assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] val
 
 void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
 	tests = [
-	  testSelectViaSQLKidLocal
+	  testInsertManyXrefsSQLLocal
+	  , testInsertManyContainSQLtoExternal
+	  , testSelectViaSQLKidLocal
 	  , testSelectViaSQLInverseLocal 
 	  , testUpdateManyXrefSQLLocal
 	  , testUpdateManyXrefSQLLocalRemove
