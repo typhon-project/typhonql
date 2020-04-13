@@ -185,6 +185,14 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
               // NB: ownership is never many to many, so if fromRole is many, toRole cannot be
               scr.steps +=  [ *updateObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams) 
                   | UUID ref <- refs ];
+
+             // we need to delete all Mongo objects in role that have a ref to mongome via toRole
+             // whose _id is not in refs.
+              DBObject q = object([<"_id", object([<"$nin", array([ \value("<ref>"[1..]) | UUID ref <- refs ])>])>
+                 , <toRole, mongoMe>]);
+              scr.steps += [ 
+                step(other, mongo(deleteMany(other, to, pp(q))), myParams)];
+                
             }
             
           }
@@ -429,6 +437,13 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
             case <mongodb(), str other> : {
               scr.steps += [ *updateObjectPointer(dbName, to, toRole, toCard, \value("<ref>"[1..]) , mongoMe, myParams)
                 | UUID ref <- refs ];
+              
+              // we need to delete all Mongo objects in role that have a ref to mongome via toRole
+              // whose _id is not in refs.
+              DBObject q = object([<"_id", object([<"$nin", array([ \value("<ref>"[1..]) | UUID ref <- refs ])>])>
+                 , <toRole, mongoMe>]);
+              scr.steps += [ 
+                step(other, mongo(deleteMany(other, to, pp(q))), myParams)];
             }
             
             case <sql(), str other>: {

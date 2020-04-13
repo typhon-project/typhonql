@@ -111,7 +111,6 @@ list[Step] insertObjectPointers(str dbName, str coll, str role, Cardinality card
 
 list[Step] cascadeViaInverse(str dbName, str coll, str role, DBObject parent, Bindings params) {
   DBObject q = object([<role, parent>]);
-  // todo: use deleteMany
   return [step(dbName, mongo(deleteMany(dbName, coll, pp(q))), params)];
 }
 
