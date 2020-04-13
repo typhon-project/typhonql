@@ -31,7 +31,7 @@ str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
 
-Log NO_LOG = void(value v){ println("LOG: <v>"); };
+Log NO_LOG = void(value v){ return; /*println("LOG: <v>");*/ };
 
 Log LOG = NO_LOG;
 
@@ -83,11 +83,34 @@ void testUpdateManyXrefSQLLocal() {
 }
 
 void testUpdateManyXrefSQLLocalRemove() {
+  runUpdate((Request)`update Product p where p.@id == #tv set {tags +: [#fun, #social]}`);
+  runUpdate((Request)`update Product p where p.@id == #radio set {tags +: [#fun, #music]}`);
+  
   runUpdate((Request)`update Product p where p.@id == #tv set {tags -: [#fun]}`);
   runUpdate((Request)`update Product p where p.@id == #radio set {tags -: [#fun]}`);
   
   rs = runQuery((Request)`from Product p select p.name where p.tags == #social`);
-  assertResultEquals("updateManyXrefsSQLLocal", rs, <["p.name"], [["TV"]]>);
+  assertResultEquals("updateManyXrefsSQLLocalRemove", rs, <["p.name"], [["TV"]]>);
+}
+
+
+void testUpdateManyXrefSQLLocalSet() {
+  runUpdate((Request)`update Product p where p.@id == #tv set {tags: [#social]}`);
+  runUpdate((Request)`update Product p where p.@id == #radio set {tags: [#music]}`);
+  
+  rs = runQuery((Request)`from Product p select p.name where p.tags == #social`);
+  assertResultEquals("updateManyXrefsSQLLocalSet", rs, <["p.name"], [["TV"]]>);
+}
+
+void testUpdateManyXrefSQLLocalSetToEmpty() {
+  runUpdate((Request)`update Product p where p.@id == #tv set {tags: [#social]}`);
+  runUpdate((Request)`update Product p where p.@id == #radio set {tags: [#music]}`);
+
+  runUpdate((Request)`update Product p where p.@id == #tv set {tags: []}`);
+  runUpdate((Request)`update Product p where p.@id == #radio set {tags: []}`);
+  
+  rs = runQuery((Request)`from Product p select p.name where p.tags == #social`);
+  assertResultEquals("updateManyXrefsSQLLocalSetToEmpty", rs, <["p.name"], []>);
 }
 
 
@@ -169,7 +192,7 @@ void test11() {
 
 void test12() {
 	runUpdate((Request) `insert User { @id: #tijs, name: "Tijs" }`);
-	rs = runQuery((Request) `from User u select u where u.@id = #tijs`);
+	rs = runQuery((Request) `from User u select u where u.@id == #tijs`);
 	assertResultEquals("test12", rs, <["u.@id"],[["tijs"]]>);
 }
 
@@ -251,6 +274,10 @@ void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
 	tests = [
 	  testSelectViaSQLKidLocal
 	  , testSelectViaSQLInverseLocal 
+	  , testUpdateManyXrefSQLLocal
+	  , testUpdateManyXrefSQLLocalRemove
+	  , testUpdateManyXrefSQLLocalSet
+	  , testUpdateManyXrefSQLLocalSetToEmpty
 	  , test1
 	   , test2
 	   , test3

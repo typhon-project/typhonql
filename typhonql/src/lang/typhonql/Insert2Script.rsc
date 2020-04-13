@@ -132,7 +132,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
          
       }
       
-      for ((KeyVal)`<Id x>: [<{UUID ","}+ refs>]` <- kvs) {
+      for ((KeyVal)`<Id x>: [<{UUID ","}* refs>]` <- kvs) {
         str from = "<e>";
         str fromRole = "<x>";
         if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, !isImplicitRole(toRole)) {
@@ -239,7 +239,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
       
       }
       
-      for ((KeyVal)`<Id x>: [<{UUID ","}+ refs>]` <- kvs) {
+      for ((KeyVal)`<Id x>: [<{UUID ","}* refs>]` <- kvs) {
         str from = "<e>";
         str fromRole = "<x>";
 
@@ -275,10 +275,10 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
 DBObject obj2dbObj((Expr)`<EId e> {<{KeyVal ","}* kvs>}`)
   = object([ keyVal2prop(kv) | KeyVal kv <- kvs ]);
    
-DBObject obj2dbObj((Expr)`[<{Obj ","}* objs>]`)
-  = array([ obj2dbObj((Expr)`<Obj obj>`) | Obj obj <- objs ]);
+//DBObject obj2dbObj((Expr)`[<{Obj ","}* objs>]`)
+//  = array([ obj2dbObj((Expr)`<Obj obj>`) | Obj obj <- objs ]);
 
-DBObject obj2dbObj((Expr)`[<{UUID ","}+ refs>]`)
+DBObject obj2dbObj((Expr)`[<{UUID ","}* refs>]`)
   = array([ obj2dbObj((Expr)`<UUID ref>`) | UUID ref <- refs ]);
 
 DBObject obj2dbObj((Expr)`<Bool b>`) = \value("<b>" == "true");

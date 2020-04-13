@@ -202,20 +202,20 @@ void collect(current:(Expr)`<Custom customValue>`, Collector c) {
     reportUnsupported(current, c);
 }
 
-void collect(current:(Expr)`[<{Obj ","}*entries>]`, Collector c) {
-    if (e <- entries) {
-        collect(entries, c);
-        c.calculate("list type", current, [et | et <- entries], AType (Solver s) {
-            for (et <- entries) {
-                s.requireEqual(e, et, error(et, "Expected same type in the list, found %t and %t", e, et));
-            }
-            return atypeList([s.getType(e)]);
-        });
-    }
-    c.fact(current, atypeList([voidType()]));
-}
+//void collect(current:(Expr)`[<{Obj ","}*entries>]`, Collector c) {
+//    if (e <- entries) {
+//        collect(entries, c);
+//        c.calculate("list type", current, [et | et <- entries], AType (Solver s) {
+//            for (et <- entries) {
+//                s.requireEqual(e, et, error(et, "Expected same type in the list, found %t and %t", e, et));
+//            }
+//            return atypeList([s.getType(e)]);
+//        });
+//    }
+//    c.fact(current, atypeList([voidType()]));
+//}
 
-void collect(current:(Expr)`[<{UUID ","}+ refs>]`, Collector c) {
+void collect(current:(Expr)`[<{UUID ","}* refs>]`, Collector c) {
     c.fact(current, atypeList([uuidType()]));
 }
 
