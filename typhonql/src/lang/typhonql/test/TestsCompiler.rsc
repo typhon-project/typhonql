@@ -148,6 +148,23 @@ void testSetup(Log log = NO_LOG) {
   LOG = oldLog;
 }
 
+void testInsertManyValuedSQLLocal() {
+  // TODO: this shows the cyclic reference problem we still need to solve.
+  runUpdate((Request)`insert Item { @id: #laptop1, shelf: 1, product: #laptop}`);	
+  runUpdate((Request)`insert Item { @id: #laptop2, shelf: 1, product: #laptop}`);	
+	
+  runUpdate((Request)`insert Product { @id: #laptop, name: "MacBook", inventory: [#laptop1, #laptop2]}`);
+  
+  rs = runQuery((Request)`from Product p select p.inventory where p.@id == #laptop`);
+  
+  assertResultEquals("many-valued inventory obtained from product", rs, <["p.inventory"],
+      [["laptop1"], ["laptop2"]]>);
+  
+  rs = runQuery((Request)`from Item i select i.@id where i.product == #laptop`);
+  assertResultEquals("many-valued inventory obtained via inverse", rs, <["i.@id"],
+      [["laptop1"], ["laptop2"]]>);
+  
+}
 
 void testDeleteAllSQLBasic() {
   runUpdate((Request)`delete Tag t`);
@@ -436,7 +453,8 @@ void assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] val
 
 void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
 	tests = [
-	    testDeleteAllSQLBasic
+	   testInsertManyValuedSQLLocal
+	  ,  testDeleteAllSQLBasic
 	  , testDeleteAllWithCascade
 	  , testDeleteKidsRemovesParentLinksSQLLocal
 	  , testDeleteKidsRemovesParentLinksSQLCross
