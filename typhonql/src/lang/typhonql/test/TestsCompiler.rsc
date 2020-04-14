@@ -89,7 +89,9 @@ void setup(bool doTest=false) {
 	    [["bio1", "Chilean", "pablo"]]>);
 	    
 	  rs = runQuery((Request)`from User u select u.biography`);
-	  assertResultEquals("bio obtained from user", rs, <["u.biography"], [["bio1"]]>);  
+	  // the fact that there's null (i.e., <false, "">) here means that
+	  // there are users without bios
+	  assertResultEquals("bio obtained from user", rs, <["u.biography"], [["bio1"], [<false, "">]]>);  
 	}
 	
 	runUpdate((Request) `insert Tag { @id: #fun, name: "fun" }`);
@@ -312,7 +314,7 @@ void test5() {
 
 void test6() {
 	rs = runQuery((Request) `from User u, Biography b select b.text where u.biography == b, u == #pablo`);
-	assertResultEquals("navigatin via where-clauses", rs,   <["b.text"],[["Chilean"]]>);
+	assertResultEquals("navigating via where-clauses", rs,   <["b.text"],[["Chilean"]]>);
 }
 
 void test7() {
@@ -405,7 +407,7 @@ void runTest(void() t, Log log = NO_LOG) {
 		t();
 	}
 	catch e: {
-		println (" ⚠:  exception for `<t> : <e>");
+		println (" ⚠: exception for `<t>`: <e>");
 	}
 	LOG = oldLog;
 }
