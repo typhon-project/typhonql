@@ -17,6 +17,7 @@ import lang::typhonql::Run;
 
 import IO;
 import ParseTree;
+import List;
 import String;
 import Map;
 
@@ -146,6 +147,23 @@ void testSetup(Log log = NO_LOG) {
   resetDatabases();
   setup(doTest=true);
   LOG = oldLog;
+}
+
+void testInsertSingleValuedSQLCross() {
+  runUpdate((Request)`insert Category {@id: #appliances, id: "appliances", name: "Home Appliances"}`);
+  
+  rs = runQuery((Request)`from Category c select c.name where c.@id == #appliances`);
+  assertResultEquals("category name obtained from mongo", rs, <["c.name"],[["Home Appliances"]]>);
+  
+  runUpdate((Request)`insert Product {@id: #nespresso, 
+  					 '  name: "Nespresso", 
+  					 '  price: 23, 
+  					 '  productionDate: $2020-04-15$,
+  					 '  category: #appliances
+  					 '}`);
+
+  rs = runQuery((Request)`from Product p select p.name where p.category == #appliances`);
+  assertResultEquals("product by category", rs, <["p.name"],[["Nespresso"]]>);
 }
 
 void testInsertManyValuedSQLLocal() {
@@ -414,6 +432,17 @@ void resetDatabases() {
 	runSchema(loadTestSchema(), testConnections());
 }
 
+
+data TestResult
+  = threw(str msg)
+  | failed()
+  | success()
+  ;
+
+// key is assertion name for succes/fail
+// or test function name for throw
+private map[str, TestResult] STATS = ();
+
 void runTest(void() t, Log log = NO_LOG) {
 	println("Running test: <t>");
 	resetDatabases();
@@ -424,6 +453,7 @@ void runTest(void() t, Log log = NO_LOG) {
 		t();
 	}
 	catch e: {
+	    STATS["<t>"] = threw("<e>");
 		println (" ⚠: exception for `<t>`: <e>");
 	}
 	LOG = oldLog;
@@ -431,30 +461,36 @@ void runTest(void() t, Log log = NO_LOG) {
 
 void assertEquals(str testName, value actual, value expected) {
 	if (actual != expected) {
+	    STATS[testName] = failed();
 		println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
 	}
 	else {
-		 println(" ✔: `<testName>`");
+	    STATS[testName] = success();
+		println(" ✔: `<testName>`");
 	}	
 }
 
 void assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected) {
   if (actual.sig != expected.sig) {
+    STATS[testName] = failed();
     println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
   }
   else if (toSet(actual.vals) != toSet(expected.vals)) {
+    STATS[testName] = failed();
     println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
   }
   else {
-    println(" ✔: `<testName>`");
+    STATS[testName] = success();
+	println(" ✔: `<testName>`");
   }
 }
 
 
 void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
 	tests = [
-	   testInsertManyValuedSQLLocal
-	  ,  testDeleteAllSQLBasic
+	   testInsertSingleValuedSQLCross
+	  , testInsertManyValuedSQLLocal
+	  , testDeleteAllSQLBasic
 	  , testDeleteAllWithCascade
 	  , testDeleteKidsRemovesParentLinksSQLLocal
 	  , testDeleteKidsRemovesParentLinksSQLCross
@@ -478,20 +514,30 @@ void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
 	  , testSQLDateEquals
 	  
 	  , test1
-	   , test2
-	   , test3
-	   , test4
-	   , test5
-	   , test6
-		, test7
-		, test8
-		, test9
-		, test10
-		, test11
-		, test12
-		, test13
-		];
+	  , test2
+	  , test3
+	  , test4
+	  , test5
+	  , test6
+	  , test7
+	  , test8
+	  , test9
+	  , test10
+	  , test11
+	  , test12
+	  , test13
+	];
+	
+	STATS = ();
 	for (t <- tests) {
 	    runTest(t, log = log);
 	}
+	
+	println("# Summary");
+	println("Number of tests: <size(tests)>");
+	println("Number of asserts: <size([ k | str k <- STATS, STATS[k] in {failed(), success()} ])>");
+	println("Number of success: <size([ k | str k <- STATS, STATS[k] == success() ])>");
+	println("Number of failed: <size([ k | str k <- STATS, STATS[k] == failed() ])>");
+	println("Number of throws: <size([ k | str k <- STATS, STATS[k] notin {failed(), success()} ])>");
+	
 }
