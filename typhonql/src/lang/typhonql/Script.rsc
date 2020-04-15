@@ -74,6 +74,10 @@ str runScript(Script scr, Session session, Schema schema) {
       case step(str r, mongo(deleteMany(str db, str coll, str query)), Bindings ps):
         println("WARNING: not yet executed: <s>"); 
        
+      case step(str r, mongo(findAndUpdateMany(str db, str coll, str query, str update)), Bindings ps):
+        println("WARNING: not yet executed: <s>");
+      
+       
       case newId(str var): {
         result = session.newId(var);
       }
@@ -86,13 +90,5 @@ str runScript(Script scr, Session session, Schema schema) {
     }
   }
   
-  //str (str result, rel[str name, str \type] entities, EntityModels models) read,
- 	//alias EntityModels = rel[str name, rel[str name, str \type] attributes, rel[str name, str entity] relations];
-  //EntityModels models = schema2entityModels(schema);
-      
-           
-  //str result = session.read(scr.steps[-1].result, {<"product", "Product">}, models);
- 	//
-  //println(result);
   return result;
 }
