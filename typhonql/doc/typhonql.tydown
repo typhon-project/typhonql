@@ -19,15 +19,40 @@ TyphonQL supports the following literal (constant) expressions:
 - Date and time values:  `$2020-03-31T18:08:28.477+00:00$`
 - Geographical points: `#point(23.4 343.34)`
 - Polygons: `#polygon((23.4 343.34), (2.0 0.0))`;
+- Null (indicating absence of a reference or value): `null`
 
 Furthermore, TyphonQL supports syntax for dealing with objects (instances of entity types):
 
 - Object literals (tagged with the entity type, in this case `Person`): `Person {name: "Pablo", age: 30, reviews: [#879b4559-f590-48ea-968c-ff3b69ec5363, #23275eec-4746-4f23-a854-660160cafed2]}`
 - Reference values (pointers), represented as UUIDs: `#879b4559-f590-48ea-968c-ff3b69ec5363`
 - Collections of pointers to objects:  `[#8bc3f0a0-5cf4-42e5-a664-0617feb2d400, #23275eec-4746-4f23-a854-660160cafed2, #879b4559-f590-48ea-968c-ff3b69ec5363]`
-     
-Note that object literals and collections of object references can only be used in insert and update statements. 
-      
+
+Object literals are used as argument to insert statements, and (lists of) references are used in 
+both insert and update statements to create links/relations between objects. 
+In the future we might support nesting of object literals and within-insert symbolic cross referencing
+to manipulate complete object graphs all at once.      
+
+### Other expressions
+
+Select queries as well as update and delete statements use expressions to filter results and find objects to operate on 
+respectively. For instance, a from-select query specifies a number of result expressions and conditions in the where-clause.
+Update and delete find the object(s) to be update resp. deleted using similar conditions in a where-clause.
+
+TyphonQL supports the following non-literal expressions:
+
+- Attribute or relation access: `entity.field`
+- Accessing the identity of an object: `entity.@id`
+- Boolean operators: `!exp` (negation), `exp1 && exp2` (conjunction), `exp1 || exp2` (disjunction)
+- Arithmetic operators: `exp1 * exp2`, `exp1 / exp2`, `exp1 + exp2`, `exp1 - exp2`
+- Comparison operators: `exp1 == exp2`, `exp1 != exp1`, `exp1 > exp2`, `exp1 >= exp2`, etc.
+
+The prefix and infix operators follow the precedence levels of Java-like languages.
+
+To be implemented:
+- member operator: `exp1 in exp2`
+- textual match operator: `exp1 like exp2`
+
+
 
 
 
@@ -197,10 +222,6 @@ set { cards +: [#the-id-of-the-new-creditcard] }
 
 Or, (better), inserting into owner directly:
 
-```
-insert CreditCard { number: "1762376287", expires:  $2020-02-21T14:03:45.274+00:00$ }
-  into #751772d3-d378-471a-8d84-555c44e2f822.cards
-```
 
 
 ### Update
