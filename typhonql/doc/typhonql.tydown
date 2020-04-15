@@ -1,11 +1,33 @@
 
-# TyphonQL: an Evolving Reference Manual
+# TyphonQL: an Evolving User Manual
 
 ## Introduction
 
+TyphonQL is a query language and data-manipulation language (DML) to access polystores (federations of 
+different kinds of database back-ends, relational, document, key-value etc.) while at the same time
+abstracting as much as possible from how the data is actually stored.
+
+Executing TyphonQL queries is parameterized by a TyphonML model, which provides the logical data schema in the
+form of an object-oriented information model. A TyphonML model declares entities with primitively-typed attributes, 
+and bi-directional (many-valued) relations (which can be containment/ownership) relations. 
+
+TyphonQL is designed to allow the query writer to think at the level of TyphonML entities as much as possible. 
+With TyphonQL one does not manipulate tables, graphs, documents, or key-value pairs, but sets of objects which 
+may have relations to each other, and which conform to the entity types declared in the TyphonML model. 
+
+The present document aims to describe the TyphonQL in sufficient detail for end-users of the language. 
+Thus, it is not a formal reference document, but rather a short overview, touching upon the most common and 
+most quirky features in equal amount.
+
+The next section presents an abstract overview of the language, and after we present the language using numerous examples.
+
+*NB*: like TyphonQL itself, this manual, is work-in-progress. It describes how the designers of TyphonQL 
+(Tijs van der Storm, Pablo Inostroza, Davy Landman) expect the language to work, -- there might be bugs.
 
 
 ## The Language
+
+This section provides a cursory overview of the language.
 
 ### Literal expressions
 
@@ -52,13 +74,28 @@ To be implemented:
 - member operator: `exp1 in exp2`
 - textual match operator: `exp1 like exp2`
 
+### Queries
 
+Queries follow the tradition of SQL queries, except that the select and from parts are swapped. 
+A basic query thus has the form of "*from* bindings *select* results *where* conditions".
+Bindings consist of a list of "Entity Variable" pairs, separated by comma, which introduce the scope of the query.
+Results is a list of expressions (separated by commas) that will make up the final result of the query.
+The where-clause is optional, but if present it consists of a list of expressions (separated by commas)
+filtering the result set. 
 
+For now, in results the only allowed expressions are `x` (an entity variable introduced in the bindings), `x.@id`, and `x.f` 
+(attribute or relation access). 
+
+### DML
+
+The general form of the insert statement is "*insert* Entity { assignments }".
+The entity is the type of the object to be inserted as defined in the TyphonML statement.
+The assignments are bindings of the form "attrOrRelation: expression". 
+The TyphonQL type checker will check that all assignments are correctly typed according
+the TyphonML model, including multiplicity constraints.   
 
 
 # TyphonQL by Example
-
-
 
 
 ```typhonML
@@ -296,6 +333,9 @@ Named placeholders:
 update User u where u.@id == ??param
   set { cards +: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
 ``` 
+
+## Miscellaneous
+ 
 
  
  
