@@ -14,7 +14,7 @@ local.properties
 .recommenders
 .externalToolBuilders/
 *.launch
-
+.idea
 
 # macOS stuff
 .DS_Store

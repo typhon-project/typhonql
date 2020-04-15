@@ -1,58 +1,49 @@
 <?xml version="1.0" encoding="ASCII"?>
 <typhonml:Model xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:typhonml="http://org.typhon.dsls.typhonml.sirius">
-  <entities name="Person">
-    <attributes xsi:type="typhonml:Attribute" name="name">
-      <type xsi:type="typhonml:StringType" maxSize="255"/>
-    </attributes>
-    <attributes xsi:type="typhonml:Attribute" name="someInt">
-      <type xsi:type="typhonml:IntType"/>
-    </attributes>
-    <attributes xsi:type="typhonml:Attribute" name="someBigint">
-      <type xsi:type="typhonml:BigintType"/>
-    </attributes>
-    <attributes xsi:type="typhonml:Attribute" name="someText">
+  <entities name="Review">
+    <attributes xsi:type="typhonml:Attribute" name="content">
       <type xsi:type="typhonml:TextType"/>
     </attributes>
-    <attributes xsi:type="typhonml:Attribute" name="someBlob">
-      <type xsi:type="typhonml:BlobType"/>
+    <relations name="product" type="//@entities.1" cardinality="one"/>
+    <relations name="user" type="//@entities.2" cardinality="one"/>
+  </entities>
+  <entities name="Product">
+    <attributes xsi:type="typhonml:Attribute" name="name">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
     </attributes>
-    <attributes xsi:type="typhonml:Attribute" name="someBool">
-      <type xsi:type="typhonml:BoolType"/>
+    <attributes xsi:type="typhonml:Attribute" name="description">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
     </attributes>
-    <attributes xsi:type="typhonml:Attribute" name="someFloat">
-      <type xsi:type="typhonml:FloatType"/>
+    <attributes xsi:type="typhonml:Attribute" name="price">
+      <type xsi:type="typhonml:IntType"/>
     </attributes>
-    <attributes xsi:type="typhonml:Attribute" name="someDate">
+    <attributes xsi:type="typhonml:Attribute" name="productionDate">
       <type xsi:type="typhonml:DateType"/>
     </attributes>
-    <attributes xsi:type="typhonml:Attribute" name="someDateTime">
-      <type xsi:type="typhonml:DatetimeType"/>
-    </attributes>
-    <attributes xsi:type="typhonml:Attribute" name="somePoint">
-      <type xsi:type="typhonml:PointType"/>
-    </attributes>
-    <attributes xsi:type="typhonml:Attribute" name="somePoly">
-      <type xsi:type="typhonml:PolygonType"/>
-    </attributes>
-    <attributes xsi:type="typhonml:CustomAttribute" name="someCustom" type="//@customDataTypes.0"/>
-    <relations name="comments" type="//@entities.1" cardinality="zero_many" isContainment="true"/>
-    <relations name="someXref" type="//@entities.0"/>
+    <relations name="reviews" type="//@entities.0" cardinality="zero_many" opposite="//@entities.0/@relations.0" isContainment="true"/>
   </entities>
-  <entities name="Comment">
-    <attributes xsi:type="typhonml:Attribute" name="txt">
-      <type xsi:type="typhonml:FreetextType">
-        <tasks workflowName="en" type="Chunking"/>
-        <tasks workflowName="dutch" type="Lemmatisation"/>
-        <tasks workflowName="bla" type="NGramExtractor"/>
-      </type>
+  <entities name="User">
+    <attributes xsi:type="typhonml:Attribute" name="name">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
     </attributes>
-    <relations name="owner" type="//@entities.0" cardinality="one" opposite="//@entities.0/@relations.0"/>
+    <attributes xsi:type="typhonml:Attribute" name="address">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </attributes>
+    <relations name="biography" type="//@entities.3" opposite="//@entities.3/@relations.0" isContainment="true"/>
+    <relations name="reviews" type="//@entities.0" cardinality="zero_many" opposite="//@entities.0/@relations.1" isContainment="true"/>
   </entities>
-  <databases xsi:type="typhonml:RelationalDB" name="RelationalDatabase">
-    <tables name="OrderDB" entity="//@entities.0"/>
+  <entities name="Biography">
+    <attributes xsi:type="typhonml:Attribute" name="content">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </attributes>
+    <relations name="user" type="//@entities.2" cardinality="one" opposite="//@entities.2/@relations.0"/>
+  </entities>
+  <databases xsi:type="typhonml:RelationalDB" name="Inventory">
+    <tables name="UserDB" entity="//@entities.2"/>
+    <tables name="ProductDB" entity="//@entities.1"/>
   </databases>
-  <databases xsi:type="typhonml:DocumentDB" name="DocumentDatabase">
-    <collections name="CommentsDB" entity="//@entities.1"/>
+  <databases xsi:type="typhonml:DocumentDB" name="Reviews">
+    <collections name="Review" entity="//@entities.0"/>
+    <collections name="Biography" entity="//@entities.3"/>
   </databases>
-  <customDataTypes name="Bla"/>
 </typhonml:Model>

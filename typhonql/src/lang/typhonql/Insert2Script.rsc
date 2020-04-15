@@ -55,7 +55,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
         str from = "<e>";
         str fromRole = "<x>";
         str uuid = "<ref>"[1..];
-        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, !isImplicitRole(toRole)) {
+        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
             // this keyval is updating ref to have me as a foreign key
             
           switch (placeOf(to, s)) {
@@ -83,7 +83,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
             
           }
         }
-        else if (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels, !isImplicitRole(parentRole)) {
+        else if (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels) {
            // this is the case that the current KeyVal pair is actually
            // setting the currently inserted object as being owned by ref
            
@@ -106,7 +106,8 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
         } 
         
         // xrefs are symmetric, so both directions are done in one go. 
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels), !isImplicitRole(toRole)) {
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)
+           /*, !isImplicitRole(toRole) */) {
            // save the cross ref
            steps += insertIntoJunction(dbName, from, fromRole, to, toRole, sqlMe, [lit(text(uuid))], myParams);
            
@@ -132,10 +133,10 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
          
       }
       
-      for ((KeyVal)`<Id x>: [<{UUID ","}+ refs>]` <- kvs) {
+      for ((KeyVal)`<Id x>: [<{UUID ","}* refs>]` <- kvs) {
         str from = "<e>";
         str fromRole = "<x>";
-        if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels, !isImplicitRole(toRole)) {
+        if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
             // this keyval is updating ref to have me as a foreign key
             
           switch (placeOf(to, s)) {
@@ -163,14 +164,15 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
             
           }
         }
-        else if (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels, !isImplicitRole(parentRole)) {
+        else if (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels) {
            // this is the case that the current KeyVal pair is actually
            // setting the currently inserted object as being owned by each ref which is illegal
            throw "Cannot have multiple parents <refs> for inserted object";
         } 
         
         // xrefs are symmetric, so both directions are done in one go. 
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels), !isImplicitRole(toRole)) {
+        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)
+          /*, !isImplicitRole(toRole) */) {
            // save the cross ref
            steps += [ *insertIntoJunction(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams) ];
            
@@ -217,7 +219,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
         str uuid = "<ref>"[1..];
         
 
-        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, _> <- s.rels, !isImplicitRole(toRole)) {
+        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, _> <- s.rels) {
           switch (placeOf(to, s)) {
           
             case <mongodb(), dbName> : {  
@@ -239,12 +241,12 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
       
       }
       
-      for ((KeyVal)`<Id x>: [<{UUID ","}+ refs>]` <- kvs) {
+      for ((KeyVal)`<Id x>: [<{UUID ","}* refs>]` <- kvs) {
         str from = "<e>";
         str fromRole = "<x>";
 
 
-        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, _> <- s.rels, !isImplicitRole(toRole)) {
+        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, _> <- s.rels) {
           switch (placeOf(to, s)) {
           
             case <mongodb(), dbName> : {  
@@ -275,10 +277,10 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
 DBObject obj2dbObj((Expr)`<EId e> {<{KeyVal ","}* kvs>}`)
   = object([ keyVal2prop(kv) | KeyVal kv <- kvs ]);
    
-DBObject obj2dbObj((Expr)`[<{Obj ","}* objs>]`)
-  = array([ obj2dbObj((Expr)`<Obj obj>`) | Obj obj <- objs ]);
+//DBObject obj2dbObj((Expr)`[<{Obj ","}* objs>]`)
+//  = array([ obj2dbObj((Expr)`<Obj obj>`) | Obj obj <- objs ]);
 
-DBObject obj2dbObj((Expr)`[<{UUID ","}+ refs>]`)
+DBObject obj2dbObj((Expr)`[<{UUID ","}* refs>]`)
   = array([ obj2dbObj((Expr)`<UUID ref>`) | UUID ref <- refs ]);
 
 DBObject obj2dbObj((Expr)`<Bool b>`) = \value("<b>" == "true");
@@ -347,7 +349,9 @@ Value evalExpr((Expr)`#polygon(<{Segment ","}* segs>)`)
 lrel[real, real] seg2lrel((Segment)`(<{XY ","}* xys>)`)
   = [ <toReal("<x>"), toReal("<y>")> | (XY)`<Real x> <Real y>` <- xys ]; 
 
-Value evalExpr((Expr)`<DateTime d>`) = dateTime(readTextValueString(#datetime, "<d>"));
+Value evalExpr((Expr)`<DateAndTime d>`) = dateTime(readTextValueString(#datetime, "<d>"));
+
+Value evalExpr((Expr)`<JustDate d>`) = date(readTextValueString(#datetime, "<d>"));
 
 // should only happen for @id field (because refs should be done via keys etc.)
 Value evalExpr((Expr)`<UUID u>`) = text("<u>"[1..]);

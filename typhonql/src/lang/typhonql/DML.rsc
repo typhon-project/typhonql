@@ -6,7 +6,6 @@ extend lang::typhonql::Query;
 
 syntax Statement
   = \insert: "insert" {Obj ","}* objs
-  | insertInto: "insert" Obj obj "into" Expr parent "." Id field
   | delete: "delete" Binding binding Where? where
   | update: "update" Binding binding Where? where "set"  "{" {KeyVal ","}* keyVals "}" 
   ;
@@ -16,11 +15,3 @@ syntax KeyVal
   = add: Id key "+:" Expr value
   | remove: Id key "-:" Expr value
   ;
-  
-  
-syntax PreparedStatement
-  = \insert: "insert" {Obj ","}* objs
-  | delete: "delete" Binding binding Where? where
-  | update: "update" Binding binding Where? where "set"  "{" {KeyVal ","}* keyVals "}" 
-  ;
-  

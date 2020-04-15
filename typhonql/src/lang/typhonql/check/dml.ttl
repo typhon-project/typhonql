@@ -1,0 +1,17 @@
+test I1 [[ insert User { name: "Hoi"} ]]
+test I2 [[ insert User { 
+      @id: #df346bbc-7044-11ea-bc55-0242ac130003, 
+      name: "Hoi"
+} ]]
+
+test IF1 [[ insert User { name2: "Hoi"} ]] expect { "name2 not defined for `User`" }
+test IF2 [[ insert User { name: 3} ]] expect { "Expected `string` but got `int`" }
+
+test D1 [[ delete User u where u.name == "First" ]]
+
+test U1 [[ update User u where u.name == "First" set { name: "Second" } ]]
+
+test L1 [[ update User u set { changes +: [#df346dde-7044-11ea-bc55-0242ac130003] } ]] 
+test L1 [[ update User u set { changes -: [#df346aab-7044-11ea-bc55-0242ac130003, #df346aac-7044-11ea-bc55-0242ac130003] } ]] 
+
+test EL1 [[ update User u set { name +: "First" } ]] expect { "Expected entity type, got `string`", "Currently only lists of uuids are supported in the update syntax" }

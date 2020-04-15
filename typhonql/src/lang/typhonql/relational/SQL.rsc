@@ -118,6 +118,7 @@ data Value
   | point(real x, real y)
   | polygon(list[lrel[real, real]] segs)
   | dateTime(datetime dateTimeVal)
+  | date(datetime dateVal)
   | placeholder(str name="")
   | null()
   ;
