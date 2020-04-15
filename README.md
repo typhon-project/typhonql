@@ -34,10 +34,10 @@ Basic primitive types.
 |----|:---:|:---:|---|
 | `int` | 🌕 | 🌕 | |
 | `bigint` | 🌓 | 🌓 | |
-| `string(maxSize)` | 🌓 | 🌓 | currently `str` exists, but this will be renamed to `text`, and `string` will get a length field |
-| `text` | 🌔 | 🌕 | in current syntax this is still called `str` |
-| `point` | 🌑 | 🌑 | |
-| `point` | 🌑 | 🌑 | |
+| `string[maxSize]` | 🌕 | 🌕 |  |
+| `text` | 🌕 | 🌕 |  |
+| `point` | 🌔  | 🌒 | operations are not yet implemented |
+| `polygon` | 🌔  | 🌒 | operations are not yet implemented |
 | `bool` | 🌕 | 🌕 | |
 | `float` | 🌕 | 🌔 | |
 | `blob` | 🌑 | 🌑 | We have to decide on a syntax for blobs |
