@@ -1,10 +1,11 @@
 module lang::typhonql::\test::TestsCompiler
 
 import lang::typhonql::util::Log;
+import lang::typhonql::util::Testing;
 
 import IO;
 
-extend lang::typhonql::util::Testing;
+import lang::typhonml::Util;
 
 /*
  * These tests are meant to be run on a Typhon Polystore deployed according to the
