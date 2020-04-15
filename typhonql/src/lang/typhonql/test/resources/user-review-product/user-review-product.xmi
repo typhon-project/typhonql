@@ -5,7 +5,7 @@
       <type xsi:type="typhonml:TextType"/>
     </attributes>
     <relations name="product" type="//@entities.1" cardinality="one"/>
-    <relations name="user" type="//@entities.4" cardinality="one"/>
+    <relations name="user" type="//@entities.5" cardinality="one"/>
   </entities>
   <entities name="Product">
     <attributes xsi:type="typhonml:Attribute" name="name">
@@ -21,8 +21,17 @@
       <type xsi:type="typhonml:DateType"/>
     </attributes>
     <relations name="reviews" type="//@entities.0" cardinality="zero_many" opposite="//@entities.0/@relations.0" isContainment="true"/>
-    <relations name="tags" type="//@entities.3" cardinality="zero_many"/>
-    <relations name="inventory" type="//@entities.2" cardinality="zero_many" isContainment="true"/>
+    <relations name="tags" type="//@entities.4" cardinality="zero_many"/>
+    <relations name="inventory" type="//@entities.3" cardinality="zero_many" isContainment="true"/>
+    <relations name="category" type="//@entities.2" cardinality="one"/>
+  </entities>
+  <entities name="Category">
+    <attributes xsi:type="typhonml:Attribute" name="id">
+      <type xsi:type="typhonml:StringType" maxSize="32"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="name">
+      <type xsi:type="typhonml:StringType" maxSize="32"/>
+    </attributes>
   </entities>
   <entities name="Item">
     <attributes xsi:type="typhonml:Attribute" name="shelf">
@@ -42,23 +51,24 @@
     <attributes xsi:type="typhonml:Attribute" name="address">
       <type xsi:type="typhonml:StringType" maxSize="256"/>
     </attributes>
-    <relations name="biography" type="//@entities.5" opposite="//@entities.5/@relations.0" isContainment="true"/>
+    <relations name="biography" type="//@entities.6" opposite="//@entities.6/@relations.0" isContainment="true"/>
     <relations name="reviews" type="//@entities.0" cardinality="zero_many" opposite="//@entities.0/@relations.1"/>
   </entities>
   <entities name="Biography">
     <attributes xsi:type="typhonml:Attribute" name="content">
       <type xsi:type="typhonml:StringType" maxSize="256"/>
     </attributes>
-    <relations name="user" type="//@entities.4" cardinality="one" opposite="//@entities.4/@relations.0"/>
+    <relations name="user" type="//@entities.5" cardinality="one" opposite="//@entities.5/@relations.0"/>
   </entities>
   <databases xsi:type="typhonml:RelationalDB" name="Inventory">
-    <tables name="UserDB" entity="//@entities.4"/>
+    <tables name="UserDB" entity="//@entities.5"/>
     <tables name="ProductDB" entity="//@entities.1"/>
-    <tables name="TagDB" entity="//@entities.3"/>
-    <tables name="ItemDB" entity="//@entities.2"/>
+    <tables name="TagDB" entity="//@entities.4"/>
+    <tables name="ItemDB" entity="//@entities.3"/>
   </databases>
   <databases xsi:type="typhonml:DocumentDB" name="Reviews">
     <collections name="Review" entity="//@entities.0"/>
-    <collections name="Biography" entity="//@entities.5"/>
+    <collections name="Biography" entity="//@entities.6"/>
+    <collections name="Category" entity="//@entities.2"/>
   </databases>
 </typhonml:Model>
