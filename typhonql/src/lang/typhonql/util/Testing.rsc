@@ -28,6 +28,8 @@ data TestResult
 // or test function name for throw
 alias Stats = map[str, TestResult];
 
+Stats STATS = ();
+
 alias PolystoreInstance =
 	tuple[
 		void() resetDatabases,
@@ -171,7 +173,7 @@ void resetDatabases(Conn c, Log log = NO_LOG) {
 	runSchema(sch, session, log = log);
 }
 
-void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log = NO_LOG, bool runTestsInSetup = false, Stats stats = ()) {
+void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log = NO_LOG, bool runTestsInSetup = false) {
 	println("Running test: <t>");
 	proxy.resetDatabases();
 	setup(proxy, runTestsInSetup);
@@ -181,46 +183,46 @@ void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(
 		t(proxy);
 	}
 	catch e: {
-		stats["<t>"] = threw("<e>");
+		STATS["<t>"] = threw("<e>");
 		println (" ⚠: exception for `<t>`: <e>");
 	}
 	LOG = oldLog;
 }
 
-void assertEquals(str testName, value actual, value expected, Stats stats = ()) {
+void assertEquals(str testName, value actual, value expected) {
 	if (actual != expected) {
-	    stats[testName] = failed();
+	    STATS[testName] = failed();
 		println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
 	}
 	else {
-	    stats[testName] = success();
+	    STATS[testName] = success();
 		println(" ✔: `<testName>`");
 	}	
 }
 
-void assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected, Stats stats =()) {
+void assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected) {
   if (actual.sig != expected.sig) {
-    stats[testName] = failed();
+    STATS[testName] = failed();
     println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
   }
   else if (toSet(actual.vals) != toSet(expected.vals)) {
-    stats[testName] = failed();
+    STATS[testName] = failed();
     println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
   }
   else {
-    stats[testName] = success();
+    STATS[testName] = success();
 	println(" ✔: `<testName>`");
   }
 }
 
-void assertException(str testName, void() block, Stats stats = ()) {
+void assertException(str testName, void() block) {
 	try {
 		block();
-		stats[testName] = failed();
+		STATS[testName] = failed();
    		println(" ✗: `<testName>` expected exception");
 	} 
 	catch e: {
-		stats[testName] = success();
+		STATS[testName] = success();
 		println(" ✔: `<testName>`");
 	}
 }
@@ -228,15 +230,19 @@ void assertException(str testName, void() block, Stats stats = ()) {
 void runTests(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, list[void(PolystoreInstance)] tests, Log log = NO_LOG /*void(value v) {println(v);}*/) {
 	map[str, TestResult] stats = ();
 	
+	STATS = ();
 	for (t <- tests) {
-		runTest(proxy, setup, t, log = log, stats = stats);
+		runTest(proxy, setup, t, log = log);
 	}
 	
 	println("# Summary");
 	println("Number of tests: <size(tests)>");
-	println("Number of asserts: <size([ k | str k <- stats, stats[k] in {failed(), success()} ])>");
-	println("Number of success: <size([ k | str k <- stats, stats[k] == success() ])>");
-	println("Number of failed: <size([ k | str k <- stats, stats[k] == failed() ])>");
-	println("Number of throws: <size([ k | str k <- stats, stats[k] notin {failed(), success()} ])>");
+	println("Number of asserts: <size([ k | str k <- STATS, STATS[k] in {failed(), success()} ])>");
+	println("Number of success: <size([ k | str k <- STATS, STATS[k] == success() ])>");
+	println("Number of failed: <size([ k | str k <- STATS, STATS[k] == failed() ])>");
+	println("Number of throws: <size([ k | str k <- STATS, STATS[k] notin {failed(), success()} ])>");
+	
+	STATS = ();
+	
 	
 }
