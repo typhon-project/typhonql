@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import engineering.swat.typhonql.ast.Expr.Lst;
+import engineering.swat.typhonql.ast.Expr.RefLst;
 import engineering.swat.typhonql.ast.Obj.Literal;
 import engineering.swat.typhonql.ast.Statement.Insert;
 
@@ -16,7 +16,7 @@ public class ASTVisitorTests {
 	@Test
 	public void testRegularVisitor() throws Exception {
 		Request ast = parseAST();
-		String productName = ast.getStm().accept(new NullASTVisitor<String>() {
+		String productId = ast.getStm().accept(new NullASTVisitor<String>() {
 			@Override
 			public String visitStatementInsert(Insert x) {
 				for (Obj o : x.getObjs()) {
@@ -30,12 +30,9 @@ public class ASTVisitorTests {
 			}
 			
 			@Override
-			public String visitExprLst(Lst x) {
-				for (Obj obj : x.getEntries()) {
-					String result = obj.accept(this);
-					if (result != null) {
-						return result;
-					}
+			public String visitExprRefLst(RefLst x) {
+				for (UUID obj : x.getRefs()) {
+					return obj.getString();
 				}
 				return null;
 			}
@@ -52,7 +49,7 @@ public class ASTVisitorTests {
 				return null;
 			}
 		});
-		assertEquals("\"TV\"", productName);
+		assertEquals("#someProductRef", productId);
 	}
 	
 	@Test
@@ -63,11 +60,11 @@ public class ASTVisitorTests {
 
 		ast.accept(new TopDownASTVisitor() {
 			@Override
-			public Void visitExprLst(Lst x) {
-				listSize.add(x.getEntries().size());
+			public Void visitExprRefLst(RefLst x) {
+				listSize.add(x.getRefs().size());
 				// call super method to continue visiting entries of this list
 				// else return null
-				return super.visitExprLst(x);
+				return super.visitExprRefLst(x);
 			}
 			
 			@Override
@@ -86,7 +83,7 @@ public class ASTVisitorTests {
 	private Request parseAST() throws ASTConversionException {
 		return TyphonQLASTParser.parseTyphonQLRequest(("insert Order { "
 				+ "totalAmount: 32, "
-				+ "products: [Product { name: \"TV\" } ]"
+				+ "products: [#someProductRef]"
 				+ "}").toCharArray());
 	}
 
