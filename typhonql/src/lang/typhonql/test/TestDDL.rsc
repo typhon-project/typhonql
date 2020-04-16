@@ -19,7 +19,7 @@ str PASSWORD = "admin1@";
 
 Log LOG = void(value v) {;};
 
-void setup(PolystoreInstance p) {
+void setup(PolystoreInstance p, bool _) {
 }
 
 // DDL

@@ -18,6 +18,16 @@ import Map;
 
 alias Conn = tuple[str host, str port, str user, str password];
 
+data TestResult
+  = threw(str msg)
+  | failed()
+  | success()
+  ;
+
+// key is assertion name for succes/fail
+// or test function name for throw
+alias Stats = map[str, TestResult];
+
 alias PolystoreInstance =
 	tuple[
 		void() resetDatabases,
@@ -36,7 +46,7 @@ alias TestExecutor =
 		void(void(PolystoreInstance proxy)) runTest,
 		void(list[void(PolystoreInstance proxy)]) runTests];
 		
-TestExecutor initTest(void(PolystoreInstance) setup, str host, str port, str user, str password) {
+TestExecutor initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password) {
 	Conn conn = <host, port, user, password>;
 	void() myResetDatabases = void() {
 		resetDatabases(conn);
@@ -83,8 +93,6 @@ TestExecutor initTest(void(PolystoreInstance) setup, str host, str port, str use
 	return <myRunTest, myRunTests>;
 	
 }
-
-default void setup() { }
 
 str notImplemented() {
 	throw "Operation not implemented";
@@ -160,44 +168,75 @@ void resetDatabases(Conn c, Log log = NO_LOG) {
 	str modelStr = readHttpModel(|http://<c.host>:<c.port>|, c.user, c.password);
 	Schema sch = loadSchemaFromXMI(modelStr);
 	Session session = newSession(connections, log = log);
-	runSchema(sch, session, log = LOG);
+	runSchema(sch, session, log = log);
 }
 
-void runTest(PolystoreInstance proxy, void(PolystoreInstance) setup, void(PolystoreInstance) t, Log log = NO_LOG) {
+void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log = NO_LOG, bool runTestsInSetup = false, Stats stats = ()) {
+	println("Running test: <t>");
 	proxy.resetDatabases();
-	setup(proxy);
+	setup(proxy, runTestsInSetup);
 	oldLog = LOG;
 	LOG = log;
 	try {
 		t(proxy);
 	}
 	catch e: {
-		println ("Test [ <t> ] threw an exception: <e>");
+		stats["<t>"] = threw("<e>");
+		println (" ⚠: exception for `<t>`: <e>");
 	}
 	LOG = oldLog;
 }
 
-void assertEquals(str testName, value actual, value expected) {
+void assertEquals(str testName, value actual, value expected, Stats stats = ()) {
 	if (actual != expected) {
-		println("<testName> failed. Expected: <expected>, Actual: <actual>");
+	    stats[testName] = failed();
+		println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
 	}
 	else {
-		println("<testName> OK");
+	    stats[testName] = success();
+		println(" ✔: `<testName>`");
 	}	
 }
 
-void assertException(str testName, void() block) {
+void assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected, Stats stats =()) {
+  if (actual.sig != expected.sig) {
+    stats[testName] = failed();
+    println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
+  }
+  else if (toSet(actual.vals) != toSet(expected.vals)) {
+    stats[testName] = failed();
+    println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
+  }
+  else {
+    stats[testName] = success();
+	println(" ✔: `<testName>`");
+  }
+}
+
+void assertException(str testName, void() block, Stats stats = ()) {
 	try {
 		block();
-		println("<testName> failed. Expected exception.");
+		stats[testName] = failed();
+   		println(" ✗: `<testName>` expected exception");
 	} 
 	catch e: {
-		println("<testName> OK");
+		stats[testName] = success();
+		println(" ✔: `<testName>`");
 	}
 }
 
-void runTests(PolystoreInstance proxy, void(PolystoreInstance) setup, list[void(PolystoreInstance)] tests, Log log = NO_LOG /*void(value v) {println(v);}*/) {
+void runTests(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, list[void(PolystoreInstance)] tests, Log log = NO_LOG /*void(value v) {println(v);}*/) {
+	map[str, TestResult] stats = ();
+	
 	for (t <- tests) {
-		runTest(proxy, setup, t, log = log);
+		runTest(proxy, setup, t, log = log, stats = stats);
 	}
+	
+	println("# Summary");
+	println("Number of tests: <size(tests)>");
+	println("Number of asserts: <size([ k | str k <- stats, stats[k] in {failed(), success()} ])>");
+	println("Number of success: <size([ k | str k <- stats, stats[k] == success() ])>");
+	println("Number of failed: <size([ k | str k <- stats, stats[k] == failed() ])>");
+	println("Number of throws: <size([ k | str k <- stats, stats[k] notin {failed(), success()} ])>");
+	
 }
