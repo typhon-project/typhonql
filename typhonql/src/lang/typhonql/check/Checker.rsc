@@ -2,6 +2,7 @@ module lang::typhonql::check::Checker
 
 import ParseTree;
 import String;
+import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
 extend analysis::typepal::TypePal;
 
@@ -65,7 +66,7 @@ bool qlSubType(voidType(), _) = true;
 
 default bool qlSubType(AType a, AType b) = false;
 
-alias CheckerMLSchema = map[AType entity, map[str field, AType tp] fields];
+alias CheckerMLSchema = map[AType entity, map[str field, tuple[AType typ, Cardinality card] tp] fields];
 data TypePalConfig(CheckerMLSchema mlSchema = ());
 
 /***********
@@ -177,23 +178,45 @@ void collectKeyVal(current:(KeyVal)`<Id key> : <Expr val>`, EId entity, Collecto
 }
 
 void collectKeyVal(current:(KeyVal)`<Id key> +: <Expr val>`, EId entity, Collector c) {
-    reportUnsupported(current, c);
+    collectKVUpdate(current, key, val, entity, c);
 }
 
 void collectKeyVal(current:(KeyVal)`<Id key> -: <Expr val>`, EId entity, Collector c) {
-    reportUnsupported(current, c);
+    collectKVUpdate(current, key, val, entity, c);
 }
+
+void collectKVUpdate(KeyVal current, Id key, Expr val, EId entity, Collector c) {
+    collect(val, c);
+    c.useViaType(entity, key, {fieldRole()});
+    c.requireEqual(atypeList([uuidType()]), val, error(val, "Currently only lists of uuids are supported in the update syntax"));
+    c.require("valid update", current, [key, val], void (Solver s) {
+        keyType = s.getType(key);
+        s.requireTrue(entityType(_) := keyType, error(key, "Expected entity type, got %t", key));
+        cardinality = getCardinality(entity, key, s);
+        s.requireTrue(cardinality in {zero_many(), one_many()}, error(current, "update not supported on cardinality one or zero-to-one"));
+    });
+}
+
 
 void collect(current:(Expr)`<Custom customValue>`, Collector c) {
     reportUnsupported(current, c);
 }
 
-void collect(current:(Expr)`[<{Obj ","}*entries>]`, Collector c) {
-    reportUnsupported(current, c);
-}
+//void collect(current:(Expr)`[<{Obj ","}*entries>]`, Collector c) {
+//    if (e <- entries) {
+//        collect(entries, c);
+//        c.calculate("list type", current, [et | et <- entries], AType (Solver s) {
+//            for (et <- entries) {
+//                s.requireEqual(e, et, error(et, "Expected same type in the list, found %t and %t", e, et));
+//            }
+//            return atypeList([s.getType(e)]);
+//        });
+//    }
+//    c.fact(current, atypeList([voidType()]));
+//}
 
-void collect(current:(Expr)`[<{UUID ","}+ refs>]`, Collector c) {
-    reportUnsupported(current, c);
+void collect(current:(Expr)`[<{UUID ","}* refs>]`, Collector c) {
+    c.fact(current, atypeList([uuidType()]));
 }
 
 void collect(current:(Expr)`null`, Collector c) {
@@ -485,6 +508,18 @@ void reportUnsupported(Tree current, Collector c) {
     });
 }
 
+Cardinality getCardinality(EId context, Id fname, Solver s) {
+    mlSchema = s.getConfig().mlSchema;
+    utype = s.getType(context);
+    if (utype in mlSchema) {
+        if ("<fname>" in mlSchema[utype]) {
+            return mlSchema[utype]["<fname>"].card;
+        }
+    }
+    s.report(error(fname, "<fname> not defined for %t", utype));
+    return \one();
+}
+
 
 private TypePalConfig buildConfig(bool debug, CheckerMLSchema mlSchema) 
     = tconfig(
@@ -498,7 +533,7 @@ private TypePalConfig buildConfig(bool debug, CheckerMLSchema mlSchema)
             AType(AType utype, Tree fname, loc scope, Solver s) {
                 if (utype in mlSchema) {
                     if ("<fname>" in mlSchema[utype]) {
-                        return mlSchema[utype]["<fname>"];
+                        return mlSchema[utype]["<fname>"].typ;
                     }
                 }
                 s.report(error(fname, "<fname> not defined for %t", utype));
@@ -525,13 +560,12 @@ default AType calcMLType(str tp) {
 
 
 
-// TODO: correctly support inverses
-// TODO: model cardinality
 CheckerMLSchema convertModel(Schema mlSchema) 
     = ( 
         entityType(tpn) : 
-        (( fn : calcMLType(ftp) | <fn, ftp> <- mlSchema.attrs[tpn])
-        + (fr : entityType(to) | <fc, fr, tr, tc, to, _> <- mlSchema.rels[tpn]))
+        (( fn : <calcMLType(ftp), \one()> | <fn, ftp> <- mlSchema.attrs[tpn])
+        + (fr : <entityType(to), fc> | <fc, fr, _, _, to, _> <- mlSchema.rels[tpn])
+        + (tr : <entityType(from), tc> | <from, _, _, tr, tc, tpn, _> <- mlSchema.rels[tpn])) // inverse roles
     | tpn <- entities(mlSchema)
     );
 

@@ -121,7 +121,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
                scr.steps += removeFromJunction(other, to, toRole, from, fromRole, sqlMe, myParams);
              }
              case <mongodb(), str other>: {
-               scr.steps += removeAllObjectPointers(other, to, toRole, mongoMe, myParams);
+               scr.steps += removeAllObjectPointers(other, to, toRole, toCard, mongoMe, myParams);
              }
            }
         

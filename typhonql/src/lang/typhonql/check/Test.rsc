@@ -15,7 +15,8 @@ test bool runExprTest(bool debug = false)
             
 CheckerMLSchema queriesModel = (
     entityType("User"): (
-        "name": stringType()
+        "name": <stringType(), \one()>,
+        "changes": <entityType("User"), zero_many()>
     )
 );
             

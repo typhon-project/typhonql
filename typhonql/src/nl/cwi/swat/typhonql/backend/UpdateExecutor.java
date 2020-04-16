@@ -3,6 +3,9 @@ package nl.cwi.swat.typhonql.backend;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
+import org.rascalmpl.values.ValueFactoryFactory;
+
 public abstract class UpdateExecutor {
 	
 	private ResultStore store;
@@ -31,7 +34,14 @@ public abstract class UpdateExecutor {
 			if (binding instanceof Field) {
 				Field field = (Field) binding;
 				ResultIterator results =  store.getResults(field.getReference());
+				
+				if (results == null) {
+					throw RuntimeExceptionFactory.illegalArgument(ValueFactoryFactory.getValueFactory().string(field.toString()), null, null, 
+							"Results was null for field " + field.toString() + " and store " + store);
+				}
+				
 				results.beforeFirst();
+				
 				while (results.hasNextResult()) {
 					results.nextResult();
 					String value = (field.getAttribute().equals("@id"))? serialize(results.getCurrentId(field.getLabel(), field.getType())) : serialize(results.getCurrentField(field.getLabel(), field.getType(), field.getAttribute()));

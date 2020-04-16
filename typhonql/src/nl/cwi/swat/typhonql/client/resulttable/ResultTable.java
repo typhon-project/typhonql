@@ -162,6 +162,9 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		else if (v instanceof Timestamp) {
 			return vf.datetime(((Timestamp) v).getTime());
 		}
+		else if (v instanceof java.sql.Date) {
+			return vf.datetime(((java.sql.Date)v).getTime());
+		}
 		else if (v instanceof List) {
 			IListWriter lw = vf.listWriter();
 			List<Object> os = (List<Object>) v;

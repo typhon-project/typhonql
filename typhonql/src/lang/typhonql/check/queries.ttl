@@ -7,3 +7,5 @@ test O1 [[ from User u select u order u ]]
 test OF1 [[ from User u select u order u2 ]] expect { "Undefined table role `u2`" }
 
 test T2 [[ from User u select u where u == #0ebe9870-b92c-4c1e-9f43-ad1945905ec2 ]]
+
+test T3 [[ from User u select u where u.changes == #0ebe9870-b92c-4c1e-9f43-ad1945905ec2 ]]
