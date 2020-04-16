@@ -92,7 +92,39 @@ The general form of the insert statement is "*insert* Entity { assignments }".
 The entity is the type of the object to be inserted as defined in the TyphonML statement.
 The assignments are bindings of the form "attrOrRelation: expression". 
 The TyphonQL type checker will check that all assignments are correctly typed according
-the TyphonML model, including multiplicity constraints.   
+the TyphonML model, including multiplicity constraints. 
+
+Update and delete statements specify the objects to work on via where-clauses.
+For instance, update has the form "*update* Entity x *where* conditions *set* { assignments }".
+The assignments are the same as in insert, except that for many-valued relations, they can specify
+additions ("relation +: expression") and removals ("relation -: expression").
+
+Delete has the form "*delete* Entity x *where* conditions", which will delete all entities of type Entity satisfying
+the conditions in the where-clause. 
+
+All three DML statements ensure (as much as possible) that relational integrity is preserved, 
+even across database back-ends. In particular
+this means:
+
+- creating resp. breaking a relation between entities entail creating resp. breaking the inverse link as well 
+(if so declared in the TyphonML model)
+- deleting an object will delete all objects "owned" by it via containment relations (cascading delete).
+
+Cascading delete of contained object is currently limited to one hop across database boundaries. 
+In other words, if a sequence of containment relations alternatingly cross multiple database back-ends
+the cascade is only performed for the first relation.
+
+
+
+
+
+
+
+
+
+
+
+  
 
 
 # TyphonQL by Example
