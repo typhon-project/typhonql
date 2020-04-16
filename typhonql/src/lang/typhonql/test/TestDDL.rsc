@@ -41,7 +41,10 @@ void test1(PolystoreInstance p) {
 
 // drop entity (relational)
 void test2(PolystoreInstance p) {
+	 s = p.fetchSchema();
 	 p.runUpdate((Request) `drop Product`);
+	 s.rels -= { p | p:<"Product", _, _, _, _, _, _> <- s.rels };
+	 s.attrs -= { p | p:<"Product", _, _> <- s.attrs };
 	 assertException("test2",
 	 	void() { p.runQuery((Request) `from Product p select p`);});
 	 
@@ -62,9 +65,15 @@ void test3(PolystoreInstance p) {
 
 // drop entity (document)
 void test4(PolystoreInstance p) {
+	 s = p.fetchSchema();
+	 
 	 p.runUpdate((Request) `drop Biography`);
+	  // We need to fake the schema update
+	 s.rels -= { p | p:<"Biography", _, _, _, _, _, _> <- s.rels };
+	 s.attrs -= { p | p:<"Biography", _, _> <- s.attrs };
+	 
 	 assertException("test4",
-	 void() { p.runQuery((Request) `from Biography b select b`);});
+	 	void() { p.runQueryForSchema((Request) `from Biography b select b`, s);});
 	 
 }
 
@@ -91,6 +100,29 @@ void test6(PolystoreInstance p) {
 	 rs = p.runQueryForSchema((Request) `from Biography b select b.@id, b.rating`, s);
 	 assertEquals("test6", rs,  <["b.@id", "b.rating"],[[ "bio1", 5 ]]>);
 }
+
+// drop attribute (relational)
+void test7(PolystoreInstance p) {
+	 s = p.fetchSchema();
+	 p.runDDL((Request) `drop Product.description`);
+	 
+	 // We need to fake the schema update
+	 s.attrs -= < {"Product", "description", "string(256)"} >;
+	 assertException("test7",
+	 	void() { p.runQuery((Request) `from Product p select p.description`);});
+}
+
+// drop attribute (document)
+void test8(PolystoreInstance p) {
+	 s = p.fetchSchema();
+	 p.runDDL((Request) `drop Review.content`);
+	 
+	 // We need to fake the schema update
+	 s.attrs -= < {"Review", "content", "text"} >;
+	 assertException("test8",
+	 	void() { p.runQuery((Request) `from Review r select r.content`);});
+}
+
 
 
 TestExecutor getExecutor() = initTest(setup, HOST, PORT, USER, PASSWORD);
