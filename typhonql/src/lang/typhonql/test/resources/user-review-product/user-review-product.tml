@@ -1,11 +1,11 @@
-entity Review{
+entity Review {
 	content: text
 	
 	product -> Product[1]
 	user -> User[1]
 }
 
-entity Product{
+entity Product {
 	name : string[256]
 	description : string[256]
 	price : int
@@ -15,7 +15,7 @@ entity Product{
 }
 
 
-entity User{
+entity User {
 	name : string[256]
 	address: string[256]
 	
@@ -23,7 +23,7 @@ entity User{
 	reviews :-> Review."Review.user"[0..*]
 }
 
-entity Biography{
+entity Biography {
 	content : string[256]
 	
 	user -> User."User.biography"[1]
