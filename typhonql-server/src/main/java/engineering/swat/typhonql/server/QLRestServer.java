@@ -65,90 +65,104 @@ public class QLRestServer {
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
         context.setMaxFormContentSize(100*1024*1024); // 100MB should be max for parameters
-        context.addServlet(jsonGetHandler(r -> handleQuery(engine, r)), "/query");
-        context.addServlet(jsonPostHandler(r -> handleCommand(engine, r)), "/update");
-        context.addServlet(jsonPostHandler(r -> handleDDLCommand(engine, r)), "/ddl");
-        context.addServlet(jsonPostHandler(r -> handlePreparedCommand(engine, r)), "/preparedUpdate");
-        context.addServlet(jsonPostHandler(r -> handleInitialize(engine, r)), "/initialize");
-        context.addServlet(jsonPostHandler(r -> handleReset(engine, r)), "/reset");
-        context.addServlet(jsonPostHandler(r -> handleChangeModel(engine, r)), "/changeModel");
+        context.addServlet(jsonGetPostHandler(r -> handleNewQuery(engine, fakeGetArguments(r), r), r -> handleNewQuery(engine, parseArguments(r), r)), "/query");
+        context.addServlet(jsonPostHandler(r -> handleCommand(engine, parseArguments(r), r)), "/update");
+        context.addServlet(jsonPostHandler(r -> handleDDLCommand(engine, parseArguments(r), r)), "/ddl");
+        context.addServlet(jsonPostHandler(r -> handlePreparedCommand(engine, parseArguments(r), r)), "/preparedUpdate");
+        context.addServlet(jsonPostHandler(r -> handleInitialize(engine, parseArguments(r), r)), "/initialize");
+        context.addServlet(jsonPostHandler(r -> handleReset(engine, parseArguments(r), r)), "/reset");
+        context.addServlet(jsonPostHandler(r -> handleChangeModel(engine, parseArguments(r), r)), "/changeModel");
         server.setHandler(context);
         server.start();
         System.err.println("Server is running, press Ctrl-C to terminate");
         server.join();
 	}
 	
-	
+	private static RestArguments fakeGetArguments(HttpServletRequest r) throws IOException {
+		RestArguments result = new RestArguments();
+		result.query = r.getParameter("q");
+		if (result.query == null || result.query.isEmpty()) {
+			throw new IOException("Missing q parameter");
+		}
+		return result;
+	}
 
-
-	private static JsonSerializableResult handleDDLCommand(QueryEngine engine, HttpServletRequest r) throws IOException {
-		CommandArgs args;
+	private static RestArguments parseArguments(HttpServletRequest r) throws IOException {
 		try {
-			args = CommandArgs.fromJSON(r.getReader());
+			return RestArguments.fromJSON(r.getReader());
 		} catch (IOException e) {
 			throw new IOException("Failure to parse args", e);
 		}
-		logger.trace("Running DDL command: {}", args);
-        return engine.executeDDL(args.command);
 	}
 
+	private static class RestArguments {
+		// should always be there
+		public String xmi;
+		public List<DatabaseInfo> databaseInfo;
 
-
-
-	private static JsonSerializableResult handleReset(QueryEngine engine, HttpServletRequest r) throws IOException {
-		return engine.resetDatabase();
-	}
-
-	private static ResultTable handleQuery(QueryEngine engine, HttpServletRequest r) throws IOException {
-		String query = r.getParameter("q");
-		if (query == null || query.isEmpty()) {
-			throw new IOException("Missing q parameter");
-		}
-		logger.trace("Running query: {}", query);
-		return engine.executeQuery(query);
-	}
-
-
-	private static class CommandArgs {
+		// depends on the command which one is filled in or not
+		public String query;
 		public String command;
 		public String[] parameterNames;
 		public String[][] boundRows;
 		
-		static CommandArgs fromJSON(Reader source)  throws JsonParseException, JsonMappingException, IOException  {
-			return mapper.readValue(source, new TypeReference<CommandArgs> () {});
+		static RestArguments fromJSON(Reader source)  throws JsonParseException, JsonMappingException, IOException  {
+			return mapper.readValue(source, new TypeReference<RestArguments> () {});
 		}
+		
 		
 		@Override
 		public String toString() {
-			if (parameterNames != null && boundRows != null) {
-				return command + " args: " + Arrays.toString(parameterNames) + " rows: " + boundRows.length;
-			}
-			return command;
+			return "{\n"
+                + ((query != null && !query.isEmpty()) ? ("query: " + query + "\n") : "")
+                + ((command != null && !command.isEmpty()) ? ("command: " + command + "\n") : "")
+                + ((parameterNames != null && parameterNames.length > 0) ? ("parameterNames: " + Arrays.toString(parameterNames) + "\n") : "")
+                + ((boundRows != null) ? ("boundRows: " + boundRows.length + "\n") : "")
+                + "}";
 		}
 	}
 
-	private static CommandResult handleCommand(QueryEngine engine, HttpServletRequest r) throws IOException {
-		CommandArgs args;
-		try {
-			args = CommandArgs.fromJSON(r.getReader());
-		} catch (IOException e) {
-			throw new IOException("Failure to parse args", e);
+	private static boolean isEmpty(String value) {
+		return value == null || value.isEmpty();
+	}
+
+
+	private static JsonSerializableResult handleDDLCommand(QueryEngine engine, RestArguments args, HttpServletRequest r) throws IOException {
+		if (isEmpty(args.command)) {
+			throw new IOException("Missing command field in post body");
+		}
+		logger.trace("Running DDL command: {}", args);
+        return engine.executeDDL(args.xmi, args.databaseInfo, args.command);
+	}
+
+
+	private static JsonSerializableResult handleReset(QueryEngine engine, RestArguments args, HttpServletRequest r) throws IOException {
+		return engine.resetDatabase(args.xmi, args.databaseInfo);
+	}
+
+	private static ResultTable handleNewQuery(QueryEngine engine, RestArguments args, HttpServletRequest r) throws IOException {
+		if (isEmpty(args.query)) {
+			throw new IOException("Missing query parameter in post body");
+		}
+		logger.trace("Running query: {}", args.query);
+		return engine.executeQuery(args.xmi, args.databaseInfo, args.query);
+	}
+
+
+
+	private static CommandResult handleCommand(QueryEngine engine, RestArguments args, HttpServletRequest r) throws IOException {
+		if (isEmpty(args.command)) {
+			throw new IOException("Missing command in post body");
 		}
 		logger.trace("Running command: {}", args);
-        return engine.executeCommand(args.command);
+        return engine.executeCommand(args.xmi, args.databaseInfo, args.command);
 	}
 
-	private static JsonSerializableResult handlePreparedCommand(QueryEngine engine, HttpServletRequest r) throws IOException {
-		CommandArgs args;
-		try {
-			args = CommandArgs.fromJSON(r.getReader());
-		} catch (IOException e) {
-			throw new IOException("Failure to parse args", e);
-		}
+	private static JsonSerializableResult handlePreparedCommand(QueryEngine engine, RestArguments args, HttpServletRequest r) throws IOException {
 		if (args.parameterNames == null || args.parameterNames.length == 0 || args.boundRows == null || args.boundRows.length == 0) {
 			throw new IOException("Missing arguments to the command");
 		}
-		CommandResult[] result = engine.executeCommand(args.command, args.parameterNames, args.boundRows);
+		CommandResult[] result = engine.executeCommand(args.xmi, args.databaseInfo, args.command, args.parameterNames, args.boundRows);
 		return target -> {
 			target.write('[');
 			boolean first = true;
@@ -163,48 +177,16 @@ public class QLRestServer {
 		}; 
 	}
 	
-	private static class InitializeArgs {
-		public String xmi;
-		public List<DatabaseInfo> databaseInfo;
-		
-		static InitializeArgs fromJSON(Reader source) throws JsonParseException, JsonMappingException, IOException {
-			return mapper.readValue(source, new TypeReference<InitializeArgs>() {});
-		}
-		@Override
-		public String toString() {
-			return   "xmi: " + xmi
-					+"\ndbInfo: " + databaseInfo;
-		}
-	}
-
-	private static JsonSerializableResult handleInitialize(QueryEngine engine, HttpServletRequest r) throws IOException {
-		InitializeArgs args;
-		try {
-			args = InitializeArgs.fromJSON(r.getReader());
-		} catch (IOException e) {
-			throw new IOException("Failure to parse args", e);
+	private static JsonSerializableResult handleInitialize(QueryEngine engine, RestArguments args, HttpServletRequest r) throws IOException {
+		if (isEmpty(args.xmi) || args.databaseInfo == null || args.databaseInfo.isEmpty()) {
+			throw new IOException("Missing xmi & database info in post body");
 		}
 		logger.trace("Initializing db with: {}", args);
 		return engine.initialize(args.xmi, args.databaseInfo);
 	}
 
-	private static class ChangeXMIArgs {
-		public String newXMI;
-		
-		static ChangeXMIArgs fromJSON(Reader source) throws JsonParseException, JsonMappingException, IOException {
-			return mapper.readValue(source, new TypeReference<ChangeXMIArgs>() {});
-		}
-	}
-
-	private static JsonSerializableResult handleChangeModel(QueryEngine engine, HttpServletRequest r) throws IOException {
-		ChangeXMIArgs args;
-		try {
-			args = ChangeXMIArgs.fromJSON(r.getReader());
-		} catch (IOException e) {
-			throw new IOException("Failure to parse args", e);
-		}
-		logger.trace("Received new xmi model: {}", args.newXMI);
-		return engine.changeModel(args.newXMI);
+	private static JsonSerializableResult handleChangeModel(QueryEngine engine, RestArguments args, HttpServletRequest r) throws IOException {
+		throw new IOException("Operation not supported anymore");
 	}
 
 
@@ -241,12 +223,17 @@ public class QLRestServer {
 		}
 	}
 	
-	private static ServletHolder jsonGetHandler(ServletHandler handler) {
+	private static ServletHolder jsonGetPostHandler(ServletHandler handler, ServletHandler newHandler) {
 		return new ServletHolder(new HttpServlet() {
 			private static final long serialVersionUID = -1652905724147115804L;
 			@Override
 			protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 				handle(req, resp, handler);
+			}
+			
+			@Override
+			protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+				handle(req, resp, newHandler);
 			}
 		});
 	}
