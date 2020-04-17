@@ -46,12 +46,12 @@ alias PolystoreInstance =
 		Schema() fetchSchema,
 		void() printSchema];
 
-alias TestExecutor =
+alias TestExecuter =
 	tuple[
 		void(void(PolystoreInstance proxy)) runTest,
 		void(list[void(PolystoreInstance proxy)]) runTests];
 		
-TestExecutor initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password) {
+TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password) {
 	Conn conn = <host, port, user, password>;
 	void() myResetDatabases = void() {
 		resetDatabases(conn);

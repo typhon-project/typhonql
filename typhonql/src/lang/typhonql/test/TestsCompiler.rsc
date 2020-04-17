@@ -382,22 +382,22 @@ void test13(PolystoreInstance p) {
 	assertResultEquals("generated id is in the result", rs, <["u.@id"],[["<uuid>"]]>);
 }
 
-TestExecutor getExecutor() = initTest(setup, HOST, PORT, USER, PASSWORD);
+TestExecuter executer() = initTest(setup, HOST, PORT, USER, PASSWORD);
 
 void runTest(void(PolystoreInstance) t) {
-	getExecutor().runTest(t); 
+	 executer().runTest(t); 
 }
 
 void runTests(list[void(PolystoreInstance)] ts) {
-	getExecutor().runTests(ts); 
+	executer().runTests(ts); 
 }
 
 Schema fetchSchema() {
-	getExecutor().fetchSchema();
+	executer().fetchSchema();
 }
 
 Schema printSchema() {
-	getExecutor().printSchema();
+	executer().printSchema();
 }
 
 
