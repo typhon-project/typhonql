@@ -1,5 +1,7 @@
 package nl.cwi.swat.typhonql.backend.test;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -120,7 +122,7 @@ public class TestSelect {
 		vf.tuple(f1, f2)
 		*/
 		
-	public static void main(String[] args) {
+	public static void main(String[] args) throws SQLException {
 		
 		ResultStore store = new ResultStore();
 		
@@ -128,7 +130,8 @@ public class TestSelect {
 		
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		
-		MariaDBEngine e1 = new MariaDBEngine(store, script, uuids, "localhost", 3306, "Inventory", "root", "example");
+		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
+		MariaDBEngine e1 = new MariaDBEngine(store, script, uuids, conn1);
 		MongoDBEngine e2 = new MongoDBEngine(store, script, uuids, "localhost", 27018, "Reviews", "admin", "admin");
 		
 		e1.executeSelect("Inventory", "select u.`User.name` as `u.User.name`,  u.`User.@id` as `u.User.@id` from User u where u.`User.name` = \"Claudio\"", 

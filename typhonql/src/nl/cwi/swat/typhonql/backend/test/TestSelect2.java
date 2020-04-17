@@ -1,5 +1,7 @@
 package nl.cwi.swat.typhonql.backend.test;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,13 +22,14 @@ import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class TestSelect2 {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws SQLException {
 		ResultStore store = new ResultStore();
 		
 		Map<String, String> uuids = new HashMap<String, String>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		
-		MariaDBEngine e1 = new MariaDBEngine(store, script, uuids, "localhost", 3306, "Inventory", "root", "example");
+		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
+		MariaDBEngine e1 = new MariaDBEngine(store, script, uuids, conn1);
 		MongoDBEngine e2 = new MongoDBEngine(store, script, uuids, "localhost", 27018, "Reviews", "admin", "admin");
 		
 		e2.executeFindWithProjection("Reviews","Review","{\"contents\": \"***\"}","{\"_id\": 1, \"user\": 1}",

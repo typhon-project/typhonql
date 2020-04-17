@@ -1,7 +1,11 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -24,11 +28,23 @@ import nl.cwi.swat.typhonql.backend.ResultStore;
 
 public class MariaDBOperations implements Operations {
 	
-	Map<String, ConnectionData> connections;
+	Map<String, Connection> connections;
 	
-	public MariaDBOperations(Map<String, ConnectionData> connections) {
-		this.connections = connections;
+	public MariaDBOperations(Map<String, ConnectionData> connections) throws SQLException {
+		initializeDriver();
+		for (Entry<String, ConnectionData> entry : connections.entrySet()) {
+			String dbName = entry.getKey();
+			ConnectionData data = entry.getValue();
+			Connection connection = DriverManager
+					.getConnection(getConnectionString(data.getHost(), data.getPort(), dbName, data.getUser(), data.getPassword()));
+			this.connections.put(dbName, connection);
+		}
 	}
+	
+	private String getConnectionString(String host, int port, String dbName, String user, String password) {
+		return "jdbc:mariadb://" + host + ":" + port + "/" + dbName + "?user=" + user + "&password=" + password;
+	}
+	
 
 	private ICallableValue makeExecuteQuery(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
 		return makeFunction(ctx, state, executeType, args -> {
@@ -41,8 +57,8 @@ public class MariaDBOperations implements Operations {
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 			List<Path> signature = rascalToJavaSignature(signatureList);
 			
-			ConnectionData data = connections.get(dbName);
-			new MariaDBEngine(store, script, uuids, data.getHost(), data.getPort(), dbName, data.getUser(), data.getPassword()).executeSelect(resultId, query, bindingsMap, signature);
+			Connection connection = connections.get(dbName);
+			new MariaDBEngine(store, script, uuids, connection).executeSelect(resultId, query, bindingsMap, signature);
 			
 			//sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
@@ -57,8 +73,8 @@ public class MariaDBOperations implements Operations {
 			
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 			
-			ConnectionData data = connections.get(dbName);
-			new MariaDBEngine(store, script, uuids, data.getHost(), data.getPort(), dbName, data.getUser(), data.getPassword()).executeUpdate(query, bindingsMap);
+			Connection connection = connections.get(dbName);
+			new MariaDBEngine(store, script, uuids, connection).executeUpdate(query, bindingsMap);
 			
 			//sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
@@ -73,9 +89,9 @@ public class MariaDBOperations implements Operations {
 			
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 			
-			ConnectionData data = connections.get(dbName);
+			Connection connection = connections.get(dbName);
 			
-			new MariaDBEngine(store, script, uuids, data.getHost(), data.getPort(), "", data.getUser(), data.getPassword()).executeUpdate(query, bindingsMap);
+			new MariaDBEngine(store, script, uuids, connection).executeUpdate(query, bindingsMap);
 			
 			//sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
@@ -96,5 +112,13 @@ public class MariaDBOperations implements Operations {
             makeExecuteStatement(store, script, state, uuids, executeStatementType, ctx, vf, tf),
             makeExecuteGlobalStatement(store, script, state, uuids, executeStatementType, ctx, vf, tf)
 		);
+	}
+	
+	private void initializeDriver() {
+		try {
+			Class.forName("org.mariadb.jdbc.Driver");
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException("MariaDB driver not found", e);
+		}
 	}
 }

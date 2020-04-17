@@ -1,5 +1,6 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -28,11 +29,6 @@ import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import io.usethesource.vallang.type.TypeStore;
-import nl.cwi.swat.typhonql.ConnectionInfo;
-import nl.cwi.swat.typhonql.Connections;
-import nl.cwi.swat.typhonql.DBType;
-import nl.cwi.swat.typhonql.MariaDB;
-import nl.cwi.swat.typhonql.MongoDB;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
@@ -90,13 +86,19 @@ public class TyphonSession implements Operations {
 		Map<String, String> uuids = new HashMap<>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		TyphonSessionState state = new TyphonSessionState();
+		ITuple mariaDBOperations;
+		try {
+			mariaDBOperations = new MariaDBOperations(mariaDbConnections).newSQLOperations(store, script, state, uuids, ctx, vf, TF);
+		} catch (SQLException e) {
+			throw RuntimeExceptionFactory.javaException(e, null, null);
+		}
 		return vf.tuple(
 			makeGetResult(store, script, state, getResultType, ctx),
 			makeGetJavaResult(store, script, state, getJavaResultType, ctx),
 			makeReadAndStore(store, script, state, readAndStoreType, ctx),
             makeClose(store, state, closeType, ctx),
             makeNewId(uuids, state, newIdType, ctx),
-            new MariaDBOperations(mariaDbConnections).newSQLOperations(store, script, state, uuids, ctx, vf, TF),
+            mariaDBOperations,
             new MongoOperations(mongoConnections).newMongoOperations(store, script, state, uuids, ctx, vf, TF)
 		);
 	}
@@ -108,7 +110,7 @@ public class TyphonSession implements Operations {
 			uuids.put(idName, uuid);
 			return ResultFactory.makeResult(TF.stringType(), vf.string(uuid), ctx);
 		});
-	}
+	} 
 
 	private ICallableValue makeClose(ResultStore store, TyphonSessionState state, FunctionType closeType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, closeType, args -> {
