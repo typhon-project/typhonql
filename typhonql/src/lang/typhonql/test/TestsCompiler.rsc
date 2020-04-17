@@ -439,9 +439,9 @@ data TestResult
   | success()
   ;
   
-str successEmoji = "\u001b[32m\U01F44D\u001b[0m";
-str failEmoji = "\u001b[31m\U01F525\u001b[0m";
-str detailEmoji = "\u001b[34m\U01F52C\u001b[0m";
+str successEmoji = "\u001b[32m☀ \u001b[0m";
+str failEmoji = "\u001b[31m☁ \u001b[0m";
+str detailEmoji = "\u001b[34m☢ \u001b[0m";
 
 // key is assertion name for succes/fail
 // or test function name for throw
