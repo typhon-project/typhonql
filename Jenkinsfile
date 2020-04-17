@@ -54,7 +54,7 @@ node {
             if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev") {
                 env.DOCKER_TAG = (env.BRANCH_NAME == "master") ? "latest" : "dev";
                 withCredentials([usernamePassword(credentialsId: 'swateng-typhonbuild', usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                    sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile jib:build  -Djib.to.tag=$DOCKER_TAG'
+                    sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile jib:build  -Djib.to.image="docker.io/swatengineering/typhonql-server:$DOCKER_TAG"'
                 }
             }
         }
