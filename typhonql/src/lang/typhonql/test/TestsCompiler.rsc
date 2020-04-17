@@ -16,8 +16,8 @@ import lang::typhonml::Util;
  */
  
 
-str HOST = "192.168.178.78";
-//str HOST = "localhost";
+//str HOST = "192.168.178.78";
+str HOST = "localhost";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
@@ -399,11 +399,6 @@ Schema fetchSchema() {
 Schema printSchema() {
 	getExecutor().printSchema();
 }
-
-str successEmoji = "\u001b[32m☀ \u001b[0m";
-str failEmoji = "\u001b[31m☁ \u001b[0m";
-str detailEmoji = "\u001b[34m☢ \u001b[0m";
-
 
 
 void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {

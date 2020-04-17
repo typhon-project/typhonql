@@ -185,34 +185,38 @@ void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(
 	}
 	catch e: {
 		STATS["<t>"] = threw("<e>");
-		println (" ⚠: exception for `<t>`: <e>");
+		println (" <detailEmoji>: exception for `<t>`: <e>");
 	}
 	LOG = oldLog;
 }
 
+str successEmoji = "\u001b[32m☀ \u001b[0m";
+str failEmoji = "\u001b[31m☁ \u001b[0m";
+str detailEmoji = "\u001b[34m☢ \u001b[0m";
+
 void assertEquals(str testName, value actual, value expected) {
 	if (actual != expected) {
 	    STATS[testName] = failed();
-		println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
+		println(" <failEmoji>: `<testName>` expected: <expected>, actual: <actual>");
 	}
 	else {
 	    STATS[testName] = success();
-		println(" ✔: `<testName>`");
+		println(" <successEmoji>: `<testName>`");
 	}	
 }
 
 void assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected) {
   if (actual.sig != expected.sig) {
     STATS[testName] = failed();
-    println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
+    println(" <failEmoji>: `<testName>` expected: <expected>, actual: <actual>");
   }
   else if (toSet(actual.vals) != toSet(expected.vals)) {
     STATS[testName] = failed();
-    println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
+    println(" <failEmoji>: `<testName>` expected: <expected>, actual: <actual>");
   }
   else {
     STATS[testName] = success();
-	println(" ✔: `<testName>`");
+	println(" <successEmoji>: `<testName>`");
   }
 }
 
@@ -220,11 +224,11 @@ void assertException(str testName, void() block) {
 	try {
 		block();
 		STATS[testName] = failed();
-   		println(" ✗: `<testName>` expected exception");
+   		println(" <failEmoji>: `<testName>` expected exception");
 	} 
 	catch e: {
 		STATS[testName] = success();
-		println(" ✔: `<testName>`");
+		println(" <successEmoji>: `<testName>`");
 	}
 }
 
