@@ -3,6 +3,7 @@ package nl.cwi.swat.typhonql.backend.rascal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -31,6 +32,7 @@ public class MariaDBOperations implements Operations {
 	Map<String, Connection> connections;
 
 	public MariaDBOperations(Map<String, ConnectionData> connections) throws SQLException {
+		this.connections = new HashMap<String, Connection>();
 		initializeDriver();
 		boolean first = true;
 		for (Entry<String, ConnectionData> entry : connections.entrySet()) {
