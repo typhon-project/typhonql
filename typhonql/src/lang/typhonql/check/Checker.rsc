@@ -565,7 +565,7 @@ CheckerMLSchema convertModel(Schema mlSchema)
         entityType(tpn) : 
         (( fn : <calcMLType(ftp), \one()> | <fn, ftp> <- mlSchema.attrs[tpn])
         + (fr : <entityType(to), fc> | <fc, fr, _, _, to, _> <- mlSchema.rels[tpn])
-        + (tr : <entityType(from), tc> | <from, _, _, tr, tc, tpn, _> <- mlSchema.rels[tpn])) // inverse roles
+        + (tr : <entityType(from), tc> | <from, _, _, tr, tc, tpn, _> <- mlSchema.rels)) // inverse roles
     | tpn <- entities(mlSchema)
     );
 
