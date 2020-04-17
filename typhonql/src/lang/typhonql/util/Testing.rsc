@@ -16,8 +16,8 @@ import ParseTree;
 import String;
 import Map;
 
-Log NO_LOG = void(value v){ return; /*println("LOG: <v>"); */};
-Log LOG = NO_LOG;
+Log NO_LOG() = void(value v){ return; /*println("LOG: <v>"); */};
+Log LOG = NO_LOG();
 
 alias Conn = tuple[str host, str port, str user, str password];
 
@@ -166,7 +166,7 @@ ResultTable runQuery(Request req, Schema s, Conn c) {
 	return runQuery(req, s, session, log = LOG);
 }
 
-void resetDatabases(Conn c, Log log = NO_LOG) {
+void resetDatabases(Conn c, Log log = LOG) {
 	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
 	str modelStr = readHttpModel(|http://<c.host>:<c.port>|, c.user, c.password);
 	Schema sch = loadSchemaFromXMI(modelStr);
@@ -174,7 +174,7 @@ void resetDatabases(Conn c, Log log = NO_LOG) {
 	runSchema(sch, session, log = log);
 }
 
-void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log = NO_LOG, bool runTestsInSetup = false) {
+void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log = LOG, bool runTestsInSetup = false) {
 	println("Running test: <t>");
 	proxy.resetDatabases();
 	setup(proxy, runTestsInSetup);
@@ -228,7 +228,7 @@ void assertException(str testName, void() block) {
 	}
 }
 
-void runTests(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, list[void(PolystoreInstance)] tests, Log log = NO_LOG /*void(value v) {println(v);}*/) {
+void runTests(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, list[void(PolystoreInstance)] tests, Log log = LOG /*void(value v) {println(v);}*/) {
 	map[str, TestResult] stats = ();
 	
 	STATS = ();

@@ -6,10 +6,9 @@ import lang::typhonql::util::Testing;
 import lang::typhonql::TDBC;
 
 import IO;
+import Set;
 
 import lang::typhonml::Util;
-
-import Type;
 
 /*
  * These tests are meant to be run on a Typhon Polystore deployed according to the
@@ -122,7 +121,7 @@ void setup(PolystoreInstance p, bool doTest) {
 }
 
 
-void testSetup(PolystoreInstance p, Log log = NO_LOG) {
+void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
   Log oldLog = LOG;
   LOG = log;
   println("Doing sanity check on setup");
@@ -401,7 +400,7 @@ Schema printSchema() {
 	getExecutor().printSchema();
 }
 
-void runAll(Log log = NO_LOG /*void(value v) {println(v);}*/) {
+void runTests(Log log = NO_LOG() /*void(value v) {println(v);}*/) {
 	list[void(PolystoreInstance)]
 	  tests = [
 	   testInsertSingleValuedSQLCross
