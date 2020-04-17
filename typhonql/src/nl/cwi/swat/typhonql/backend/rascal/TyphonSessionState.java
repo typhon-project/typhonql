@@ -9,7 +9,11 @@ public class TyphonSessionState {
 	private boolean finalized = false;
 	private ResultTable result = null;
 
+	private MariaDBOperations mariaDbOperations;
+
+
 	public void close() {
+		mariaDbOperations.close();
 		this.finalized = true;
 		this.result = null;
 	}
@@ -24,6 +28,11 @@ public class TyphonSessionState {
 
 	public boolean isFinalized() {
 		return finalized;
+	}
+
+	public void setMariaDBOperations(MariaDBOperations mariaDBOperations) {
+		this.mariaDbOperations = mariaDBOperations;
+		
 	}
 	
 }

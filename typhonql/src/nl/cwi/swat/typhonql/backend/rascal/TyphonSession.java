@@ -86,19 +86,20 @@ public class TyphonSession implements Operations {
 		Map<String, String> uuids = new HashMap<>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		TyphonSessionState state = new TyphonSessionState();
-		ITuple mariaDBOperations;
+		MariaDBOperations mariaDBOperations = null;
 		try {
-			mariaDBOperations = new MariaDBOperations(mariaDbConnections).newSQLOperations(store, script, state, uuids, ctx, vf, TF);
+			mariaDBOperations =  new MariaDBOperations(mariaDbConnections);
 		} catch (SQLException e) {
 			throw RuntimeExceptionFactory.javaException(e, null, null);
 		}
+		state.setMariaDBOperations(mariaDBOperations);
 		return vf.tuple(
 			makeGetResult(store, script, state, getResultType, ctx),
 			makeGetJavaResult(store, script, state, getJavaResultType, ctx),
 			makeReadAndStore(store, script, state, readAndStoreType, ctx),
             makeClose(store, state, closeType, ctx),
             makeNewId(uuids, state, newIdType, ctx),
-            mariaDBOperations,
+            mariaDBOperations.newSQLOperations(store, script, state, uuids, ctx, vf, TF),
             new MongoOperations(mongoConnections).newMongoOperations(store, script, state, uuids, ctx, vf, TF)
 		);
 	}
