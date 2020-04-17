@@ -19,6 +19,7 @@ import lang::typhonql::Session;
 import lang::typhonql::mongodb::DBCollection;
 import lang::typhonql::mongodb::DML2Method;
 import lang::typhonql::mongodb::Select2Find;
+import lang::typhonql::Session;
 
 
 import String;
@@ -232,6 +233,10 @@ int runDeleteById(<sql(), str db>, str entity, str uuid, map[str, Connection] co
 
 
 void runSchema(p:<sql(), str db>, Schema s, map[str, Connection] connections, Log log = noLog) {
+  executeUpdate(db, "CREATE DATABASE <db> 
+					'   DEFAULT CHARACTER SET utf8mb4 
+					'   DEFAULT COLLATE utf8mb4_unicode_ci", connections[db]);
+  executeUpdate(db, "DROP DATABASE IF EXISTS <db>", connections[db]);
   list[SQLStat] stats = schema2sql(s, p, s.placement[p], doForeignKeys = false);
   for (SQLStat stat <- stats) {
     log("[RUN-schema/sql/<db>] executing <pp(stat)>");
@@ -241,6 +246,8 @@ void runSchema(p:<sql(), str db>, Schema s, map[str, Connection] connections, Lo
 
 
 void runSchema(p:<mongodb(), str db>, Schema s, map[str, Connection] connections, Log log = noLog) {
+  Session session = newSession(connections);
+  session.mongo.dropDatabase(db);
   for (str entity <- s.placement[p]) {
     log("[RUN-schema/mongodb/<db>] creating collection <entity>");
     drop(db, entity, connections[db]);

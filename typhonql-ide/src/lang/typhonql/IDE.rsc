@@ -8,11 +8,9 @@ import lang::typhonml::XMIReader;
 import lang::typhonql::TDBC;
 import lang::typhonql::DDL;
 import lang::typhonql::WorkingSet;
-import lang::typhonql::Run;
 import lang::typhonql::RunUsingCompiler;
 
 import lang::typhonql::check::Checker;
-
 
 import lang::typhonql::Session;
 import lang::typhonql::Script;
@@ -108,6 +106,11 @@ map[str, Connection] getConnections(Tree tree) {
   return readConnectionsInfo(polystoreUri, user, password);
 }
 
+Session getSession(Tree tree) {
+  map[str, Connection] connections =  getConnections(tree);
+  return newSession(connections);
+}
+
 void setupIDE(bool isDevMode = false) {
   Schema sch = schema({}, {});
   CheckerMLSchema cSch = ();
@@ -156,17 +159,17 @@ void setupIDE(bool isDevMode = false) {
         	if (isDevMode) {
 	          try {
 	          	if ((Request) `<Query q>` := req) {
-	          		ResultTable result = runQuery(req, currentSchema(tree), getConnections(tree));
+	          		ResultTable result = runQuery(req, currentSchema(tree), getSession(tree));
 	            	text(result);
 	          	}
 	          	else if ((Request) `<Statement s>` := req)  {
 	          		if (isDDL(s)) {
 	          			// use interpreter
-	          			 runDDL(req, currentSchema(tree), getConnections(tree));
+	          			 runDDL(req, currentSchema(tree), getSession(tree));
 	          		}
 	          		else {
 	          			// use compiler
-	          			runUpdate(req, currentSchema(tree), getConnections(tree));
+	          			runUpdate(req, currentSchema(tree), getSession(tree));
 	          		}
 	            	alert("Operation succesfully executed");
 	          	}
@@ -219,7 +222,7 @@ void setupIDE(bool isDevMode = false) {
       	if (yes == "yes") {
       		if (isDevMode) {        		
         		try {
-          			runSchema(currentSchema(tree), getConnections(tree));
+          			runSchema(currentSchema(tree), getSession(tree));
           			alert("Polystore successfully reset");
           		} catch e: {
 	        		alert("Error: <e> ");
@@ -242,7 +245,8 @@ void setupIDE(bool isDevMode = false) {
       })
       
     ];
-  
+    
+  /*
   if (isDevMode) {
   	actions += action("Dump database",  void (Tree tree, loc selection) {
   		try {
@@ -253,6 +257,7 @@ void setupIDE(bool isDevMode = false) {
       });
       
   }
+  */
   
   registerContributions(TYPHONQL, {
     outliner(scriptOutliner),

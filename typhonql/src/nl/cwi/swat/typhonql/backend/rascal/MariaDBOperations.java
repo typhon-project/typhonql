@@ -64,6 +64,23 @@ public class MariaDBOperations implements Operations {
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
 		});
 	}
+	
+	private ICallableValue makeExecuteGlobalStatement(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, Map<String, String> uuids, FunctionType executeStmtType, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+		return makeFunction(ctx, state, executeStmtType, args -> {
+			String dbName = ((IString) args[0]).getValue();
+			String query = ((IString) args[1]).getValue();
+			IMap bindings = (IMap) args[2];
+			
+			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
+			
+			ConnectionData data = connections.get(dbName);
+			
+			new MariaDBEngine(store, script, uuids, data.getHost(), data.getPort(), "", data.getUser(), data.getPassword()).executeUpdate(query, bindingsMap);
+			
+			//sessionData.put(resultName, query);
+			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+		});
+	}
 
 	public ITuple newSQLOperations(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, Map<String, String> uuids, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("SQLOperations"));
@@ -76,7 +93,8 @@ public class MariaDBOperations implements Operations {
 				
 		return vf.tuple(
             makeExecuteQuery(store, script, state, uuids, executeQueryType, ctx, vf, tf),
-            makeExecuteStatement(store, script, state, uuids, executeStatementType, ctx, vf, tf)
+            makeExecuteStatement(store, script, state, uuids, executeStatementType, ctx, vf, tf),
+            makeExecuteGlobalStatement(store, script, state, uuids, executeStatementType, ctx, vf, tf)
 		);
 	}
 }

@@ -15,6 +15,7 @@ import org.rascalmpl.interpreter.env.ModuleEnvironment;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
+import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 
 import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IInteger;
@@ -42,32 +43,6 @@ public class TyphonSession implements Operations {
 	
 	public TyphonSession(IValueFactory vf) {
 		this.vf = vf;
-	}
-	
-	public static void bootConnections(IMap connections) {
-		Iterator<Entry<IValue, IValue>> connIter = connections.entryIterator();
-		List<ConnectionInfo> infos = new ArrayList<>();
- 		while (connIter.hasNext()) {
-			Entry<IValue, IValue> entry = connIter.next();
-			String dbName = ((IString) entry.getKey()).getValue();
-			IConstructor cons = (IConstructor) entry.getValue();
-			String host = ((IString) cons.get("host")).getValue();
-			int port = ((IInteger) cons.get("port")).intValue();
-			String user = ((IString) cons.get("user")).getValue();
-			String password = ((IString) cons.get("password")).getValue();
-			ConnectionInfo info = new ConnectionInfo("localhost",
-					host, port, dbName,
-					cons.getName().equals("sqlConnection")?DBType.relationaldb
-					: DBType.documentdb,
-					cons.getName().equals("sqlConnection")?new MariaDB().getName()
-							: new MongoDB().getName(),
-					user,
-					password);
-			infos.add(info);
-		}
-		
-		Connections.boot(infos.toArray(new ConnectionInfo[0]));
-		
 	}
 
 	public ITuple newSession(IMap connections, IEvaluatorContext ctx) {
@@ -155,8 +130,12 @@ public class TyphonSession implements Operations {
 		
 		//List<EntityModel> models = EntityModelReader.fromRascalRelation(types, modelsRel);
 		//WorkingSet ws = store.computeResult(resultName, labels.toArray(new String[0]), models.toArray(new EntityModel[0]));
-		ResultTable rt = store.computeResultTable(script, paths);
-		return rt;
+		try {
+			ResultTable rt = store.computeResultTable(script, paths);
+			return rt;
+		} catch (RuntimeException e) {
+			throw RuntimeExceptionFactory.javaException(e, null, null);
+		}
 	}
 	
 	private ICallableValue makeGetResult(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, FunctionType getResultType, IEvaluatorContext ctx) {

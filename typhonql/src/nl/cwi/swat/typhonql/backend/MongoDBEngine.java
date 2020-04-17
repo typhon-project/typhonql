@@ -6,7 +6,10 @@ import java.util.function.Consumer;
 
 import org.bson.Document;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
@@ -57,6 +60,25 @@ public class MongoDBEngine extends Engine {
 				coll.deleteOne(resolveQuery);
 			}
 		}.executeUpdate();
+	}
+	
+	public void executeCreateCollection(String dbName, String collectionName) {
+		MongoClient mongoClient = MongoClients.create(getConnectionString());
+		MongoDatabase db = mongoClient.getDatabase(dbName);
+		db.createCollection(collectionName);
+	}
+	
+	public void executeDropCollection(String dbName, String collectionName) {
+		MongoClient mongoClient = MongoClients.create(getConnectionString());
+		MongoDatabase db = mongoClient.getDatabase(dbName);
+		MongoCollection<Document> coll = db.getCollection(collectionName);
+		coll.drop();
+	}
+
+	public void executeDropDatabase(String dbName) {
+		MongoClient mongoClient = MongoClients.create(getConnectionString());
+		MongoDatabase db = mongoClient.getDatabase(dbName);
+		db.drop();
 	}
 
 }
