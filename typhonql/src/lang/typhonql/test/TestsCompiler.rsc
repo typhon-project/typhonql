@@ -438,6 +438,10 @@ data TestResult
   | failed()
   | success()
   ;
+  
+str successEmoji = "\u001b[32m\U01F44D\u001b[0m";
+str failEmoji = "\u001b[31m\U01F525\u001b[0m";
+str detailEmoji = "\u001b[34m\U01F52C\u001b[0m";
 
 // key is assertion name for succes/fail
 // or test function name for throw
@@ -454,34 +458,35 @@ void runTest(void() t, Log log = NO_LOG) {
 	}
 	catch e: {
 	    STATS["<t>"] = threw("<e>");
-		println (" ⚠: exception for `<t>`: <e>");
+		println (" <detailEmoji>: exception for `<t>`: <e>");
 	}
 	LOG = oldLog;
 }
 
+
 void assertEquals(str testName, value actual, value expected) {
 	if (actual != expected) {
 	    STATS[testName] = failed();
-		println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
+		println(" <failEmoji>: `<testName>` expected: <expected>, actual: <actual>");
 	}
 	else {
 	    STATS[testName] = success();
-		println(" ✔: `<testName>`");
+		println(" <successEmoji>: `<testName>`");
 	}	
 }
 
 void assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected) {
   if (actual.sig != expected.sig) {
     STATS[testName] = failed();
-    println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
+    println(" <failEmoji>: `<testName>` expected: <expected>, actual: <actual>");
   }
   else if (toSet(actual.vals) != toSet(expected.vals)) {
     STATS[testName] = failed();
-    println(" ✗: `<testName>` expected: <expected>, actual: <actual>");
+    println(" <failEmoji>: `<testName>` expected: <expected>, actual: <actual>");
   }
   else {
     STATS[testName] = success();
-	println(" ✔: `<testName>`");
+	println(" <successEmoji>: `<testName>`");
   }
 }
 
