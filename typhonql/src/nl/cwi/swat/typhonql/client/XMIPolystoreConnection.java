@@ -53,96 +53,83 @@ import nl.cwi.swat.typhonql.backend.rascal.TyphonSession;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 import nl.cwi.swat.typhonql.workingset.Entity;
 
-public class XMIPolystoreConnection implements PolystoreConnection {
+public class XMIPolystoreConnection {
 	private static final StandardTextWriter VALUE_PRINTER = new StandardTextWriter(true, 2);
-
-	private volatile IString xmiModel;
-	private final ConcurrentSoftReferenceObjectPool<Evaluator> evaluators;
 	private static final IValueFactory VF = ValueFactoryFactory.getValueFactory();
 	private static final TypeFactory TF = TypeFactory.getInstance();
-	private IMap connections;
 
-	private TyphonSession sessionBuilder;
+	private final ConcurrentSoftReferenceObjectPool<Evaluator> evaluators;
+	private final TyphonSession sessionBuilder;
 	
-	public XMIPolystoreConnection(String xmiModel, List<DatabaseInfo> infos) throws IOException {
-		this(infos);
-		this.xmiModel = VF.string(xmiModel);
+	public XMIPolystoreConnection() throws IOException {
 		this.sessionBuilder = new TyphonSession(VF);
+		ISourceLocation root = URIUtil.correctLocation("project", "typhonql", null);
+		if (!hasRascalMF(root)) {
+			// project not available, switch to lib
+			root = URIUtil.correctLocation("lib", "typhonql", null);
+		}
+		if (!hasRascalMF(root)) {
+			// maybe lib scheme does not exist yet, so we switch to the plugin scheme
+			root = URIUtil.correctLocation("plugin", "typhonql", null);
+		}
+		if (!hasRascalMF(root)) {
+			// we are not inside eclipse/OSGI, so we are in the headless version, so we have to help the registry in finding 
+			try {
+				root = URIUtil.createFileLocation(XMIPolystoreConnection.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+				if (root.getPath().endsWith(".jar")) {
+					root = URIUtil.changePath(URIUtil.changeScheme(root, "jar+" + root.getScheme()), root.getPath() + "!/");
+				}
+			} catch (URISyntaxException e) {
+				throw new RuntimeException("Cannot get to root of the typhonql project", e);
+			}
+		}
+		if (!hasRascalMF(root)) {
+			if (root.getScheme().equals("file") && root.getPath().endsWith("/target/classes/")) {
+				// last resort, we are in a 1st level eclipse on the typhonql project itself, now RASCAL.MF file is harder to find
+				try {
+					root = URIUtil.changePath(root, root.getPath().replace("/target/classes/", ""));
+				} catch (URISyntaxException e) {
+					throw new RuntimeException("Cannot get to root of the typhonql project", e);
+				}
+			}
+		}
+
+		if (!hasRascalMF(root)) {
+			System.err.println("Running polystore jar in a strange context, cannot find rascal.mf file & and related modules");
+			System.err.println("Last location tried: " + root);
+		}
+
+
+		PathConfig pcfg = PathConfig.fromSourceProjectRascalManifest(root);
+		ClassLoader cl = new SourceLocationClassLoader(pcfg.getClassloaders(), XMIPolystoreConnection.class.getClassLoader());
+
+		evaluators = new ConcurrentSoftReferenceObjectPool<>(10, TimeUnit.MINUTES, 1, calculateMaxEvaluators(), () -> {
+			// we construct a new evaluator for every concurrent call
+			GlobalEnvironment  heap = new GlobalEnvironment();
+			Evaluator result = new Evaluator(ValueFactoryFactory.getValueFactory(), 
+					new PrintWriter(System.err, true), new PrintWriter(System.out, false),
+					new ModuleEnvironment("$typhonql$", heap), heap);
+
+			result.addRascalSearchPathContributor(StandardLibraryContributor.getInstance());
+			result.addRascalSearchPath(pcfg.getBin());
+			for (IValue path : pcfg.getSrcs()) {
+				result.addRascalSearchPath((ISourceLocation) path); 
+			}
+			result.addClassLoader(cl);
+
+			System.out.println("Starting a fresh evaluator to interpret the query (" + Integer.toHexString(System.identityHashCode(result)) + ")");
+			System.out.flush();
+			// now we are ready to import our main module
+			result.doImport(null, "lang::typhonql::RunUsingCompiler");
+			result.doImport(null, "lang::typhonql::Session");
+			System.out.println("Finished initializing evaluator: " + Integer.toHexString(System.identityHashCode(result)));
+			System.out.flush();
+			return result;
+		});
 	}
 	
-	private XMIPolystoreConnection(List<DatabaseInfo> infos) throws IOException {
-				this.connections = buildConnections(infos);
-				ISourceLocation root = URIUtil.correctLocation("project", "typhonql", null);
-				if (!hasRascalMF(root)) {
-					// project not available, switch to lib
-					root = URIUtil.correctLocation("lib", "typhonql", null);
-				}
-				if (!hasRascalMF(root)) {
-					// maybe lib scheme does not exist yet, so we switch to the plugin scheme
-					root = URIUtil.correctLocation("plugin", "typhonql", null);
-				}
-				if (!hasRascalMF(root)) {
-					// we are not inside eclipse/OSGI, so we are in the headless version, so we have to help the registry in finding 
-		            try {
-		                root = URIUtil.createFileLocation(XMIPolystoreConnection.class.getProtectionDomain().getCodeSource().getLocation().getPath());
-		                if (root.getPath().endsWith(".jar")) {
-		                    root = URIUtil.changePath(URIUtil.changeScheme(root, "jar+" + root.getScheme()), root.getPath() + "!/");
-		                }
-		            } catch (URISyntaxException e) {
-		                throw new RuntimeException("Cannot get to root of the typhonql project", e);
-		            }
-				}
-				if (!hasRascalMF(root)) {
-					if (root.getScheme().equals("file") && root.getPath().endsWith("/target/classes/")) {
-						// last resort, we are in a 1st level eclipse on the typhonql project itself, now RASCAL.MF file is harder to find
-						try {
-							root = URIUtil.changePath(root, root.getPath().replace("/target/classes/", ""));
-						} catch (URISyntaxException e) {
-							throw new RuntimeException("Cannot get to root of the typhonql project", e);
-						}
-					}
-				}
-
-				if (!hasRascalMF(root)) {
-					System.err.println("Running polystore jar in a strange context, cannot find rascal.mf file & and related modules");
-					System.err.println("Last location tried: " + root);
-				}
-
-				
-				PathConfig pcfg = PathConfig.fromSourceProjectRascalManifest(root);
-				ClassLoader cl = new SourceLocationClassLoader(pcfg.getClassloaders(), XMIPolystoreConnection.class.getClassLoader());
-				
-				evaluators = new ConcurrentSoftReferenceObjectPool<>(10, TimeUnit.MINUTES, 1, calculateMaxEvaluators(), () -> {
-					// we construct a new evaluator for every concurrent call
-					GlobalEnvironment  heap = new GlobalEnvironment();
-					Evaluator result = new Evaluator(ValueFactoryFactory.getValueFactory(), 
-							new PrintWriter(System.err, true), new PrintWriter(System.out, false),
-							new ModuleEnvironment("$typhonql$", heap), heap);
-					
-					result.addRascalSearchPathContributor(StandardLibraryContributor.getInstance());
-					result.addRascalSearchPath(pcfg.getBin());
-					for (IValue path : pcfg.getSrcs()) {
-						result.addRascalSearchPath((ISourceLocation) path); 
-					}
-					result.addClassLoader(cl);
-
-					System.out.println("Starting a fresh evaluator to interpret the query (" + Integer.toHexString(System.identityHashCode(result)) + ")");
-					System.out.flush();
-					// now we are ready to import our main module
-					result.doImport(null, "lang::typhonql::RunUsingCompiler");
-					result.doImport(null, "lang::typhonql::Session");
-					System.out.println("Finished initializing evaluator: " + Integer.toHexString(System.identityHashCode(result)));
-					System.out.flush();
-					return result;
-				});
-	}
 	
-	public void setXmiModel(String xmiModel) {
-		this.xmiModel = VF.string(xmiModel);
-	}
-	
-	@Override
-	public ResultTable executeQuery(String query) {
+	public ResultTable executeQuery(String xmiModel, List<DatabaseInfo> connections, String query) {
 		return evaluators.useAndReturn(evaluator -> {
 			try {
 				synchronized (evaluator) {
@@ -152,7 +139,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(query), 
-							xmiModel,
+							VF.string(xmiModel),
 							session);
 					return (ResultTable) v;
 				}
@@ -169,8 +156,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 		});
 	}
 	
-	@Override
-	public void executeDDLUpdate(String update) {
+	public void executeDDLUpdate(String xmiModel, List<DatabaseInfo> connections, String update) {
 		evaluators.useAndReturn(evaluator -> {
 			try {
 				synchronized (evaluator) {
@@ -180,7 +166,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(update), 
-							xmiModel,
+							VF.string(xmiModel),
 							session);
 				}
 			} catch (StaticError e) {
@@ -197,23 +183,23 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 		
 	}
 	
-	public CommandResult executeUpdate(String query) {
-		IValue val = evaluateUpdate(query);
+	public CommandResult executeUpdate(String xmiModel, List<DatabaseInfo> connections, String query) {
+		IValue val = evaluateUpdate(xmiModel, connections, query);
 		return CommandResult.fromIValue(val);
 	}
 	
 	
-	private IValue evaluateUpdate(String update) {
+	private IValue evaluateUpdate(String xmiModel, List<DatabaseInfo> connections, String update) {
 		return evaluators.useAndReturn(evaluator -> {
 			try {
 				synchronized (evaluator) {
 					// str src, str xmiString, Session sessions
-					ITuple session = createSession(evaluator);
+					ITuple session = sessionBuilder.newSession(connections, evaluator);
 					return evaluator.call("runUpdate", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(update), 
-							xmiModel,
+							VF.string(xmiModel),
 							session);
 				}
 			} catch (StaticError e) {
@@ -230,7 +216,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 	}
 	
 
-	private IValue evaluatePreparedStatementQuery(String preparedStatement, String[] columnNames, String[][] matrix) {
+	private IValue evaluatePreparedStatementQuery(String xmiModel, List<DatabaseInfo> connections, String preparedStatement, String[] columnNames, String[][] matrix) {
 		IListWriter lw = VF.listWriter();
 		for (Object[] row : matrix) {
 			List<IValue> vs = Arrays.asList(row).stream().map(
@@ -244,7 +230,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 		return evaluators.useAndReturn(evaluator -> {
 			try {
 				synchronized (evaluator) {
-					ITuple session = createSession(evaluator);
+					ITuple session = sessionBuilder.newSession(connections, evaluator);
 					// str src, str polystoreId, Schema s, Session session
 					return evaluator.call("runPrepared", 
 							"lang::typhonql::RunUsingCompiler",
@@ -252,7 +238,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 							VF.string(preparedStatement),
 							columnsWriter.done(),
 							lw.done(),
-							xmiModel,
+							VF.string(xmiModel),
 							session);
 				}
 			} catch (StaticError e) {
@@ -268,8 +254,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 		});
 	}
 	
-	@Override
-	public void resetDatabases() {
+	public void resetDatabases(String xmiModel, List<DatabaseInfo> connections) {
 		evaluators.useAndReturn(evaluator -> {
 			try {
 				synchronized (evaluator) {
@@ -277,7 +262,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 					return evaluator.call("runSchema", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
-                    		xmiModel, connections);
+                    		VF.string(xmiModel), connectionsAsMap(connections));
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
@@ -305,7 +290,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 		return URIResolverRegistry.getInstance().exists(URIUtil.getChildLocation(root, RascalManifest.META_INF_RASCAL_MF));
 	}
 
-	private IMap buildConnections(List<DatabaseInfo> connectionInfo) {
+	private static IMap connectionsAsMap(List<DatabaseInfo> connectionInfo) {
 		IMapWriter mw = VF.mapWriter();
 		TypeStore ts = new TypeStore();
 		Type connectionType = TF.abstractDataType(ts, "Connection");
@@ -335,13 +320,8 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 		return mw.done();
 	}
 	
-	private ITuple createSession(Evaluator evaluator) {
-		return sessionBuilder.newSession(connections, evaluator);
-	}
-	
-	@Override
-	public CommandResult[] executePreparedUpdate(String preparedStatement, String[] columnNames, String[][] values) {
-		IValue v = evaluatePreparedStatementQuery(preparedStatement, columnNames, values);
+	public CommandResult[] executePreparedUpdate(String xmiModel, List<DatabaseInfo> connections, String preparedStatement, String[] columnNames, String[][] values) {
+		IValue v = evaluatePreparedStatementQuery(xmiModel, connections, preparedStatement, columnNames, values);
 		Iterator<IValue> iter0 = ((IList) v).iterator();
 		List<CommandResult> results = new ArrayList<CommandResult>();
 		while (iter0.hasNext()) {
@@ -367,8 +347,8 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 		
 		String xmiString = String.join("\n", Files.readAllLines(Paths.get(new URI(fileName))));
 
-		PolystoreConnection conn = new XMIPolystoreConnection(xmiString, Arrays.asList(infos));
-		ResultTable iv = conn.executeQuery("from Product p select p");
+		XMIPolystoreConnection conn = new XMIPolystoreConnection();
+		ResultTable iv = conn.executeQuery(xmiString, Arrays.asList(infos), "from Product p select p");
 		System.out.println(iv);
 
 	}
