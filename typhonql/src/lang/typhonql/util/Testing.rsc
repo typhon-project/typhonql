@@ -16,6 +16,9 @@ import ParseTree;
 import String;
 import Map;
 
+Log NO_LOG = void(value v){ return; /*println("LOG: <v>"); */};
+Log LOG = NO_LOG;
+
 alias Conn = tuple[str host, str port, str user, str password];
 
 data TestResult
@@ -99,8 +102,6 @@ TestExecutor initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 str notImplemented() {
 	throw "Operation not implemented";
 }
-
-Log NO_LOG = void(value v){ return; };
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java str readHttpModel(loc polystoreUri, str user, str password);

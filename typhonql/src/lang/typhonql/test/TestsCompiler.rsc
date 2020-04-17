@@ -3,6 +3,8 @@ module lang::typhonql::\test::TestsCompiler
 import lang::typhonql::util::Log;
 import lang::typhonql::util::Testing;
 
+import lang::typhonql::TDBC;
+
 import IO;
 
 import lang::typhonml::Util;
@@ -15,15 +17,13 @@ import Type;
  */
  
 
-// str HOST = "localhost";
+// str HOST = "192.168.178.78";
 str HOST = "localhost";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
 
-Log NO_LOG = void(value v){ return; /*println("LOG: <v>"); */};
 public Log PRINT() = void(value v) { println("LOG: <v>"); };
-Log LOG = NO_LOG;
 
 void setup(PolystoreInstance p, bool doTest) {
 	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo" }`);
