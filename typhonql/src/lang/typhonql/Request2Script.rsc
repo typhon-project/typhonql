@@ -9,7 +9,7 @@ import lang::typhonql::TDBC;
 import lang::typhonql::Order;
 import lang::typhonql::Normalize;
 
-import lang::typhonql::Insert2Script;
+import lang::typhonql::Insert2ScriptRefactored;
 import lang::typhonql::Update2Script;
 import lang::typhonql::Delete2Script;
 import lang::typhonql::Query2Script;
