@@ -3,7 +3,6 @@ package nl.cwi.swat.typhonql.client;
 import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.staticErrorMessage;
 import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.throwMessage;
 import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.throwableMessage;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
@@ -17,7 +16,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import org.rascalmpl.interpreter.Evaluator;
 import org.rascalmpl.interpreter.control_exceptions.Throw;
 import org.rascalmpl.interpreter.env.GlobalEnvironment;
@@ -31,24 +29,17 @@ import org.rascalmpl.uri.URIUtil;
 import org.rascalmpl.uri.classloaders.SourceLocationClassLoader;
 import org.rascalmpl.util.ConcurrentSoftReferenceObjectPool;
 import org.rascalmpl.values.ValueFactoryFactory;
-
-import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IListWriter;
-import io.usethesource.vallang.IMap;
-import io.usethesource.vallang.IMapWriter;
 import io.usethesource.vallang.ISourceLocation;
-import io.usethesource.vallang.IString;
-import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.io.StandardTextWriter;
-import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
-import io.usethesource.vallang.type.TypeStore;
 import nl.cwi.swat.typhonql.DBType;
 import nl.cwi.swat.typhonql.MariaDB;
 import nl.cwi.swat.typhonql.MongoDB;
+import nl.cwi.swat.typhonql.backend.rascal.SessionWrapper;
 import nl.cwi.swat.typhonql.backend.rascal.TyphonSession;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 import nl.cwi.swat.typhonql.workingset.Entity;
@@ -131,16 +122,15 @@ public class XMIPolystoreConnection {
 	
 	public ResultTable executeQuery(String xmiModel, List<DatabaseInfo> connections, String query) {
 		return evaluators.useAndReturn(evaluator -> {
-			try {
+			try (SessionWrapper session = sessionBuilder.newSession(connections, evaluator)) {
 				synchronized (evaluator) {
-					ITuple session = sessionBuilder.newSession(connections, evaluator);
 					// str src, str xmiString, Session session
 					IValue v = evaluator.call("runQueryAndGetJava", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(query), 
 							VF.string(xmiModel),
-							session);
+							session.getTuple());
 					return (ResultTable) v;
 				}
 			} catch (StaticError e) {
@@ -158,16 +148,14 @@ public class XMIPolystoreConnection {
 	
 	public void executeDDLUpdate(String xmiModel, List<DatabaseInfo> connections, String update) {
 		evaluators.useAndReturn(evaluator -> {
-			try {
+			try (SessionWrapper session = sessionBuilder.newSession(connections, evaluator)) {
 				synchronized (evaluator) {
-					ITuple session = sessionBuilder.newSession(connections, evaluator);
-					
 					return evaluator.call("runDDL", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(update), 
 							VF.string(xmiModel),
-							session);
+							session.getTuple());
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
@@ -191,16 +179,16 @@ public class XMIPolystoreConnection {
 	
 	private IValue evaluateUpdate(String xmiModel, List<DatabaseInfo> connections, String update) {
 		return evaluators.useAndReturn(evaluator -> {
-			try {
+			try (SessionWrapper session = sessionBuilder.newSession(connections, evaluator)) {
+                
 				synchronized (evaluator) {
 					// str src, str xmiString, Session sessions
-					ITuple session = sessionBuilder.newSession(connections, evaluator);
 					return evaluator.call("runUpdate", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(update), 
 							VF.string(xmiModel),
-							session);
+							session.getTuple());
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
@@ -228,9 +216,8 @@ public class XMIPolystoreConnection {
 		IListWriter columnsWriter = VF.listWriter();
 		columnsWriter.appendAll(Arrays.asList(columnNames).stream().map(columnName -> VF.string(columnName)).collect(Collectors.toList()));
 		return evaluators.useAndReturn(evaluator -> {
-			try {
+			try (SessionWrapper session = sessionBuilder.newSession(connections, evaluator)) {
 				synchronized (evaluator) {
-					ITuple session = sessionBuilder.newSession(connections, evaluator);
 					// str src, str polystoreId, Schema s, Session session
 					return evaluator.call("runPrepared", 
 							"lang::typhonql::RunUsingCompiler",
@@ -239,7 +226,7 @@ public class XMIPolystoreConnection {
 							columnsWriter.done(),
 							lw.done(),
 							VF.string(xmiModel),
-							session);
+							session.getTuple());
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
@@ -256,13 +243,14 @@ public class XMIPolystoreConnection {
 	
 	public void resetDatabases(String xmiModel, List<DatabaseInfo> connections) {
 		evaluators.useAndReturn(evaluator -> {
-			try {
+			try (SessionWrapper session = sessionBuilder.newSession(connections, evaluator)) {
 				synchronized (evaluator) {
 					// str src, str polystoreId, Schema s,
 					return evaluator.call("runSchema", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
-                    		VF.string(xmiModel), connectionsAsMap(connections));
+                    		VF.string(xmiModel), 
+                    		session.getTuple());
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
@@ -288,36 +276,6 @@ public class XMIPolystoreConnection {
 	
 	private static boolean hasRascalMF(ISourceLocation root) {
 		return URIResolverRegistry.getInstance().exists(URIUtil.getChildLocation(root, RascalManifest.META_INF_RASCAL_MF));
-	}
-
-	private static IMap connectionsAsMap(List<DatabaseInfo> connectionInfo) {
-		IMapWriter mw = VF.mapWriter();
-		TypeStore ts = new TypeStore();
-		Type connectionType = TF.abstractDataType(ts, "Connection");
-		Type mariaDbType = TF.constructor(ts, connectionType, "sqlConnection", 
-				TF.stringType(), "host", TF.integerType(), "port", TF.stringType(), "user",
-				TF.stringType(), "password");
-		Type mongoType = TF.constructor(ts, connectionType, "mongoConnection", 
-				TF.stringType(), "host", TF.integerType(), "port", TF.stringType(), "user",
-				TF.stringType(), "password");
-
-		for (DatabaseInfo info : connectionInfo) {
-			IString host = VF.string(info.getHost());
-			IInteger port = VF.integer(info.getPort());
-			IString user = VF.string(info.getUser());
-			IString password = VF.string(info.getPassword());
-			IString dbName = VF.string(info.getDbName());
-			switch (info.getDbType()) { 
-			case relationaldb:
-				IValue v = VF.constructor(mariaDbType, host, port, user, password);
-				mw.put(dbName, VF.constructor(mariaDbType, host, port, user, password));
-				break;
-			case documentdb:
-				mw.put(dbName, VF.constructor(mongoType, host, port, user, password));
-				break;
-			}
-		}
-		return mw.done();
 	}
 	
 	public CommandResult[] executePreparedUpdate(String xmiModel, List<DatabaseInfo> connections, String preparedStatement, String[] columnNames, String[][] values) {

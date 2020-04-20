@@ -36,13 +36,15 @@ Stats STATS = ();
 alias PolystoreInstance =
 	tuple[
 		void() resetDatabases,
+		void() startSession,
+		void() closeSession,
 		ResultTable(Request req) runQuery,
 		ResultTable(Request req, Schema s) runQueryForSchema,
 		CommandResult(Request req) runUpdate,
 		CommandResult(Request req, Schema s) runUpdateForSchema,
 		CommandResult(Request req) runDDL,
 		list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs)
-			runPreparedStatement,
+			runPreparedUpdate,
 		Schema() fetchSchema,
 		void() printSchema];
 
@@ -53,27 +55,39 @@ alias TestExecuter =
 		
 TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password) {
 	Conn conn = <host, port, user, password>;
+	Schema sch = fetchSchema(conn);
+	map[str, Connection] connections =  readConnectionsInfo(conn.host, toInt(conn.port), conn.user, conn.password);
+	Session session;
+	
+	void() myStartSession = void() {
+		session = newSession(connections, log = LOG);
+	};
+	
+	void() myCloseSession = void() {
+		session.done();
+	};
+	
 	void() myResetDatabases = void() {
-		resetDatabases(conn);
+		resetDatabasesInTest(sch, session);
 	};
 	ResultTable(Request req) myRunQuery = ResultTable(Request req) {
-		return runQuery(req, conn);
+		return runQueryInTest(req, sch, session);
 	};
 	ResultTable(Request req, Schema s) myRunQueryForSchema = ResultTable(Request req, Schema s) {
-		return runQuery(req, s, conn);
+		return runQueryInTest(req, s, session);
 	};
 	CommandResult(Request req) myRunUpdate = CommandResult(Request req) {
-		return runUpdate(req, conn);
+		return runUpdateInTest(req, sch, session);
 	};
 	CommandResult(Request req, Schema s) myRunUpdateForSchema = CommandResult(Request req, Schema s) {
-		return runUpdate(req, s, conn);
+		return runUpdateInTest(req, s, session);
 	};
 	CommandResult(Request req) myRunDDL = CommandResult(Request req) {
-		return runDDL(req, conn);
+		return runDDLInTest(req, sch, conn);
 	};
 	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) 
-		myRunPreparedStatement = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
-			return runPreparedStatement(req, columnNames, vs, conn);
+		myRunPreparedUpdate = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
+			return runPreparedUpdateInTest(req, columnNames, vs, sch, session);
 	};
 	Schema() myFetchSchema = Schema() {
 		return fetchSchema(conn);
@@ -83,8 +97,8 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		printSchema(conn);
 	};
 	
-	PolystoreInstance proxy = <myResetDatabases, myRunQuery, myRunQueryForSchema,
-		myRunUpdate, myRunUpdateForSchema, myRunDDL, myRunPreparedStatement, 
+	PolystoreInstance proxy = <myResetDatabases, myStartSession, myCloseSession, myRunQuery, myRunQueryForSchema,
+		myRunUpdate, myRunUpdateForSchema, myRunDDL, myRunPreparedUpdate, 
 		myFetchSchema, myPrintSchema>;
 	
 	void(void(PolystoreInstance proxy)) myRunTest = void(void(PolystoreInstance proxy) t) {
@@ -121,67 +135,37 @@ Schema fetchSchema(Conn c) {
 	return sch;
 }
 
-CommandResult runDDL(Request req, Conn c) {
-	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
-	Schema s = fetchSchema(c);
-	return runDDL(req, s, c);
-}
-
-CommandResult runDDL(Request req, Schema s, Conn c) {
-	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
-	Session session = newSession(connections, log = LOG);
+CommandResult runDDLInTest(Request req, Schema s, Session session) {
 	runDDL(req, s, session, log = LOG);
 	return <-1, ()>;
 }
 
-CommandResult runUpdate(Request req, Conn c) {
-	Schema s = fetchSchema(c);
-	return runUpdate(req, s, c);
-}
-
-CommandResult runUpdate(Request req, Schema s, Conn c) {
-	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
-	Session session = newSession(connections, log = LOG);
+CommandResult runUpdateInTest(Request req, Schema s, Session session) {
 	return runUpdate(req, s, session, log = LOG);
 }
 
-list[CommandResult] runPreparedUpdate(Request req, list[str] columnNames, list[list[str]] vs, Conn c) {
-	Schema s = fetchSchema(c);
-	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
-	Session session = newSession(connections, log = LOG);
+list[CommandResult] runPreparedUpdateInTest(Request req, list[str] columnNames, list[list[str]] vs, Schema s, Session session) {
 	return runPrepared(req, columnNames, vs, s, session, log = LOG);
 }
 
-ResultTable runQuery(Request req, Conn c) {
-	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
-	Session session = newSession(connections, log = LOG);
-	Schema s = fetchSchema(c);
+ResultTable runQueryInTest(Request req, Schema s, Session session) {
 	return runQuery(req, s, session, log = LOG);
 }
 
-
-ResultTable runQuery(Request req, Schema s, Conn c) {
-	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
-	Session session = newSession(connections, log = LOG);
-	return runQuery(req, s, session, log = LOG);
-}
-
-void resetDatabases(Conn c, Log log = LOG) {
-	map[str, Connection] connections =  readConnectionsInfo(c.host, toInt(c.port), c.user, c.password);
-	str modelStr = readHttpModel(|http://<c.host>:<c.port>|, c.user, c.password);
-	Schema sch = loadSchemaFromXMI(modelStr);
-	Session session = newSession(connections, log = log);
+void resetDatabasesInTest(Schema sch, Session session, Log log = LOG) {
 	runSchema(sch, session, log = log);
 }
 
 void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log = LOG, bool runTestsInSetup = false) {
 	println("Running test: <t>");
+	proxy.startSession();
 	proxy.resetDatabases();
 	setup(proxy, runTestsInSetup);
 	oldLog = LOG;
 	LOG = log;
 	try {
 		t(proxy);
+		proxy.closeSession();
 	}
 	catch e: {
 		STATS["<t>"] = threw("<e>");

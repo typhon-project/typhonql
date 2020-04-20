@@ -48,7 +48,11 @@ EntityModels schema2entityModels(Schema s)
            | str e <- entities(s) };
   
 
-  
+str runScriptAndClose(Script scr, Session session, Schema schema) {
+	str result = runScript(scr, session, schema);
+	session.done();
+	return result;
+}
   
 str runScript(Script scr, Session session, Schema schema) {
   str result = "";
