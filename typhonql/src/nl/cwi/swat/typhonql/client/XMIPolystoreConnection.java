@@ -39,7 +39,6 @@ import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IMapWriter;
 import io.usethesource.vallang.ISourceLocation;
 import io.usethesource.vallang.IString;
-import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.io.StandardTextWriter;
@@ -49,6 +48,7 @@ import io.usethesource.vallang.type.TypeStore;
 import nl.cwi.swat.typhonql.DBType;
 import nl.cwi.swat.typhonql.MariaDB;
 import nl.cwi.swat.typhonql.MongoDB;
+import nl.cwi.swat.typhonql.backend.rascal.SessionWrapper;
 import nl.cwi.swat.typhonql.backend.rascal.TyphonSession;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 import nl.cwi.swat.typhonql.workingset.Entity;
@@ -144,16 +144,16 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 	@Override
 	public ResultTable executeQuery(String query) {
 		return evaluators.useAndReturn(evaluator -> {
+			SessionWrapper session = sessionBuilder.newSessionWrapper(connections, evaluator);
 			try {
 				synchronized (evaluator) {
-					ITuple session = sessionBuilder.newSession(connections, evaluator);
 					// str src, str xmiString, Session session
-					IValue v = evaluator.call("runQueryAndGetJavaClosing", 
+					IValue v = evaluator.call("runQueryAndGetJava", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(query), 
 							xmiModel,
-							session);
+							session.getTuple());
 					return (ResultTable) v;
 				}
 			} catch (StaticError e) {
@@ -165,6 +165,8 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 			} catch (Throwable e) {
 				throwableMessage(evaluator.getStdErr(), e, evaluator.getStackTrace(), VALUE_PRINTER);
 				throw e;
+			} finally {
+				session.close();
 			}
 		});
 	}
@@ -172,16 +174,15 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 	@Override
 	public void executeDDLUpdate(String update) {
 		evaluators.useAndReturn(evaluator -> {
+			SessionWrapper session = sessionBuilder.newSessionWrapper(connections, evaluator);
 			try {
 				synchronized (evaluator) {
-					ITuple session = sessionBuilder.newSession(connections, evaluator);
-					
-					return evaluator.call("runDDLClosing", 
+					return evaluator.call("runDDL", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(update), 
 							xmiModel,
-							session);
+							session.getTuple());
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
@@ -192,6 +193,8 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 			} catch (Throwable e) {
 				throwableMessage(evaluator.getStdErr(), e, evaluator.getStackTrace(), VALUE_PRINTER);
 				throw e;
+			} finally {
+				session.close();
 			}
 		});
 		
@@ -205,16 +208,16 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 	
 	private IValue evaluateUpdate(String update) {
 		return evaluators.useAndReturn(evaluator -> {
+			SessionWrapper session = sessionBuilder.newSessionWrapper(connections, evaluator);
 			try {
 				synchronized (evaluator) {
 					// str src, str xmiString, Session sessions
-					ITuple session = createSession(evaluator);
-					return evaluator.call("runUpdateClosing", 
+					return evaluator.call("runUpdate", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(update), 
 							xmiModel,
-							session);
+							session.getTuple());
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
@@ -225,6 +228,8 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 			} catch (Throwable e) {
 				throwableMessage(evaluator.getStdErr(), e, evaluator.getStackTrace(), VALUE_PRINTER);
 				throw e;
+			} finally {
+				session.close();
 			}
 		});
 	}
@@ -242,18 +247,18 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 		IListWriter columnsWriter = VF.listWriter();
 		columnsWriter.appendAll(Arrays.asList(columnNames).stream().map(columnName -> VF.string(columnName)).collect(Collectors.toList()));
 		return evaluators.useAndReturn(evaluator -> {
+			SessionWrapper session = sessionBuilder.newSessionWrapper(connections, evaluator);
 			try {
 				synchronized (evaluator) {
-					ITuple session = createSession(evaluator);
 					// str src, str polystoreId, Schema s, Session session
-					return evaluator.call("runPreparedClosing", 
+					return evaluator.call("runPrepared", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(preparedStatement),
 							columnsWriter.done(),
 							lw.done(),
 							xmiModel,
-							session);
+							session.getTuple());
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
@@ -264,6 +269,8 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 			} catch (Throwable e) {
 				throwableMessage(evaluator.getStdErr(), e, evaluator.getStackTrace(), VALUE_PRINTER);
 				throw e;
+			} finally {
+				session.close();
 			}
 		});
 	}
@@ -271,13 +278,15 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 	@Override
 	public void resetDatabases() {
 		evaluators.useAndReturn(evaluator -> {
+			SessionWrapper session = sessionBuilder.newSessionWrapper(connections, evaluator);
 			try {
 				synchronized (evaluator) {
 					// str src, str polystoreId, Schema s,
 					return evaluator.call("runSchema", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
-                    		xmiModel, connections);
+                    		xmiModel, 
+                    		session.getTuple());
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
@@ -288,6 +297,8 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 			} catch (Throwable e) {
 				throwableMessage(evaluator.getStdErr(), e, evaluator.getStackTrace(), VALUE_PRINTER);
 				throw e;
+			} finally {
+				session.close();
 			}
 		});
 	}
@@ -333,10 +344,6 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 			}
 		}
 		return mw.done();
-	}
-	
-	private ITuple createSession(Evaluator evaluator) {
-		return sessionBuilder.newSession(connections, evaluator);
 	}
 	
 	@Override
