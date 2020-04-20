@@ -182,3 +182,36 @@ generated into the script on the Rascal side.
 Note that id-generation, would be simply another method in such a
 class, populating the map with generated id, where `interpolate` would
 access that.
+
+# Data Manipulation Statements
+
+
+TyphonQL supports the standard data manipulation (DML) statements to create, modify, and delete entities in the 
+Polystore. While insert, update and delete always operate on a single entity type, which is consequently
+local to a single back-end, maintenance of inverses and containment relations requires cross-db logic.
+
+### Insert
+
+`insert` inserts a new entity into the polystore, but accesses back-ends external to the entity itself in 
+the following cases:
+
+- if the inverse of a containment relations is specified, the (primary) ownership relation of the owner object 
+is updated in a possibly external back-end.
+
+- similarly, if the insert includes references to contained or cross-references entities in another back-end, and the specifeid target entity/entities have an inverse,  than *that* inverse is updated as well.
+
+### Update
+
+The same cross-db updates apply as in the case of insert, except that in this case the modification may
+include removals, because of the `-: [#....]` notation.
+
+### Delete
+
+If an entity is deleted, it's removed from its owning entity and references by any entity that references it 
+as a cross-ref, which may be living outside the database of the entity itself. If the entity contains elements 
+that are outside its own back-end these are deleted as well (cross-db cascade delete), but only thru one
+hop across database back-ends. 
+
+ 
+
+ 

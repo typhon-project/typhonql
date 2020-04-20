@@ -63,6 +63,7 @@ void smokeStat(Request r) {
   iprintln(scr);
   Session session = newSession(connections);
   runScript(scr, session, s);
+  session.done();
 }
 
   
@@ -77,6 +78,7 @@ void smokeQuery(Request r, str result, rel[str name, str \type] entities, Entity
 
   Session session = newSession(connections);
   runScript(scr, session, s);
+  session.done();
   
   println("## Result:");
   println(session.read(result, entities, models));
@@ -173,7 +175,8 @@ void smokeInsertMaria() {
 	Script scr1 = request2script(req1, s);
 	iprintln(scr1);
 	runScript(scr1, session, s);
-  
+    session.done();
+    
 }
 
 void smokeInsertMongoAndMaria2() {
@@ -226,7 +229,7 @@ void smokeCrossCascadeDelete1() {
 	
 }
 
-Session executeRequests(list[Request] rs, bool clean = true) {
+void executeRequests(list[Request] rs, bool clean = true) {
 	if (clean) { 
 		resetDatabases();
 	} 
@@ -236,7 +239,7 @@ Session executeRequests(list[Request] rs, bool clean = true) {
 		iprintln(scr);
 		runScript(scr, session, s);
 	}
-	return session;
+	session.done();
 }
 
 void resetDatabases() {

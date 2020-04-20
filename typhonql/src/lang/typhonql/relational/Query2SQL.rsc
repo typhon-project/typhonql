@@ -16,6 +16,7 @@ import lang::typhonml::Util;
 import lang::typhonql::util::Log;
 
 import IO;
+import ValueIO;
 import String;
 import List;
 
@@ -259,7 +260,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.@id`, Ctx ctx, Log log = noLog) {
   
 // only one level of navigation because of normalization
 SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
-  // println("TRANSLATING: <e>");
+  log("TRANSLATING: <e>");
   str entity = ctx.env["<x>"];
   str role = "<f>"; 
 
@@ -271,7 +272,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
 
   
   if (<entity, _, role, str toRole, _, str to, true> <- ctx.schema.rels, placeOf(to, ctx.schema) == ctx.place) {
-    log("# local containment <entity> -<role>/<toRole>-\> <to>");
+    log("########### local containment <entity> -<role>/<toRole>-\> <to>");
     str tbl1 = "<x>";
     str tbl2 = varForTarget(f, ctx.vars()); // introduce a new table alias
     ctx.addLeftOuterJoin(tbl1,
@@ -282,8 +283,13 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
     // provided that its parent is the table representing x 
     return column(tbl2, typhonId(to));
   }
+  else if (<str parent, _, str parentRole, role, _, entity, true> <- ctx.schema.rels, placeOf(parent, ctx.schema) == ctx.place) {
+    log("########### local (reverse) containment <parent> -<parentRole>/<role>-\> <entity>");
+    str tbl1 = "<x>";
+    return column(tbl1, fkName(parent, entity, role));
+  }
   else if (<entity, _, role, str toRole, _, str to, _> <- ctx.schema.rels) {
-  	log("# xref, or external containment: <entity> -<role>/<toRole>-\> <to> (`<e>`)  ");
+  	log("######### xref, or external containment: <entity> -<role>/<toRole>-\> <to> (`<e>`)  ");
   	tbl1 = "<x>";
     tbl2 = varForJunction(f, ctx.vars());
 
@@ -295,7 +301,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
   	return column(tbl2, junctionFkName(to, toRole));
   }
   else if (<entity, role, _> <- ctx.schema.attrs) { 
-    // println("# an attribute");
+    log("# an attribute <entity>.<role>");
     return column("<x>", columnName(role, entity));
   }
   else {
@@ -312,7 +318,9 @@ SQLExpr expr2sql((Expr)`<Real r>`, Ctx ctx, Log log = noLog) = lit(decimal(toRea
 
 SQLExpr expr2sql((Expr)`<Str s>`, Ctx ctx, Log log = noLog) = lit(text("<s>"[1..-1]));
 
-SQLExpr expr2sql((Expr)`<DateTime d>`, Ctx ctx, Log log = noLog) = lit(dateTime(readTextValueString(#datetime, "<d>")));
+SQLExpr expr2sql((Expr)`<DateAndTime d>`, Ctx ctx, Log log = noLog) = lit(dateTime(readTextValueString(#datetime, "<d>")));
+
+SQLExpr expr2sql((Expr)`<JustDate d>`, Ctx ctx, Log log = noLog) = lit(date(readTextValueString(#datetime, "<d>")));
 
 SQLExpr expr2sql((Expr)`<UUID u>`, Ctx ctx, Log log = noLog) = lit(text("<u>"[1..]));
 

@@ -1,18 +1,16 @@
 package engineering.swat.typhonql.server;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Server;
@@ -20,17 +18,14 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.servlet.ServletContainer;
-
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-
 import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
+import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 import nl.cwi.swat.typhonql.workingset.JsonSerializableResult;
 
@@ -58,7 +53,8 @@ public class QLRestServer {
 			System.err.println("Missing port to run the reset server on, pass it as the first argument");
 			return;
 		}
-        QueryEngine engine = new QueryEngine();
+        XMIPolystoreConnection engine = new XMIPolystoreConnection();
+
         Server server = new Server();
         ServerConnector http = new ServerConnector(server);
         http.setHost("0.0.0.0");
@@ -70,104 +66,112 @@ public class QLRestServer {
         context.setContextPath("/");
         
         context.setMaxFormContentSize(100*1024*1024); // 100MB should be max for parameters
-        context.addServlet(jsonGetHandler(r -> handleQuery(engine, r)), "/query");
-        context.addServlet(jsonPostHandler(r -> handleCommand(engine, r)), "/update");
-        context.addServlet(jsonPostHandler(r -> handleDDLCommand(engine, r)), "/ddl");
-        context.addServlet(jsonPostHandler(r -> handlePreparedCommand(engine, r)), "/preparedUpdate");
-        context.addServlet(jsonPostHandler(r -> handleInitialize(engine, r)), "/initialize");
-        context.addServlet(jsonPostHandler(r -> handleReset(engine, r)), "/reset");
-        context.addServlet(jsonPostHandler(r -> handleChangeModel(engine, r)), "/changeModel");
+        context.addServlet(jsonPostHandler(engine, QLRestServer::handleNewQuery), "/query");
+        context.addServlet(jsonPostHandler(engine, QLRestServer::handleCommand), "/update");
+        context.addServlet(jsonPostHandler(engine, QLRestServer::handleDDLCommand), "/ddl");
+        context.addServlet(jsonPostHandler(engine, QLRestServer::handlePreparedCommand), "/preparedUpdate");
+        context.addServlet(jsonPostHandler(engine, QLRestServer::handleReset), "/reset");
+
+		//REST DAL
         
-      
-// 		//REST DAL
+		context.setAttribute(QUERY_ENGINE, engine);
         
-        context.setAttribute(QUERY_ENGINE, engine);
-        
-        ServletHolder servletHolder = context.addServlet(ServletContainer.class, "/crud/*");
-        servletHolder.setInitOrder(0);
-        servletHolder.setInitParameter(
-                "jersey.config.server.provider.packages",
-                "engineering.swat.typhonql.server.crud"
-        );
-        
+		ServletHolder servletHolder = context.addServlet(ServletContainer.class, "/crud/*");
+		servletHolder.setInitOrder(0);
+		servletHolder.setInitParameter(
+			"jersey.config.server.provider.packages",
+		    "engineering.swat.typhonql.server.crud");
         server.setHandler(context);
     
         server.start();
         System.err.println("Server is running, press Ctrl-C to terminate");
         server.join();
 	}
-	
-	
 
+	private static final byte[] RESULT_OK_MESSAGE = "{\"result\":\"ok\"}".getBytes(StandardCharsets.UTF_8);
+	private static JsonSerializableResult RESULT_OK = t -> t.write(RESULT_OK_MESSAGE);
 
-	private static JsonSerializableResult handleDDLCommand(QueryEngine engine, HttpServletRequest r) throws IOException {
-		CommandArgs args;
-		try {
-			args = CommandArgs.fromJSON(r.getReader());
-		} catch (IOException e) {
-			throw new IOException("Failure to parse args", e);
-		}
-		logger.trace("Running DDL command: {}", args);
-        return engine.executeDDL(args.command);
-	}
+	private static class RestArguments {
+		// should always be there
+		public String xmi;
+		public List<DatabaseInfo> databaseInfo;
 
-
-
-
-	private static JsonSerializableResult handleReset(QueryEngine engine, HttpServletRequest r) throws IOException {
-		return engine.resetDatabase();
-	}
-
-	private static ResultTable handleQuery(QueryEngine engine, HttpServletRequest r) throws IOException {
-		String query = r.getParameter("q");
-		if (query == null || query.isEmpty()) {
-			throw new IOException("Missing q parameter");
-		}
-		logger.trace("Running query: {}", query);
-		return engine.executeQuery(query);
-	}
-
-
-	private static class CommandArgs {
+		// depends on the command which one is filled in or not
+		public String query;
 		public String command;
 		public String[] parameterNames;
 		public String[][] boundRows;
+
+        private static RestArguments parse(HttpServletRequest r) throws IOException {
+            try {
+                RestArguments result = mapper.readValue(r.getReader(), new TypeReference<RestArguments> () {});
+                if (isEmpty(result.xmi)) {
+                    throw new IOException("Missing xmi field");
+                }
+                if (result.databaseInfo == null || result.databaseInfo.isEmpty()) {
+                    throw new IOException("Missing databaseInfo field");
+                }
+                 return result;
+            } catch (IOException e) {
+                throw new IOException("Failure to parse args", e);
+            }
+        }
 		
-		static CommandArgs fromJSON(Reader source)  throws JsonParseException, JsonMappingException, IOException  {
-			return mapper.readValue(source, new TypeReference<CommandArgs> () {});
-		}
 		
 		@Override
 		public String toString() {
-			if (parameterNames != null && boundRows != null) {
-				return command + " args: " + Arrays.toString(parameterNames) + " rows: " + boundRows.length;
-			}
-			return command;
+			return "{\n"
+                + ((query != null && !query.isEmpty()) ? ("query: " + query + "\n") : "")
+                + ((command != null && !command.isEmpty()) ? ("command: " + command + "\n") : "")
+                + ((parameterNames != null && parameterNames.length > 0) ? ("parameterNames: " + Arrays.toString(parameterNames) + "\n") : "")
+                + ((boundRows != null) ? ("boundRows: " + boundRows.length + "\n") : "")
+                + "}";
 		}
 	}
 
-	private static CommandResult handleCommand(QueryEngine engine, HttpServletRequest r) throws IOException {
-		CommandArgs args;
-		try {
-			args = CommandArgs.fromJSON(r.getReader());
-		} catch (IOException e) {
-			throw new IOException("Failure to parse args", e);
+	private static boolean isEmpty(String value) {
+		return value == null || value.isEmpty();
+	}
+
+
+	private static JsonSerializableResult handleDDLCommand(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r) throws IOException {
+		if (isEmpty(args.command)) {
+			throw new IOException("Missing command field in post body");
+		}
+		logger.trace("Running DDL command: {}", args);
+        engine.executeDDLUpdate(args.xmi, args.databaseInfo, args.command);
+        return RESULT_OK;
+	}
+
+
+	private static JsonSerializableResult handleReset(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r) throws IOException {
+		engine.resetDatabases(args.xmi, args.databaseInfo);
+        return RESULT_OK;
+	}
+
+	private static ResultTable handleNewQuery(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r) throws IOException {
+		if (isEmpty(args.query)) {
+			throw new IOException("Missing query parameter in post body");
+		}
+		logger.trace("Running query: {}", args.query);
+		return engine.executeQuery(args.xmi, args.databaseInfo, args.query);
+	}
+
+
+
+	private static CommandResult handleCommand(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r) throws IOException {
+		if (isEmpty(args.command)) {
+			throw new IOException("Missing command in post body");
 		}
 		logger.trace("Running command: {}", args);
-        return engine.executeCommand(args.command);
+        return engine.executeUpdate(args.xmi, args.databaseInfo, args.command);
 	}
 
-	private static JsonSerializableResult handlePreparedCommand(QueryEngine engine, HttpServletRequest r) throws IOException {
-		CommandArgs args;
-		try {
-			args = CommandArgs.fromJSON(r.getReader());
-		} catch (IOException e) {
-			throw new IOException("Failure to parse args", e);
-		}
+	private static JsonSerializableResult handlePreparedCommand(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r) throws IOException {
 		if (args.parameterNames == null || args.parameterNames.length == 0 || args.boundRows == null || args.boundRows.length == 0) {
 			throw new IOException("Missing arguments to the command");
 		}
-		CommandResult[] result = engine.executeCommand(args.command, args.parameterNames, args.boundRows);
+		CommandResult[] result = engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.command, args.parameterNames, args.boundRows);
 		return target -> {
 			target.write('[');
 			boolean first = true;
@@ -182,61 +186,16 @@ public class QLRestServer {
 		}; 
 	}
 	
-	private static class InitializeArgs {
-		public String xmi;
-		public List<DatabaseInfo> databaseInfo;
-		
-		static InitializeArgs fromJSON(Reader source) throws JsonParseException, JsonMappingException, IOException {
-			return mapper.readValue(source, new TypeReference<InitializeArgs>() {});
-		}
-		@Override
-		public String toString() {
-			return   "xmi: " + xmi
-					+"\ndbInfo: " + databaseInfo;
-		}
-	}
-
-	private static JsonSerializableResult handleInitialize(QueryEngine engine, HttpServletRequest r) throws IOException {
-		InitializeArgs args;
-		try {
-			args = InitializeArgs.fromJSON(r.getReader());
-		} catch (IOException e) {
-			throw new IOException("Failure to parse args", e);
-		}
-		logger.trace("Initializing db with: {}", args);
-		return engine.initialize(args.xmi, args.databaseInfo);
-	}
-
-	private static class ChangeXMIArgs {
-		public String newXMI;
-		
-		static ChangeXMIArgs fromJSON(Reader source) throws JsonParseException, JsonMappingException, IOException {
-			return mapper.readValue(source, new TypeReference<ChangeXMIArgs>() {});
-		}
-	}
-
-	private static JsonSerializableResult handleChangeModel(QueryEngine engine, HttpServletRequest r) throws IOException {
-		ChangeXMIArgs args;
-		try {
-			args = ChangeXMIArgs.fromJSON(r.getReader());
-		} catch (IOException e) {
-			throw new IOException("Failure to parse args", e);
-		}
-		logger.trace("Received new xmi model: {}", args.newXMI);
-		return engine.changeModel(args.newXMI);
-	}
-
-
 	@FunctionalInterface 
 	private interface ServletHandler {
-		JsonSerializableResult handle(HttpServletRequest req) throws ServletException, IOException;
+		JsonSerializableResult handle(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r) throws ServletException, IOException;
 	}
 	
-	private static void handle(HttpServletRequest req, HttpServletResponse resp, ServletHandler handler) throws ServletException, IOException {
+	private static void handle(XMIPolystoreConnection engine, HttpServletRequest req, HttpServletResponse resp, ServletHandler handler) throws ServletException, IOException {
 		try (ServletOutputStream responseStream = resp.getOutputStream()) {
 			try { // nested try so that we can report an error before the stream is closed
 				long start = System.nanoTime();
-				JsonSerializableResult result = handler.handle(req);
+				JsonSerializableResult result = handler.handle(engine, RestArguments.parse(req), req);
 				long stop = System.nanoTime();
 				resp.setStatus(HttpServletResponse.SC_OK);
 				resp.setHeader("QL-Wall-Time-Ms", Long.toString(TimeUnit.NANOSECONDS.toMillis(stop-start)));
@@ -260,28 +219,15 @@ public class QLRestServer {
 		}
 	}
 	
-	private static ServletHolder jsonGetHandler(ServletHandler handler) {
-		return new ServletHolder(new HttpServlet() {
-			private static final long serialVersionUID = -1652905724147115804L;
-			@Override
-			protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-				handle(req, resp, handler);
-			}
-		});
-	}
-
-	
-	private static ServletHolder jsonPostHandler(ServletHandler handler) {
+	private static ServletHolder jsonPostHandler(XMIPolystoreConnection engine, ServletHandler handler) {
 		return new ServletHolder(new HttpServlet() {
 			private static final long serialVersionUID = 4128294886643135039L;
 
 			@Override
 			protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-				handle(req, resp, handler);
+				handle(engine, req, resp, handler);
 			}
 		});
 	}
-	
-
 
 }

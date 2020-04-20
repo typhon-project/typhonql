@@ -16,27 +16,22 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class MongoQueryExecutor extends QueryExecutor {
 
-
-	private String connectionString;
-	private String dbName;
 	private String collectionName;
 	private String query;
 	List<Consumer<List<Record>>> script;
+	private MongoDatabase db;
 
-	public MongoQueryExecutor(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, 
-			List<Path> signature, String collectionName, String query,
-			Map<String, Binding> bindings, String connectionString, String dbName) {
+	public MongoQueryExecutor(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids,
+			List<Path> signature, String collectionName, String query, Map<String, Binding> bindings,
+			MongoDatabase db) {
 		super(store, script, uuids, bindings, signature);
-		this.dbName = dbName;
-		this.connectionString = connectionString;
+		this.db = db;
 		this.collectionName = collectionName;
 		this.query = query;
 	}
 
 	@Override
 	protected ResultIterator performSelect(Map<String, String> values) {
-		MongoClient mongoClient = MongoClients.create(connectionString);
-		MongoDatabase db = mongoClient.getDatabase(dbName);
 		StringSubstitutor sub = new StringSubstitutor(values);
 		String resolvedQuery = sub.replace(query);
 		MongoCollection<Document> coll = db.getCollection(collectionName);

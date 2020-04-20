@@ -49,11 +49,12 @@ node {
 
     }
     stage('Deploying server') {
-        if (env.BRANCH_NAME == "master") {
-            configFileProvider(
-                    [configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
+        configFileProvider(
+                [configFile(fileId: 'c262b5dc-6fc6-40eb-a271-885950d8cf70', variable: 'MAVEN_SETTINGS')]) {
+            if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev") {
+                env.DOCKER_TAG = (env.BRANCH_NAME == "master") ? "latest" : "dev";
                 withCredentials([usernamePassword(credentialsId: 'swateng-typhonbuild', usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                    sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile jib:build'
+                    sh 'cd typhonql-server && mvn -U -B -gs $MAVEN_SETTINGS clean compile jib:build  -Djib.to.image="docker.io/swatengineering/typhonql-server:$DOCKER_TAG"'
                 }
             }
         }

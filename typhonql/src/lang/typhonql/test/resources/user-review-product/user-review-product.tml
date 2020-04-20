@@ -1,48 +1,68 @@
-entity Review{
-	content: text
-	
+entity Review {
+	content : text
+		
 	product -> Product[1]
 	user -> User[1]
 }
 
-entity Product{
+entity Product {
 	name : string[256]
 	description : string[256]
 	price : int
 	productionDate : date
 		
 	reviews :-> Review."Review.product"[0..*]
+	tags -> Tag[0..*]
+	inventory :-> Item[0..*]
+	category -> Category[1]
 }
 
+entity Category {
+	id: string[32]
+	name: string[32]
+}
 
-entity User{
+entity Item {
+	shelf: int
+	product -> Product."Product.inventory"[1]
+}
+
+entity Tag {
+	name: string[64]
+}
+
+entity User {
 	name : string[256]
 	address: string[256]
 	
 	biography :-> Biography."Biography.user"[0..1]
-	reviews :-> Review."Review.user"[0..*]
+	reviews -> Review."Review.user"[0..*]
 }
 
-entity Biography{
+entity Biography {
 	content : string[256]
 	
 	user -> User."User.biography"[1]
 }
 
 relationaldb Inventory {
-	tables{
+	tables {
 		table {
 			UserDB : User
 		}
 		table {
 			ProductDB : Product
 		}
+		table { TagDB: Tag }
+		table { ItemDB: Item }
 	}
 }
 
 documentdb Reviews {
-	collections{
-			Review : Review
-			Biography : Biography
+	collections {
+		Review : Review
+		Biography : Biography
+		Category: Category
 	}
 }
+

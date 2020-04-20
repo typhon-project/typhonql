@@ -155,6 +155,8 @@ str pp(boolean(bool b)) = "<b>";
 
 str pp(dateTime(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
 
+str pp(date(datetime d)) = "\'<printDate(d, "YYYY-MM-dd")>\'";
+
 str pp(point(real x, real y)) = "PointFromText(\'POINT(<x> <y>)\')";
 
 str pp(polygon(list[lrel[real, real]] segs)) 

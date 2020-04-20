@@ -154,7 +154,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
         
       }
       
-      for ((KeyVal)`<Id fld>: [<{UUID ","}+ refs>]` <- kvs) {
+      for ((KeyVal)`<Id fld>: [<{UUID ","}* refs>]` <- kvs) {
         str from = "<e>";
         str fromRole = "<fld>";
         
@@ -185,6 +185,14 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
               // NB: ownership is never many to many, so if fromRole is many, toRole cannot be
               scr.steps +=  [ *updateObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams) 
                   | UUID ref <- refs ];
+
+             // we need to delete all Mongo objects in role that have a ref to mongome via toRole
+             // whose _id is not in refs.
+              DBObject q = object([<"_id", object([<"$nin", array([ \value("<ref>"[1..]) | UUID ref <- refs ])>])>
+                 , <toRole, mongoMe>]);
+              scr.steps += [ 
+                step(other, mongo(deleteMany(other, to, pp(q))), myParams)];
+                
             }
             
           }
@@ -207,7 +215,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
                // for both directions.
              }
              case <sql(), str other>: {
-               scr.steps +=  [ updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
+               scr.steps +=  [ *updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
                  | UUID ref <- refs ];
              }
              case <mongodb(), str other>: {
@@ -227,7 +235,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
        * Adding to many-valued collections
        */
       
-      for ((KeyVal)`<Id fld> +: [<{UUID ","}+ refs>]` <- kvs) {
+      for ((KeyVal)`<Id fld> +: [<{UUID ","}* refs>]` <- kvs) {
         str from = "<e>";
         str fromRole = "<fld>";
         
@@ -271,7 +279,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
         // xrefs are symmetric, so both directions are done in one go. 
         else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
            // save the cross ref
-           scr.steps +=  insertIntoJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
+           scr.steps +=  insertIntoJunction(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
            
            // and the opposite sides
            switch (placeOf(to, s)) {
@@ -281,7 +289,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
              }
              case <sql(), str other>: {
                //scr.steps +=  insertIntoJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
-               scr.steps +=  [ insertIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
+               scr.steps +=  [ *insertIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
                  | UUID ref <- refs ];
              }
              case <mongodb(), str other>: {
@@ -301,7 +309,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
        * Removing from many-valued collections
        */
       
-      for ((KeyVal)`<Id fld> -: [<{UUID ","}+ refs>]` <- kvs) {
+      for ((KeyVal)`<Id fld> -: [<{UUID ","}* refs>]` <- kvs) {
         str from = "<e>";
         str fromRole = "<fld>";
         
@@ -320,12 +328,16 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
             }
             
             case <sql(), str other> : {
-              scr.steps +=  removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
+              scr.steps +=  removeFromJunction(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
                  , myParams);
               // NB: ownership is never many to many, so if fromRole is many, toRole cannot be
-              scr.steps +=  [ *removeFromJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
+              scr.steps +=  [ *removeFromJunction(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
                 | UUID ref <- refs ];
                 
+              // SQLStat stat = delete(tableName(ent),
+          // [where([equ(column(tableName(ent), typhonId(ent)), sqlMe)])]);
+          
+       // scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), myParams) ]; 
               scr.steps +=  deleteManySQL(other, to, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]);
             }
             
@@ -345,7 +357,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
         // xrefs are symmetric, so both directions are done in one go. 
         else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
            // save the cross ref
-           scr.steps +=  removeFromJunctionMany(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
+           scr.steps +=  removeFromJunction(dbName, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], myParams);
            
            // and the opposite sides
            switch (placeOf(to, s)) {
@@ -354,13 +366,13 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
                // for both directions.
              }
              case <sql(), str other>: {
-               scr.steps +=  removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
+               scr.steps +=  removeFromJunction(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
                  , myParams);
-               scr.steps +=  [ removeJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
+               scr.steps +=  [ removeJunction(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
                  | UUID ref <- refs ];
              }
              case <mongodb(), str other>: {
-				scr.steps +=  removeFromJunctionMany(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
+				scr.steps +=  removeFromJunction(p.name, from, fromRole, to, toRole, sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]
                  , myParams);
                 scr.steps +=  deleteManyMongo(other, to, [ \value("<ref>"[1..]) | UUID ref <- refs ], myParams);
              }
@@ -376,7 +388,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
     
     case <mongodb(), str dbName>: {
       DBObject q = object([<"_id", mongoMe>]);
-      DBObject u = object([ keyVal2prop(kv) | KeyVal kv <- kvs, !isDelta(kv) ]);
+      DBObject u = object([ <"$set", object([keyVal2prop(kv)])> | KeyVal kv <- kvs, !isDelta(kv) ]);
       if (u.props != []) {
         scr.steps += [step(dbName, mongo(findAndUpdateOne(dbName, ent, pp(q), pp(u))), myParams)];
       }
@@ -393,23 +405,23 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
           
             case <mongodb(), dbName> : {  
               // update uuid's toRole to me
-              steps += updateObjectPointer(dbName, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+              scr.steps += updateObjectPointer(dbName, to, toRole, toCard, \value(uuid), mongoMe, myParams);
             }
             
             case <mongodb(), str other> : {
               // update uuid's toRole to me, but on other db
-              steps += updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
+              scr.steps += updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
             }
             
             case <sql(), str other>: {
-              steps += updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
+              scr.steps += updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
             }
             
           }
         }
       }
       
-      for ((KeyVal)`<Id x>: [<{UUID ","}+ refs>]` <- kvs) {
+      for ((KeyVal)`<Id x>: [<{UUID ","}* refs>]` <- kvs) {
         str from = "<e>";
         str fromRole = "<x>";
 
@@ -425,6 +437,13 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
             case <mongodb(), str other> : {
               scr.steps += [ *updateObjectPointer(dbName, to, toRole, toCard, \value("<ref>"[1..]) , mongoMe, myParams)
                 | UUID ref <- refs ];
+              
+              // we need to delete all Mongo objects in role that have a ref to mongome via toRole
+              // whose _id is not in refs.
+              DBObject q = object([<"_id", object([<"$nin", array([ \value("<ref>"[1..]) | UUID ref <- refs ])>])>
+                 , <toRole, mongoMe>]);
+              scr.steps += [ 
+                step(other, mongo(deleteMany(other, to, pp(q))), myParams)];
             }
             
             case <sql(), str other>: {
@@ -441,7 +460,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
        * Adding to many-valued collections
        */
       
-      for ((KeyVal)`<Id fld> +: [<{UUID ","}+ refs>]` <- kvs) {
+      for ((KeyVal)`<Id fld> +: [<{UUID ","}* refs>]` <- kvs) {
         str from = "<e>";
         str fromRole = "<fld>";
         
@@ -479,7 +498,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
            throw "Bad update: an object cannot have many parents  <refs>";
         }
         // xrefs are symmetric, so both directions are done in one go. 
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
+        else if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
 
            scr.steps += insertObjectPointers(dbName, from, fromRole, fromCard, mongoMe, 
                [ \value("<ref>"[1..]) | UUID ref <- refs ], myParams);
@@ -494,7 +513,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
                 | UUID ref <- refs ];
              }
              case <sql(), str other>: {
-                scr.steps +=  [ *insertIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), [sqlMe], myParams)
+                scr.steps +=  [ *insertIntoJunction(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), [sqlMe], myParams)
                 | UUID ref <- refs ];
              
              }
@@ -510,7 +529,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
        * Removing from many-valued collections
        */
       
-      for ((KeyVal)`<Id fld> -: [<{UUID ","}+ refs>]` <- kvs) {
+      for ((KeyVal)`<Id fld> -: [<{UUID ","}* refs>]` <- kvs) {
         str from = "<e>";
         str fromRole = "<fld>";
         
@@ -546,7 +565,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
            // removing owernship for the currently updated object as not being owned anymore by each ref (which should not be possible)
            throw "Bad update: an object cannot have many parents  <refs>";
         }
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
+        else if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
            scr.steps += removeObjectPointers(dbName, from, fromRole, fromCard, mongoMe, 
              [ \value("<ref>"[1..]) | UUID ref <- refs ], myParams);  
             

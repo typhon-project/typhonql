@@ -19,6 +19,11 @@ public class ResultStore {
 	public ResultStore() {
 		store = new HashMap<String, ResultIterator>();
 	}
+	
+	@Override
+	public String toString() {
+		return "RESULTSTORE(" + store.toString() + ")";
+	}
 
 	public ResultIterator getResults(String id) {
 		return store.get(id);
