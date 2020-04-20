@@ -93,6 +93,10 @@ public class TyphonSession implements Operations {
 			throw RuntimeExceptionFactory.javaException(e, null, null);
 		}
 		state.setMariaDBOperations(mariaDBOperations);
+		
+		MongoOperations mongoOperations = new MongoOperations(mongoConnections);
+		state.setMongoOperations(mongoOperations);
+		
 		return vf.tuple(
 			makeGetResult(store, script, state, getResultType, ctx),
 			makeGetJavaResult(store, script, state, getJavaResultType, ctx),
@@ -100,7 +104,7 @@ public class TyphonSession implements Operations {
             makeClose(store, state, closeType, ctx),
             makeNewId(uuids, state, newIdType, ctx),
             mariaDBOperations.newSQLOperations(store, script, state, uuids, ctx, vf, TF),
-            new MongoOperations(mongoConnections).newMongoOperations(store, script, state, uuids, ctx, vf, TF)
+            mongoOperations.newMongoOperations(store, script, state, uuids, ctx, vf, TF)
 		);
 	}
 	

@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import com.mongodb.client.MongoDatabase;
+
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Field;
 import nl.cwi.swat.typhonql.backend.MariaDBEngine;
@@ -28,8 +30,10 @@ public class TestSelect1 {
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		
 		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
+		MongoDatabase conn2 = BackendTestCommon.getMongoDatabase("localhost", 27018, "Reviews", "admin", "admin");
+		
 		MariaDBEngine e1 = new MariaDBEngine(store, script, uuids, conn1);
-		MongoDBEngine e2 = new MongoDBEngine(store, script, uuids, "localhost", 27018, "Reviews", "admin", "admin");
+		MongoDBEngine e2 = new MongoDBEngine(store, script, uuids, conn2);
 		
 		e1.executeSelect("Inventory", "select `junction_biography$0`.`Biography.user` as `u.User.biography`, `u`.`User.@id` as `u.User.@id` \nfrom `User` as `u` left outer join `Biography.user-User.biography` as `junction_biography$0` on (`junction_biography$0`.`User.biography`) = (`u`.`User.@id`)\nwhere true",
 				Arrays.asList(new Path("Inventory", "u", "User", new String[] { "biography" })));

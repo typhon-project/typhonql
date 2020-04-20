@@ -10,18 +10,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import com.mongodb.client.MongoDatabase;
+
 import nl.cwi.swat.typhonql.backend.Binding;
-import nl.cwi.swat.typhonql.backend.EntityModel;
 import nl.cwi.swat.typhonql.backend.Field;
 import nl.cwi.swat.typhonql.backend.MariaDBEngine;
 import nl.cwi.swat.typhonql.backend.MongoDBEngine;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
-import nl.cwi.swat.typhonql.backend.TyphonType;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
-import nl.cwi.swat.typhonql.workingset.Entity;
-import nl.cwi.swat.typhonql.workingset.WorkingSet;
 
 public class TestSelect {
 /*
@@ -131,8 +129,9 @@ public class TestSelect {
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		
 		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
+		MongoDatabase conn2 = BackendTestCommon.getMongoDatabase("localhost", 27018, "Reviews", "admin", "admin");
 		MariaDBEngine e1 = new MariaDBEngine(store, script, uuids, conn1);
-		MongoDBEngine e2 = new MongoDBEngine(store, script, uuids, "localhost", 27018, "Reviews", "admin", "admin");
+		MongoDBEngine e2 = new MongoDBEngine(store, script, uuids, conn2);
 		
 		e1.executeSelect("Inventory", "select u.`User.name` as `u.User.name`,  u.`User.@id` as `u.User.@id` from User u where u.`User.name` = \"Claudio\"", 
 				Arrays.asList(new Path("Inventory", "u", "User", new String[] { "@id" })));

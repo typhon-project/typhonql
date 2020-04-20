@@ -11,9 +11,12 @@ public class TyphonSessionState {
 
 	private MariaDBOperations mariaDbOperations;
 
+	private MongoOperations mongoOperations;
+
 
 	public void close() {
 		mariaDbOperations.close();
+		mongoOperations.close();
 		this.finalized = true;
 		this.result = null;
 	}
@@ -32,6 +35,11 @@ public class TyphonSessionState {
 
 	public void setMariaDBOperations(MariaDBOperations mariaDBOperations) {
 		this.mariaDbOperations = mariaDBOperations;
+		
+	}
+
+	public void setMongoOperations(MongoOperations mongoOperations) {
+		this.mongoOperations = mongoOperations;
 		
 	}
 	
