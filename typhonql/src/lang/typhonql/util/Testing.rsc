@@ -44,7 +44,7 @@ alias PolystoreInstance =
 		CommandResult(Request req, Schema s) runUpdateForSchema,
 		CommandResult(Request req) runDDL,
 		list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs)
-			runPreparedStatement,
+			runPreparedUpdate,
 		Schema() fetchSchema,
 		void() printSchema];
 
@@ -86,8 +86,8 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		return runDDLInTest(req, sch, conn);
 	};
 	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) 
-		myRunPreparedStatement = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
-			return runPreparedStatementInTest(req, columnNames, vs, sch, session);
+		myRunPreparedUpdate = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
+			return runPreparedUpdateInTest(req, columnNames, vs, sch, session);
 	};
 	Schema() myFetchSchema = Schema() {
 		return fetchSchema(conn);
@@ -98,7 +98,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	
 	PolystoreInstance proxy = <myResetDatabases, myStartSession, myCloseSession, myRunQuery, myRunQueryForSchema,
-		myRunUpdate, myRunUpdateForSchema, myRunDDL, myRunPreparedStatement, 
+		myRunUpdate, myRunUpdateForSchema, myRunDDL, myRunPreparedUpdate, 
 		myFetchSchema, myPrintSchema>;
 	
 	void(void(PolystoreInstance proxy)) myRunTest = void(void(PolystoreInstance proxy) t) {
