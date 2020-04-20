@@ -31,7 +31,6 @@ str uuid2str(UUID ref) = "<ref>"[1..];
 
 alias InsertContext = tuple[
   str entity,
-  {KeyVal ","}* kvs,
   Bindings myParams,
   SQLExpr sqlMe,
   DBObject mongoMe,
@@ -68,7 +67,6 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
 
   InsertContext ctx = <
     entity,
-    kvs,
     myParams,
     sqlMe,
     mongoMe,
@@ -184,7 +182,7 @@ void compileRefBinding(
   UUID ref, InsertContext ctx
 ) {
   if (r notin trueCrossRefs(ctx.schema)) {
-    fail;
+    fail compileRefBinding;
   }
   ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(text(uuid2str(ref)))], ctx.myParams));
 }
@@ -195,7 +193,7 @@ void compileRefBinding(
   UUID ref, InsertContext ctx
 ) {
   if (r notin trueCrossRefs(ctx.schema)) {
-    fail;
+    fail compileRefBinding;
   }
   ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(text(uuid2str(ref)))], ctx.myParams));
   ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
@@ -207,7 +205,7 @@ void compileRefBinding(
   UUID ref, InsertContext ctx
 ) {
   if (r notin trueCrossRefs(ctx.schema)) {
-    fail;
+    fail compileRefBinding;
   }
   ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
