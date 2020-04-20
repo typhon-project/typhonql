@@ -73,7 +73,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) 
 		myRunPreparedStatement = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
-			return runPreparedStatement(req, columnNames, vs, conn);
+			return runPreparedUpdate(req, columnNames, vs, conn);
 	};
 	Schema() myFetchSchema = Schema() {
 		return fetchSchema(conn);
