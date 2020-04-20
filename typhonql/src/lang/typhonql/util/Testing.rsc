@@ -68,26 +68,26 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	
 	void() myResetDatabases = void() {
-		resetDatabases(sch, session);
+		resetDatabasesInTest(sch, session);
 	};
 	ResultTable(Request req) myRunQuery = ResultTable(Request req) {
-		return runQuery(req, sch, session);
+		return runQueryInTest(req, sch, session);
 	};
 	ResultTable(Request req, Schema s) myRunQueryForSchema = ResultTable(Request req, Schema s) {
-		return runQuery(req, s, session);
+		return runQueryInTest(req, s, session);
 	};
 	CommandResult(Request req) myRunUpdate = CommandResult(Request req) {
-		return runUpdate(req, sch, session);
+		return runUpdateInTest(req, sch, session);
 	};
 	CommandResult(Request req, Schema s) myRunUpdateForSchema = CommandResult(Request req, Schema s) {
-		return runUpdate(req, s, session);
+		return runUpdateInTest(req, s, session);
 	};
 	CommandResult(Request req) myRunDDL = CommandResult(Request req) {
-		return runDDL(req, sch, conn);
+		return runDDLInTest(req, sch, conn);
 	};
 	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) 
 		myRunPreparedStatement = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
-			return runPreparedStatement(req, columnNames, vs, sch, session);
+			return runPreparedStatementInTest(req, columnNames, vs, sch, session);
 	};
 	Schema() myFetchSchema = Schema() {
 		return fetchSchema(conn);
@@ -135,24 +135,24 @@ Schema fetchSchema(Conn c) {
 	return sch;
 }
 
-CommandResult runDDL(Request req, Schema s, Session session) {
+CommandResult runDDLInTest(Request req, Schema s, Session session) {
 	runDDL(req, s, session, log = LOG);
 	return <-1, ()>;
 }
 
-CommandResult runUpdate(Request req, Schema s, Session session) {
+CommandResult runUpdateInTest(Request req, Schema s, Session session) {
 	return runUpdate(req, s, session, log = LOG);
 }
 
-list[CommandResult] runPreparedUpdate(Request req, list[str] columnNames, list[list[str]] vs, Schema s, Session session) {
+list[CommandResult] runPreparedUpdateInTest(Request req, list[str] columnNames, list[list[str]] vs, Schema s, Session session) {
 	return runPrepared(req, columnNames, vs, s, session, log = LOG);
 }
 
-ResultTable runQuery(Request req, Schema s, Session session) {
+ResultTable runQueryInTest(Request req, Schema s, Session session) {
 	return runQuery(req, s, session, log = LOG);
 }
 
-void resetDatabases(Schema sch, Session session, Log log = LOG) {
+void resetDatabasesInTest(Schema sch, Session session, Log log = LOG) {
 	runSchema(sch, session, log = log);
 }
 
