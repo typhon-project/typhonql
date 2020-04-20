@@ -148,7 +148,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 				synchronized (evaluator) {
 					ITuple session = sessionBuilder.newSession(connections, evaluator);
 					// str src, str xmiString, Session session
-					IValue v = evaluator.call("runQueryAndGetJava", 
+					IValue v = evaluator.call("runQueryAndGetJavaClosing", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(query), 
@@ -176,7 +176,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 				synchronized (evaluator) {
 					ITuple session = sessionBuilder.newSession(connections, evaluator);
 					
-					return evaluator.call("runDDL", 
+					return evaluator.call("runDDLClosing", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(update), 
@@ -209,7 +209,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 				synchronized (evaluator) {
 					// str src, str xmiString, Session sessions
 					ITuple session = createSession(evaluator);
-					return evaluator.call("runUpdate", 
+					return evaluator.call("runUpdateClosing", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(update), 
@@ -246,7 +246,7 @@ public class XMIPolystoreConnection implements PolystoreConnection {
 				synchronized (evaluator) {
 					ITuple session = createSession(evaluator);
 					// str src, str polystoreId, Schema s, Session session
-					return evaluator.call("runPrepared", 
+					return evaluator.call("runPreparedClosing", 
 							"lang::typhonql::RunUsingCompiler",
                     		Collections.emptyMap(),
 							VF.string(preparedStatement),

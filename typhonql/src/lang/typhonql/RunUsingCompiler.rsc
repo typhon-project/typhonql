@@ -184,3 +184,27 @@ Path buildPath(str selector, map[str, str] entityTypes) {
 	return <label, ty, parts[1..]>;
 }
 
+// Calling from Java
+
+value runQueryAndGetJavaClosing(str src, str xmiString, Session session, Log log = noLog) {
+	value v = runQueryAndGetJava(src, xmiString, session, log = log);
+	session.done();
+	return v;
+}
+
+void runDDLClosing(str src,  str xmiString, Session session, Log log = noLog) {
+	runDDL(src, xmiString, session, log = log);
+	session.done();
+}
+
+CommandResult runUpdateClosing(str src, str xmiString, Session session, Log log = noLog) {
+	CommandResult r = runUpdate(src, xmiString, session, log = log);
+	session.done();
+	return r;
+}
+
+list[CommandResult] runPreparedClosing(str src, list[str] columnNames, list[list[str]] values, str xmiString, Session session, Log log = noLog) {
+	list[CommandResult]  rs = runPrepared(src, columnNames, values, xmiString, session, log = log);
+	session.done();
+	return rs;
+}
