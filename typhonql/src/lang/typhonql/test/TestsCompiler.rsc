@@ -7,6 +7,7 @@ import lang::typhonql::TDBC;
 
 import IO;
 import Set;
+import Map;
 
 import lang::typhonml::Util;
 
@@ -16,8 +17,8 @@ import lang::typhonml::Util;
  */
  
 
-//str HOST = "192.168.178.78";
-str HOST = "localhost";
+str HOST = "192.168.178.78";
+//str HOST = "localhost";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
