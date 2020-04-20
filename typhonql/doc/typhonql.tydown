@@ -74,6 +74,22 @@ To be implemented:
 - member operator: `exp1 in exp2`
 - textual match operator: `exp1 like exp2`
 
+#### Geographical expressions
+
+The following boolean expressions are possible with `point` and `polygon`:
+
+- point/polygon close to a specific point `<point|polygon>.near(<point>, <meters>)`:
+    - point p1 is not more than 300m from point p2: `p1.near(p2, 300)`
+    - point p1 is not more than 300m from polygon pg1: `pg1.near(p1, 300)`
+- are two polygons overlapping <polygon> .overlaps(<polygon>):
+- polygon contains another point/polygon: <point/polygon> in <polygon>
+    - point pt1 is inside polygon pg2: `pt1 in pg2`
+    - polygon ptg is inside polygon pg2: `pg1 in pg2`
+
+alternative: allow full expression, but only support a subset on mongo x.distance(b) < 300 for example
+
+*note*: on mongodb backends, the second point/polygon should be a literal, it cannot point to another field expression.
+
 ### Queries
 
 Queries follow the tradition of SQL queries, except that the select and from parts are swapped. 
