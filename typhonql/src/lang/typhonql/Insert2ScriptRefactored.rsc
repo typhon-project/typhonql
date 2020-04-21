@@ -57,10 +57,6 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   Script theScript = script([]);
   
   void addSteps(list[Step] steps) {
-    println("Adding steps: ");
-    for (Step st <- steps) {
-      println(" - <st>");
-    }
     theScript.steps += steps;
   }
   
