@@ -50,6 +50,7 @@ alias PolystoreInstance =
 
 alias TestExecuter =
 	tuple[
+		void(void(PolystoreInstance, bool), bool) runSetup,
 		void(void(PolystoreInstance proxy)) runTest,
 		void(list[void(PolystoreInstance proxy)]) runTests];
 		
@@ -100,6 +101,12 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	PolystoreInstance proxy = <myResetDatabases, myStartSession, myCloseSession, myRunQuery, myRunQueryForSchema,
 		myRunUpdate, myRunUpdateForSchema, myRunDDL, myRunPreparedUpdate, 
 		myFetchSchema, myPrintSchema>;
+		
+	void(void(PolystoreInstance, bool), bool) myRunSetup = void(void(PolystoreInstance, bool) setupFun, bool doTests) {
+		proxy.startSession();
+		setupFun(proxy, doTests);
+		proxy.closeSession();
+	};
 	
 	void(void(PolystoreInstance proxy)) myRunTest = void(void(PolystoreInstance proxy) t) {
 		runTest(proxy, setup, t);
@@ -109,7 +116,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		runTests(proxy, setup, ts);
 	};
 	
-	return <myRunTest, myRunTests>;
+	return <myRunSetup, myRunTest, myRunTests>;
 	
 }
 
