@@ -108,7 +108,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   
   for ((KeyVal)`<Id x>: <UUID ref>` <- kvs) {
     str fromRole = "<x>"; 
-    for (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality_, str to, bool _> <- s.rels) {
+    for (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
       compileRefBinding(p, placeOf(to, s), entity, fromRole, r, ref, ctx);
     }
   }
@@ -133,6 +133,7 @@ void compileAttrs(<DB::sql(), str dbName>, list[KeyVal] kvs, InsertContext ctx) 
 } 
 
 void compileAttrs(<mongodb(), str dbName>, list[KeyVal] kvs, InsertContext ctx) {
+  // todo: nested object literals are not compiled here
   ctx.updateMongoInsert(DBObject(DBObject obj) {
     obj.props += [ keyVal2prop(kv) | KeyVal kv <- kvs ] + [ <"_id", ctx.mongoMe> | !hasId(kvs) ];
     return obj;
