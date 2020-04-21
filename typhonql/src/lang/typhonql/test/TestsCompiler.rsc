@@ -353,7 +353,7 @@ void test9(PolystoreInstance p) {
 
 
 void test10(PolystoreInstance p) {
-	p.runPreparedStatement((Request) `insert Product { name: ??name, description: ??description }`,
+	p.runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description }`,
 						  ["name", "description"],
 						  [["\"IPhone\"", "\"Apple\""],
 				           ["\"Samsung S10\"", "\"Samsung\""]]);
