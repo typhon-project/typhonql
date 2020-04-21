@@ -57,13 +57,17 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   Script theScript = script([]);
   
   void addSteps(list[Step] steps) {
+    println("Adding steps: ");
+    for (Step st <- steps) {
+      println(" - <st>");
+    }
     theScript.steps += steps;
   }
   
   
   
   void updateStep(int idx, Step s) {
-    if (theScript.steps == [], idx == 0) {
+    if (idx >= size(theScript.steps)) {
       theScript.steps += [s];
     }
     else {
@@ -104,15 +108,15 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   
   for ((KeyVal)`<Id x>: <UUID ref>` <- kvs) {
     str fromRole = "<x>"; 
-    for (r:<entity, _, fromRole, _, _, str to, _> <- s) {
-      compileRefBinding(p, placeOf(to, s), from, fromRole, r, ref, ctx);
+    for (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality_, str to, bool _> <- s.rels) {
+      compileRefBinding(p, placeOf(to, s), entity, fromRole, r, ref, ctx);
     }
   }
 
   for ((KeyVal)`<Id x>: [<{UUID ","}* refs>]` <- kvs) {
     str fromRole = "<x>"; 
-    for (r:<entity, _, fromRole, _, _, str to, _> <- s) {
-      compileRefBindingMany(p, placeOf(to, s), from, fromRole, r, refs, ctx);
+    for (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
+      compileRefBindingMany(p, placeOf(to, s), entity, fromRole, r, refs, ctx);
     }
   }
 
@@ -120,7 +124,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
 }
 
 
-void compileAttrs(<sql(), str dbName>, list[KeyVal] kvs, InsertContext ctx) {
+void compileAttrs(<DB::sql(), str dbName>, list[KeyVal] kvs, InsertContext ctx) {
   ctx.updateSQLInsert(SQLStat(SQLStat ins) {
      ins.colNames = [ *columnName(kv, ctx.entity) | KeyVal kv  <- kvs ] + [ typhonId(ctx.entity) ];
      ins.values =  [ *evalKeyVal(kv) | KeyVal kv <- kvs ] + [ ctx.sqlMe ];
@@ -137,8 +141,8 @@ void compileAttrs(<mongodb(), str dbName>, list[KeyVal] kvs, InsertContext ctx) 
       
 
 void compileRefBinding(
-  p:<sql(), str dbName>, <sql(), dbName>, str from, str fromRole, 
-  <from, _, fromRole, str toRole, Cardinality toCard, str to, true>,
+  <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>,
   UUID ref, InsertContext ctx
 ) {
   // update ref's foreign key to point to sqlMe
@@ -151,8 +155,8 @@ void compileRefBinding(
 }
  
 void compileRefBinding(
-  p:<sql(), str dbName>, <sql(), str other:!dbName>, str from, str fromRole,
-  <from, _, fromRole, str toRole, Cardinality toCard, str to, true>,
+  <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole,
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>,
   UUID ref, InsertContext ctx
 ) {
 
@@ -161,8 +165,8 @@ void compileRefBinding(
   ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(text("<ref>"[1..])), [ctx.sqlMe], ctx.myParams));
 }   
 void compileRefBinding(
-  p:<sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
-  <from, _, fromRole, str toRole, Cardinality toCard, str to, true>,
+  <DB::sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>,
   UUID ref, InsertContext ctx
 ) {
   // insert entry in junction table between from and to on the current place.
@@ -171,8 +175,8 @@ void compileRefBinding(
 }
 
 void compileRefBinding(
-  p:<sql(), str dbName>, <sql(), dbName>, str from, str fromRole,
-  <str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
+  <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole,
+  Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
   UUID ref, InsertContext ctx
 ) {
   // set foreign key of sqlMe to point to uuid
@@ -185,8 +189,8 @@ void compileRefBinding(
  }   
 
 void compileRefBinding(
-  p:<sql(), str dbName>, <sql(), str other:!dbName>, str from, str fromRole,
-  <str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
+  <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole,
+  Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
   UUID ref, InsertContext ctx
 ) {      
   ctx.addSteps(insertIntoJunction(dbName, from, fromRole, parent, parentRole, lit(text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
@@ -195,8 +199,8 @@ void compileRefBinding(
 
 
 void compileRefBinding(
-  p:<sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
-  <str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
+  <DB::sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
+  Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
   UUID ref, InsertContext ctx
 ) {
   ctx.addSteps(insertIntoJunction(dbName, from, fromRole, parent, parentRole, lit(text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
@@ -204,8 +208,8 @@ void compileRefBinding(
 }
 
 void compileRefBinding(
-  p:<sql(), str dbName>, <sql(), dbName>, str from, str fromRole,
-  r:<from, _, fromRole, str toRole, Cardinality toCard, str to, false>,
+  <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole,
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, false>,
   UUID ref, InsertContext ctx
 ) {
   if (r notin trueCrossRefs(ctx.schema.rels)) {
@@ -215,8 +219,8 @@ void compileRefBinding(
 }
 
 void compileRefBinding(
-  p:<sql(), str dbName>, <sql(), str other:!dbName>, str from, str fromRole,
-  r:<from, _, fromRole, str toRole, Cardinality toCard, str to, false>,
+  <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole,
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, false>,
   UUID ref, InsertContext ctx
 ) {
   if (r notin trueCrossRefs(ctx.schema.rels)) {
@@ -227,8 +231,8 @@ void compileRefBinding(
 }
 
 void compileRefBinding(
-  p:<sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
-  r:<from, _, fromRole, str toRole, Cardinality toCard, str to, false>,
+  <DB::sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, false>,
   UUID ref, InsertContext ctx
 ) {
   if (r notin trueCrossRefs(ctx.schema.rels)) {
@@ -244,8 +248,8 @@ to update the inverse direction.
 */
 
 void compileRefBinding(
-  p:<mongodb(), str dbName>, <mongodb(), dbName>, str from, str fromRole,
-  r:<from, _, fromRole, str toRole, Cardinality toCard, str to, false>, 
+  <mongodb(), str dbName>, <mongodb(), dbName>, str from, str fromRole,
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, false>, 
   UUID ref, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
@@ -256,8 +260,8 @@ void compileRefBinding(
 }
 
 void compileRefBinding(
-  p:<mongodb(), str dbName>, <mongodb(), str other:!dbName>, str from, str fromRole,
-  r:<from, _, fromRole, str toRole, Cardinality toCard, str to, false>, 
+  <mongodb(), str dbName>, <mongodb(), str other:!dbName>, str from, str fromRole,
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, false>, 
   UUID ref, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
@@ -267,9 +271,15 @@ void compileRefBinding(
   ctx.addSteps(insertObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
+void compileRefBindingBla(
+  <mongodb(), str dbName>, <DB::sql(), str other>, str from, str fromRole,
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, bool _>,
+  UUID ref, InsertContext ctx
+) {}
+
 void compileRefBinding(
-  p:<mongodb(), str dbName>, <sql(), str other>, str from, str fromRole,
-  r:<from, _, fromRole, str toRole, Cardinality toCard, str to, _>,
+  <mongodb(), str dbName>, <DB::sql(), str other>, str from, str fromRole,
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, bool _>,
   UUID ref, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
@@ -281,8 +291,8 @@ void compileRefBinding(
 
 
 void compileRefBindingMany(
- p:<sql(), str dbName>, <sql(), dbName>, str from, str fromRole,
- <from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
+ <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole,
+ Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
  {UUID ","}* refs, InsertContext ctx
 ) {
   str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
@@ -293,8 +303,8 @@ void compileRefBindingMany(
 }
 
 void compileRefBindingMany(
- p:<sql(), str dbName>, <sql(), str other:!dbName>, str from, str fromRole,
- <from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
+ <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole,
+ Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
  {UUID ","}* refs, InsertContext ctx
 ) {
   // insert entry in junction table between from and to on the current place.
@@ -303,8 +313,8 @@ void compileRefBindingMany(
 }
 
 void compileRefBindingMany(
- p:<sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
- <from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
+ <DB::sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
+ Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
  {UUID ","}* refs, InsertContext ctx
 ) {
   ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams));
@@ -313,8 +323,8 @@ void compileRefBindingMany(
 } 
 
 void compileRefBindingMany(
- p:<sql(), str dbName>, _, str from, str fromRole,
- <str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
+ <DB::sql(), str dbName>, _, str from, str fromRole,
+ Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
  {UUID ","}* refs, InsertContext ctx
 ) {
   throw "Cannot have multiple parents <refs> for inserted object <ctx.sqlMe>";
@@ -322,8 +332,8 @@ void compileRefBindingMany(
 
 
 void compileRefBindingMany(
- p:<sql(), str dbName>, <sql(), dbName>, str from, str fromRole,
- <from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
+ <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole,
+ Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
  {UUID ","}* refs, InsertContext ctx
 ) {
   // save the cross ref
@@ -332,8 +342,8 @@ void compileRefBindingMany(
 }
 
 void compileRefBindingMany(
- p:<sql(), str dbName>, <sql(), str other:!dbName>, str from, str fromRole,
- <from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
+ <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole,
+ Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
  {UUID ","}* refs, InsertContext ctx
 ) {
   ctx.addSteps([ *insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, 
@@ -344,8 +354,8 @@ void compileRefBindingMany(
 }
 
 void compileRefBindingMany(
- p:<sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
- <from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
+ <DB::sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
+ Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
  {UUID ","}* refs, InsertContext ctx
 ) {
   ctx.addSteps([ *insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, 
@@ -355,8 +365,8 @@ void compileRefBindingMany(
 }
 
 void compileRefBindingMany(
- p:<mongodb(), str dbName>, <mongodb(), dbName>, str from, str fromRole,
- <from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
+ <mongodb(), str dbName>, <mongodb(), dbName>, str from, str fromRole,
+ Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
  {UUID ","}* refs, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
@@ -368,8 +378,8 @@ void compileRefBindingMany(
 }
 
 void compileRefBindingMany(
- p:<mongodb(), str dbName>, <mongodb(), str other:!dbName>, str from, str fromRole,
- <from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
+ <mongodb(), str dbName>, <mongodb(), str other:!dbName>, str from, str fromRole,
+ Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
  {UUID ","}* refs, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
@@ -381,8 +391,8 @@ void compileRefBindingMany(
 }
 
 void compileRefBindingMany(
- p:<mongodb(), str dbName>, <sql(), str other>, str from, str fromRole,
- <from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
+ <mongodb(), str dbName>, <DB::sql(), str other>, str from, str fromRole,
+ Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
  {UUID ","}* refs, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
