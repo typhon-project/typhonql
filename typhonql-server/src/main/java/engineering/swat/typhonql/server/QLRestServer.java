@@ -6,11 +6,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Server;
@@ -18,11 +20,13 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.servlet.ServletContainer;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+
 import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
@@ -31,11 +35,13 @@ import nl.cwi.swat.typhonql.workingset.JsonSerializableResult;
 
 public class QLRestServer {
 	
-	public static String QUERY_ENGINE = "queryEngine"; 
+	public static String QUERY_ENGINE = "queryEngine";
+	public static String MODEL_FOR_DAL = "modelForDAL"; 
+	public static String DATABASE_INFO_FOR_DAL = "databaseInfoForDAL";
 	
 	private static final Logger logger = LogManager.getLogger(QLRestServer.class);
 	private static final ObjectMapper mapper;
-	
+
 	static {
 		mapper = new ObjectMapper()
 				.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, true)
@@ -73,8 +79,8 @@ public class QLRestServer {
         context.addServlet(jsonPostHandler(engine, QLRestServer::handleReset), "/reset");
 
 		//REST DAL
-        
-		context.setAttribute(QUERY_ENGINE, engine);
+        context.addServlet(jsonPostHandler(engine, QLRestServer::handlePrepareForDAL), "/prepareForDAL");
+        context.setAttribute(QUERY_ENGINE, engine);
         
 		ServletHolder servletHolder = context.addServlet(ServletContainer.class, "/crud/*");
 		servletHolder.setInitOrder(0);
@@ -143,7 +149,6 @@ public class QLRestServer {
         return RESULT_OK;
 	}
 
-
 	private static JsonSerializableResult handleReset(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r) throws IOException {
 		engine.resetDatabases(args.xmi, args.databaseInfo);
         return RESULT_OK;
@@ -184,6 +189,12 @@ public class QLRestServer {
 			}
 			target.write(']');
 		}; 
+	}
+	
+	private static JsonSerializableResult handlePrepareForDAL(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r) throws IOException {
+		r.getServletContext().setAttribute(MODEL_FOR_DAL, args.xmi);
+		r.getServletContext().setAttribute(DATABASE_INFO_FOR_DAL, args.databaseInfo);
+		return RESULT_OK;
 	}
 	
 	@FunctionalInterface 
