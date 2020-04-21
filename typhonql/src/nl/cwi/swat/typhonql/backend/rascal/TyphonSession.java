@@ -47,7 +47,11 @@ public class TyphonSession implements Operations {
 		this.vf = vf;
 	}
 	
-	public SessionWrapper newSession(IMap connections, IEvaluatorContext ctx) {
+	public ITuple newSession(IMap connections, IEvaluatorContext ctx) {
+		return newSessionWrapper(connections, ctx).getTuple();
+	}
+	
+	public SessionWrapper newSessionWrapper(IMap connections, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		
@@ -68,10 +72,10 @@ public class TyphonSession implements Operations {
 			else if (cons.getName().equals("mongoConnection"))
 				mongoConnections.put(dbName, data);
 		}
-		return newSession(mariaDbConnections, mongoConnections, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, ctx);
 	}
 	
-	public SessionWrapper newSession(List<DatabaseInfo> connections, IEvaluatorContext ctx) {
+	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		for (DatabaseInfo db: connections) {
@@ -86,10 +90,10 @@ public class TyphonSession implements Operations {
                     throw new RuntimeException("Missing type: " + db.getDbType());
 			}
 		}
-		return newSession(mariaDbConnections, mongoConnections, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, ctx);
 	}
 
-	private SessionWrapper newSession(Map<String, ConnectionData> mariaDbConnections, Map<String, ConnectionData> mongoConnections, IEvaluatorContext ctx) {
+	private SessionWrapper newSessionWrapper(Map<String, ConnectionData> mariaDbConnections, Map<String, ConnectionData> mongoConnections, IEvaluatorContext ctx) {
 		//checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function type ourself
         ModuleEnvironment aliasModule = ctx.getHeap().getModule("lang::typhonql::Session");

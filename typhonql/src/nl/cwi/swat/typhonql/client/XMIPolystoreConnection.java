@@ -122,7 +122,7 @@ public class XMIPolystoreConnection {
 	
 	public ResultTable executeQuery(String xmiModel, List<DatabaseInfo> connections, String query) {
 		return evaluators.useAndReturn(evaluator -> {
-			try (SessionWrapper session = sessionBuilder.newSession(connections, evaluator)) {
+			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, evaluator)) {
 				synchronized (evaluator) {
 					// str src, str xmiString, Session session
 					IValue v = evaluator.call("runQueryAndGetJava", 
@@ -148,7 +148,7 @@ public class XMIPolystoreConnection {
 	
 	public void executeDDLUpdate(String xmiModel, List<DatabaseInfo> connections, String update) {
 		evaluators.useAndReturn(evaluator -> {
-			try (SessionWrapper session = sessionBuilder.newSession(connections, evaluator)) {
+			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, evaluator)) {
 				synchronized (evaluator) {
 					return evaluator.call("runDDL", 
 							"lang::typhonql::RunUsingCompiler",
@@ -179,7 +179,7 @@ public class XMIPolystoreConnection {
 	
 	private IValue evaluateUpdate(String xmiModel, List<DatabaseInfo> connections, String update) {
 		return evaluators.useAndReturn(evaluator -> {
-			try (SessionWrapper session = sessionBuilder.newSession(connections, evaluator)) {
+			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, evaluator)) {
                 
 				synchronized (evaluator) {
 					// str src, str xmiString, Session sessions
@@ -216,7 +216,7 @@ public class XMIPolystoreConnection {
 		IListWriter columnsWriter = VF.listWriter();
 		columnsWriter.appendAll(Arrays.asList(columnNames).stream().map(columnName -> VF.string(columnName)).collect(Collectors.toList()));
 		return evaluators.useAndReturn(evaluator -> {
-			try (SessionWrapper session = sessionBuilder.newSession(connections, evaluator)) {
+			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, evaluator)) {
 				synchronized (evaluator) {
 					// str src, str polystoreId, Schema s, Session session
 					return evaluator.call("runPrepared", 
@@ -243,7 +243,7 @@ public class XMIPolystoreConnection {
 	
 	public void resetDatabases(String xmiModel, List<DatabaseInfo> connections) {
 		evaluators.useAndReturn(evaluator -> {
-			try (SessionWrapper session = sessionBuilder.newSession(connections, evaluator)) {
+			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, evaluator)) {
 				synchronized (evaluator) {
 					// str src, str polystoreId, Schema s,
 					return evaluator.call("runSchema", 
