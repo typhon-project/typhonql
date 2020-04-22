@@ -102,7 +102,7 @@ public class QLRestServer {
                 }
                  return result;
             } catch (IOException e) {
-                throw new IOException("Failure to parse args", e);
+                throw new IOException("Failure to parse json body", e);
             }
         }
 		
@@ -198,6 +198,9 @@ public class QLRestServer {
 					resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 					try (Writer w = resp.getWriter()) {
 						w.write("Error: " + e.getMessage());
+						if (e.getCause() != null) {
+							w.write("\nOrigin: " + e.getCause().getMessage());
+						}
 					}
 				}
 				else {
