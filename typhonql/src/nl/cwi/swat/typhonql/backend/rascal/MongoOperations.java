@@ -1,5 +1,6 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,17 +31,19 @@ import nl.cwi.swat.typhonql.backend.ResultStore;
 
 public class MongoOperations implements Operations {
 
-	Map<String, MongoDatabase> connections;
-	MongoClient client;
+	private final Map<String, MongoDatabase> connections;
+	private final List<MongoClient> clients;
 
 	public MongoOperations(Map<String, ConnectionData> connections) {
 		this.connections = new HashMap<String, MongoDatabase>();
+		this.clients = new ArrayList<>();
 		for (Entry<String, ConnectionData> entry : connections.entrySet()) {
 			String dbName = entry.getKey();
 			ConnectionData data = entry.getValue();
-			this.client = MongoClients
+			MongoClient currentClient = MongoClients
 					.create(getConnectionString(data.getHost(), data.getPort(), data.getUser(), data.getPassword()));
-			MongoDatabase conn = client.getDatabase(dbName);
+			MongoDatabase conn = currentClient.getDatabase(dbName);
+			this.clients.add(currentClient);
 			this.connections.put(dbName, conn);
 		}
 	}
@@ -227,6 +230,19 @@ public class MongoOperations implements Operations {
 	}
 
 	public void close() {
-		client.close();
+		Exception failed = null;
+		for (MongoClient c: clients) {
+			try {
+				c.close();
+			}
+			catch (Exception e) {
+				if (failed == null) {
+					failed =e;
+				}
+			}
+		}
+		if (failed != null) {
+			throw new RuntimeException("Failure closing mongo clients", failed);
+		}
 	}
 }

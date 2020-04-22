@@ -138,13 +138,20 @@ public class MariaDBOperations implements Operations {
 	}
 
 	public void close() {
+		String firstFailureDB = null;
+		SQLException firstFailure = null;
 		for (Entry<String, Connection> conn : connections.entrySet()) {
 			try {
 				conn.getValue().close();
 			} catch (SQLException e) {
-				throw new RuntimeException("Problems closing connection " + conn.getKey(), e);
+				if (firstFailure == null) {
+					firstFailure = e;
+					firstFailureDB = conn.getKey();
+				}
 			}
-
+		}
+		if (firstFailure != null) {
+			throw new RuntimeException("Problems closing connection " + firstFailureDB, firstFailure);
 		}
 
 	}
