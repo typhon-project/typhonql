@@ -3,9 +3,11 @@ test I2 [[ insert User {
       @id: #df346bbc-7044-11ea-bc55-0242ac130003, 
       name: "Hoi"
 } ]]
+test IC1 [[ insert User { changes: [#df346bbc-7044-11ea-bc55-0242ac130003] } ]]
 
 test IF1 [[ insert User { name2: "Hoi"} ]] expect { "name2 not defined for `User`" }
 test IF2 [[ insert User { name: 3} ]] expect { "Expected `string` but got `int`" }
+test IF3 [[ insert User { name: [#df346bbc-7044-11ea-bc55-0242ac130003]} ]] expect { "Expected entity type, got `string`" }
 
 test D1 [[ delete User u where u.name == "First" ]]
 
