@@ -1,6 +1,6 @@
 entity Review {
 	content : text
-	
+		
 	product -> Product[1]
 	user -> User[1]
 }
@@ -27,11 +27,9 @@ entity Item {
 	product -> Product."Product.inventory"[1]
 }
 
-
 entity Tag {
 	name: string[64]
 }
-
 
 entity User {
 	name : string[256]

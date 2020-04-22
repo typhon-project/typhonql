@@ -13,7 +13,7 @@ import lang::typhonql::Insert2Script;
 import lang::typhonql::Update2Script;
 import lang::typhonql::Delete2Script;
 import lang::typhonql::Query2Script;
-
+import lang::typhonql::DDL2Script;
 
 
 import lang::typhonql::relational::SQL;
@@ -75,10 +75,11 @@ Script request2script(Request r, Schema s, Log log = noLog) {
 	  return delete2script(r, s);
 
     case (Request)`insert <EId e> { <{KeyVal ","}* kvs> }`:
-       return insert2script(r, s);
-
-    default:
-      throw "Unsupported request: `<r>`";
+       return insert2script(r, s); 
+    
+    default: 
+      //throw "Unsupported request: `<r>`";
+      return ddl2script(r, s);
   }
 }
 

@@ -5,8 +5,6 @@ import java.util.Map;
 import org.apache.commons.text.StringSubstitutor;
 import org.bson.Document;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
@@ -15,8 +13,8 @@ public class MongoFindOneAndUpdateExecutor extends MongoUpdateExecutor {
 	private String update;
 
 	public MongoFindOneAndUpdateExecutor(ResultStore store, Map<String, String> uuids, String collectionName,
-			String query, String update, Map<String, Binding> bindings, String connectionString, String dbName) {
-		super(store, uuids, collectionName, query, bindings, connectionString, dbName);
+			String query, String update, Map<String, Binding> bindings, MongoDatabase db) {
+		super(store, uuids, collectionName, query, bindings, db);
 		this.update = update;
 	}
 
@@ -27,8 +25,6 @@ public class MongoFindOneAndUpdateExecutor extends MongoUpdateExecutor {
 	
 	@Override
 	protected void performUpdate(Map<String, String> values) {
-		MongoClient mongoClient = MongoClients.create(connectionString);
-		MongoDatabase db = mongoClient.getDatabase(dbName);
 		MongoCollection<Document> coll = db.getCollection(collectionName);
 		performUpdate(coll, resolveQuery(values), resolveUpdate(values));
 	}

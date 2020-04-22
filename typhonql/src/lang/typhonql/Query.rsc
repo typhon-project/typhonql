@@ -14,11 +14,11 @@ syntax Binding = variableBinding: EId entity VId var;
   
 syntax Where = whereClause: "where" {Expr ","}+ clauses;
 
-syntax GroupBy = groupClause: "group" {VId ","}+ vars Having? having;
+syntax GroupBy = groupClause: "group" {Expr ","}+ exprs Having? having;
 
 syntax Having = havingClause: "having" {Expr ","}+ clauses;
 
-syntax OrderBy = orderClause: "order" {VId ","}+ vars;
+syntax OrderBy = orderClause: "order" {Expr ","}+ exprs;
   
 alias Env = map[str var, str entity];
 

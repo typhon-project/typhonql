@@ -23,7 +23,7 @@ public class MariaDBQueryExecutor extends QueryExecutor {
 	private PreparedStatement pstmt;
 	private List<String> vars = new ArrayList<String>();
 	
-	public MariaDBQueryExecutor(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, List<Path> signature, String query, Map<String, Binding> bindings, String connectionString) {
+	public MariaDBQueryExecutor(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, List<Path> signature, String query, Map<String, Binding> bindings, Connection connection) {
 		super(store, script, uuids, bindings, signature);
 		System.out.println(query);
 		Pattern pat =  Pattern.compile("\\$\\{(\\w*?)\\}");
@@ -37,8 +37,6 @@ public class MariaDBQueryExecutor extends QueryExecutor {
 		StringSubstitutor sub = new StringSubstitutor(map);
 		String jdbcQuery = sub.replace(query);
 		try {
-			Connection connection = DriverManager
-					.getConnection(connectionString);
 			pstmt = connection.prepareStatement(jdbcQuery);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
