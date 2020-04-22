@@ -2,10 +2,10 @@ package nl.cwi.swat.typhonql.backend.rascal;
 
 import io.usethesource.vallang.ITuple;
 
-public class SessionWrapper {
+public class SessionWrapper implements AutoCloseable {
 
-	private ITuple tuple;
-	private TyphonSessionState state;
+	private final ITuple tuple;
+	private final TyphonSessionState state;
 
 	public SessionWrapper(ITuple sessionTuple, TyphonSessionState sessionState) {
 		this.tuple = sessionTuple;
@@ -20,6 +20,7 @@ public class SessionWrapper {
 		return state;
 	}
 
+	@Override
 	public void close() {
 		state.close();
 	}
