@@ -15,8 +15,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -87,12 +89,16 @@ public class QLRestServer {
 		servletHolder.setInitParameter(
 			"jersey.config.server.provider.packages",
 		    "engineering.swat.typhonql.server.crud");
-        server.setHandler(context);
-    
+        
+		server.setHandler(wrapCompression(context));
+
         server.start();
         System.err.println("Server is running, press Ctrl-C to terminate");
         server.join();
 	}
+
+
+
 
 	private static final byte[] RESULT_OK_MESSAGE = "{\"result\":\"ok\"}".getBytes(StandardCharsets.UTF_8);
 	private static JsonSerializableResult RESULT_OK = t -> t.write(RESULT_OK_MESSAGE);
@@ -119,7 +125,7 @@ public class QLRestServer {
                 }
                  return result;
             } catch (IOException e) {
-                throw new IOException("Failure to parse args", e);
+                throw new IOException("Failure to parse json body", e);
             }
         }
 		
@@ -220,6 +226,9 @@ public class QLRestServer {
 					resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 					try (Writer w = resp.getWriter()) {
 						w.write("Error: " + e.getMessage());
+						if (e.getCause() != null) {
+							w.write("\nOrigin: " + e.getCause().getMessage());
+						}
 					}
 				}
 				else {
@@ -241,4 +250,11 @@ public class QLRestServer {
 		});
 	}
 
+	private static Handler wrapCompression(ServletContextHandler originalHandler) {
+		GzipHandler gzipHandler = new GzipHandler();
+		gzipHandler.setIncludedMimeTypes("text/plain", "text/html", "application/json");
+		gzipHandler.setIncludedMethods("GET", "PUT", "POST");
+		gzipHandler.setHandler(originalHandler);
+		return gzipHandler;
+	}
 }
