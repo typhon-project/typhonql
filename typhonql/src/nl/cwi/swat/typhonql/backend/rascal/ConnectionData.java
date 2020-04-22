@@ -1,13 +1,18 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
+import nl.cwi.swat.typhonql.client.DatabaseInfo;
+
 public class ConnectionData {
-	private String host;
-	private int port;
-	private String user;
-	private String password;
+	private final String host;
+	private final int port;
+	private final String user;
+	private final String password;
+	
+	public ConnectionData(DatabaseInfo from) {
+		this(from.getHost(), from.getPort(), from.getUser(), from.getPassword());
+	}
 
 	public ConnectionData(String host, int port, String user, String password) {
-		super();
 		this.host = host;
 		this.port = port;
 		this.user = user;
@@ -29,5 +34,6 @@ public class ConnectionData {
 	public String getPassword() {
 		return password;
 	}
+	
 
 }

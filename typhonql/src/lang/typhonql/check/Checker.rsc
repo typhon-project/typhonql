@@ -173,7 +173,12 @@ void collectKeyVal(current:(KeyVal)`<Id key> : <Expr val>`, EId entity, Collecto
     collect(val, c);
     c.useViaType(entity, key, {fieldRole()});
     c.require("valid assignment", current, [key, val], void (Solver s) {
-        s.requireTrue(s.equal(key, val) || s.subtype(val, key), error(current, "Expected %t but got %t", key, val));
+        if (atypeList([uuidType()]) := s.getType(val)) {
+            requireValidCardinality(current, key, entity, s);
+        }
+        else {
+            s.requireTrue(s.equal(key, val) || s.subtype(val, key), error(current, "Expected %t but got %t", key, val));
+        }
     });
 }
 
@@ -190,11 +195,15 @@ void collectKVUpdate(KeyVal current, Id key, Expr val, EId entity, Collector c) 
     c.useViaType(entity, key, {fieldRole()});
     c.requireEqual(atypeList([uuidType()]), val, error(val, "Currently only lists of uuids are supported in the update syntax"));
     c.require("valid update", current, [key, val], void (Solver s) {
-        keyType = s.getType(key);
-        s.requireTrue(entityType(_) := keyType, error(key, "Expected entity type, got %t", key));
-        cardinality = getCardinality(entity, key, s);
-        s.requireTrue(cardinality in {zero_many(), one_many()}, error(current, "update not supported on cardinality one or zero-to-one"));
+        requireValidCardinality(current, key, entity, s);
     });
+}
+
+void requireValidCardinality(KeyVal current, Id key, EId entity, Solver s) {
+    keyType = s.getType(key);
+    s.requireTrue(entityType(_) := keyType, error(key, "Expected entity type, got %t", key));
+    cardinality = getCardinality(entity, key, s);
+    s.requireTrue(cardinality in {zero_many(), one_many()}, error(current, "update not supported on cardinality one or zero-to-one"));
 }
 
 
@@ -402,7 +411,7 @@ void collect((Where)`where <{Expr ","}+ clauses>`, Collector c) {
     }
 }
 
-void collect((GroupBy)`group <{VId ","}+ vars> <Having? having>`, Collector c) {
+void collect((GroupBy)`group <{Expr ","}+ vars> <Having? having>`, Collector c) {
     collect(vars, c);
     if (h <- having) {
         collect(h, c);
@@ -416,7 +425,7 @@ void collect((Having)`having <{Expr ","}+ clauses>`, Collector c) {
     }
 }
 
-void collect((OrderBy)`order <{VId ","}+ vars>`, Collector c) {
+void collect((OrderBy)`order <{Expr ","}+ vars>`, Collector c) {
     collect(vars, c);
 }
 

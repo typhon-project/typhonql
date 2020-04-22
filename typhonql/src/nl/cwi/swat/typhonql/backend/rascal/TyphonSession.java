@@ -10,14 +10,12 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
-
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.env.ModuleEnvironment;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
-
 import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
@@ -31,21 +29,64 @@ import io.usethesource.vallang.type.TypeFactory;
 import io.usethesource.vallang.type.TypeStore;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
+import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class TyphonSession implements Operations {
 	private static final TypeFactory TF = TypeFactory.getInstance();
 	private final IValueFactory vf;
-
+	
 	public TyphonSession(IValueFactory vf) {
 		this.vf = vf;
 	}
 	
-	public ITuple newSession(IMap connections, IEvaluatorContext ctx)  {
+	public ITuple newSession(IMap connections, IEvaluatorContext ctx) {
 		return newSessionWrapper(connections, ctx).getTuple();
 	}
-
+	
 	public SessionWrapper newSessionWrapper(IMap connections, IEvaluatorContext ctx) {
+		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
+		Map<String, ConnectionData> mongoConnections = new HashMap<>();
+		
+		
+		Iterator<Entry<IValue, IValue>> connIter = connections.entryIterator();
+		
+		while (connIter.hasNext()) {
+			Entry<IValue, IValue> entry = connIter.next();
+			String dbName = ((IString) entry.getKey()).getValue();
+			IConstructor cons = (IConstructor) entry.getValue();
+			String host = ((IString) cons.get("host")).getValue();
+			int port = ((IInteger) cons.get("port")).intValue();
+			String user = ((IString) cons.get("user")).getValue();
+			String password = ((IString) cons.get("password")).getValue();
+			ConnectionData data = new ConnectionData(host, port, user, password);
+			if (cons.getName().equals("sqlConnection"))
+				mariaDbConnections.put(dbName, data);
+			else if (cons.getName().equals("mongoConnection"))
+				mongoConnections.put(dbName, data);
+		}
+		return newSessionWrapper(mariaDbConnections, mongoConnections, ctx);
+	}
+	
+	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, IEvaluatorContext ctx) {
+		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
+		Map<String, ConnectionData> mongoConnections = new HashMap<>();
+		for (DatabaseInfo db: connections) {
+			switch (db.getDbType()) {
+				case documentdb:
+					mongoConnections.put(db.getDbName(), new ConnectionData(db));
+					break;
+				case relationaldb:
+					mariaDbConnections.put(db.getDbName(), new ConnectionData(db));
+					break;
+                default:
+                    throw new RuntimeException("Missing type: " + db.getDbType());
+			}
+		}
+		return newSessionWrapper(mariaDbConnections, mongoConnections, ctx);
+	}
+
+	private SessionWrapper newSessionWrapper(Map<String, ConnectionData> mariaDbConnections, Map<String, ConnectionData> mongoConnections, IEvaluatorContext ctx) {
 		//checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function type ourself
         ModuleEnvironment aliasModule = ctx.getHeap().getModule("lang::typhonql::Session");
@@ -65,26 +106,6 @@ public class TyphonSession implements Operations {
 		FunctionType closeType = (FunctionType)aliasedTuple.getFieldType("done");
 		FunctionType newIdType = (FunctionType)aliasedTuple.getFieldType("newId");
 		
-		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
-		Map<String, ConnectionData> mongoConnections = new HashMap<>();
-		
-		Iterator<Entry<IValue, IValue>> connIter = connections.entryIterator();
-		
-		while (connIter.hasNext()) {
-			Entry<IValue, IValue> entry = connIter.next();
-			String dbName = ((IString) entry.getKey()).getValue();
-			IConstructor cons = (IConstructor) entry.getValue();
-			String host = ((IString) cons.get("host")).getValue();
-			int port = ((IInteger) cons.get("port")).intValue();
-			String user = ((IString) cons.get("user")).getValue();
-			String password = ((IString) cons.get("password")).getValue();
-			ConnectionData data = new ConnectionData(host, port, user, password);
-			if (cons.getName().equals("sqlConnection"))
-				mariaDbConnections.put(dbName, data);
-			else if (cons.getName().equals("mongoConnection"))
-				mongoConnections.put(dbName, data);
-				
-		}
 		// construct the session tuple
 		ResultStore store  = new ResultStore();
 		Map<String, String> uuids = new HashMap<>();

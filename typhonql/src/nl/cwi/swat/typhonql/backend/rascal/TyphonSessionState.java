@@ -3,7 +3,7 @@ package nl.cwi.swat.typhonql.backend.rascal;
 import io.usethesource.vallang.type.TypeFactory;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
-public class TyphonSessionState {
+public class TyphonSessionState implements AutoCloseable {
 	private static TypeFactory TF = TypeFactory.getInstance();
 	
 	private boolean finalized = false;
