@@ -55,6 +55,10 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   Script theScript = script([]);
   
   void addSteps(list[Step] steps) {
+    //println("Adding steps:");
+    //for (Step st <- steps) {
+    //  println(" - <st>");
+    //}
     theScript.steps += steps;
   }
   
@@ -71,7 +75,10 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   
   void updateSQLInsert(SQLStat(SQLStat) block) {
     int idx = hasId(kvs) ? 0 : 1;
+    //println("Updating the insert statement:");
+    //println("- Was: <theInsert>");
     theInsert = block(theInsert);
+    //println("- Became: <theInsert>");
     updateStep(idx, step(p.name, sql(executeStatement(p.name, pp(theInsert))), myParams));
   }
   
@@ -100,16 +107,20 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   
   compileAttrs(p, [ kv | KeyVal kv <- kvs, isAttr(kv, entity, s) ], ctx);
   
+  //iprintln(s.rels);
+  
+  
   for ((KeyVal)`<Id x>: <UUID ref>` <- kvs) {
     str fromRole = "<x>"; 
-    for (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
+    if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
+      //println("COMPILING rel: <r>");
       compileRefBinding(p, placeOf(to, s), entity, fromRole, r, ref, ctx);
     }
   }
 
   for ((KeyVal)`<Id x>: [<{UUID ","}* refs>]` <- kvs) {
     str fromRole = "<x>"; 
-    for (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
+    if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
       compileRefBindingMany(p, placeOf(to, s), entity, fromRole, r, refs, ctx);
     }
   }
@@ -169,19 +180,21 @@ void compileRefBinding(
   ctx.addSteps(insertObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), ctx.mongoMe, ctx.myParams));
 }
 
-void compileRefBinding(
-  <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole,
-  Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
-  UUID ref, InsertContext ctx
-) {
-  // set foreign key of sqlMe to point to uuid
-  str fk = fkName(parent, from, fromRole == "" ? parentRole : fromRole);
-  ctx.updateSQLInsert(SQLStat(SQLStat theInsert) {
-    theInsert.colNames += [ fk ];
-    theInsert.values += [ lit(text(uuid2str(ref))) ];
-    return theInsert;
-  });
- }   
+//void compileRefBinding(
+//  <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole,
+//  // parent = Product, parentRole = inventory, from = Item, fromRole = product
+//  Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
+//  UUID ref, InsertContext ctx
+//) {
+//  // set foreign key of sqlMe to point to uuid
+//  println("DOING PARENT");
+//  str fk = fkName(parent, from, fromRole == "" ? parentRole : fromRole);
+//  ctx.updateSQLInsert(SQLStat(SQLStat theInsert) {
+//    theInsert.colNames += [ fk ];
+//    theInsert.values += [ lit(text(uuid2str(ref))) ];
+//    return theInsert;
+//  });
+// }   
 
 void compileRefBinding(
   <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole,
@@ -204,13 +217,21 @@ void compileRefBinding(
 
 void compileRefBinding(
   <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole,
-  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, false>,
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
   UUID ref, InsertContext ctx
 ) {
-  if (r notin trueCrossRefs(ctx.schema.rels)) {
-    fail compileRefBinding;
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> in ctx.schema.rels) {
+    // it's an inverse of containment
+    str fk = fkName(to, from, fromRole == "" ? toRole : fromRole);
+    ctx.updateSQLInsert(SQLStat(SQLStat theInsert) {
+      theInsert.colNames += [ fk ];
+      theInsert.values += [ lit(text(uuid2str(ref))) ];
+      return theInsert;
+    });
   }
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(text(uuid2str(ref)))], ctx.myParams));
+  else {
+    ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(text(uuid2str(ref)))], ctx.myParams));
+  }
 }
 
 void compileRefBinding(
@@ -218,9 +239,9 @@ void compileRefBinding(
   Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, false>,
   UUID ref, InsertContext ctx
 ) {
-  if (r notin trueCrossRefs(ctx.schema.rels)) {
-    fail compileRefBinding;
-  }
+  //if (r notin trueCrossRefs(ctx.schema.rels)) {
+  //  fail compileRefBinding;
+  //}
   ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(text(uuid2str(ref)))], ctx.myParams));
   ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
 }
@@ -230,9 +251,9 @@ void compileRefBinding(
   Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, false>,
   UUID ref, InsertContext ctx
 ) {
-  if (r notin trueCrossRefs(ctx.schema.rels)) {
-    fail compileRefBinding;
-  }
+  //if (r notin trueCrossRefs(ctx.schema.rels)) {
+  //  fail compileRefBinding;
+  //}
   ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
@@ -265,12 +286,6 @@ void compileRefBinding(
   });
   ctx.addSteps(insertObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
-
-void compileRefBindingBla(
-  <mongodb(), str dbName>, <DB::sql(), str other>, str from, str fromRole,
-  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, bool _>,
-  UUID ref, InsertContext ctx
-) {}
 
 void compileRefBinding(
   <mongodb(), str dbName>, <DB::sql(), str other>, str from, str fromRole,
