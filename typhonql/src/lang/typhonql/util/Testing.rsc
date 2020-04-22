@@ -54,7 +54,7 @@ alias TestExecuter =
 		void(void(PolystoreInstance proxy)) runTest,
 		void(list[void(PolystoreInstance proxy)]) runTests];
 		
-TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password) {
+TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password, Log log = NO_LOG()) {
 	Conn conn = <host, port, user, password>;
 	Schema sch = fetchSchema(conn);
 	map[str, Connection] connections =  readConnectionsInfo(conn.host, toInt(conn.port), conn.user, conn.password);
@@ -108,12 +108,12 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		proxy.closeSession();
 	};
 	
-	void(void(PolystoreInstance proxy)) myRunTest = void(void(PolystoreInstance proxy) t) {
-		runTest(proxy, setup, t);
+	void(void(PolystoreInstance)) myRunTest = void(void(PolystoreInstance proxy) t) {
+		runTest(proxy, setup, t, log);
 	};
 	
-	void(list[void(PolystoreInstance proxy)]) myRunTests = void(list[void(PolystoreInstance proxy)] ts) {
-		runTests(proxy, setup, ts);
+	void(list[void(PolystoreInstance)]) myRunTests = void(list[void(PolystoreInstance proxy)] ts) {
+		runTests(proxy, setup, ts, log);
 	};
 	
 	return <myRunSetup, myRunTest, myRunTests>;
@@ -163,7 +163,7 @@ void resetDatabasesInTest(Schema sch, Session session, Log log = LOG) {
 	runSchema(sch, session, log = log);
 }
 
-void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log = LOG, bool runTestsInSetup = false) {
+void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log, bool runTestsInSetup = false) {
 	println("Running test: <t>");
 	proxy.startSession();
 	proxy.resetDatabases();
@@ -223,12 +223,12 @@ void assertException(str testName, void() block) {
 	}
 }
 
-void runTests(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, list[void(PolystoreInstance)] tests, Log log = LOG /*void(value v) {println(v);}*/) {
+void runTests(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, list[void(PolystoreInstance)] tests, Log log ,  bool runTestsInSetup = false/*void(value v) {println(v);}*/) {
 	map[str, TestResult] stats = ();
 	
 	STATS = ();
 	for (t <- tests) {
-		runTest(proxy, setup, t, log = log);
+		runTest(proxy, setup, t, log = log, runTestsInSetup = runTestsInSetup);
 	}
 	
 	println("# Summary");
