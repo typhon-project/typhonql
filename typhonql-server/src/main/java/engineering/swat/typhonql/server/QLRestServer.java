@@ -13,8 +13,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -66,11 +68,14 @@ public class QLRestServer {
         context.addServlet(jsonPostHandler(engine, QLRestServer::handleDDLCommand), "/ddl");
         context.addServlet(jsonPostHandler(engine, QLRestServer::handlePreparedCommand), "/preparedUpdate");
         context.addServlet(jsonPostHandler(engine, QLRestServer::handleReset), "/reset");
-        server.setHandler(context);
+        server.setHandler(wrapCompression(context));
         server.start();
         System.err.println("Server is running, press Ctrl-C to terminate");
         server.join();
 	}
+
+
+
 
 	private static final byte[] RESULT_OK_MESSAGE = "{\"result\":\"ok\"}".getBytes(StandardCharsets.UTF_8);
 	private static JsonSerializableResult RESULT_OK = t -> t.write(RESULT_OK_MESSAGE);
@@ -214,4 +219,11 @@ public class QLRestServer {
 		});
 	}
 
+	private static Handler wrapCompression(ServletContextHandler originalHandler) {
+		GzipHandler gzipHandler = new GzipHandler();
+		gzipHandler.setIncludedMimeTypes("text/plain", "text/html", "application/json");
+		gzipHandler.setIncludedMethods("GET", "PUT", "POST");
+		gzipHandler.setHandler(originalHandler);
+		return gzipHandler;
+	}
 }
