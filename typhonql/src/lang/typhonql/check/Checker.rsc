@@ -402,7 +402,7 @@ void collect((Where)`where <{Expr ","}+ clauses>`, Collector c) {
     }
 }
 
-void collect((GroupBy)`group <{VId ","}+ vars> <Having? having>`, Collector c) {
+void collect((GroupBy)`group <{Expr ","}+ vars> <Having? having>`, Collector c) {
     collect(vars, c);
     if (h <- having) {
         collect(h, c);
@@ -416,7 +416,7 @@ void collect((Having)`having <{Expr ","}+ clauses>`, Collector c) {
     }
 }
 
-void collect((OrderBy)`order <{VId ","}+ vars>`, Collector c) {
+void collect((OrderBy)`order <{Expr ","}+ vars>`, Collector c) {
     collect(vars, c);
 }
 
