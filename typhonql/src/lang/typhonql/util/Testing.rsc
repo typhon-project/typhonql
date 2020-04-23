@@ -52,7 +52,8 @@ alias TestExecuter =
 	tuple[
 		void(void(PolystoreInstance, bool), bool) runSetup,
 		void(void(PolystoreInstance proxy)) runTest,
-		void(list[void(PolystoreInstance proxy)]) runTests];
+		void(list[void(PolystoreInstance proxy)]) runTests,
+		Schema() fetchSchema];
 		
 TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password, Log log = NO_LOG()) {
 	Conn conn = <host, port, user, password>;
@@ -116,7 +117,11 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		runTests(proxy, setup, ts, log);
 	};
 	
-	return <myRunSetup, myRunTest, myRunTests>;
+	Schema() myfetchSchema = Schema() {
+		return proxy.fetchSchema;
+	};
+	
+	return <myRunSetup, myRunTest, myRunTests, myFetchSchema>;
 	
 }
 
