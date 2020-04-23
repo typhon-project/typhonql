@@ -58,6 +58,11 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	public List<List<Object>> getValues() {
 		return values;
 	}
+	
+	@JsonIgnore
+	public boolean isEmpty() {
+		return values == null || values.size() == 0;
+	}
 
 	@JsonIgnore
 	public static ResultTable fromIValue(IValue v) {
