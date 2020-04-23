@@ -38,7 +38,7 @@ public class EntitiesResource extends TyphonDALResource {
 	@POST
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response createEntity(@PathParam("entityName") String entityName, Map<String, String> fields) {
-		String query = "insert " + entityName + " { " + serializeFields(fields) + "}";
+		String query = "insert " + entityName + " { " + concatenateFields(fields) + "}";
  		try {
 			CommandResult cr = getEngine().executeUpdate(getModel(), getDatabaseInfo(), query);
 			return Response.created(URI.create("/" + entityName + "/" + cr.getCreatedUuids().values().iterator().next())).build();

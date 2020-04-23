@@ -28,16 +28,9 @@ public abstract class TyphonDALResource {
 		return (List<DatabaseInfo>) context.getAttribute(QLRestServer.DATABASE_INFO_FOR_DAL);
 	}
 
-	protected String serializeFields(Map<String, String> fields) {
+	protected String concatenateFields(Map<String, String> fields) {
 		return String.join(", ",
-				fields.entrySet().stream().map(e -> "\"" + e.getKey() + "\" : "
-						+ serializeValue(e.getValue())).collect(Collectors.toList()).toArray(new String[0]));
-	}
-
-	private String serializeValue(Object v) {
-		if (v instanceof String)
-			return "\"" + v + "\"";
-		else
-			return v.toString();
+				fields.entrySet().stream().map(e -> e.getKey() + " : "
+						+ e.getValue()).collect(Collectors.toList()).toArray(new String[0]));
 	}
 }
