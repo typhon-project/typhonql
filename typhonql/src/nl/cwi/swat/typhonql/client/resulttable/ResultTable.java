@@ -40,9 +40,9 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	}
 				
 	private List<String> columnNames;
-	private List<List<Object>> values;
+	private List<List<String>> values;
 	
-	public ResultTable(List<String> columnNames, List<List<Object>> values) {
+	public ResultTable(List<String> columnNames, List<List<String>> values) {
 		this.columnNames = columnNames;
 		this.values = values;
 	}
@@ -55,7 +55,7 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		return columnNames;
 	}
 
-	public List<List<Object>> getValues() {
+	public List<List<String>> getValues() {
 		return values;
 	}
 	
@@ -64,40 +64,6 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		return values == null || values.size() == 0;
 	}
 
-	@JsonIgnore
-	public static ResultTable fromIValue(IValue v) {
-		// map[str entity, list[Entity] entities];
-		if (v instanceof ITuple) {
-			ITuple tuple = (ITuple) v;
-			IList columns = (IList) tuple.get(0);
-			IList vs = (IList) tuple.get(1);
-			
-			Iterator<IValue> columnIter = columns.iterator();
-			List<String> columnNames = new ArrayList<String>();
-			while (columnIter.hasNext()) {
-				IString c = (IString) columnIter.next();
-				columnNames.add(c.getValue());
-			}
-			
-			Iterator<IValue> rowsIter = vs.iterator();
-			List<List<Object>> values = new ArrayList<>();
-			while (rowsIter.hasNext()) {
-				IList row = (IList) rowsIter.next();
-				Iterator<IValue> oneRowIter = row.iterator();
-				List<Object> objects = new ArrayList<>();
-				while (oneRowIter.hasNext()) {
-					IValue o = oneRowIter.next();
-					objects.add(toJava(o)); 
-				}
-				values.add(objects);
-			}
-			
-			return new ResultTable(columnNames, values);
-		} else
-			throw new RuntimeException("IValue does not represent a working set");
-
-	}
-	
 	@JsonIgnore
 	public static Object toJava(IValue object) {
 		if (object instanceof IInteger) {
@@ -140,7 +106,7 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 			cnw.append(vf.string(cn));
 		IListWriter vsw = vf.listWriter();
 		
-		for (List<Object> row : values) {
+		for (List<String> row : values) {
 			IListWriter osw = vf.listWriter();
 			for (Object o : row) {
 				osw.append(toIValue(vf, o));
@@ -190,7 +156,7 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	@JsonIgnore
 	public void print() {
 		System.out.println(String.join(", ", columnNames));
-		for (List<Object> vs : values) {
+		for (List<String> vs : values) {
 			System.out.println(String.join(",", 
 					vs.stream().map(o -> o.toString()).collect(Collectors.toList())));
 		}
@@ -212,6 +178,15 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	public static ResultTable fromJSON(InputStream is) throws IOException {
 		ResultTable rt = mapper.readValue(is, ResultTable.class);
 		return rt;
+	}
+
+	public static String serialize(String type, String s) {
+		// TODO complete all the cases
+		if (type.equals("str") || type.equals("string"))
+			return "\"" + s + "\"";
+		else if (type.equals("int") || type.equals("integer"))
+			return s;
+		return s;
 	}
 
 }

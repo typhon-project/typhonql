@@ -31,10 +31,19 @@ public class MongoDBIterator implements ResultIterator {
 	}
 
 	@Override
-	public Object getCurrentField(String label, String type, String name) {
+	public String getCurrentField(String label, String type, String name) {
 		// TODO TEMPORARY!!!!!
 		//return current.get(type + "." + name);
-		return current.get(name);
+		Object fromDB = current.get(name);
+		return toGenericString(fromDB);
+	}
+
+	private String toGenericString(Object fromDB) {
+		if (fromDB == null)
+			return null;
+		// Here how to convert MongoDB objects into neutral typhon strings
+		// TODO for now only calling toString
+		return fromDB.toString();
 	}
 
 	@Override

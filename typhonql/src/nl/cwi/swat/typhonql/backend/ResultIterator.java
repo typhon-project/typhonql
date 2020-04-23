@@ -13,17 +13,17 @@ public interface ResultIterator {
 	void nextResult();
 	boolean hasNextResult();
 	String getCurrentId(String label, String type);
-	Object getCurrentField(String label, String type, String name);
+	String getCurrentField(String label, String type, String name);
 	void beforeFirst();
 	default Record buildRecord(List<Path> signature) {
-		Map<Field, Object> vs = new HashMap<Field, Object>();
+		Map<Field, String> vs = new HashMap<Field, String>();
 		if (signature.isEmpty())
 			return new Record(vs);
 		Path first = signature.get(0);
 		Path id = new Path(first.getDbName(), first.getVar(), first.getEntityType(), new String[] { "@id" });
 		for (Path p : Stream.concat(signature.stream(), Stream.of(id)).collect(Collectors.toList())) {
 			Field f = toField(p);
-			Object v = (f.getAttribute().equals("@id")) 
+			String v = (f.getAttribute().equals("@id")) 
 					? getCurrentId(f.getLabel(), f.getType())
 					: getCurrentField(f.getLabel(), f.getType(), f.getAttribute());
 			vs.put(f, v);

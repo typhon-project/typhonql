@@ -51,12 +51,21 @@ public class MariaDBIterator implements ResultIterator {
 	}
 
 	@Override
-	public Object getCurrentField(String label, String type, String name) {
+	public String getCurrentField(String label, String type, String name) {
 		try {
-			return rs.getObject(label + "." + type + "." + name);
+			Object fromDB = rs.getObject(label + "." + type + "." + name);
+			return toGenericString(fromDB);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private String toGenericString(Object fromDB) {
+		if (fromDB == null)
+			return "null";
+		// Here how to convert SQL objects into neutral typhon strings
+		// TODO for now only calling toString
+		return fromDB.toString();
 	}
 
 	@Override
