@@ -38,6 +38,7 @@ data MongoCall
   | deleteOne(str dbName, str coll, str query)
   | deleteMany(str dbName, str coll, str query)
   | createCollection(str dbName, str coll)
+  | renameCollection(str dbName, str coll, str newName)
   | dropCollection(str dbName, str coll)
   | dropDatabase(str dbName)
   ;

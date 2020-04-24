@@ -175,6 +175,23 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
 }
 
 	// DDL operations
+	
+  list[SQLStat] renameRelation(str from, str relation, str newName, Schema s) {
+    if (r: <from, fromCard, relation, toRole, toCard, to, contain> <- s.rels)  {
+  		switch (<fromCard, toCard, contain>) {
+       		case <one_many(), \one(), true>: return renameOnlyCascadingForeignKey(newName, from, fromRole, to, toRole, []); // ??? how to enforce one_many?
+       		case <zero_many(), zero_one(), true>: renameOnlyCascadingForeignKey(newName, from, fromRole, to, toRole, []);
+       		case <zero_many(), \one(), true>: return renameOnlyCascadingForeignKey(newName, from, fromRole, to, toRole, [notNull()]);
+			case <zero_one(), \one(), true>: renameOnlyCascadingForeignKey(newNamefrom, fromRole, to, toRole, [unique(), notNull()]);
+       		case <\one(), zero_one(), true>: return renameOnlyCascadingForeignKey(newName, from, fromRole, to, toRole, []);
+       		case <\one(), \one(), true>: return renameOnlyCascadingForeignKey(newName, from, fromRole, to, toRole, [unique(), notNull()]);
+            // we realize all cross refs using a junction table.
+       		case <_, _, false>: return renameOnlyJunctionTable(newName, from, fromRole, to, toRole);
+       		default: illegal(r);
+       }
+    }
+  	throw "Relation <relation> does not exist";
+  }
 
   list[SQLStat] createRelation(str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain, bool doForeignKeys = true) {
     Rel r = <from, fromCard, fromRole, toRole, toCard, to, contain>;
@@ -208,6 +225,8 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
      illegal(r);
   }
   
+  
+  
   list[SQLStat] addOnlyCascadingForeignKey(str from, str fromRole, str to, str toRole, list[ColumnConstraint] cs, bool doForeignKeys) {
   	list[SQLStat] stats = [];
     fk = fkName(from, to, toRole == "" ? fromRole : toRole);
@@ -215,6 +234,15 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
 	if (doForeignKeys)
     	stats += alterTable(tableName(to), [addConstraint(foreignKey(fk, tableName(from), typhonId(from), cascade()))]);
     return stats; 
+  }
+  
+  list[SQLStat] renameOnlyCascadingForeignKey(str newName, str from, str fromRole, str to, str toRole, list[ColumnConstraint] cs) {
+  	list[SQLStat] stats = [];
+    fk = fkName(from, to, toRole == "" ? fromRole : toRole);
+    //stats += alterTable(tableName(to), [addColumn(column(fk, typhonIdType(), cs))]);
+    //renameColumn(column(columnName(attribute, entity), typhonType2SQL(ty), []), columnName(newName, entity))
+    stats += alterTable(tableName(to), [renameColumn(column(fk, typhonType2SQL(typhonIdType()), []), fkName(from, to, toRole == "" ? newName : toRole))]);
+	return stats; 
   }
 
   // should we make both fk's the combined primary key, if so, when?
@@ -232,6 +260,20 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
         | doForeignKeys ]);
     stats += dropTable([tbl], true, []);
     stats += stat;
+    return stats;
+  }
+  
+  list[SQLStat] renameOnlyJunctionTable(str newName, str from, str fromRole, str to, str toRole) {
+    list[SQLStat] stats = [];
+    str left = junctionFkName(from, fromRole);
+    str newLeft = junctionFkName(from, newName);
+    str right = junctionFkName(to, toRole);
+    str tbl = junctionTableName(from, fromRole, to, toRole);
+    str newTbl = junctionFkName(from, newName);
+    SQLStat stat1 = renameColumn(column(left, typhonType2SQL(typhonIdType()), []), newLeft);
+    SQLStat stat2 = rename(tbl, newTbl);
+    stats += stat1;
+    stats += stat2;
     return stats;
   }
 

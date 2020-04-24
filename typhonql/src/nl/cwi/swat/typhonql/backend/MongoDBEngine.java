@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 
 import org.bson.Document;
 
+import com.mongodb.MongoNamespace;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
@@ -62,6 +63,11 @@ public class MongoDBEngine extends Engine {
 
 	public void executeDropDatabase(String dbName) {
 		db.drop();
+	}
+
+	public void executeRenameCollection(String dbName, String collection, String newName) {
+		MongoCollection<Document> coll = db.getCollection(collection);
+		coll.renameCollection(new MongoNamespace(newName));
 	}
 
 }

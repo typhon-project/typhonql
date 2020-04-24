@@ -172,6 +172,23 @@ public class MongoOperations implements Operations {
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
 		});
 	}
+	
+	private ICallableValue makeRenameCollection(ResultStore store, List<Consumer<List<Record>>> script,
+			TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx,
+			IValueFactory vf, TypeFactory tf) {
+		return makeFunction(ctx, state, executeType, args -> {
+			String dbName = ((IString) args[0]).getValue();
+			String collection = ((IString) args[1]).getValue();
+			String newName = ((IString) args[2]).getValue();
+
+			MongoDatabase conn = connections.get(dbName);
+			new MongoDBEngine(store, script, uuids, conn).executeRenameCollection(dbName, collection, newName);
+
+			// sessionData.put(resultName, query);
+			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+		});
+	}
+
 
 	private ICallableValue makeDropCollection(ResultStore store, List<Consumer<List<Record>>> script,
 			TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx,
@@ -216,8 +233,9 @@ public class MongoOperations implements Operations {
 		FunctionType executeType4 = (FunctionType) aliasedTuple.getFieldType("findAndUpdateOne");
 		FunctionType executeType5 = (FunctionType) aliasedTuple.getFieldType("deleteOne");
 		FunctionType executeType6 = (FunctionType) aliasedTuple.getFieldType("createCollection");
-		FunctionType executeType7 = (FunctionType) aliasedTuple.getFieldType("dropCollection");
-		FunctionType executeType8 = (FunctionType) aliasedTuple.getFieldType("dropDatabase");
+		FunctionType executeType7 = (FunctionType) aliasedTuple.getFieldType("renameCollection");
+		FunctionType executeType8 = (FunctionType) aliasedTuple.getFieldType("dropCollection");
+		FunctionType executeType9 = (FunctionType) aliasedTuple.getFieldType("dropDatabase");
 
 		return vf.tuple(makeFind(store, script, state, uuids, executeType1, ctx, vf, tf),
 				makeFindWithProjection(store, script, state, uuids, executeType2, ctx, vf, tf),
@@ -225,8 +243,9 @@ public class MongoOperations implements Operations {
 				makeFindAndUpdateOne(store, script, state, uuids, executeType4, ctx, vf, tf),
 				makeDeleteOne(store, script, state, uuids, executeType5, ctx, vf, tf),
 				makeCreateCollection(store, script, state, uuids, executeType6, ctx, vf, tf),
-				makeDropCollection(store, script, state, uuids, executeType7, ctx, vf, tf),
-				makeDropDatabase(store, script, state, uuids, executeType8, ctx, vf, tf));
+				makeRenameCollection(store, script, state, uuids, executeType7, ctx, vf, tf),
+				makeDropCollection(store, script, state, uuids, executeType8, ctx, vf, tf),
+				makeDropDatabase(store, script, state, uuids, executeType9, ctx, vf, tf));
 	}
 
 	public void close() {
