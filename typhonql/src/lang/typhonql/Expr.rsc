@@ -45,6 +45,7 @@ syntax Expr
     | non-assoc \in: Expr lhs "in" Expr rhs
     | non-assoc like: Expr lhs "like" Expr rhs
   )
+  > left intersect: Expr lhs "&" Expr rhs
   > left and: Expr lhs "&&" Expr rhs
   > left or: Expr lhs "||" Expr rhs
   ;
