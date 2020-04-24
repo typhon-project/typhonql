@@ -14,11 +14,21 @@ public class TyphonSessionState implements AutoCloseable {
 	private MongoOperations mongoOperations;
 
 
+	@Override
 	public void close() {
-		mariaDbOperations.close();
-		mongoOperations.close();
-		this.finalized = true;
-		this.result = null;
+		try {
+            this.finalized = true;
+            this.result = null;
+            if (mariaDbOperations != null) {
+            	mariaDbOperations.close();
+            }
+		}
+		finally {
+			// make sure mongoOperations are also closed, even if mariadb operations fail to close
+            if (mongoOperations != null) {
+            	mongoOperations.close();
+            }
+		}
 	}
 
 	public ResultTable getResult() {
