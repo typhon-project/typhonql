@@ -4,13 +4,9 @@ module lang::typhonql::RunUsingCompiler
 import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
 
-import lang::typhonql::WorkingSet;
-import lang::typhonql::Native;
 import lang::typhonql::Partition;
 import lang::typhonql::TDBC;
 import lang::typhonql::DDL;
-import lang::typhonql::Eval;
-import lang::typhonql::Closure;
 import lang::typhonql::Session;
 import lang::typhonql::Request2Script;
 import lang::typhonql::Schema2Script;
