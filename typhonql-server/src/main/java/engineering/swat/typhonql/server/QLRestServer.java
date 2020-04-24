@@ -27,8 +27,8 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
+import nl.cwi.swat.typhonql.client.resulttable.JsonSerializableResult;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
-import nl.cwi.swat.typhonql.workingset.JsonSerializableResult;
 
 public class QLRestServer {
 	private static final Logger logger = LogManager.getLogger(QLRestServer.class);

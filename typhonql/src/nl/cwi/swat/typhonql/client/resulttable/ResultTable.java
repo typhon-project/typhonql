@@ -13,7 +13,9 @@ import org.rascalmpl.values.ValueFactoryFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import io.usethesource.vallang.IBool;
 import io.usethesource.vallang.IExternalValue;
@@ -25,8 +27,6 @@ import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
-import nl.cwi.swat.typhonql.workingset.EntityRef;
-import nl.cwi.swat.typhonql.workingset.JsonSerializableResult;
 
 
 public class ResultTable implements JsonSerializableResult, IExternalValue {
@@ -36,10 +36,14 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	static {
 		//mapper.configure(DeserializationFeature.
 		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+		mapper.canDeserialize(mapper.getTypeFactory().constructSimpleType(EntityRef.class, new JavaType[0]));
+		mapper.canSerialize(EntityRef.class);
 
 	}
 				
 	private List<String> columnNames;
+	
+	@JsonDeserialize(contentConverter = EntityRefConverter.class)
 	private List<List<Object>> values;
 	
 	public ResultTable(List<String> columnNames, List<List<Object>> values) {
