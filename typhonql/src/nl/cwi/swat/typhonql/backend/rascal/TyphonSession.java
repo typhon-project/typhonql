@@ -163,10 +163,6 @@ public class TyphonSession implements Operations {
 			paths.add(toPath(tuple));
 		}
 
-		// List<EntityModel> models = EntityModelReader.fromRascalRelation(types,
-		// modelsRel);
-		// WorkingSet ws = store.computeResult(resultName, labels.toArray(new
-		// String[0]), models.toArray(new EntityModel[0]));
 		try {
 			ResultTable rt = store.computeResultTable(script, paths);
 			return rt;
