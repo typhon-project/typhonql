@@ -7,15 +7,24 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
-import nl.cwi.swat.typhonql.workingset.JsonSerializableResult;
-import nl.cwi.swat.typhonql.workingset.json.WorkingSetJSON;
+import nl.cwi.swat.typhonql.client.resulttable.JsonSerializableResult;
 
 public class CommandResult implements JsonSerializableResult {
+	private static final ObjectMapper mapper;
+	
+	static {
+		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+
+	}
+	
 	private int affectedEntities;
 	private Map<String, String> createdUuids;
 	
@@ -41,7 +50,7 @@ public class CommandResult implements JsonSerializableResult {
 
 	@Override
 	public void serializeJSON(OutputStream target) throws IOException {
-		WorkingSetJSON.getMapper().writeValue(target, this);
+		mapper.writeValue(target, this);
 	}
 	
 	public static CommandResult fromIValue(IValue val) {

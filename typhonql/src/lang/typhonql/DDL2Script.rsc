@@ -203,6 +203,31 @@ default Script dropRelation(p:<db, str dbName>,  str entity, str relation, str t
 	throw "Unrecognized backend: <db>";
 }
 
+Script ddl2script((Request) `rename <EId eId> to <EId newName>`, Schema s, Log log = noLog) {
+  if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+     return renameEntity(p, "<eId>", "<newName>", s, log=log);
+  }
+  throw "Not found entity <eId>";
+}
+
+Script renameEntity(p:<sql(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
+	if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+		return rename(tableName(entity), tableName(newName));
+  	}
+  	throw "Not found entity <eId>";
+}
+
+Script renameEntity(p:<mongodb(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
+	if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+		return script([step(dbName, mongo(renameCollection(dbName, entity, newName)), ())]);
+  	}
+  	throw "Not found entity <eId>";
+}
+
+default Script renameEntity(p:<db, str dbName>, str entity, str newName, Schema s, Log log = noLog) {
+	throw "Unrecognized backend: <db>";
+}
+
 Script ddl2script((Request) `rename attribute <EId eId>.<Id name> to <Id newName>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	return renameAttribute(p, entity, "<name>", "<newName>", s, log = log);
@@ -227,6 +252,33 @@ Script renameAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str
 }
 
 default Script renameAttribute(p:<db, str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
+	throw "Unrecognized backend: <db>";
+}
+
+
+Script ddl2script((Request) `rename relation <EId eId>.<Id name> to <Id newName>`, Schema s, Log log = noLog) {
+  if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+	return renameRelation(p, entity, "<name>", "<newName>", s, log = log);
+  }
+  throw "Not found entity <eId>";
+}
+
+Script renameRelation(p:<sql(), str dbName>, str entity, str relation, str newName, Schema s, Log log = noLog) {
+	list[SQLStat] stats = renameRelation(entity, relation, newName, s);
+ 	for (SQLStat stat <- stats) {
+    	log("[ddl2script-rename-relation/sql/<dbName>] generating <pp(stat)>");
+    	steps += step(dbName, sql(executeStatement(dbName, pp(stat))), ());
+    }   
+    return script(steps);
+}
+
+Script renameRelation(p:<mongodb(), str dbName>, str entity, str relation, str newName, Schema s, Log log = noLog) {
+	Call call = mongo(
+				findAndUpdateMany(dbName, entity, "", "{ $rename : { \"<relation>\" : \"<newName>\" }}"));
+	return script([step(dbName, call, ())]);
+}
+
+default Script renameRelation(p:<db, str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
 }
 

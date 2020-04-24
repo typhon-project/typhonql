@@ -1,6 +1,5 @@
 insert Order {
-	totalAmount: 32, 
-	products: [Product { name: "TV" } ]
+	totalAmount: 32
 }
 
 from User u, Comment c select u, c where u.name == "test"
@@ -85,13 +84,6 @@ insert
 	@badradio Review { contents: "Good TV",product: radio,user: pablo}	
 
 
-insert 
-	@mauricio User {name: "Mauricio"},
-	@pablo User { name: "Cristian", reviews: badradio },
-	@radio Product {name: "Car", description: "Fast", reviews: badradio },
-	@badradio Review { contents: "Good Car",product: radio,user: pablo,
-		reviews: [ @really Review {contents: "Really?", product: radio, user: pablo},
-				   @nested2 Review {contents: "Indeed!", product: radio, user: pablo}]}	
 
 
 insert User {

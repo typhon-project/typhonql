@@ -1,20 +1,20 @@
 package nl.cwi.swat.typhonql.client;
 
+import java.util.Objects;
 import nl.cwi.swat.typhonql.DBType;
 
 public class DatabaseInfo {
 	
-	private String host; 
-	private int port; 
-	private String dbName; 
-	private DBType dbType; 
-	private String dbms; 
-	private String user; 
-	private String password;
+	private final String host; 
+	private final int port; 
+	private final String dbName; 
+	private final DBType dbType; 
+	private final String dbms; 
+	private final String user; 
+	private final String password;
 	
 	public DatabaseInfo(String host, int port, String dbName, DBType dbType, String dbms, String user,
 			String password) {
-		super();
 		this.host = host;
 		this.port = port;
 		this.dbName = dbName;
@@ -52,4 +52,13 @@ public class DatabaseInfo {
 	public String getPassword() {
 		return password;
 	}
+
+
+	@Override
+	public String toString() {
+		return "DatabaseInfo [host=" + host + ", port=" + port + ", dbName=" + dbName + ", dbType="
+				+ dbType + ", dbms=" + dbms + ", user=" + user + ", password=" + password + "]";
+	}
+	
+	
 }

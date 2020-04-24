@@ -17,8 +17,8 @@ import lang::typhonml::Util;
  */
  
 
-str HOST = "192.168.178.78";
-//str HOST = "localhost";
+//str HOST = "192.168.178.78";
+str HOST = "localhost";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
@@ -353,7 +353,7 @@ void test9(PolystoreInstance p) {
 
 
 void test10(PolystoreInstance p) {
-	p.runPreparedStatement((Request) `insert Product { name: ??name, description: ??description }`,
+	p.runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description }`,
 						  ["name", "description"],
 						  [["\"IPhone\"", "\"Apple\""],
 				           ["\"Samsung S10\"", "\"Samsung\""]]);
@@ -383,14 +383,14 @@ void test13(PolystoreInstance p) {
 	assertResultEquals("generated id is in the result", rs, <["u.@id"],[["<uuid>"]]>);
 }
 
-TestExecuter executer() = initTest(setup, HOST, PORT, USER, PASSWORD);
+TestExecuter executer(Log log = NO_LOG()) = initTest(setup, HOST, PORT, USER, PASSWORD, log = log);
 
-void runTest(void(PolystoreInstance) t) {
-	 executer().runTest(t); 
+void runTest(void(PolystoreInstance) t, Log log = NO_LOG()) {
+	 executer(log = log).runTest(t); 
 }
 
-void runTests(list[void(PolystoreInstance)] ts) {
-	executer().runTests(ts); 
+void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG) {
+	executer(log = log).runTests(ts); 
 }
 
 Schema fetchSchema() {
@@ -402,7 +402,7 @@ Schema printSchema() {
 }
 
 
-void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
+void runTests(Log log = NO_LOG()) {
 	tests = [
 	   testInsertSingleValuedSQLCross
 	  , testInsertManyValuedSQLLocal
@@ -443,5 +443,5 @@ void runTests(Log log = NO_LOG /*void(value v) {println(v);}*/) {
 	  , test12
 	  , test13
 	];
-	runTests(tests);
+	runTests(tests, log = log);
 }
