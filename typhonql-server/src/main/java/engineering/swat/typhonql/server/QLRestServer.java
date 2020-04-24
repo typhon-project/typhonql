@@ -94,6 +94,7 @@ public class QLRestServer {
         private static RestArguments parse(HttpServletRequest r) throws IOException {
             try {
                 RestArguments result = mapper.readValue(r.getReader(), new TypeReference<RestArguments> () {});
+                logger.trace("Received arguments: {}", result);
                 if (isEmpty(result.xmi)) {
                     throw new IOException("Missing xmi field");
                 }
@@ -114,6 +115,8 @@ public class QLRestServer {
                 + ((command != null && !command.isEmpty()) ? ("command: " + command + "\n") : "")
                 + ((parameterNames != null && parameterNames.length > 0) ? ("parameterNames: " + Arrays.toString(parameterNames) + "\n") : "")
                 + ((boundRows != null) ? ("boundRows: " + boundRows.length + "\n") : "")
+                + "xmi: " + xmi + "\n"
+                + "databaseInfo" + databaseInfo
                 + "}";
 		}
 	}
