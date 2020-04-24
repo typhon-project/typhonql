@@ -156,7 +156,7 @@ void resetDatabasesInTest(Schema sch, Session session, Log log = LOG) {
 	runSchema(sch, session, log = log);
 }
 
-void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log, bool runTestsInSetup = false) {
+void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log = LOG, bool runTestsInSetup = false) {
 	println("Running test: <t>");
 	proxy.startSession();
 	proxy.resetDatabases();
