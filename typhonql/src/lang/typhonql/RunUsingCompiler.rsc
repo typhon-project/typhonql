@@ -4,7 +4,6 @@ module lang::typhonql::RunUsingCompiler
 import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
 
-import lang::typhonql::Partition;
 import lang::typhonql::TDBC;
 import lang::typhonql::DDL;
 import lang::typhonql::Session;
