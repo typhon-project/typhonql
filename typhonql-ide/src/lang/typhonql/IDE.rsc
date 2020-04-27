@@ -7,7 +7,6 @@ import lang::typhonml::XMIReader;
 
 import lang::typhonql::TDBC;
 import lang::typhonql::DDL;
-import lang::typhonql::WorkingSet;
 import lang::typhonql::RunUsingCompiler;
 
 import lang::typhonql::check::Checker;

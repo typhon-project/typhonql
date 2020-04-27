@@ -6,5 +6,5 @@ Require-Libraries: |lib://typhonql|, |lib://typepal|
 Source: src
 PolystoreHost: localhost
 PolystorePort: 8080
-PolystoreUser: pablo
-PolystorePassword: antonio
+PolystoreUser: admin
+PolystorePassword: admin1@

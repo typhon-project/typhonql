@@ -1,4 +1,4 @@
-package nl.cwi.swat.typhonql.workingset;
+package nl.cwi.swat.typhonql.client.resulttable;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 

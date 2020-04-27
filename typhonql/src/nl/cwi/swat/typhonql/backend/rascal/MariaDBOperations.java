@@ -29,30 +29,38 @@ import nl.cwi.swat.typhonql.backend.ResultStore;
 
 public class MariaDBOperations implements Operations {
 
-	Map<String, Connection> connections;
+	private final Map<String, Connection> connections;
+	private final Map<String, ConnectionData> connectionSettings;
 
-	public MariaDBOperations(Map<String, ConnectionData> connections) throws SQLException {
+	public MariaDBOperations(Map<String, ConnectionData> connections) {
 		this.connections = new HashMap<String, Connection>();
+		this.connectionSettings = connections;
 		initializeDriver();
-		boolean first = true;
-		for (Entry<String, ConnectionData> entry : connections.entrySet()) {
-			String dbName = entry.getKey();
-			ConnectionData data = entry.getValue();
-			
-			if (first) {
-				Connection globalConnection = DriverManager.getConnection(
-						getConnectionString(data.getHost(), data.getPort(), "", data.getUser(), data.getPassword()));
-				this.connections.put("", globalConnection);
-			}
-			
-			Connection connection = DriverManager.getConnection(
-					getConnectionString(data.getHost(), data.getPort(), dbName, data.getUser(), data.getPassword()));
-			this.connections.put(dbName, connection);
-		}
 	}
-
-	private String getConnectionString(String host, int port, String dbName, String user, String password) {
-		return "jdbc:mariadb://" + host + ":" + port + "/" + dbName + "?user=" + user + "&password=" + password;
+	
+	private Connection getConnection(String dbName, boolean scopedToDb) {
+		return connections.computeIfAbsent(scopedToDb ? dbName : "#" + dbName, conName -> {
+            ConnectionData settings = connectionSettings.get(dbName);
+            if (settings == null) {
+                throw new RuntimeException("Missing connection settings for " + dbName);
+            }
+            try {
+                if (scopedToDb) {
+                    return getConnection(settings, dbName);
+                }
+                else {
+                    // TODO merge global connection for all databased on the same server
+                    return getConnection(settings, "");
+                }
+            } catch (SQLException e) {
+            	throw new RuntimeException("Failure to initialize connection to" + dbName, e);
+            }
+		});
+		
+	}
+	
+	private static Connection getConnection(ConnectionData cd, String dbName) throws SQLException {
+		return DriverManager.getConnection("jdbc:mariadb://" + cd.getHost() + ":" + cd.getPort() + "/" + dbName + "?user=" + cd.getUser() + "&password=" + cd.getPassword());
 	}
 
 	private ICallableValue makeExecuteQuery(ResultStore store, List<Consumer<List<Record>>> script,
@@ -68,8 +76,7 @@ public class MariaDBOperations implements Operations {
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 			List<Path> signature = rascalToJavaSignature(signatureList);
 
-			Connection connection = connections.get(dbName);
-			new MariaDBEngine(store, script, uuids, connection).executeSelect(resultId, query, bindingsMap, signature);
+			new MariaDBEngine(store, script, uuids, getConnection(dbName, true)).executeSelect(resultId, query, bindingsMap, signature);
 
 			// sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
@@ -86,8 +93,7 @@ public class MariaDBOperations implements Operations {
 
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 
-			Connection connection = connections.get(dbName);
-			new MariaDBEngine(store, script, uuids, connection).executeUpdate(query, bindingsMap);
+			new MariaDBEngine(store, script, uuids, getConnection(dbName, true)).executeUpdate(query, bindingsMap);
 
 			// sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
@@ -104,9 +110,7 @@ public class MariaDBOperations implements Operations {
 
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 
-			Connection connection = connections.get("");
-
-			new MariaDBEngine(store, script, uuids, connection).executeUpdate(query, bindingsMap);
+			new MariaDBEngine(store, script, uuids, getConnection(dbName, false)).executeUpdate(query, bindingsMap);
 
 			// sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
