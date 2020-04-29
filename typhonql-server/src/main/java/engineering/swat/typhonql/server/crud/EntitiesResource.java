@@ -1,6 +1,7 @@
 package engineering.swat.typhonql.server.crud;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,8 +19,6 @@ import org.apache.logging.log4j.Logger;
 
 import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
-import nl.cwi.swat.typhonql.workingset.Entity;
-
 @Path("/{entityName}")
 public class EntitiesResource extends TyphonDALResource {
 
@@ -27,11 +26,14 @@ public class EntitiesResource extends TyphonDALResource {
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	public List<Entity> getEntites(@PathParam("entityName") String entityName) {
+	public List<Map<String, String>> getEntites(@PathParam("entityName") String entityName) {
 		logger.trace("Getting all entities of type: " + entityName);
 		ResultTable result = getEngine().executeQuery(getModel(), getDatabaseInfo(),
 				"from " + entityName + " e select e");
-		return result.getValues().stream().map(vs -> new Entity(entityName, (String) vs.get(0)))
+		return result.getValues().stream().map(vs -> { 
+					Map<String, String> map = new HashMap<>();
+					map.put("@id", vs.get(0)); 
+					return map; })
 				.collect(Collectors.toList());
 	}
 
