@@ -32,24 +32,26 @@ import nl.cwi.swat.typhonql.backend.ResultStore;
 public class MongoOperations implements Operations {
 
 	private final Map<String, MongoDatabase> connections;
-	private final List<MongoClient> clients;
+	private final Map<String, MongoClient> clients;
+	private final Map<String, ConnectionData> connectionSettings;
 
 	public MongoOperations(Map<String, ConnectionData> connections) {
-		this.connections = new HashMap<String, MongoDatabase>();
-		this.clients = new ArrayList<>();
-		for (Entry<String, ConnectionData> entry : connections.entrySet()) {
-			String dbName = entry.getKey();
-			ConnectionData data = entry.getValue();
-			MongoClient currentClient = MongoClients
-					.create(getConnectionString(data.getHost(), data.getPort(), data.getUser(), data.getPassword()));
-			MongoDatabase conn = currentClient.getDatabase(dbName);
-			this.clients.add(currentClient);
-			this.connections.put(dbName, conn);
-		}
+		this.connections = new HashMap<>();
+		this.clients = new HashMap<>();
+		this.connectionSettings = connections;
 	}
-
-	private String getConnectionString(String host, int port, String user, String password) {
-		return "mongodb://" + user + ":" + password + "@" + host + ":" + port;
+	
+	private MongoDatabase getDatabase(String dbName) {
+		return connections.computeIfAbsent(dbName, nm -> {
+			ConnectionData cd = connectionSettings.get(nm);
+			if (cd == null) {
+				throw new RuntimeException("Missing database config for " + nm);
+			}
+			MongoClient client = clients.computeIfAbsent(cd.getHost(), 
+					h -> MongoClients.create("mongodb://" + cd.getUser() + ":" + cd.getPassword() + "@" + cd.getHost() + ":" + cd.getPort())
+			);
+			return client.getDatabase(nm);
+		});
 	}
 
 	private ICallableValue makeFind(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state,
@@ -66,13 +68,17 @@ public class MongoOperations implements Operations {
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 			List<Path> signature = rascalToJavaSignature(signatureList);
 
-			MongoDatabase conn = connections.get(dbName);
-			new MongoDBEngine(store, script, uuids, conn).executeFind(resultId, collection, query, bindingsMap,
+			engine(store, script, uuids, dbName).executeFind(resultId, collection, query, bindingsMap,
 					signature);
 
 			// sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
 		});
+	}
+
+	private MongoDBEngine engine(ResultStore store, List<Consumer<List<Record>>> script,
+			Map<String, String> uuids, String dbName) {
+		return new MongoDBEngine(store, script, uuids, getDatabase(dbName));
 	}
 
 	private ICallableValue makeFindWithProjection(ResultStore store, List<Consumer<List<Record>>> script,
@@ -90,8 +96,7 @@ public class MongoOperations implements Operations {
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 			List<Path> signature = rascalToJavaSignature(signatureList);
 
-			MongoDatabase conn = connections.get(dbName);
-			new MongoDBEngine(store, script, uuids, conn).executeFindWithProjection(resultId, collection, query,
+			engine(store, script, uuids, dbName).executeFindWithProjection(resultId, collection, query,
 					projection, bindingsMap, signature);
 
 			// sessionData.put(resultName, query);
@@ -110,8 +115,7 @@ public class MongoOperations implements Operations {
 
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 
-			MongoDatabase conn = connections.get(dbName);
-			new MongoDBEngine(store, script, uuids, conn).executeInsertOne(dbName, collection, doc, bindingsMap);
+			engine(store, script, uuids, dbName).executeInsertOne(dbName, collection, doc, bindingsMap);
 
 			// sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
@@ -130,8 +134,7 @@ public class MongoOperations implements Operations {
 
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 
-			MongoDatabase conn = connections.get(dbName);
-			new MongoDBEngine(store, script, uuids, conn).executeFindAndUpdateOne(dbName, collection, query, update,
+			engine(store, script, uuids, dbName).executeFindAndUpdateOne(dbName, collection, query, update,
 					bindingsMap);
 
 			// sessionData.put(resultName, query);
@@ -150,8 +153,7 @@ public class MongoOperations implements Operations {
 
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 
-			MongoDatabase conn = connections.get(dbName);
-			new MongoDBEngine(store, script, uuids, conn).executeDeleteOne(dbName, collection, query, bindingsMap);
+			engine(store, script, uuids, dbName).executeDeleteOne(dbName, collection, query, bindingsMap);
 
 			// sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
@@ -165,13 +167,29 @@ public class MongoOperations implements Operations {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
 
-			MongoDatabase conn = connections.get(dbName);
-			new MongoDBEngine(store, script, uuids, conn).executeCreateCollection(dbName, collection);
+			engine(store, script, uuids, dbName).executeCreateCollection(dbName, collection);
 
 			// sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
 		});
 	}
+	
+	private ICallableValue makeRenameCollection(ResultStore store, List<Consumer<List<Record>>> script,
+			TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx,
+			IValueFactory vf, TypeFactory tf) {
+		return makeFunction(ctx, state, executeType, args -> {
+			String dbName = ((IString) args[0]).getValue();
+			String collection = ((IString) args[1]).getValue();
+			String newName = ((IString) args[2]).getValue();
+
+			MongoDatabase conn = connections.get(dbName);
+			new MongoDBEngine(store, script, uuids, conn).executeRenameCollection(dbName, collection, newName);
+
+			// sessionData.put(resultName, query);
+			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+		});
+	}
+
 
 	private ICallableValue makeDropCollection(ResultStore store, List<Consumer<List<Record>>> script,
 			TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx,
@@ -180,8 +198,7 @@ public class MongoOperations implements Operations {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
 
-			MongoDatabase conn = connections.get(dbName);
-			new MongoDBEngine(store, script, uuids, conn).executeDropCollection(dbName, collection);
+			engine(store, script, uuids, dbName).executeDropCollection(dbName, collection);
 
 			// sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
@@ -194,8 +211,7 @@ public class MongoOperations implements Operations {
 		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 
-			MongoDatabase conn = connections.get(dbName);
-			new MongoDBEngine(store, script, uuids, conn).executeDropDatabase(dbName);
+			engine(store, script, uuids, dbName).executeDropDatabase(dbName);
 
 			// sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
@@ -216,8 +232,9 @@ public class MongoOperations implements Operations {
 		FunctionType executeType4 = (FunctionType) aliasedTuple.getFieldType("findAndUpdateOne");
 		FunctionType executeType5 = (FunctionType) aliasedTuple.getFieldType("deleteOne");
 		FunctionType executeType6 = (FunctionType) aliasedTuple.getFieldType("createCollection");
-		FunctionType executeType7 = (FunctionType) aliasedTuple.getFieldType("dropCollection");
-		FunctionType executeType8 = (FunctionType) aliasedTuple.getFieldType("dropDatabase");
+		FunctionType executeType7 = (FunctionType) aliasedTuple.getFieldType("renameCollection");
+		FunctionType executeType8 = (FunctionType) aliasedTuple.getFieldType("dropCollection");
+		FunctionType executeType9 = (FunctionType) aliasedTuple.getFieldType("dropDatabase");
 
 		return vf.tuple(makeFind(store, script, state, uuids, executeType1, ctx, vf, tf),
 				makeFindWithProjection(store, script, state, uuids, executeType2, ctx, vf, tf),
@@ -225,13 +242,14 @@ public class MongoOperations implements Operations {
 				makeFindAndUpdateOne(store, script, state, uuids, executeType4, ctx, vf, tf),
 				makeDeleteOne(store, script, state, uuids, executeType5, ctx, vf, tf),
 				makeCreateCollection(store, script, state, uuids, executeType6, ctx, vf, tf),
-				makeDropCollection(store, script, state, uuids, executeType7, ctx, vf, tf),
-				makeDropDatabase(store, script, state, uuids, executeType8, ctx, vf, tf));
+				makeRenameCollection(store, script, state, uuids, executeType7, ctx, vf, tf),
+				makeDropCollection(store, script, state, uuids, executeType8, ctx, vf, tf),
+				makeDropDatabase(store, script, state, uuids, executeType9, ctx, vf, tf));
 	}
 
 	public void close() {
 		Exception failed = null;
-		for (MongoClient c: clients) {
+		for (MongoClient c: clients.values()) {
 			try {
 				c.close();
 			}

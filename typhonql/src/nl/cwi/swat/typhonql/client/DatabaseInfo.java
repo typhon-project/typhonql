@@ -52,4 +52,13 @@ public class DatabaseInfo {
 	public String getPassword() {
 		return password;
 	}
+
+
+	@Override
+	public String toString() {
+		return "DatabaseInfo [host=" + host + ", port=" + port + ", dbName=" + dbName + ", dbType="
+				+ dbType + ", dbms=" + dbms + ", user=" + user + ", password=" + password + "]";
+	}
+	
+	
 }

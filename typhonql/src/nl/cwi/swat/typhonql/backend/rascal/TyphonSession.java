@@ -111,14 +111,9 @@ public class TyphonSession implements Operations {
 		Map<String, String> uuids = new HashMap<>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		TyphonSessionState state = new TyphonSessionState();
-		MariaDBOperations mariaDBOperations = null;
-		try {
-			mariaDBOperations =  new MariaDBOperations(mariaDbConnections);
-		} catch (SQLException e) {
-			throw RuntimeExceptionFactory.javaException(e, null, null);
-		}
+
+		MariaDBOperations mariaDBOperations = new MariaDBOperations(mariaDbConnections);
 		state.setMariaDBOperations(mariaDBOperations);
-		
 		MongoOperations mongoOperations = new MongoOperations(mongoConnections);
 		state.setMongoOperations(mongoOperations);
 		
@@ -163,10 +158,6 @@ public class TyphonSession implements Operations {
 			paths.add(toPath(tuple));
 		}
 
-		// List<EntityModel> models = EntityModelReader.fromRascalRelation(types,
-		// modelsRel);
-		// WorkingSet ws = store.computeResult(resultName, labels.toArray(new
-		// String[0]), models.toArray(new EntityModel[0]));
 		try {
 			ResultTable rt = store.computeResultTable(script, paths);
 			return rt;

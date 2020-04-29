@@ -32,8 +32,8 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
+import nl.cwi.swat.typhonql.client.resulttable.JsonSerializableResult;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
-import nl.cwi.swat.typhonql.workingset.JsonSerializableResult;
 
 public class QLRestServer {
 	
@@ -117,6 +117,7 @@ public class QLRestServer {
         private static RestArguments parse(HttpServletRequest r) throws IOException {
             try {
                 RestArguments result = mapper.readValue(r.getReader(), new TypeReference<RestArguments> () {});
+                logger.trace("Received arguments: {}", result);
                 if (isEmpty(result.xmi)) {
                     throw new IOException("Missing xmi field");
                 }
@@ -137,6 +138,8 @@ public class QLRestServer {
                 + ((command != null && !command.isEmpty()) ? ("command: " + command + "\n") : "")
                 + ((parameterNames != null && parameterNames.length > 0) ? ("parameterNames: " + Arrays.toString(parameterNames) + "\n") : "")
                 + ((boundRows != null) ? ("boundRows: " + boundRows.length + "\n") : "")
+                + "xmi: " + xmi + "\n"
+                + "databaseInfo" + databaseInfo
                 + "}";
 		}
 	}

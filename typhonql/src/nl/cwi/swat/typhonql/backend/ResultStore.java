@@ -17,7 +17,7 @@ public class ResultStore {
 	public ResultStore() {
 		store = new HashMap<String, ResultIterator>();
 	}
-	
+
 	@Override
 	public String toString() {
 		return "RESULTSTORE(" + store.toString() + ")";
@@ -30,10 +30,10 @@ public class ResultStore {
 	public void put(String id, ResultIterator results) {
 		store.put(id, results);
 	}
-	
+
 	public ResultTable computeResultTable(List<Consumer<List<Record>>> script, List<Path> paths) {
 		List<List<Record>> result = new ArrayList<List<Record>>();
-		script.add((List<Record> row ) -> {
+		script.add((List<Record> row) -> {
 			result.add(project(row, paths));
 		});
 		script.get(0).accept(new ArrayList<Record>());
@@ -74,29 +74,27 @@ public class ResultStore {
 		}
 		return ls;
 	}
-	
+
 	private Field match(Record r, Path p) {
-		for (Field f :r.getObjects().keySet()) {
-			if (f.getLabel().equals(p.getVar()) &&
-					f.getType().equals(p.getEntityType()) &&
-					f.getAttribute().equals(p.getSelectors()[0]))
+		for (Field f : r.getObjects().keySet()) {
+			if (f.getLabel().equals(p.getVar()) && f.getType().equals(p.getEntityType())
+					&& f.getAttribute().equals(p.getSelectors()[0]))
 				return f;
-					
+
 		}
 		return null;
 	}
-	
+
 	private Record project(Record r, List<Path> paths) {
 		Map<Field, String> os = new HashMap<>();
 		for (Path p : paths) {
 			Field f = match(r, p);
 			if (f != null) {
 				os.put(f, r.getObjects().get(f));
-			}	
+			}
 		}
 		return new Record(os);
 	}
-	
 
 	private List<String> buildColumnNames(List<Path> paths) {
 		List<String> names = new ArrayList<String>();

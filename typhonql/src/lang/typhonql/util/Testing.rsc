@@ -31,10 +31,11 @@ data TestResult
 // or test function name for throw
 alias Stats = map[str, TestResult];
 
-Stats STATS = ();
-
 alias PolystoreInstance =
 	tuple[
+		void() resetStats,
+		Stats() getStats,
+		void(str key, TestResult result) setStat,		
 		void() resetDatabases,
 		void() startSession,
 		void() closeSession,
@@ -46,7 +47,11 @@ alias PolystoreInstance =
 		list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs)
 			runPreparedUpdate,
 		Schema() fetchSchema,
-		void() printSchema];
+		void() printSchema,
+		void (str testName, value actual, value expected) assertEquals,
+		void(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected) assertResultEquals,
+		void (str testName, void() block)  assertException
+	];
 
 alias TestExecuter =
 	tuple[
@@ -61,6 +66,20 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	map[str, Connection] connections =  readConnectionsInfo(conn.host, toInt(conn.port), conn.user, conn.password);
 	Session session;
 	
+	Stats stats = ();
+	
+	void() myResetStats = void() {
+		stats = ();
+	};
+	
+	Stats() myGetStats = Stats() {
+		return stats;
+	};
+	
+	void(str key, TestResult result) mySetStat = void (str key, TestResult result) {
+		stats[key] = result;
+	};
+	
 	void() myStartSession = void() {
 		session = newSession(connections, log = LOG);
 	};
@@ -70,26 +89,46 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	
 	void() myResetDatabases = void() {
-		resetDatabasesInTest(sch, session);
+		ses = newSession(connections, log = LOG);
+		resetDatabasesInTest(sch, ses);
+		ses.done();
 	};
 	ResultTable(Request req) myRunQuery = ResultTable(Request req) {
-		return runQueryInTest(req, sch, session);
+		ses = newSession(connections, log = LOG);
+		result = runQueryInTest(req, sch, ses);
+		ses.done();
+		return result;
 	};
 	ResultTable(Request req, Schema s) myRunQueryForSchema = ResultTable(Request req, Schema s) {
-		return runQueryInTest(req, s, session);
+		ses = newSession(connections, log = LOG);
+		result = runQueryInTest(req, s, ses);
+		ses.done();
+		return result;
 	};
 	CommandResult(Request req) myRunUpdate = CommandResult(Request req) {
-		return runUpdateInTest(req, sch, session);
+		ses = newSession(connections, log = LOG);
+		result = runUpdateInTest(req, sch, ses);
+		ses.done();
+		return result;
 	};
 	CommandResult(Request req, Schema s) myRunUpdateForSchema = CommandResult(Request req, Schema s) {
-		return runUpdateInTest(req, s, session);
+		ses = newSession(connections, log = LOG);
+		result = runUpdateInTest(req, s, ses);
+		ses.done();
+		return result;
 	};
 	CommandResult(Request req) myRunDDL = CommandResult(Request req) {
-		return runDDLInTest(req, sch, conn);
+		ses = newSession(connections, log = LOG);
+		result = runDDLInTest(req, sch, ses);
+		ses.done();
+		return result;
 	};
-	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) 
+	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs)
 		myRunPreparedUpdate = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
-			return runPreparedUpdateInTest(req, columnNames, vs, sch, session);
+	    ses = newSession(connections, log = LOG); 
+		result = runPreparedUpdateInTest(req, columnNames, vs, sch, ses);
+		ses.done();
+		return result;
 	};
 	Schema() myFetchSchema = Schema() {
 		return fetchSchema(conn);
@@ -99,9 +138,23 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		printSchema(conn);
 	};
 	
-	PolystoreInstance proxy = <myResetDatabases, myStartSession, myCloseSession, myRunQuery, myRunQueryForSchema,
+	void (str testName, value actual, value expected)  myAssertEquals = void (str testName, value actual, value expected)  {
+		stats = assertEquals(testName, actual, expected, stats);
+	};
+	
+	void(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected)
+		myAssertResultEquals = void(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected)  {
+		stats = assertResultEquals(testName, actual, expected, stats);		
+	};
+	
+	void (str testName, void() block) myAssertException = void (str testName, void() block) {
+		stats = assertException(testName, block, stats);
+	};
+	
+	PolystoreInstance proxy = <myResetStats, myGetStats, mySetStat, myResetDatabases, myStartSession, 
+		myCloseSession, myRunQuery, myRunQueryForSchema,
 		myRunUpdate, myRunUpdateForSchema, myRunDDL, myRunPreparedUpdate, 
-		myFetchSchema, myPrintSchema>;
+		myFetchSchema, myPrintSchema,  myAssertEquals, myAssertResultEquals, myAssertException>>;
 		
 	void(void(PolystoreInstance, bool), bool) myRunSetup = void(void(PolystoreInstance, bool) setupFun, bool doTests) {
 		proxy.startSession();
@@ -110,11 +163,13 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	
 	void(void(PolystoreInstance)) myRunTest = void(void(PolystoreInstance proxy) t) {
-		runTest(proxy, setup, t, log);
+		proxy.resetStats();
+		runTest(proxy, setup, t, log = log);
 	};
 	
 	void(list[void(PolystoreInstance)]) myRunTests = void(list[void(PolystoreInstance proxy)] ts) {
-		runTests(proxy, setup, ts, log);
+		proxy.resetStats();
+		runTests(proxy, setup, ts, log = log);
 	};
 	
 	Schema() myfetchSchema = Schema() {
@@ -168,19 +223,17 @@ void resetDatabasesInTest(Schema sch, Session session, Log log = LOG) {
 	runSchema(sch, session, log = log);
 }
 
-void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log = log, bool runTestsInSetup = false) {
+void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log = LOG, bool runTestsInSetup = false) {
 	println("Running test: <t>");
-	proxy.startSession();
 	proxy.resetDatabases();
 	setup(proxy, runTestsInSetup);
 	oldLog = LOG;
 	LOG = log;
 	try {
-		t(proxy);
-		proxy.closeSession();
+		t(proxy);		
 	}
 	catch e: {
-		STATS["<t>"] = threw("<e>");
+		proxy.setStat("<t>", threw("<e>"));
 		println (" <detailEmoji>: exception for `<t>`: <e>");
 	}
 	LOG = oldLog;
@@ -190,60 +243,62 @@ str successEmoji = "\u001b[32m☀ \u001b[0m";
 str failEmoji = "\u001b[31m☁ \u001b[0m";
 str detailEmoji = "\u001b[34m☢ \u001b[0m";
 
-void assertEquals(str testName, value actual, value expected) {
+Stats assertEquals(str testName, value actual, value expected, Stats stats) {
 	if (actual != expected) {
-	    STATS[testName] = failed();
+	    stats[testName] = failed();
 		println(" <failEmoji>: `<testName>` expected: <expected>, actual: <actual>");
 	}
 	else {
-	    STATS[testName] = success();
+	    stats[testName] = success();
 		println(" <successEmoji>: `<testName>`");
 	}	
+	return stats;
 }
 
-void assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected) {
+Stats assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected, Stats stats) {
   if (actual.sig != expected.sig) {
-    STATS[testName] = failed();
+    stats[testName] = failed();
     println(" <failEmoji>: `<testName>` expected: <expected>, actual: <actual>");
   }
   else if (toSet(actual.vals) != toSet(expected.vals)) {
-    STATS[testName] = failed();
+    stats[testName] = failed();
     println(" <failEmoji>: `<testName>` expected: <expected>, actual: <actual>");
   }
   else {
-    STATS[testName] = success();
+    stats[testName] = success();
 	println(" <successEmoji>: `<testName>`");
   }
+  return stats;
 }
 
-void assertException(str testName, void() block) {
+Stats assertException(str testName, void() block, Stats stats) {
 	try {
 		block();
-		STATS[testName] = failed();
+		stats[testName] = failed();
    		println(" <failEmoji>: `<testName>` expected exception");
 	} 
 	catch e: {
-		STATS[testName] = success();
+		stats[testName] = success();
 		println(" <successEmoji>: `<testName>`");
 	}
+	return stats;
 }
 
-void runTests(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, list[void(PolystoreInstance)] tests, Log log ,  bool runTestsInSetup = false/*void(value v) {println(v);}*/) {
-	map[str, TestResult] stats = ();
+void runTests(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, list[void(PolystoreInstance)] tests, Log log = log ,  bool runTestsInSetup = false/*void(value v) {println(v);}*/) {
 	
-	STATS = ();
+	proxy.resetStats();
+	
 	for (t <- tests) {
 		runTest(proxy, setup, t, log = log, runTestsInSetup = runTestsInSetup);
 	}
 	
+	Stats stats = proxy.getStats();
+	
 	println("# Summary");
 	println("Number of tests: <size(tests)>");
-	println("Number of asserts: <size([ k | str k <- STATS, STATS[k] in {failed(), success()} ])>");
-	println("Number of success: <size([ k | str k <- STATS, STATS[k] == success() ])>");
-	println("Number of failed: <size([ k | str k <- STATS, STATS[k] == failed() ])>");
-	println("Number of throws: <size([ k | str k <- STATS, STATS[k] notin {failed(), success()} ])>");
-	
-	STATS = ();
-	
-	
+	println("Number of asserts: <size([ k | str k <- stats, stats[k] in {failed(), success()} ])>");
+	println("Number of success: <size([ k | str k <- stats, stats[k] == success() ])>");
+	println("Number of failed: <size([ k | str k <- stats, stats[k] == failed() ])>");
+	println("Number of throws: <size([ k | str k <- stats, stats[k] notin {failed(), success()} ])>");
+
 }
