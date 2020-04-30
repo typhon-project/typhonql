@@ -122,13 +122,10 @@ void setup(PolystoreInstance p, bool doTest) {
 }
 
 
-void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
-  Log oldLog = LOG;
-  LOG = log;
+void testSetup(PolystoreInstance p) {
   println("Doing sanity check on setup");
   p.resetDatabases();
   setup(p, true);
-  LOG = oldLog;
 }
 
 void testInsertSingleValuedSQLCross(PolystoreInstance p) {
