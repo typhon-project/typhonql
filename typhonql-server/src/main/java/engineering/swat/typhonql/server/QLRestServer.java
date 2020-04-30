@@ -1,6 +1,7 @@
 package engineering.swat.typhonql.server;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -38,8 +39,6 @@ import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 public class QLRestServer {
 	
 	public static String QUERY_ENGINE = "queryEngine";
-	public static String MODEL_FOR_DAL = "modelForDAL"; 
-	public static String DATABASE_INFO_FOR_DAL = "databaseInfoForDAL";
 	
 	private static final Logger logger = LogManager.getLogger(QLRestServer.class);
 	private static final ObjectMapper mapper;
@@ -81,7 +80,6 @@ public class QLRestServer {
         context.addServlet(jsonPostHandler(engine, QLRestServer::handleReset), "/reset");
 
 		//REST DAL
-        context.addServlet(jsonPostHandler(engine, QLRestServer::handlePrepareForDAL), "/prepareForDAL");
         context.setAttribute(QUERY_ENGINE, engine);
         
 		ServletHolder servletHolder = context.addServlet(ServletContainer.class, "/crud/*");
@@ -103,7 +101,7 @@ public class QLRestServer {
 	private static final byte[] RESULT_OK_MESSAGE = "{\"result\":\"ok\"}".getBytes(StandardCharsets.UTF_8);
 	private static JsonSerializableResult RESULT_OK = t -> t.write(RESULT_OK_MESSAGE);
 
-	private static class RestArguments {
+	public static class RestArguments {
 		// should always be there
 		public String xmi;
 		public List<DatabaseInfo> databaseInfo;
@@ -114,9 +112,13 @@ public class QLRestServer {
 		public String[] parameterNames;
 		public String[][] boundRows;
 
-        private static RestArguments parse(HttpServletRequest r) throws IOException {
+        public static RestArguments parse(HttpServletRequest r) throws IOException {
+            return parse(r.getReader());
+        }
+        
+        public static RestArguments parse(Reader r) throws IOException {
             try {
-                RestArguments result = mapper.readValue(r.getReader(), new TypeReference<RestArguments> () {});
+                RestArguments result = mapper.readValue(r, new TypeReference<RestArguments> () {});
                 logger.trace("Received arguments: {}", result);
                 if (isEmpty(result.xmi)) {
                     throw new IOException("Missing xmi field");
@@ -198,12 +200,6 @@ public class QLRestServer {
 			}
 			target.write(']');
 		}; 
-	}
-	
-	private static JsonSerializableResult handlePrepareForDAL(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r) throws IOException {
-		r.getServletContext().setAttribute(MODEL_FOR_DAL, args.xmi);
-		r.getServletContext().setAttribute(DATABASE_INFO_FOR_DAL, args.databaseInfo);
-		return RESULT_OK;
 	}
 	
 	@FunctionalInterface 

@@ -1,5 +1,6 @@
 package engineering.swat.typhonql.server.crud;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import javax.ws.rs.core.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import engineering.swat.typhonql.server.QLRestServer;
 import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
@@ -27,9 +29,10 @@ public class EntityResource extends TyphonDALResource {
 	
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	public Map<String, String> getEntity(@PathParam("entityName") String entityName, @PathParam("uuid") String uuid) {
+	public Map<String, String> getEntity(@PathParam("entityName") String entityName, @PathParam("uuid") String uuid) throws IOException {
 		logger.trace("Getting entity " + uuid + " of type: " + entityName);
-		ResultTable result = getEngine().executeGetEntity(getModel(), getDatabaseInfo(), entityName, uuid);
+		QLRestServer.RestArguments args = getRestArguments();
+		ResultTable result = getEngine().executeGetEntity(args.xmi, args.databaseInfo, entityName, uuid);
 		if (result.isEmpty()) {
 			throw new NotFoundException();
 		}
@@ -43,17 +46,19 @@ public class EntityResource extends TyphonDALResource {
 	}
 
 	@DELETE
-	public Response deleteEntity(@PathParam("entityName") String entityName, @PathParam("uuid") String uuid) {
+	public Response deleteEntity(@PathParam("entityName") String entityName, @PathParam("uuid") String uuid) throws IOException {
 		String query = "delete " + entityName + " e where e.@id == #" +uuid;
-		CommandResult cr = getEngine().executeUpdate(getModel(), getDatabaseInfo(), query);
+		QLRestServer.RestArguments args = getRestArguments();
+		CommandResult cr = getEngine().executeUpdate(args.xmi, args.databaseInfo, query);
 		return Response.ok().build();
 	}
 	
 	@PATCH
-	public Response updateEntity(@PathParam("entityName") String entityName, @PathParam("uuid") String uuid, Map<String, String> fields) {
+	public Response updateEntity(@PathParam("entityName") String entityName, @PathParam("uuid") String uuid, Map<String, String> fields) throws IOException {
 		String query = "update " + entityName + " e where e.@id == #" + uuid + " set { "
 				+ concatenateFields(fields) + "}";
-		CommandResult cr = getEngine().executeUpdate(getModel(), getDatabaseInfo(), query);
+		QLRestServer.RestArguments args = getRestArguments();
+		CommandResult cr = getEngine().executeUpdate(args.xmi, args.databaseInfo, query);
 		return Response.ok().build();
 	}
 
