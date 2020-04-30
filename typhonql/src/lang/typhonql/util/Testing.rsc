@@ -151,10 +151,12 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		stats = assertException(testName, block, stats);
 	};
 	
-	PolystoreInstance proxy = <myResetStats, myGetStats, mySetStat, myResetDatabases, myStartSession, 
+	PolystoreInstance proxy = <myResetStats, myGetStats, mySetStat,
+		myResetDatabases, myStartSession, 
 		myCloseSession, myRunQuery, myRunQueryForSchema,
 		myRunUpdate, myRunUpdateForSchema, myRunDDL, myRunPreparedUpdate, 
-		myFetchSchema, myPrintSchema,  myAssertEquals, myAssertResultEquals, myAssertException>>;
+		myFetchSchema, myPrintSchema,  myAssertEquals, myAssertResultEquals,
+		myAssertException>;
 		
 	void(void(PolystoreInstance, bool), bool) myRunSetup = void(void(PolystoreInstance, bool) setupFun, bool doTests) {
 		proxy.startSession();
