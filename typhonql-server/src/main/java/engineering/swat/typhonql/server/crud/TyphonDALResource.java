@@ -30,9 +30,4 @@ public abstract class TyphonDALResource {
 		String s = headers.getRequestHeader(REST_ARGUMENTS).get(0);
 		return QLRestServer.RestArguments.parse(new StringReader(s));			
 	}
-	protected String concatenateFields(Map<String, String> fields) {
-		return String.join(", ",
-				fields.entrySet().stream().map(e -> e.getKey() + " : "
-						+ e.getValue()).collect(Collectors.toList()).toArray(new String[0]));
-	}
 }

@@ -42,7 +42,7 @@ public class EntitiesResource extends TyphonDALResource {
 
 	@POST
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response createEntity(@PathParam("entityName") String entityName, Map<String, String> fields) throws IOException {
+	public Response createEntity(@PathParam("entityName") String entityName, Map<String, Object> fields) throws IOException {
 		String query = "insert " + entityName + " { " + concatenateFields(fields) + "}";
  		try {
  			QLRestServer.RestArguments args = getRestArguments();
@@ -50,6 +50,24 @@ public class EntitiesResource extends TyphonDALResource {
 			return Response.created(URI.create("/" + entityName + "/" + cr.getCreatedUuids().values().iterator().next())).build();
 		} catch (RuntimeException e) {
 			return Response.serverError().build();
+		}
+	}
+	
+	protected String concatenateFields(Map<String, Object> fields) throws IOException {
+		return String.join(", ",
+				fields.entrySet().stream().map(e -> e.getKey() + " : "
+						+ value2String(e.getValue())).collect(Collectors.toList()).toArray(new String[0]));
+	}
+
+	private String value2String(Object value) {
+		if (value instanceof String) {
+			return (String) value;
+		}
+		else if (value instanceof String[]) {
+			return "[" + String.join(", ", (String[]) value) + "]";
+		}
+		else {
+			throw new RuntimeException("Failure to parse json body representing entity");
 		}
 	}
 
