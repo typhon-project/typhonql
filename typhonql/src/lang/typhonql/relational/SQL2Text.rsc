@@ -44,7 +44,7 @@ str pp(deleteJoining(list[str] tables, list[Clause] clauses))
     '<intercalate("\n", [ pp(c) | Clause c <- cs ])>";
 
 str pp(select(list[SQLExpr] es, list[As] as, list[Clause] cs))
-  = "select <intercalate(", ", [ pp(e) | SQLExpr e <- es ])> 
+  =  "select <intercalate(", ", [ pp(e) | SQLExpr e <- es ])> 
     'from <intercalate(", ", [ pp(a) | As a <- as ])>
     '<intercalate("\n", [ pp(c) | Clause c <- cs ])>;";  
 
@@ -118,6 +118,7 @@ str pp(notIn(SQLExpr arg, list[Value] vals))
 str pp(\in(SQLExpr arg, list[Value] vals)) 
   = "(<pp(arg)>) in (<intercalate(", ", [ pp(v) | Value v <- vals])>)";
 
+str pp(fun(str name, vals)) = "<name>(<intercalate(", ", [pp(v) | v <- vals])>)";
 
 str pp(SQLExpr::placeholder(name = str name)) = "${<name>}";
 
@@ -160,13 +161,13 @@ str pp(dateTime(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
 
 str pp(date(datetime d)) = "\'<printDate(d, "YYYY-MM-dd")>\'";
 
-str pp(point(real x, real y)) = "PointFromText(\'POINT(<x> <y>)\')";
+str pp(point(real x, real y)) = "PointFromText(\'POINT(<x> <y>)\', 4326)";
 
 str pp(polygon(list[lrel[real, real]] segs)) 
-  = "PolyFromText(\'POLYGON(<intercalate(", ", [ seg2str(s) | s <- segs ])>)\')";
+  = "PolyFromText(\'POLYGON(<intercalate(", ", [ seg2str(s) | s <- segs ])>)\', 4326)";
 
 str seg2str(lrel[real,real] seg)  
-  = "(<intercalate(", ", [ "<x> <y>" | <real x, real y> <- seg ])>";
+  = "(<intercalate(", ", [ "<x> <y>" | <real x, real y> <- seg ])>)";
 
 str pp(null()) = "null";
 

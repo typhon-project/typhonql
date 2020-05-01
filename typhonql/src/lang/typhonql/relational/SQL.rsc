@@ -55,6 +55,7 @@ data SQLExpr
   | and(SQLExpr lhs, SQLExpr rhs) 
   | notIn(SQLExpr arg, list[Value] vals)
   | \in(SQLExpr arg, list[Value] vals)
+  | fun(str name, list[SQLExpr] args)
   ;
 
 

@@ -26,19 +26,20 @@ str PASSWORD = "admin1@";
 public Log PRINT() = void(value v) { println("LOG: <v>"); };
 
 void setup(PolystoreInstance p, bool doTest) {
-	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo" }`);
-	p.runUpdate((Request) `insert User { @id: #davy, name: "Davy" }`);
+	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo", location: #point(2.0 3.0) }`);
+	p.runUpdate((Request) `insert User { @id: #davy, name: "Davy", location: #point(20.0 30.0)  }`);
 	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from User u select u.@id, u.name`);
 	  p.assertResultEquals("users were inserted", rs, <["u.@id", "u.name"], [["pablo", "Pablo"], ["davy", "Davy"]]>);
 	}
 	
-	p.runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat", productionDate:  $2020-04-13$ }`);
-	p.runUpdate((Request) `insert Product {@id: #radio, name: "Radio", description: "Loud" , productionDate:  $2020-04-13$ }`);
+	p.runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat", productionDate:  $2020-04-13$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0) }`);
+	p.runUpdate((Request) `insert Product {@id: #radio, name: "Radio", description: "Loud" , productionDate:  $2020-04-13$, availabilityRegion: #polygon((10.0 10.0, 40.0 10.0, 40.0 40.0, 10.0 40.0, 10.0 10.0) }`);
+	
 	
 	if (doTest) {
-	  rs = p.runQuery((Request)`from Product p select p.@id, p.name, p.description, p.productionDate`);
+	  rs = p.runQuery((Request)`from Product p select p.@id, p.name, p.description, p.productionDate`); // TODO: include polygon in this test
 	  p.assertResultEquals("products were inserted", rs, <["p.@id", "p.name", "p.description", "p.productionDate"], 
 	     [["tv", "TV", "Flat", $2020-04-12T22:00:00.000+00:00$], ["radio", "Radio", "Loud", $2020-04-12T22:00:00.000+00:00$]]>);
 	}
@@ -304,6 +305,16 @@ void testSQLDateEquals(PolystoreInstance p) {
   p.assertResultEquals("sqlDateEquals", rs, <["p.name"], [["Radio"],["TV"]]>);
 }
 
+
+void testGISonSQL(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from Product p select p.name where #point(2.0 3.0) in p.availabilityRegion`);
+  p.assertResultEquals("testGISonSQLLiteralPoint", rs, <["p.name"], [["Radio"]]>);
+
+  rs = p.runQuery((Request)`from Product p, User u select u.name, p.name where u.position in p.availabilityRegion`);
+  p.assertResultEquals("testGISonSQLJoin", rs, <["u.name", "p.name"], [["Pablo", "Radio"], ["Davy", "TV"]]>);
+}
+
+
 void test1(PolystoreInstance p) {
 	rs = p.runQuery((Request) `from Product p select p.name`);
 	p.assertResultEquals("name is selected from product", rs, <["p.name"],[["Radio"],["TV"]]>);
@@ -383,6 +394,7 @@ void test13(PolystoreInstance p) {
 	p.assertResultEquals("generated id is in the result", rs, <["u.@id"],[["<uuid>"]]>);
 }
 
+
 TestExecuter executer(Log log = NO_LOG()) = initTest(setup, HOST, PORT, USER, PASSWORD, log = log);
 
 void runTest(void(PolystoreInstance) t, Log log = NO_LOG()) {
@@ -428,6 +440,8 @@ void runTests(Log log = NO_LOG()) {
 	  , testUpdateManyContainSQLtoExternalSetToEmpty	  
 	  
 	  , testSQLDateEquals
+	  
+	  , testGISonSQL
 	  
 	  , test1
 	  , test2

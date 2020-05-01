@@ -55,7 +55,11 @@ insert User { name: "Claudio",
 }
 
 insert Product {name: "Smartphone", 
-	description: "Waterproof" }
+	description: "Waterproof",
+	availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0))
+}
+
+from Product p select p.name where #point(2.0 3.0) in p.availabilityRegion
 	
 insert Review { contents: "Good phone" } 
 

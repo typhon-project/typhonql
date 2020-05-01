@@ -4,6 +4,9 @@
     <attributes xsi:type="typhonml:Attribute" name="content">
       <type xsi:type="typhonml:TextType"/>
     </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="location">
+      <type xsi:type="typhonml:PointType"/>
+    </attributes>
     <relations name="product" type="//@entities.1" cardinality="one"/>
     <relations name="user" type="//@entities.5" cardinality="one"/>
   </entities>
@@ -19,6 +22,9 @@
     </attributes>
     <attributes xsi:type="typhonml:Attribute" name="productionDate">
       <type xsi:type="typhonml:DateType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="availabilityRegion">
+      <type xsi:type="typhonml:PolygonType"/>
     </attributes>
     <relations name="reviews" type="//@entities.0" cardinality="zero_many" opposite="//@entities.0/@relations.0" isContainment="true"/>
     <relations name="tags" type="//@entities.4" cardinality="zero_many"/>
@@ -50,6 +56,9 @@
     </attributes>
     <attributes xsi:type="typhonml:Attribute" name="address">
       <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="location">
+      <type xsi:type="typhonml:PointType"/>
     </attributes>
     <relations name="biography" type="//@entities.6" opposite="//@entities.6/@relations.0" isContainment="true"/>
     <relations name="reviews" type="//@entities.0" cardinality="zero_many" opposite="//@entities.0/@relations.1"/>

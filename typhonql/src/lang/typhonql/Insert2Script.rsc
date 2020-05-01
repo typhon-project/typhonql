@@ -358,7 +358,7 @@ Value evalExpr((Expr)`<UUID u>`) = text("<u>"[1..]);
 
 Value evalExpr((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
 
-default Value evalExpr(Expr _) = null();
+default Value evalExpr(Expr ex) { throw "missing case for <ex>"; }
 
 bool isAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) = <e, "<x>", _> <- s.attrs;
 

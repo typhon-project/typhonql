@@ -322,6 +322,14 @@ SQLExpr expr2sql((Expr)`<DateAndTime d>`, Ctx ctx, Log log = noLog) = lit(dateTi
 
 SQLExpr expr2sql((Expr)`<JustDate d>`, Ctx ctx, Log log = noLog) = lit(date(readTextValueString(#datetime, "<d>")));
 
+SQLExpr expr2sql((Expr)`#point(<Real x> <Real y>)`, Ctx ctx, Log log = noLog) = lit(point(toReal("<x>"), toReal("<y>")));
+
+SQLExpr expr2sql((Expr)`#polygon(<{Segment ","}* segments>)`, Ctx ctx, Log log = noLog) 
+    = lit(polygon([ [<toReal("<x>"), toReal("<y>")> | (XY)`<X x> <Y y>` <- s.points] | s <- segments]));
+
+
+SQLExpr expr2sql((Expr)`false`, Ctx ctx, Log log = noLog) = lit(boolean(false));
+
 SQLExpr expr2sql((Expr)`<UUID u>`, Ctx ctx, Log log = noLog) = lit(text("<u>"[1..]));
 
 SQLExpr expr2sql((Expr)`true`, Ctx ctx, Log log = noLog) = lit(boolean(true));
@@ -377,6 +385,14 @@ SQLExpr expr2sql((Expr)`<Expr lhs> && <Expr rhs>`, Ctx ctx, Log log = noLog)
 SQLExpr expr2sql((Expr)`<Expr lhs> || <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = or(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
+SQLExpr expr2sql((Expr)`<Expr lhs> & <Expr rhs>`, Ctx ctx, Log log = noLog) 
+  = equ(fun("ST_Intersects", [expr2sql(lhs, ctx), expr2sql(rhs, ctx)]), lit(integer(1)));
+
+SQLExpr expr2sql((Expr)`<Expr lhs> in <Expr rhs>`, Ctx ctx, Log log = noLog) 
+  = equ(fun("ST_Within", [expr2sql(lhs, ctx), expr2sql(rhs, ctx)]), lit(integer(1)));
+
+SQLExpr expr2sql((Expr)`distance(<Expr from>, <Expr to>)`, Ctx ctx, Log log = noLog)
+  = fun("ST_Distance", [expr2sql(from, ctx), expr2sql(from, ctx)]);
 
 default SQLExpr expr2sql(Expr e, Ctx _) { throw "Unsupported expression: <e>"; }
 

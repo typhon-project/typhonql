@@ -1,6 +1,7 @@
 entity Review {
 	content : text
-		
+	location: point
+
 	product -> Product[1]
 	user -> User[1]
 }
@@ -10,6 +11,7 @@ entity Product {
 	description : string[256]
 	price : int
 	productionDate : date
+	availabilityRegion: polygon
 		
 	reviews :-> Review."Review.product"[0..*]
 	tags -> Tag[0..*]
@@ -34,6 +36,7 @@ entity Tag {
 entity User {
 	name : string[256]
 	address: string[256]
+	location: point
 	
 	biography :-> Biography."Biography.user"[0..1]
 	reviews -> Review."Review.user"[0..*]
@@ -43,6 +46,7 @@ entity Biography {
 	content : string[256]
 	
 	user -> User."User.biography"[1]
+
 }
 
 relationaldb Inventory {

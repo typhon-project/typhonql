@@ -67,11 +67,11 @@ syntax XY
   = coordinate: Real Real;
 
 syntax Polygon
-  = shape: "#polygon" "(" {Segment ","}* ")" 
+  = shape: "#polygon" "(" {Segment ","}* segments ")" 
   ;
   
 syntax Segment
-  = line: "(" {XY ","}* ")";
+  = line: "(" {XY ","}* points ")";
 
 
 // Variable Ids
