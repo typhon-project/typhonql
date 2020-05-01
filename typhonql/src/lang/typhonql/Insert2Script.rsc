@@ -341,7 +341,7 @@ Value evalExpr((Expr)`<Bool b>`) = boolean("<b>" == "true");
 
 Value evalExpr((Expr)`<Real r>`) = decimal(toReal("<r>"));
 
-Value evalExpr((Expr)`#point(<Real x> <Real y>)`) = point(toReal("<x>", toReal("<y>")));
+Value evalExpr((Expr)`#point(<Real x> <Real y>)`) = point(toReal("<x>"), toReal("<y>"));
 
 Value evalExpr((Expr)`#polygon(<{Segment ","}* segs>)`)
   = polygon([ seg2lrel(s) | Segment s <- segs ]);

@@ -325,7 +325,7 @@ SQLExpr expr2sql((Expr)`<JustDate d>`, Ctx ctx, Log log = noLog) = lit(date(read
 SQLExpr expr2sql((Expr)`#point(<Real x> <Real y>)`, Ctx ctx, Log log = noLog) = lit(point(toReal("<x>"), toReal("<y>")));
 
 SQLExpr expr2sql((Expr)`#polygon(<{Segment ","}* segments>)`, Ctx ctx, Log log = noLog) 
-    = lit(polygon([ [<toReal("<x>"), toReal("<y>")> | (XY)`<X x> <Y y>` <- s.points] | s <- segments]));
+    = lit(polygon([ [<toReal("<x>"), toReal("<y>")> | (XY)`<Real x> <Real y>` <- s.points] | s <- segments]));
 
 
 SQLExpr expr2sql((Expr)`false`, Ctx ctx, Log log = noLog) = lit(boolean(false));
