@@ -17,8 +17,8 @@ import lang::typhonml::Util;
  */
  
 
-//str HOST = "192.168.178.78";
-str HOST = "localhost";
+str HOST = "192.168.178.78";
+//str HOST = "localhost";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
@@ -124,12 +124,9 @@ void setup(PolystoreInstance p, bool doTest) {
 
 
 void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
-  Log oldLog = LOG;
-  LOG = log;
   println("Doing sanity check on setup");
   p.resetDatabases();
   setup(p, true);
-  LOG = oldLog;
 }
 
 void testInsertSingleValuedSQLCross(PolystoreInstance p) {
@@ -174,7 +171,15 @@ void testDeleteAllSQLBasic(PolystoreInstance p) {
 }
 
 void testDeleteAllWithCascade(PolystoreInstance p) {
+  p.runUpdate((Request)`delete Product p where p.name == "Radio"`);
+
+  rs = p.runQuery((Request)`from Product p select p.@id where p.name == "Radio"`);
+  p.assertResultEquals("deleting a product by name deletes it", rs, <["p.@id"], []>);
+
   p.runUpdate((Request)`delete Product p where p.@id == #tv`);
+  
+  rs = p.runQuery((Request)`from Product p select p.@id where p.@id == #tv`);
+  p.assertResultEquals("deleting a product by id deletes it", rs, <["p.@id"], []>);
   
   rs = p.runQuery((Request)`from Item i select i.@id where i.product == #tv`);
   p.assertResultEquals("deleting products deletes items", rs, <["i.@id"], []>);
