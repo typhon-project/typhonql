@@ -1,5 +1,6 @@
 package nl.cwi.swat.typhonql.backend;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.text.StringSubstitutor;
@@ -12,9 +13,9 @@ public class MongoFindOneAndUpdateExecutor extends MongoUpdateExecutor {
 
 	private String update;
 
-	public MongoFindOneAndUpdateExecutor(ResultStore store, Map<String, String> uuids, String collectionName,
+	public MongoFindOneAndUpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, String> uuids, String collectionName,
 			String query, String update, Map<String, Binding> bindings, MongoDatabase db) {
-		super(store, uuids, collectionName, query, bindings, db);
+		super(store, updates, uuids, collectionName, query, bindings, db);
 		this.update = update;
 	}
 
