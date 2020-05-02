@@ -117,12 +117,46 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
     s
   >;
   
-  compileAttrs(p, [ kv | KeyVal kv <- kvs, isAttr(kv, ent, s) ], ctx);
+  compileAttrSets(p, [ kv | KeyVal kv <- kvs, isAttr(kv, ent, s) ], ctx);
+
+  // TODO: make less ugly how the rel is looked up here in if-statements (also with insert)
+  for ((KeyVal)`<Id x>: <UUID ref>` <- kvs) {
+    str fromRole = "<x>"; 
+    if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
+      //println("COMPILING rel: <r>");
+      compileRefSet(p, placeOf(to, s), entity, fromRole, r, ref, ctx);
+    }
+  }
+
+  for ((KeyVal)`<Id x>: [<{UUID ","}* refs>]` <- kvs) {
+    str fromRole = "<x>"; 
+    if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
+      compileRefSetMany(p, placeOf(to, s), entity, fromRole, r, refs, ctx);
+    }
+  }
+
+  for ((KeyVal)`<Id x> +: [<{UUID ","}* refs>]` <- kvs) {
+    str fromRole = "<x>"; 
+    if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
+      compileRefAddTo(p, placeOf(to, s), entity, fromRole, r, refs, ctx);
+    }
+  }
+
+  for ((KeyVal)`<Id x> -: [<{UUID ","}* refs>]` <- kvs) {
+    str fromRole = "<x>"; 
+    if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
+      compileRefRemoveFrom(p, placeOf(to, s), entity, fromRole, r, refs, ctx);
+    }
+  }
   
- }
+  
+
+  return theScript;
+  
+}
  
  
-void compileAttrs(<sql(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
+void compileAttrSets(<sql(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
   ctx.updateSQLUpdate(SQLStat(SQLStat upd) {
     upd.sets += [ Set::\set(columnName("<kv.key>", ctx.entity), SQLExpr::lit(evalExpr(kv.\value))) | KeyVal kv <- kvs ];
     return upd;
@@ -130,25 +164,83 @@ void compileAttrs(<sql(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
 
  }
  
-void compileAttrs(<mongodb(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
+void compileAttrSets(<mongodb(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
   ctx.updateMongoUpdate(DBObject(DBObject upd) {
     upd.props += [ <"$set", object([keyVal2prop(kv)])> | KeyVal kv <- kvs ];
   });
 }
+
+void compileRefSet(
+  <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
+  UUID ref, UpdateContext ctx
+) {
+  // update ref's foreign key to point to sqlMe
+  str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
+  SQLStat theUpdate = update(tableName(to), [\set(fk, ctx.sqlMe)],
+    [where([equ(column(tableName(to), typhonId(to)), lit(text(uuid2str(ref))))])]);
+  addSteps([step(dbName, sql(executeStatement(dbName, pp(theUpdate))), ctx.myParams)]);
+}
  
+void compileRefSet(
+  <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
+  UUID ref, UpdateContext ctx
+) {
+   // it's single ownership, so dont' insert in the junction but update.
+  ctx.addSteps(updateIntoJunctionSingle(dbName, from, fromRole, to, toRole, ctx.sqlMe, lit(text(uuid2str(ref))), ctx.myParams));
+  ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
+}
  
- 
+void compileRefSet(
+  <DB::sql(), str dbName>, <mongodb(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
+  UUID ref, UpdateContext ctx
+) {
+  ctx.addSteps(updateIntoJunctionSingle(dbName, from, fromRole, to, toRole, ctx.sqlMe, lit(text(uuid2str(ref))), ctx.myParams));
+  ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+} 
+
+// <str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> 
+// this is the case that the current KeyVal pair is actually
+// setting the currently updated object as being owned by ref
+           
+void compileRefSet(
+  <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
+  Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
+  UUID ref, UpdateContext ctx
+) {
+  // update "my" foreign key to point to uuid
+  ctx.updateSQLUpdate(SQLStat(SQLStat upd) {
+    str fk = fkName(parent, from, fromRole == "" ? parentRole : fromRole);
+    upd.sets += [\set(fk, lit(text(uuid2str(ref))))];
+    return upd;
+  });
+}
+
+void compileRefSet(
+  <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole, 
+  Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
+  UUID ref, UpdateContext ctx
+) {
+  // it's single ownership, so dont' insert in the junction but update.
+  ctx.addSteps(updateIntoJunctionSingle(dbName, from, fromRole, parent, parentRole, lit(text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
+  ctx.addSteps(updateIntoJunctionSingle(other, parent, parentRole, from, fromRole, lit(text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
+}
+
+void compileRefSet(
+  <DB::sql(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
+  Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
+  UUID ref, UpdateContext ctx
+) {
+  ctx.addSteps(updateIntoJunctionSingle(dbName, from, fromRole, parent, parentRole, lit(text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
+  ctx.addSteps(updateObjectPointer(other, parent, parentRole, parentCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+}
+
 void old () {
    
   switch (p) {
     case <sql(), str dbName>: {
-      SQLStat stat = update(tableName(ent),
-        [ Set::\set(columnName("<kv.key>", ent), SQLExpr::lit(evalExpr(kv.\value))) | KeyVal kv <- kvs, isAttr(kv, ent, s) ],
-          [where([equ(column(tableName(ent), typhonId(ent)), sqlMe)])]);
-      if (stat.sets != []) {
-        scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), myParams)];
-      }
-      
       for ((KeyVal)`<Id fld>: <UUID ref>` <- kvs) {
         str from = "<e>";
         str fromRole = "<fld>";
@@ -159,20 +251,20 @@ void old () {
             
           switch (placeOf(to, s)) {
           
-            case <sql(), dbName> : {  
-              // update ref's foreign key to point to sqlMe
-              str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
-              SQLStat theUpdate = update(tableName(to), [\set(fk, sqlMe)],
-                [where([equ(column(tableName(to), typhonId(to)), lit(text(uuid)))])]);
-                
-              scr.steps +=  [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
-            }
+            //case <sql(), dbName> : {  
+            //  // update ref's foreign key to point to sqlMe
+            //  str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
+            //  SQLStat theUpdate = update(tableName(to), [\set(fk, sqlMe)],
+            //    [where([equ(column(tableName(to), typhonId(to)), lit(text(uuid)))])]);
+            //    
+            //  scr.steps +=  [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
+            //}
             
-            case <sql(), str other> : {
-              // it's single ownership, so dont' insert in the junction but update.
-              scr.steps +=  updateIntoJunctionSingle(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
-              scr.steps +=  updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
-            }
+            //case <sql(), str other> : {
+            //  // it's single ownership, so dont' insert in the junction but update.
+            //  scr.steps +=  updateIntoJunctionSingle(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
+            //  scr.steps +=  updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
+            //}
             
             case <mongodb(), str other>: {
               scr.steps +=  updateIntoJunctionSingle(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
