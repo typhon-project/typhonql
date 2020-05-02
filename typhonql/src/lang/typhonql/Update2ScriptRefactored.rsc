@@ -370,7 +370,83 @@ void compileRefSetMany(
  * Adding to many-valued collections
  */
  
+void compileRefAddTo(
+  <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  // update each ref's foreign key to point to sqlMe
+  str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
+  SQLStat theUpdate = update(tableName(to), [\set(fk, ctx.sqlMe)],
+    [where([\in(column(tableName(to), typhonId(to)), [ evalExpr((Expr)`<UUID ref>`) | UUID ref <- refs ])])]);
+    
+  ctx.addSteps([step(dbName, sql(executeStatement(dbName, pp(theUpdate))), ctx.myParams)]);
+}  
+
+void compileRefAddTo(
+  <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, 
+     [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams));
+  // NB: ownership is never many to many, so if fromRole is many, toRole cannot be
+  ctx.addSteps([ *updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), ctx.sqlMe, ctx.myParams)
+    | UUID ref <- refs ]);
+}
+
+void compileRefAddTo(
+  <DB::sql(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, 
+    [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams));
   
+  // NB: ownership is never many to many, so if fromRole is many, toRole cannot be
+  ctx.addSteps([ *updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams) 
+      | UUID ref <- refs ]);
+}
+
+void compileRefAddTo(
+  <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    throw "Bad update, cannot have multiple owners.";
+  }
+  // save the cross ref
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams));
+}
+  
+void compileRefAddTo(
+  <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    throw "Bad update, cannot have multiple owners.";
+  }
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams));
+  ctx.addSteps([ *insertIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), ctx.sqlMe, ctx.myParams)
+                 | UUID ref <- refs ]);
+}
+
+void compileRefAddTo(
+  <DB::sql(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    throw "Bad update, cannot have multiple owners.";
+  }
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams));
+  // todo: deal with multiplicity correctly in updateObject Pointer
+  ctx.addSteps([ *updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams) 
+      | UUID ref <- refs ]);
+}
+
 
 void old () {
    
