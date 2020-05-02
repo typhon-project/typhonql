@@ -43,21 +43,29 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   str ent = "<e>";
 
   Place p = placeOf(ent, s);
-
-  Param toBeUpdated = field(p.name, "<x>", ent, "@id");
-  str myId = newParam();
-  SQLExpr sqlMe = lit(Value::placeholder(name=myId));
-  DBObject mongoMe = DBObject::placeholder(name=myId);
-  Bindings myParams = ( myId: toBeUpdated );
-  
-  SQLStat theUpdate = update(tableName(ent), [], []);
-  DBObject theObject = object([]);
   
   Script theScript = script([]);
   
   void addSteps(list[Step] steps) {
     theScript.steps += steps;
   }
+  
+  void updateStep(int idx, Step step) {
+    if (idx >= size(theScript.steps)) {
+      theScript.steps += [step];
+    }
+    else {
+      theScript.steps[idx] = step;
+    }
+  }
+
+  int statIndex = 0;
+  
+  Param toBeUpdated = field(p.name, "<x>", ent, "@id");
+  str myId = newParam();
+  SQLExpr sqlMe = lit(Value::placeholder(name=myId));
+  DBObject mongoMe = DBObject::placeholder(name=myId);
+  Bindings myParams = ( myId: toBeUpdated );
   
   
   if ((Where)`where <VId _>.@id == <UUID mySelf>` := (Where)`where <{Expr ","}+ ws>`) {
@@ -70,7 +78,33 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
     Request req = (Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ ws>`;
     // NB: no partitioning, compile locally.
     addSteps(compileQuery(req, p, s));
+    statIndex = size(theScript.steps);
   }
+  
+  
+  SQLStat theUpdate = update(tableName(ent), []
+    , [where([equ(column(tableName(ent), typhonId(ent)), sqlMe)])]);
+
+  void updateSQLUpdate(SQLStat(SQLStat) block) {
+    theUpdate = block(theUpdate);
+    Step st = step(p.name, sql(executeStatement(p.name, pp(theUpdate))), myParams);
+    updateStep(statIndex, st);
+  }
+
+  updateSQLUpdate(SQLStat(SQLStat s) { return s; });
+  
+
+  DBObject theFilter = object([<"_id", mongoMe>]);
+  DBObject theObject = object([]);
+
+  void updateMongoUpdate(DBObject(DBObject) block) {
+    theObject = block(theObject);
+    Step st = step(p.name, mongo(findAndUpdateOne(p.name, ent, pp(theFiler), pp(theObject))), myParams);
+    updateStep(statIndex, st);
+  }
+  
+  updateMongoUpdate(DBObject(DBObject d) { return d; });
+  
   
   UpdateContext ctx = <
     ent,
@@ -91,28 +125,15 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
 void compileAttrs(<sql(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
   ctx.updateSQLUpdate(SQLStat(SQLStat upd) {
     upd.sets += [ Set::\set(columnName("<kv.key>", ctx.entity), SQLExpr::lit(evalExpr(kv.\value))) | KeyVal kv <- kvs ];
-    upd.clauses += [ where([equ(column(tableName(ctx.entity), typhonId(ctx.entity)), ctx.sqlMe)]) ];
     return upd;
   });
 
-  //SQLStat stat = update(tableName(ctx.entity),
-  //  [ Set::\set(columnName("<kv.key>", ctx.entity), SQLExpr::lit(evalExpr(kv.\value))) | KeyVal kv <- kvs ],
-  //    [where([equ(column(tableName(ctx.entity), typhonId(ctx.entity)), ctx.sqlMe)])]);
-  //if (stat.sets != []) {
-  //  ctx.addSteps([step(dbName, sql(executeStatement(dbName, pp(stat))), ctx.myParams)]);
-  //}
  }
  
 void compileAttrs(<mongodb(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
   ctx.updateMongoUpdate(DBObject(DBObject upd) {
     upd.props += [ <"$set", object([keyVal2prop(kv)])> | KeyVal kv <- kvs ];
   });
-  //DBObject q = object([<"_id", mongoMe>]);
-  //DBObject u = object([ <"$set", object([keyVal2prop(kv)])> | KeyVal kv <- kvs, !isDelta(kv) ]);
-  //if (u.props != []) {
-  //  scr.steps += [step(dbName, mongo(findAndUpdateOne(dbName, ent, pp(q), pp(u))), myParams)];
-  //}
-   
 }
  
  
