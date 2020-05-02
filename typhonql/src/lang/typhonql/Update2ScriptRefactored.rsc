@@ -237,96 +237,52 @@ void compileRefSet(
   ctx.addSteps(updateObjectPointer(other, parent, parentRole, parentCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
+
+void compileRefSet(
+  <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
+  UUID ref, UpdateContext ctx
+) {
+  // save the cross ref
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    // inverse of containment, the target `to` owns sqlMe, so modify the update
+    // to include foreign key. TODO: is this the same case as with `parent`?
+    // [probably that one should be dropped]
+    ctx.updateSQLUpdate(SQLStat(SQLStat upd) {
+      str fk = fkName(parent, from, fromRole == "" ? parentRole : fromRole);
+      upd.sets += [\set(fk, lit(text(uuid2str(ref))))];
+      return upd;
+    });
+  }
+  else {
+    ctx.addSteps(updateIntoJunctionSingle(dbName, from, fromRole, to, toRole, ctx.sqlMe, lit(text(uuid2str(ref))), ctx.myParams));
+  }
+}
+
+void compileRefSet(
+  <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
+  UUID ref, UpdateContext ctx
+) {
+  ctx.addSteps(updateIntoJunctionSingle(dbName, from, fromRole, to, toRole, ctx.sqlMe, lit(text(uuid2str(ref))), ctx.myParams));
+  ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
+}
+
+void compileRefSet(
+  <DB::sql(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
+  UUID ref, UpdateContext ctx
+) {
+  ctx.addSteps(updateIntoJunctionSingle(dbName, from, fromRole, to, toRole, ctx.sqlMe, lit(text(uuid2str(ref))), ctx.myParams));
+  addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+}
+
 void old () {
    
   switch (p) {
     case <sql(), str dbName>: {
       for ((KeyVal)`<Id fld>: <UUID ref>` <- kvs) {
-        str from = "<e>";
-        str fromRole = "<fld>";
-        str uuid = "<ref>"[1..];
-
-        if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
-            // this keyval is updating ref to have me as a parent/owner
-            
-          switch (placeOf(to, s)) {
-          
-            //case <sql(), dbName> : {  
-            //  // update ref's foreign key to point to sqlMe
-            //  str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
-            //  SQLStat theUpdate = update(tableName(to), [\set(fk, sqlMe)],
-            //    [where([equ(column(tableName(to), typhonId(to)), lit(text(uuid)))])]);
-            //    
-            //  scr.steps +=  [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
-            //}
-            
-            //case <sql(), str other> : {
-            //  // it's single ownership, so dont' insert in the junction but update.
-            //  scr.steps +=  updateIntoJunctionSingle(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
-            //  scr.steps +=  updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
-            //}
-            
-            case <mongodb(), str other>: {
-              scr.steps +=  updateIntoJunctionSingle(p.name, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
-              scr.steps +=  updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
-            }
-            
-          }
-        }
-        
-        else if (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels) {
-           // this is the case that the current KeyVal pair is actually
-           // setting the currently updated object as being owned by ref
-           
-          switch (placeOf(parent, s)) {
-          
-            case <sql(), dbName> : {  
-              // update "my" foreign key to point to uuid
-              str fk = fkName(parent, from, fromRole == "" ? parentRole : fromRole);
-              SQLStat theUpdate = update(tableName(from), [\set(fk, lit(text(uuid)))],
-                [where([equ(column(tableName(from), typhonId(from)), sqlMe)])]);
-                
-              scr.steps +=  [step(dbName, sql(executeStatement(dbName, pp(theUpdate))), myParams)];
-            }
-            
-            case <sql(), str other> : {
-              // it's single ownership, so dont' insert in the junction but update.
-              scr.steps +=  updateIntoJunctionSingle(p.name, from, fromRole, parent, parentRole, lit(text(uuid)), sqlMe, myParams);
-              scr.steps +=  updateIntoJunctionSingle(other, parent, parentRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
-            }
-            
-            case <mongodb(), str other>: {
-              scr.steps +=  updateIntoJunctionSingle(p.name, from, fromRole, parent, parentRole, lit(text(uuid)), sqlMe, myParams);
-              scr.steps +=  updateObjectPointer(other, parent, parentRole, parentCard, \value(uuid), mongoMe, myParams);
-            }
-            
-          }
-        }
-        
-        // xrefs are symmetric, so both directions are done in one go. 
-        else if (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
-           // save the cross ref
-           scr.steps +=  updateIntoJunctionSingle(dbName, from, fromRole, to, toRole, sqlMe, lit(text(uuid)), myParams);
-           
-           // and the opposite sides
-           switch (placeOf(to, s)) {
-             case <sql(), dbName>: {
-               ; // nothing to be done, locally, the same junction table is used
-               // for both directions.
-             }
-             case <sql(), str other>: {
-               scr.steps +=  updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
-             }
-             case <mongodb(), str other>: {
-               scr.steps +=  updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
-             }
-           }
-        
-        }
-        else {
-          throw "Cannot happen";
-        } 
-        
+        ;
       }
       
       for ((KeyVal)`<Id fld>: [<{UUID ","}* refs>]` <- kvs) {
