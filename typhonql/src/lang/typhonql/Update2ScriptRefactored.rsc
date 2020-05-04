@@ -99,7 +99,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
 
   void updateMongoUpdate(DBObject(DBObject) block) {
     theObject = block(theObject);
-    Step st = step(p.name, mongo(findAndUpdateOne(p.name, ent, pp(theFiler), pp(theObject))), myParams);
+    Step st = step(p.name, mongo(findAndUpdateOne(p.name, ent, pp(theFilter), pp(theObject))), myParams);
     updateStep(statIndex, st);
   }
   
@@ -167,6 +167,7 @@ void compileAttrSets(<sql(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
 void compileAttrSets(<mongodb(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
   ctx.updateMongoUpdate(DBObject(DBObject upd) {
     upd.props += [ <"$set", object([keyVal2prop(kv)])> | KeyVal kv <- kvs ];
+    return upd;
   });
 }
 
@@ -185,7 +186,7 @@ void compileRefSet(
   str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
   SQLStat theUpdate = update(tableName(to), [\set(fk, ctx.sqlMe)],
     [where([equ(column(tableName(to), typhonId(to)), lit(text(uuid2str(ref))))])]);
-  addSteps([step(dbName, sql(executeStatement(dbName, pp(theUpdate))), ctx.myParams)]);
+  ctx.addSteps([step(dbName, sql(executeStatement(dbName, pp(theUpdate))), ctx.myParams)]);
 }
  
  // sql/other sql containment
@@ -325,7 +326,7 @@ void compileRefSet(
   UUID ref, UpdateContext ctx
 ) {
   ctx.addSteps(updateIntoJunctionSingle(dbName, from, fromRole, to, toRole, ctx.sqlMe, lit(text(uuid2str(ref))), ctx.myParams));
-  addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
 
@@ -434,6 +435,18 @@ void compileRefSetMany(
   });
   ctx.addSteps([ *updateObjectPointer(dbName, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams)
                 | UUID ref <- refs ]);
+                
+  // we need to update all Mongo objects that have a pointer to mongoMe via toRole
+  // whose _id is not in refs, and in case of containment, delete them [do we have containment that is not native in Mongo?]
+  
+  DBObject q = object([<"_id", object([<"$nin", array([ \value(uuid2str(ref)) | UUID ref <- refs ])>])>, <toRole, ctx.mongoMe>]);
+  DBObject u = object([<"$set", object([<toRole, object([<"$set", DBObject::null()>])>])>]); 
+  if (toCard in {zero_many(), one_many()}) { 
+    u = object([<"$pull", 
+               object([<toRole, 
+                 object([<"$in", array([ ctx.mongoMe ])>])>])>]);
+  }              
+  ctx.addSteps([ step(dbName, mongo(findAndUpdateMany(dbName, to, pp(q), pp(u))), ctx.myParams)]); 
 }
 
 // mongo/other mongo containment or xref
@@ -448,10 +461,18 @@ void compileRefSetMany(
   });
   ctx.addSteps([ *updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams)
                 | UUID ref <- refs ]);
-  // we need to delete all Mongo objects in role that have a ref to mongome via toRole
-  // whose _id is not in refs. [??? tvds: I don't understand this anymore]
-  //DBObject q = object([<"_id", object([<"$nin", array([ \value(uuid2str(ref)) | UUID ref <- refs ])>])>, <toRole, ctx.mongoMe>]);
-  //ctx.addSteps([ step(other, mongo(deleteMany(other, to, pp(q))), ctx.myParams)]);              
+
+  // we need to update all Mongo objects that have a pointer to mongoMe via toRole
+  // whose _id is not in refs, and in case of containment, delete them [do we have containment that is not native in Mongo?]
+  
+  DBObject q = object([<"_id", object([<"$nin", array([ \value(uuid2str(ref)) | UUID ref <- refs ])>])>, <toRole, ctx.mongoMe>]);
+  DBObject u = object([<"$set", object([<toRole, object([<"$set", null()>])>])>]); 
+  if (toCard in {zero_many(), one_many()}) { 
+    u = object([<"$pull", 
+               object([<toRole, 
+                 object([<"$in", array([ ctx.mongoMe ])>])>])>]);
+  }              
+  ctx.addSteps([ step(other, mongo(findAndUpdateMany(dbName, to, pp(q), pp(u))), ctx.myParams)]);              
 }
 
 // mongo/sql containment or xref
@@ -566,7 +587,7 @@ void compileRefAddTo(
     throw "Bad update, cannot have multiple owners.";
   }
   ctx.addSteps(insertObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
-             [ \value(uuid2ref(ref)) | UUID ref <- refs ], ctx.myParams));
+             [ \value(uuid2str(ref)) | UUID ref <- refs ], ctx.myParams));
   ctx.addSteps([ *insertObjectPointer(dbName, to, toRole, toCard, \value(uuid2str(ref)) , ctx.mongoMe, ctx.myParams)
                 | UUID ref <- refs ]);
 }
@@ -581,7 +602,7 @@ void compileRefAddTo(
     throw "Bad update, cannot have multiple owners.";
   }
   ctx.addSteps(insertObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
-             [ \value(uuid2ref(ref)) | UUID ref <- refs ], ctx.myParams));
+             [ \value(uuid2str(ref)) | UUID ref <- refs ], ctx.myParams));
   ctx.addSteps([ *insertObjectPointer(dbName, to, toRole, toCard, \value(uuid2str(ref)) , ctx.mongoMe, ctx.myParams)
                 | UUID ref <- refs ]);
 }
@@ -596,7 +617,7 @@ void compileRefAddTo(
     throw "Bad update, cannot have multiple owners.";
   }
   ctx.addSteps(insertObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
-             [ \value(uuid2ref(ref)) | UUID ref <- refs ], ctx.myParams));
+             [ \value(uuid2str(ref)) | UUID ref <- refs ], ctx.myParams));
   ctx.addSteps([ *updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), ctx.sqlMe, ctx.myParams)
                 | UUID ref <- refs ]);
 }
@@ -735,237 +756,3 @@ void compileRefRemoveFrom(
 }
 
 
-
-void old () {
-   
-  switch (p) {
-    
-    
-    case <mongodb(), str dbName>: {
-      DBObject q = object([<"_id", mongoMe>]);
-      DBObject u = object([ <"$set", object([keyVal2prop(kv)])> | KeyVal kv <- kvs, !isDelta(kv) ]);
-      if (u.props != []) {
-        scr.steps += [step(dbName, mongo(findAndUpdateOne(dbName, ent, pp(q), pp(u))), myParams)];
-      }
-      
-      // refs/ (local) containment are direct, but we need to update the other direction.
-      
-      for ((KeyVal)`<Id x>: <UUID ref>` <- kvs) {
-        str from = "<e>";
-        str fromRole = "<x>";
-        str uuid = "<ref>"[1..];
-
-        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, _> <- s.rels) {
-          switch (placeOf(to, s)) {
-          
-            case <mongodb(), dbName> : {  
-              // update uuid's toRole to me
-              scr.steps += updateObjectPointer(dbName, to, toRole, toCard, \value(uuid), mongoMe, myParams);
-            }
-            
-            case <mongodb(), str other> : {
-              // update uuid's toRole to me, but on other db
-              scr.steps += updateObjectPointer(other, to, toRole, toCard, \value(uuid), mongoMe, myParams);
-            }
-            
-            case <sql(), str other>: {
-              scr.steps += updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid)), sqlMe, myParams);
-            }
-            
-          }
-        }
-      }
-      
-      for ((KeyVal)`<Id x>: [<{UUID ","}* refs>]` <- kvs) {
-        str from = "<e>";
-        str fromRole = "<x>";
-
-        // only update the inverses 
-        if (<from, _, fromRole, str toRole, Cardinality toCard, str to, _> <- s.rels) {
-          switch (placeOf(to, s)) {
-          
-            case <mongodb(), dbName> : {  
-              scr.steps += [ *updateObjectPointer(dbName, to, toRole, toCard, \value("<ref>"[1..]) , mongoMe, myParams)
-                | UUID ref <- refs ];
-            }
-            
-            case <mongodb(), str other> : {
-              scr.steps += [ *updateObjectPointer(dbName, to, toRole, toCard, \value("<ref>"[1..]) , mongoMe, myParams)
-                | UUID ref <- refs ];
-              
-              // we need to delete all Mongo objects in role that have a ref to mongome via toRole
-              // whose _id is not in refs.
-              DBObject q = object([<"_id", object([<"$nin", array([ \value("<ref>"[1..]) | UUID ref <- refs ])>])>
-                 , <toRole, mongoMe>]);
-              scr.steps += [ 
-                step(other, mongo(deleteMany(other, to, pp(q))), myParams)];
-            }
-            
-            case <sql(), str other>: {
-              scr.steps += [ *updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
-                | UUID ref <- refs ];
-            }
-            
-          }
-        }
-      }
-      
-      
-      /*
-       * Adding to many-valued collections
-       */
-      
-      for ((KeyVal)`<Id fld> +: [<{UUID ","}* refs>]` <- kvs) {
-        str from = "<e>";
-        str fromRole = "<fld>";
-        
-        
-        if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
-        
-          scr.steps += insertObjectPointers(dbName, from, fromRole, fromCard, mongoMe, 
-             [ \value("<ref>"[1..]) | UUID ref <- refs ], myParams);
-            
-          switch (placeOf(to, s)) {
-          
-            case <mongodb(), dbName> : {  // same as above
-              scr.steps += [ *updateObjectPointer(dbName, to, toRole, toCard, \value("<ref>"[1..]) , mongoMe, myParams)
-                | UUID ref <- refs ];
-            }
-            
-            case <mongodb(), str other>: {
-              scr.steps +=  [ *updateObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), mongoMe, myParams) 
-                  | UUID ref <- refs ];
-            }
-            
-            case <sql(), str other> : {
-              scr.steps +=  [ *updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), sqlMe, myParams)
-                | UUID ref <- refs ];
-            }
-            
-           
-            
-          }
-        }
-        
-        else if (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels) {
-           // this is the case that the current KeyVal pair is actually
-           // setting the currently updated object as being owned by each ref (which should not be possible)
-           throw "Bad update: an object cannot have many parents  <refs>";
-        }
-        // xrefs are symmetric, so both directions are done in one go. 
-        else if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
-
-           scr.steps += insertObjectPointers(dbName, from, fromRole, fromCard, mongoMe, 
-               [ \value("<ref>"[1..]) | UUID ref <- refs ], myParams);
-
-           switch (placeOf(to, s)) {
-             case <mongodb(), dbName>: {
-                scr.steps += [ *insertObjectPointer(dbName, to, toRole, toCard, \value("<ref>"[1..]) , mongoMe, myParams)
-                | UUID ref <- refs ];
-             }
-             case <mongodb(), str other>: {
-                scr.steps += [ *insertObjectPointer(dbName, to, toRole, toCard, \value("<ref>"[1..]) , mongoMe, myParams)
-                | UUID ref <- refs ];
-             }
-             case <sql(), str other>: {
-                scr.steps +=  [ *insertIntoJunction(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), [sqlMe], myParams)
-                | UUID ref <- refs ];
-             
-             }
-           }
-        
-        }
-        else {
-          throw "Cannot happen";
-        } 
-      }
-      
-      /*
-       * Removing from many-valued collections
-       */
-      
-      for ((KeyVal)`<Id fld> -: [<{UUID ","}* refs>]` <- kvs) {
-        str from = "<e>";
-        str fromRole = "<fld>";
-        
-        if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
-           // this keyval is for each ref removing me as a parent/owner
-            
-          scr.steps += removeObjectPointers(dbName, from, fromRole, fromCard, mongoMe, 
-             [ \value("<ref>"[1..]) | UUID ref <- refs ], myParams);  
-            
-          switch (placeOf(to, s)) {
-          
-            case <mongodb(), dbName> : {  
-              scr.steps = [*removeObjectPointers(dbName, to, toRole, toCard, \value("<ref>"[1..]), [mongoMe], myParams)
-                | UUID ref <- refs ];
-            }
-            
-            case <mongodb(), str other> : {  
-              scr.steps = [*removeObjectPointers(dbName, to, toRole, toCard, \value("<ref>"[1..]), [mongoMe], myParams)
-                | UUID ref <- refs ];
-            }
-            
-            
-            case <sql(), str other> : {
-              scr.steps +=  [*removeFromJunction(other, from, fromRole, to, toRole, lit(evalExpr((Expr)`<UUID ref>`)), [sqlMe], myParams) 
-                  | UUID ref <- refs ];
-            }
-            
-          }
-        }
-        
-        else if (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels) {
-           // this is the case that the current KeyVal pair is actually
-           // removing owernship for the currently updated object as not being owned anymore by each ref (which should not be possible)
-           throw "Bad update: an object cannot have many parents  <refs>";
-        }
-        else if (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
-           scr.steps += removeObjectPointers(dbName, from, fromRole, fromCard, mongoMe, 
-             [ \value("<ref>"[1..]) | UUID ref <- refs ], myParams);  
-            
-           switch (placeOf(to, s)) {
-          
-            case <mongodb(), dbName> : {  
-              scr.steps = [*removeObjectPointers(dbName, to, toRole, toCard, \value("<ref>"[1..]), [mongoMe], myParams)
-                | UUID ref <- refs ];
-            }
-            
-            case <mongodb(), str other> : {  
-              scr.steps = [*removeObjectPointers(dbName, to, toRole, toCard, \value("<ref>"[1..]), [mongoMe], myParams)
-                | UUID ref <- refs ];
-            }
-            
-            
-            case <sql(), str other> : {
-              scr.steps +=  [*removeFromJunction(other, from, fromRole, to, toRole, lit(evalExpr((Expr)`<UUID ref>`)), [sqlMe], myParams) 
-                  | UUID ref <- refs ];
-            }
-            
-          }
-        
-        }
-        else {
-          throw "Cannot happen";
-        } 
-      }
-      
-      
-    }
-  
-  }
-  
-  /*
-   * what to do about nested objects? for now, we don't support them.
-   * we could insert them directly, but what happens with all the inverse management
-   * for the implicitly insert entities??
-  */
-
-
-  return scr;
- 
-
-  
-
-
-}
