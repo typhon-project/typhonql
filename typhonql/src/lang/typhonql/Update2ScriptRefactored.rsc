@@ -149,7 +149,13 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
     }
   }
   
-  
+  // Ugh, this is horrible.
+  if (p.db is sql, theUpdate.sets == []) {
+     theScript.steps = delete(theScript.steps, statIndex);
+  }
+  if (p.db is mongo, theObject.props == []) {
+    theScript.steps = delete(theScript.steps, statIndex);
+  }
 
   return theScript;
   
