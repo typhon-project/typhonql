@@ -79,12 +79,13 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
      deleteKids(p, placeOf(to, s), r, ctx);
   }
   
-  for (Rel r:<str parent, _, _, _, _, ent, true> <- s.rels) {
-     breakFromParent(p, placeOf(parent, s), r, ctx);
-  }
-  
-  for (Rel r:<str ref, _, _, _, _, ent, false> <- s.rels) {
-     breakInPointers(p, placeOf(ref, s), r, ctx);
+  //for (Rel r:<str parent, _, _, _, _, ent, true> <- s.rels) {
+  //   breakFromParent(p, placeOf(parent, s), r, ctx);
+  //}
+  //
+  for (Rel r:<str ref, _, _, _, _, ent, _> <- s.rels) {
+     // NB: r is not in the direction of p and placeOf(ref, s)
+     breakInboundPointers(p, placeOf(ref, s), r, ctx);
   }
   
   deleteObject(p, ctx);
@@ -106,169 +107,132 @@ void deleteObject(<sql(), str dbName>, DeleteContext ctx) {
   ctx.addSteps([ step(dbName, mongo(deleteOne(dbName, ctx.entity, pp(object([<"_id", ctx.mongoMe>])))), ctx.myParams) ]);
 }
 
+
+/*
+ * Cascade to owned objects
+ */
+
 void deleteKids(
   <sql(), str dbName>, <sql(), dbName>,
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
   DeleteContext ctx
 ) {
+  // automatic through cascade delete clauses
+}
+
+
+void deleteKids(
+  <sql(), str dbName>, <sql(), str other:!dbName>,
+  <str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, true>, 
+  DeleteContext ctx
+) {
+  ctx.addSteps(removeFromJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, ctx.myParams));
+  ctx.addSteps(cascadeViaJunction(other, to, toRole, from, fromRole, ctx.sqlMe, ctx.myParams));
+}
+
+void deleteKids(
+  <sql(), str dbName>, <mongodb(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
+  DeleteContext ctx
+) {
+  ctx.addSteps(removeFromJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, ctx.myParams));
+  ctx.addSteps(cascadeViaInverse(other, to, toRole, ctx.mongoMe, ctx.myParams));   
+}
+
+
+void deleteKids(
+  <mongodb(), str dbName>, <mongodb(), dbName>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
+  DeleteContext ctx
+) {
+  // immediate because of nesting
+}
+
+
+void deleteKids(
+  <mongodb(), str dbName>, <mongodb(), str other:!dbName>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
+  DeleteContext ctx
+) {
+  ctx.addSteps(cascadeViaInverse(other, to, toRole, ctx.mongoMe, ctx.myParams));
+}
+
+void deleteKids(
+  <mongodb(), str dbName>, <sql(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
+  DeleteContext ctx
+) {
+  // cascadeViaJunction deletes from "to" and from the (inverse) junction table modeling
+  // this containment relation
+  ctx.addSteps(cascadeViaJunction(other, to, toRole, from, fromRole, ctx.sqlMe, ctx.myParams));  
+}
+
+/*
+ * Break pointers into the deleted objects
+ */
+ 
+ 
+void breakInboundPointers(
+  del:<sql(), str dbName>, incoming:<sql(), dbName>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str deleted, bool contain>, 
+  DeleteContext ctx
+) {
+  if (contain) {
+    // do nothing because the containment is modeled using a foreign key on 
+    // the deleted child, so the link is broken automatically.
+    return;
+  }
+
+  // and also here nothing needs to be done
+  // because the junction tables have cascade delete
+  // on the tables they point to; deleting the kid
+  // will delete the entry as well.
 }
  
+
+void breakInboundPointers(
+  del:<sql(), str dbName>, incoming:<sql(), str other:!dbName>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str deleted, bool contain>, 
+  DeleteContext ctx
+) {
+  // local junction tables are updated because of cascade delete
   
-void old() { 
-  switch (p) {
-    case <sql(), str dbName>: {
-      
-
-      str from = "<e>";
-
-      // delete kids that are not on dbName
-      for (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
-          // local deletions go via cascade delete
-          
-          switch (placeOf(to, s)) {
-          
-            case <sql(), dbName> : {
-              ;  
-            }
-            
-            case <sql(), str other> : {
-              // cascadeViaJunction deletes from "to" and from the (inverse) junction table modeling
-              // this containment relation
-              scr.steps += cascadeViaJunction(other, to, toRole, from, fromRole, sqlMe, myParams);
-            }
-            
-            case <mongodb(), str other>: {
-              // delete all to's in mongo that toRole to be mongoMe
-              scr.steps += cascadeViaInverse(other, to, toRole, mongoMe, myParams); 
-            }
-            
-          }
-        }
-        
-        // break links with parent (if any)
-       for (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels) {
-          // this is the case where "me" is owned by something, we don't want to delete
-          // the parents here, but need (non-local) links in junction tables and update inverses.
-           
-          switch (placeOf(parent, s)) {
-          
-            case <sql(), dbName> : {  
-              // nothing: the junction table entry will be deleted via cascade delete.
-              ;
-            }
-            
-            case <sql(), str other> : {
-              scr.steps += removeFromJunction(dbName, parent, parentRole, from, fromRole, sqlMe, myParams);
-              scr.steps += removeFromJunction(other, parent, parentRole, from, fromRole, sqlMe, myParams);
-            }
-            
-            case <mongodb(), str other>: {
-              scr.steps += removeFromJunction(dbName, parent, parentRole, from, fromRole, sqlMe, myParams);
-              scr.steps += removeAllObjectPointers(other, parent, parentRole, mongoMe, myParams);
-            }
-            
-          }
-        }
-        
-      // break cross references  
-      for (<from, _, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
-           
-           switch (placeOf(to, s)) {
-             case <sql(), dbName>: {
-               ; // nothing to be done, locally, the same junction table is used
-               // for both directions.
-             }
-             case <sql(), str other>: {
-               scr.steps += removeFromJunction(other, to, toRole, from, fromRole, sqlMe, myParams);
-             }
-             case <mongodb(), str other>: {
-               scr.steps += removeAllObjectPointers(other, to, toRole, toCard, mongoMe, myParams);
-             }
-           }
-        
-        }
-
-      // delete the thing itself
-      SQLStat stat = delete(tableName(ent),
-          [where([equ(column(tableName(ent), typhonId(ent)), sqlMe)])]);
-          
-      scr.steps += [step(dbName, sql(executeStatement(dbName, pp(stat))), myParams) ]; 
-    }
-    
-    case <mongodb(), str dbName>: {
-      str from = "<e>";
-
-      // delete kids that are not on dbName
-      for (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
-          
-          switch (placeOf(to, s)) {
-          
-            case <mongodb(), dbName> : {
-              ;  // immediate
-            }
-            
-            case <mongodb(), str other> : {
-              // delete all to's in mongo that toRole to be mongoMe
-              scr.steps += cascadeViaInverse(other, to, toRole, mongoMe, myParams);
-            }
-            
-            case <sql(), str other>: {
-			  // cascadeViaJunction deletes from "to" and from the (inverse) junction table modeling
-              // this containment relation
-              scr.steps += cascadeViaJunction(other, to, toRole, from, fromRole, sqlMe, myParams);               
-            }
-            
-          }
-        }
-        
-        // break links with parent (if any)
-       for (<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true> <- s.rels) {
-          // this is the case where "me" is owned by something, we don't want to delete
-          // the parents here, but need (non-local) links in junction tables and update inverses.
-           
-          switch (placeOf(parent, s)) {
-          
-            case <mongodb(), dbName> : {  
-              // ???? nesting strikes again.
-              ;
-            }
-            
-            case <mongo(), str other> : {
-              scr.steps += removeAllObjectPointers(other, parent, parentRole, from, fromRole, mongoMe, myParams);
-            }
-            
-            case <sql(), str other>: {
-               scr.steps += removeFromJunction(other, from, fromRole, parent, parentRole, sqlMe, myParams);
-            }
-            
-          }
-        }
-        
-      // break cross references  
-      for (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false> <- trueCrossRefs(s.rels)) {
-           
-           switch (placeOf(to, s)) {
-             case <mongodb(), dbName>: {
-               scr.steps += removeAllObjectPointers(other, to, toRole, mongoMe, myParams);
-             }
-             case <mongodb(), str other>: {
-               scr.steps += removeAllObjectPointers(other, to, toRole, mongoMe, myParams);
-             }
-             case <sql(), str other>: {
-               scr.steps += removeFromJunction(other, to, toRole, from, fromRole, sqlMe, myParams);
-             }
-           }
-        
-      }
-      
-      scr.steps += [ step(dbName, mongo(
-        deleteOne(dbName, ent, pp(object([<"_id", mongoMe>])))), myParams) ];
-      
-    }
-    
-  }
-  
-  scr.steps += [finish()];
-  
-  return scr;
+  ctx.addSteps(removeFromJunction(other, from, fromRole, deleted, toRole, ctx.sqlMe, ctx.myParams));
 }
+
+void breakInboundPointers(
+  del:<sql(), str dbName>, incoming:<mongodb(), str other>,
+  <str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str deleted, bool contain>, 
+  DeleteContext ctx
+) {
+  // local junction tables are updated because of cascade delete
+  
+  ctx.addSteps(removeAllObjectPointers(other, from, fromRole, fromCard, ctx.mongoMe, ctx.myParams));
+}
+
+
+void breakInboundPointers(
+  del:<mongodb(), str dbName>, incoming:<mongodb(), dbName>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str deleted, bool contain>, 
+  DeleteContext ctx
+) {
+  ctx.addSteps(removeAllObjectPointers(dbName, from, fromRole, ctx.mongoMe, ctx.myParams));
+}
+
+void breakInboundPointers(
+  del:<mongodb(), str dbName>, incoming:<mongodb(), str other:!dbName>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str deleted, bool contain>, 
+  DeleteContext ctx
+) {
+  ctx.addSteps(removeAllObjectPointers(other, from, fromRole, ctx.mongoMe, ctx.myParams));
+}
+
+void breakInboundPointers(
+  del:<mongodb(), str dbName>, incoming:<sql(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str deleted, bool contain>, 
+  DeleteContext ctx
+) {
+  ctx.addSteps(removeFromJunction(other, from, fromRole, deleted, toRole, ctx.sqlMe, ctx.myParams));
+}
+
+  
