@@ -170,6 +170,12 @@ void compileAttrSets(<mongodb(), str dbName>, list[KeyVal] kvs, UpdateContext ct
   });
 }
 
+
+/*
+ * Assign to a relation, single-valued
+ */
+
+// sql/same sql containment
 void compileRefSet(
   <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
@@ -182,6 +188,7 @@ void compileRefSet(
   addSteps([step(dbName, sql(executeStatement(dbName, pp(theUpdate))), ctx.myParams)]);
 }
  
+ // sql/other sql containment
 void compileRefSet(
   <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
@@ -192,6 +199,7 @@ void compileRefSet(
   ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
 }
  
+ // sql/mongo containment
 void compileRefSet(
   <DB::sql(), str dbName>, <mongodb(), str other>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
@@ -205,6 +213,7 @@ void compileRefSet(
 // this is the case that the current KeyVal pair is actually
 // setting the currently updated object as being owned by ref
            
+// sql/same sql co-containment           
 void compileRefSet(
   <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
   Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
@@ -218,6 +227,7 @@ void compileRefSet(
   });
 }
 
+// sql/other sql co-containment
 void compileRefSet(
   <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole, 
   Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
@@ -228,6 +238,7 @@ void compileRefSet(
   ctx.addSteps(updateIntoJunctionSingle(other, parent, parentRole, from, fromRole, lit(text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
 }
 
+// sql/mongo containment
 void compileRefSet(
   <DB::sql(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
   Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
@@ -237,7 +248,46 @@ void compileRefSet(
   ctx.addSteps(updateObjectPointer(other, parent, parentRole, parentCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
+// mongo/same mongo containment or xref
+void compileRefSet(
+  <DB::mongodb(), str dbName>, <DB::mongodb(), dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  UUID ref, UpdateContext ctx
+) {
+  ctx.updateMongoUpdate(DBObject(DBObject upd) {
+    upd.props += [ <"$set", \value(uuid2str(ref))> ];
+    return upd;
+  });
+  ctx.addSteps(updateObjectPointer(dbName, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+}
 
+// mongo/other mongo containment or xref
+void compileRefSet(
+  <DB::mongodb(), str dbName>, <DB::mongodb(), str other:!dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  UUID ref, UpdateContext ctx
+) {
+  ctx.updateMongoUpdate(DBObject(DBObject upd) {
+    upd.props += [ <"$set", \value(uuid2str(ref))> ];
+    return upd;
+  });
+  ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+}
+
+// mongo/sql containment or xref
+void compileRefSet(
+  <DB::mongodb(), str dbName>, <DB::sql(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  UUID ref, UpdateContext ctx
+) {
+  ctx.updateMongoUpdate(DBObject(DBObject upd) {
+    upd.props += [ <"$set", \value(uuid2str(ref))> ];
+    return upd;
+  });
+  ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
+}
+
+// sql/same sql xref
 void compileRefSet(
   <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
@@ -258,7 +308,7 @@ void compileRefSet(
     ctx.addSteps(updateIntoJunctionSingle(dbName, from, fromRole, to, toRole, ctx.sqlMe, lit(text(uuid2str(ref))), ctx.myParams));
   }
 }
-
+// sql/other sql xref
 void compileRefSet(
   <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
@@ -268,6 +318,7 @@ void compileRefSet(
   ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
 }
 
+// sql/mongo xref
 void compileRefSet(
   <DB::sql(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
@@ -277,10 +328,12 @@ void compileRefSet(
   addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
+
 /* 
  * Many-valued set
  */
 
+// sql/same sql containment
 void compileRefSetMany(
   <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
@@ -294,6 +347,7 @@ void compileRefSetMany(
   ctx.addSteps([step(dbName, sql(executeStatement(dbName, pp(theUpdate))), ctx.myParams)]);
 }
 
+// sql/other sql containment
 void compileRefSetMany(
   <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
@@ -306,6 +360,7 @@ void compileRefSetMany(
     | UUID ref <- refs ]);
 }
 
+// sql/mongo containment
 void compileRefSetMany(
   <DB::sql(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
@@ -325,7 +380,7 @@ void compileRefSetMany(
   ctx.addSteps([ step(other, mongo(deleteMany(other, to, pp(q))), ctx.myParams)]);
 }
 
-
+// sql/same sql xref
 void compileRefSetMany(
   <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
@@ -338,7 +393,7 @@ void compileRefSetMany(
     [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams));
 }
 
-
+// sql/other sql xref
 void compileRefSetMany(
   <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
@@ -353,6 +408,7 @@ void compileRefSetMany(
                  | UUID ref <- refs ]);
 }
 
+// sql/mongo xref
 void compileRefSetMany(
   <DB::sql(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
@@ -366,10 +422,58 @@ void compileRefSetMany(
       | UUID ref <- refs ]);
 }
 
+// mongo/same mongo containment or xref
+void compileRefSetMany(
+  <DB::mongodb(), str dbName>, <DB::mongodb(), dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  ctx.updateMongoUpdate(DBObject(DBObject upd) {
+    upd.props += [ <"$set", array([ \value(uuid2str(ref )) | UUID ref <- refs ])> ];
+    return upd;
+  });
+  ctx.addSteps([ *updateObjectPointer(dbName, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams)
+                | UUID ref <- refs ]);
+}
+
+// mongo/other mongo containment or xref
+void compileRefSetMany(
+  <DB::mongodb(), str dbName>, <DB::mongodb(), dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  ctx.updateMongoUpdate(DBObject(DBObject upd) {
+    upd.props += [ <"$set", array([ \value(uuid2str(ref )) | UUID ref <- refs ])> ];
+    return upd;
+  });
+  ctx.addSteps([ *updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams)
+                | UUID ref <- refs ]);
+  // we need to delete all Mongo objects in role that have a ref to mongome via toRole
+  // whose _id is not in refs. [??? tvds: I don't understand this anymore]
+  //DBObject q = object([<"_id", object([<"$nin", array([ \value(uuid2str(ref)) | UUID ref <- refs ])>])>, <toRole, ctx.mongoMe>]);
+  //ctx.addSteps([ step(other, mongo(deleteMany(other, to, pp(q))), ctx.myParams)]);              
+}
+
+// mongo/sql containment or xref
+void compileRefSetMany(
+  <DB::mongodb(), str dbName>, <DB::mongodb(), dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  ctx.updateMongoUpdate(DBObject(DBObject upd) {
+    upd.props += [ <"$set", array([ \value(uuid2str(ref )) | UUID ref <- refs ])> ];
+    return upd;
+  });
+  ctx.addSteps([ *updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), ctx.sqlMe, ctx.myParams)
+                | UUID ref <- refs ]);
+}
+
+
 /*
- * Adding to many-valued collections (containment)
+ * Adding to many-valued collections
  */
  
+// sql/same sql containment 
 void compileRefAddTo(
   <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
@@ -383,6 +487,7 @@ void compileRefAddTo(
   ctx.addSteps([step(dbName, sql(executeStatement(dbName, pp(theUpdate))), ctx.myParams)]);
 }  
 
+// sql/other sql containment
 void compileRefAddTo(
   <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
@@ -395,6 +500,7 @@ void compileRefAddTo(
     | UUID ref <- refs ]);
 }
 
+// sql/mongo containment
 void compileRefAddTo(
   <DB::sql(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
@@ -408,11 +514,7 @@ void compileRefAddTo(
       | UUID ref <- refs ]);
 }
 
-/*
- * Adding to many-valued collections (cross-ref)
- */
-
-
+// sql/same sql xref 
 void compileRefAddTo(
   <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
@@ -425,6 +527,7 @@ void compileRefAddTo(
   ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams));
 }
   
+// sql/other sql xref
 void compileRefAddTo(
   <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
@@ -438,6 +541,7 @@ void compileRefAddTo(
                  | UUID ref <- refs ]);
 }
 
+// sql/mongo xref
 void compileRefAddTo(
   <DB::sql(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
@@ -452,10 +556,58 @@ void compileRefAddTo(
       | UUID ref <- refs ]);
 }
 
+// mongo/same mongo containment or xref
+void compileRefAddTo(
+  <DB::mongodb(), str dbName>, <DB::mongodb(), dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    throw "Bad update, cannot have multiple owners.";
+  }
+  ctx.addSteps(insertObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
+             [ \value(uuid2ref(ref)) | UUID ref <- refs ], ctx.myParams));
+  ctx.addSteps([ *insertObjectPointer(dbName, to, toRole, toCard, \value(uuid2str(ref)) , ctx.mongoMe, ctx.myParams)
+                | UUID ref <- refs ]);
+}
+
+// mongo/other mongo containment or xref
+void compileRefAddTo(
+  <DB::mongodb(), str dbName>, <DB::mongodb(), str other:!dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    throw "Bad update, cannot have multiple owners.";
+  }
+  ctx.addSteps(insertObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
+             [ \value(uuid2ref(ref)) | UUID ref <- refs ], ctx.myParams));
+  ctx.addSteps([ *insertObjectPointer(dbName, to, toRole, toCard, \value(uuid2str(ref)) , ctx.mongoMe, ctx.myParams)
+                | UUID ref <- refs ]);
+}
+
+// mongo/sql containment or xref
+void compileRefAddTo(
+  <DB::mongodb(), str dbName>, <DB::sql(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    throw "Bad update, cannot have multiple owners.";
+  }
+  ctx.addSteps(insertObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
+             [ \value(uuid2ref(ref)) | UUID ref <- refs ], ctx.myParams));
+  ctx.addSteps([ *updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), ctx.sqlMe, ctx.myParams)
+                | UUID ref <- refs ]);
+}
+
+
+
 /*
- * Removing from many-valued refs (containment)
+ * Removing from many-valued refs 
  */
  
+ // sql/same sql containment
 void compileRefRemoveFrom(
   <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
@@ -469,6 +621,7 @@ void compileRefRemoveFrom(
   ctx.addSteps([step(dbName, sql(executeStatement(dbName, pp(theUpdate))), ctx.myParams)]);
 }
 
+// sql/other sql containment
 void compileRefRemoveFrom(
   <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
@@ -484,6 +637,7 @@ void compileRefRemoveFrom(
   ctx.addSteps(deleteManySQL(other, to, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ]));
 }
 
+// sql/mongo containment
 void compileRefRemoveFrom(
   <DB::sql(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
@@ -495,10 +649,7 @@ void compileRefRemoveFrom(
   ctx.addSteps(deleteManyMongo(other, to, [ \value(uuid2str(ref)) | UUID ref <- refs ], ctx.myParams));
 }
 
-/*
- * Removing from many-valued refs (cross-ref)
- */
- 
+// sql/same sql xref 
 void compileRefRemoveFrom(
   <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
@@ -510,6 +661,7 @@ void compileRefRemoveFrom(
   ctx.addSteps(removeFromJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams));
 }
 
+// sql/other sql xref
 void compileRefRemoveFrom(
   <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
@@ -523,6 +675,7 @@ void compileRefRemoveFrom(
                  | UUID ref <- refs ]);
 }
 
+// sql/mongo xref
 void compileRefRemoveFrom(
   <DB::sql(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
@@ -535,6 +688,52 @@ void compileRefRemoveFrom(
   ctx.addSteps(deleteManyMongo(other, to, [ \value(uuid2str(ref)) | UUID ref <- refs ], ctx.myParams));
   
 }
+
+// mongo/same mongo containment or xref
+void compileRefRemoveFrom(
+  <DB::mongodb(), str dbName>, <DB::mongodb(), dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    throw "Bad update, cannot have multiple owners.";
+  }
+  ctx.addSteps(removeObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
+             [ \value(uuid2str(ref)) | UUID ref <- refs ], ctx.myParams));  
+  ctx.addSteps([*removeObjectPointers(dbName, to, toRole, toCard, \value(uuid2str(ref)), [ctx.mongoMe], ctx.myParams)
+                | UUID ref <- refs ]);
+}
+
+// mongo/other mongo containment or xref
+void compileRefRemoveFrom(
+  <DB::mongodb(), str dbName>, <DB::mongodb(), str other:!dbName>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    throw "Bad update, cannot have multiple owners.";
+  }
+  ctx.addSteps(removeObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
+             [ \value(uuid2str(ref)) | UUID ref <- refs ], ctx.myParams));  
+  ctx.addSteps([*removeObjectPointers(other, to, toRole, toCard, \value(uuid2str(ref)), [ctx.mongoMe], ctx.myParams)
+                | UUID ref <- refs ]);
+}
+
+// mongo/sql containment or xref
+void compileRefRemoveFrom(
+  <DB::mongodb(), str dbName>, <DB::sql(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  {UUID ","}* refs, UpdateContext ctx
+) {
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    throw "Bad update, cannot have multiple owners.";
+  }
+  ctx.addSteps(removeObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
+             [ \value(uuid2str(ref)) | UUID ref <- refs ], ctx.myParams));  
+  ctx.addSteps([*removeFromJunction(other, from, fromRole, to, toRole, lit(evalExpr((Expr)`<UUID ref>`)), [ctx.sqlMe], ctx.myParams) 
+                  | UUID ref <- refs ]);
+}
+
 
 
 void old () {
