@@ -27,6 +27,15 @@ import lang::typhonql::mongodb::DBCollection;
 import IO;
 import List;
 
+alias DeleteContext = tuple[
+  str entity,
+  Bindings myParams,
+  SQLExpr sqlMe,
+  DBObject mongoMe,
+  void (list[Step]) addSteps,
+  Schema schema
+];
+
 Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, Schema s) {
   //s.rels = symmetricReduction(s.rels);
   
@@ -38,21 +47,74 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   SQLExpr sqlMe = lit(Value::placeholder(name=myId));
   DBObject mongoMe = DBObject::placeholder(name=myId);
   Bindings myParams = ( myId: toBeDeleted );
-  Script scr = script([]);
+  Script theScript = script([]);
+  
+  void addSteps(list[Step] steps) {
+    theScript.steps += steps;
+  }
   
   if ((Where)`where <VId _>.@id == <UUID mySelf>` := (Where)`where <{Expr ","}+ ws>`) {
     sqlMe = lit(evalExpr((Expr)`<UUID mySelf>`));
-    mongoMe = \value("<mySelf>"[1..]);
+    mongoMe = \value(uuid2str(mySelf));
     myParams = ();
   }
   else {
     // first, find all id's of e things that need to be updated
     Request req = (Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ ws>`;
-    // NB: no partitioning, compile locally.
-    scr.steps = compileQuery(req, p, s);
+    addSteps(compileQuery(req, p, s));
   }
   
-   
+  
+  
+  DeleteContext ctx = <
+    ent,
+    myParams,
+    sqlMe,
+    mongoMe,
+    addSteps,
+    s
+  >;
+ 
+  for (Rel r:<ent, Cardinality _, _, _, _, str to, true> <- s.rels) {
+     deleteKids(p, placeOf(to, s), r, ctx);
+  }
+  
+  for (Rel r:<str parent, _, _, _, _, ent, true> <- s.rels) {
+     breakFromParent(p, placeOf(parent, s), r, ctx);
+  }
+  
+  for (Rel r:<str ref, _, _, _, _, ent, false> <- s.rels) {
+     breakInPointers(p, placeOf(ref, s), r, ctx);
+  }
+  
+  deleteObject(p, ctx);
+  
+  theScript.steps += [finish()];
+  
+  return theScript;
+  
+}
+
+void deleteObject(<sql(), str dbName>, DeleteContext ctx) {
+  SQLStat stat = delete(tableName(ctx.entity),
+      [where([equ(column(tableName(ctx.entity), typhonId(ctx.entity)), ctx.sqlMe)])]);
+      
+  ctx.addSteps([step(dbName, sql(executeStatement(dbName, pp(stat))), ctx.myParams)]); 
+}
+
+void deleteObject(<sql(), str dbName>, DeleteContext ctx) {
+  ctx.addSteps([ step(dbName, mongo(deleteOne(dbName, ctx.entity, pp(object([<"_id", ctx.mongoMe>])))), ctx.myParams) ]);
+}
+
+void deleteKids(
+  <sql(), str dbName>, <sql(), dbName>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
+  DeleteContext ctx
+) {
+}
+ 
+  
+void old() { 
   switch (p) {
     case <sql(), str dbName>: {
       
@@ -61,7 +123,6 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
 
       // delete kids that are not on dbName
       for (<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true> <- s.rels) {
-            // this keyval is updating ref to have me as a parent/owner
           // local deletions go via cascade delete
           
           switch (placeOf(to, s)) {
