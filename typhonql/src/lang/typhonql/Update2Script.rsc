@@ -157,6 +157,8 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
     theScript.steps = delete(theScript.steps, statIndex);
   }
 
+  theScript.steps += [finish()];
+
   return theScript;
   
 }

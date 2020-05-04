@@ -125,6 +125,8 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
     }
   }
 
+  theScript.steps += [finish()];
+
   return theScript;
 }
 
