@@ -13,6 +13,7 @@ data DBObject
   | array(list[DBObject] values)
   | \value(value v)
   | placeholder(str name="") 
+  | null()
   ;
   
   
@@ -22,6 +23,7 @@ str pp(array(list[DBObject] vs)) = "[<intercalate(", ", [ pp(v) | DBObject v <- 
 
 str pp(\value(int i)) = "<i>";
 
+
 str pp(\value(real r)) = "<r>";
 
 str pp(\value(str s)) = "\"<strEscape(s)>\"";
@@ -29,6 +31,8 @@ str pp(\value(str s)) = "\"<strEscape(s)>\"";
 str pp(\value(bool b)) = "<b>";
 
 str pp(\value(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
+
+str pp(null()) = "null";
 
 str pp(placeholder(name = str x)) = "${<x>}";
 
