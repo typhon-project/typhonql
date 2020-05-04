@@ -268,5 +268,7 @@ void old() {
     
   }
   
+  scr.steps += [finish()];
+  
   return scr;
 }
