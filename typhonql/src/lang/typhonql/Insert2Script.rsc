@@ -254,6 +254,7 @@ void compileRefBinding(
   //if (r notin trueCrossRefs(ctx.schema.rels)) {
   //  fail compileRefBinding;
   //}
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(text(uuid2str(ref)))], ctx.myParams));
   ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
