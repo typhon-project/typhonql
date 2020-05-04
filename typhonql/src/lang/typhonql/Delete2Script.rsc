@@ -207,5 +207,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
     
   }
   
+  scr.steps += [finish()];
+  
   return scr;
 }

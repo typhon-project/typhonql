@@ -273,6 +273,9 @@ from User u, Product p, Review r select u.name, p.name
  where u.reviews == r, p.reviews == r, r.text like "bad"
 ```
 
+Note the use of "==" even for many-valued references.
+You may wonder why not use the `x in y` operator for
+
 
 ## Manipulating Data
 
