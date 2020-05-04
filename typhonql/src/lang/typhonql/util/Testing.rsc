@@ -87,26 +87,46 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	
 	void() myResetDatabases = void() {
-		resetDatabasesInTest(sch, session);
+		ses = newSession(connections, log = LOG);
+		resetDatabasesInTest(sch, ses);
+		ses.done();
 	};
 	ResultTable(Request req) myRunQuery = ResultTable(Request req) {
-		return runQueryInTest(req, sch, session);
+		ses = newSession(connections, log = LOG);
+		result = runQueryInTest(req, sch, ses);
+		ses.done();
+		return result;
 	};
 	ResultTable(Request req, Schema s) myRunQueryForSchema = ResultTable(Request req, Schema s) {
-		return runQueryInTest(req, s, session);
+		ses = newSession(connections, log = LOG);
+		result = runQueryInTest(req, s, ses);
+		ses.done();
+		return result;
 	};
 	CommandResult(Request req) myRunUpdate = CommandResult(Request req) {
-		return runUpdateInTest(req, sch, session);
+		ses = newSession(connections, log = LOG);
+		result = runUpdateInTest(req, sch, ses);
+		ses.done();
+		return result;
 	};
 	CommandResult(Request req, Schema s) myRunUpdateForSchema = CommandResult(Request req, Schema s) {
-		return runUpdateInTest(req, s, session);
+		ses = newSession(connections, log = LOG);
+		result = runUpdateInTest(req, s, ses);
+		ses.done();
+		return result;
 	};
 	CommandResult(Request req) myRunDDL = CommandResult(Request req) {
-		return runDDLInTest(req, sch, conn);
+		ses = newSession(connections, log = LOG);
+		result = runDDLInTest(req, sch, ses);
+		ses.done();
+		return result;
 	};
-	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) 
+	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs)
 		myRunPreparedUpdate = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
-			return runPreparedUpdateInTest(req, columnNames, vs, sch, session);
+	    ses = newSession(connections, log = LOG); 
+		result = runPreparedUpdateInTest(req, columnNames, vs, sch, ses);
+		ses.done();
+		return result;
 	};
 	Schema() myFetchSchema = Schema() {
 		return fetchSchema(conn);
@@ -193,14 +213,12 @@ void resetDatabasesInTest(Schema sch, Session session, Log log = LOG) {
 
 void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log = LOG, bool runTestsInSetup = false) {
 	println("Running test: <t>");
-	proxy.startSession();
 	proxy.resetDatabases();
 	setup(proxy, runTestsInSetup);
 	oldLog = LOG;
 	LOG = log;
 	try {
-		t(proxy);
-		proxy.closeSession();
+		t(proxy);		
 	}
 	catch e: {
 		proxy.setStat("<t>", threw("<e>"));
