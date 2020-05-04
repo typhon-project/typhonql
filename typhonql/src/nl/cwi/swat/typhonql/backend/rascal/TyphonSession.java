@@ -106,6 +106,7 @@ public class TyphonSession implements Operations {
 		FunctionType getResultType = (FunctionType) aliasedTuple.getFieldType("getResult");
 		FunctionType getJavaResultType = (FunctionType) aliasedTuple.getFieldType("getJavaResult");
 		FunctionType readAndStoreType = (FunctionType) aliasedTuple.getFieldType("readAndStore");
+		FunctionType doneType = (FunctionType) aliasedTuple.getFieldType("doneAndUpdate");
 		FunctionType closeType = (FunctionType) aliasedTuple.getFieldType("done");
 		FunctionType newIdType = (FunctionType) aliasedTuple.getFieldType("newId");
 
@@ -123,7 +124,9 @@ public class TyphonSession implements Operations {
 
 		return new SessionWrapper(vf.tuple(makeGetResult(store, script, state, getResultType, ctx),
 				makeGetJavaResult(store, script, state, getJavaResultType, ctx),
-				makeReadAndStore(store, script, state, readAndStoreType, ctx), makeClose(store, state, closeType, ctx),
+				makeReadAndStore(store, script, state, readAndStoreType, ctx),
+				makeDone(store, script, updates, state, doneType, ctx),
+				makeClose(store, state, closeType, ctx),
 				makeNewId(uuids, state, newIdType, ctx),
 				mariaDBOperations.newSQLOperations(store, script, updates, state, uuids, ctx, vf, TF),
 				mongoOperations.newMongoOperations(store, script, updates, state, uuids, ctx, vf, TF)), state);
