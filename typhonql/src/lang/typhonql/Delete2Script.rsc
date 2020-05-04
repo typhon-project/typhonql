@@ -79,14 +79,15 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
      deleteKids(p, placeOf(to, s), r, ctx);
   }
   
-  //for (Rel r:<str parent, _, _, _, _, ent, true> <- s.rels) {
-  //   breakFromParent(p, placeOf(parent, s), r, ctx);
-  //}
-  //
   for (Rel r:<str ref, _, _, _, _, ent, _> <- s.rels) {
      // NB: r is not in the direction of p and placeOf(ref, s)
      breakInboundPointers(p, placeOf(ref, s), r, ctx);
   }
+
+  for (Rel r:<ent, _, _, _, _, str to, false> <- s.rels) {
+     breakOutboundPointers(p, placeOf(to, s), r, ctx);
+  }
+
   
   deleteObject(p, ctx);
   
@@ -103,7 +104,7 @@ void deleteObject(<sql(), str dbName>, DeleteContext ctx) {
   ctx.addSteps([step(dbName, sql(executeStatement(dbName, pp(stat))), ctx.myParams)]); 
 }
 
-void deleteObject(<sql(), str dbName>, DeleteContext ctx) {
+void deleteObject(<mongodb(), str dbName>, DeleteContext ctx) {
   ctx.addSteps([ step(dbName, mongo(deleteOne(dbName, ctx.entity, pp(object([<"_id", ctx.mongoMe>])))), ctx.myParams) ]);
 }
 
@@ -216,7 +217,7 @@ void breakInboundPointers(
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str deleted, bool contain>, 
   DeleteContext ctx
 ) {
-  ctx.addSteps(removeAllObjectPointers(dbName, from, fromRole, ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(removeAllObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, ctx.myParams));
 }
 
 void breakInboundPointers(
@@ -224,7 +225,7 @@ void breakInboundPointers(
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str deleted, bool contain>, 
   DeleteContext ctx
 ) {
-  ctx.addSteps(removeAllObjectPointers(other, from, fromRole, ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(removeAllObjectPointers(other, from, fromRole, fromCard, ctx.mongoMe, ctx.myParams));
 }
 
 void breakInboundPointers(
@@ -235,4 +236,77 @@ void breakInboundPointers(
   ctx.addSteps(removeFromJunction(other, from, fromRole, deleted, toRole, ctx.sqlMe, ctx.myParams));
 }
 
+/*
+ * Break cross-ref pointers out of the deleted objects
+ */
+ 
+ void breakOutboundPointers(
+  del:<sql(), str dbName>, <sql(), dbName>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
+  DeleteContext ctx
+) {
+  // automatic because of foreign keys from junction table to from
+}
+ 
+
+ void breakOutboundPointers(
+  del:<sql(), str dbName>, <sql(), str other:!dbName>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
+  DeleteContext ctx
+) {
+  // automatic because of foreign keys from junction table to from on this db
+  
+  // but not for the inverse on other:
+  ctx.addSteps(removeFromJunction(other, from, fromRole, to, toRole, ctx.sqlMe, ctx.myParams));
+}
+
+
+void breakOutboundPointers(
+  del:<sql(), str dbName>, <mongodb(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
+  DeleteContext ctx
+) {
+  // automatic because of foreign keys from junction table to from on this db
+  
+  // but not for the inverse on other:
+  ctx.addSteps(removeAllObjectPointers(other, to, toRole, toCard, ctx.mongoMe, ctx.myParams));
+}
+
+
+void breakOutboundPointers(
+  del:<mongodb(), str dbName>, <mongodb(), dbName>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
+  DeleteContext ctx
+) {
+  // automatic because of deletion of object in the from db
+  
+  // but not for the inverse 
+  ctx.addSteps(removeAllObjectPointers(dbName, to, toRole, toCard, ctx.mongoMe, ctx.myParams));
+}
+ 
+void breakOutboundPointers(
+  del:<mongodb(), str dbName>, <mongodb(), str other:!dbName>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
+  DeleteContext ctx
+) {
+  // automatic because of deletion of object in the from db
+  
+  // but not for the inverse on other
+  ctx.addSteps(removeAllObjectPointers(other, to, toRole, toCard, ctx.mongoMe, ctx.myParams));
+}
+
+void breakOutboundPointers(
+  del:<mongodb(), str dbName>, <sql(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
+  DeleteContext ctx
+) {
+  // automatic because of deletion of object in the from db
+  
+  // but not for the inverse on sql
+  ctx.addSteps(removeFromJunction(other, from, fromRole, to, toRole, ctx.sqlMe, ctx.myParams));
+}
+ 
+
+ 
+  
   
