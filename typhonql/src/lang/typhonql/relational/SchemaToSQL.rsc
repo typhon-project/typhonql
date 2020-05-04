@@ -46,12 +46,20 @@ void printSQLSchema(Schema schema, str dbName) {
 
  SQLStat attrs2create(str e, rel[str, str] attrs, Schema schema) {
   	return create(tableName(e), [typhonIdColumn(e)]
-      + [column(columnName(attr, e), typhonType2SQL(typ), []) | <str attr, str typ> <- attrs, 
+      + [column(columnName(attr, e), typhonType2SQL(typ), typhonType2Constrains(typ)) | <str attr, str typ> <- attrs, 
       		typ notin schema.customs<0>]
       + [column(columnName(attr, e, typ, element), typhonType2SQL(elementType), []) | <str attr, str typ> <- attrs,
       	 typ in schema.customs<0>, <str typ, str element, str elementType> <- schema.customs]
-      , [primaryKey(typhonId(e))]);
+      , [primaryKey(typhonId(e))] + indexes(e, attrs, schema));
 }
+
+list[TableConstraint] indexes(str e, rel[str, str] attrs, Schema schema) 
+    = [
+        index("<e>_<attr>_spatial", spatial(), [columnName(attr, e)])
+        | <str attr, str typ> <- attrs, typhonType2SQL(typ) in {polygon(), point()}
+    ]
+    + [] // TODO: add user defined indexes after we've added them to the Schema import
+    ; 
  
   // ugh...
   int createOfEntity(str entity, Stats theStats) {

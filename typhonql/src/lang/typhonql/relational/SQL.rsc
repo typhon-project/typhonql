@@ -89,7 +89,14 @@ data ColumnConstraint
 data TableConstraint
   = primaryKey(str column)
   | foreignKey(str column, str parent, str key, OnDelete onDelete)
+  | index(str indexName, IndexKind kind, list[str] columns)
   ;
+  
+data IndexKind
+    = uniqueIndex()
+    | fullText()
+    | spatial()
+    ;
   
 data OnDelete
   = cascade()

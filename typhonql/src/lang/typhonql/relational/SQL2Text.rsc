@@ -38,7 +38,7 @@ str pp(delete(str t, list[Clause] cs))
   = "delete from <q(t)> 
     '<intercalate("\n", [ pp(c) | Clause c <- cs ])>;";
 
-str pp(deleteJoining(list[str] tables, list[Clause] clauses)) 
+str pp(deleteJoining(list[str] tables, list[Clause] cs)) 
   = "delete <intercalate(", ", [ q(t) | str t <- tables ])> 
     'from <intercalate(" inner join ", [ q(t) | str t <- tables ])>
     '<intercalate("\n", [ pp(c) | Clause c <- cs ])>";
@@ -182,6 +182,9 @@ str pp(foreignKey(str c, str p, str k, OnDelete od))
     '  references <q(p)>(<q(k)>)<pp(od)>";
 
 
+str pp(index(_, spatial(), list[str] columns))
+    = intercalate(", ", ["spatial index(<q(c)>)" | c <- columns]);
+
 // OnDelete
 
 str pp(OnDelete::cascade()) = " on delete cascade";
@@ -194,6 +197,7 @@ str pp(OnDelete::nothing()) = "";
 str pp(notNull()) = "not null";
 
 str pp(unique()) = "unique";
+
 
 // ColumnType
 
