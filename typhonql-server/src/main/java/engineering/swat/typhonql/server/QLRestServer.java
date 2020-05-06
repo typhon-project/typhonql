@@ -43,8 +43,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
-import engineering.swat.typhonql.server.crud.CreationEntity;
-import engineering.swat.typhonql.server.crud.CreationEntityDeserializer;
+import engineering.swat.typhonql.server.crud.EntityFields;
+import engineering.swat.typhonql.server.crud.EntityFieldsDeserializer;
 import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
@@ -103,7 +103,7 @@ public class QLRestServer {
 
 		SimpleModule module = new SimpleModule();
 		// adding our custom serializer and deserializer
-		module.addDeserializer(CreationEntity.class, new CreationEntityDeserializer());
+		module.addDeserializer(EntityFields.class, new EntityFieldsDeserializer());
 		// registering the module with ObjectMapper
 		crudMapper.registerModule(module);
 		// create JsonProvider to provide custom ObjectMapper

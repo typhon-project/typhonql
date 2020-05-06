@@ -16,10 +16,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
-public class CreationEntityDeserializer extends JsonDeserializer<CreationEntity> {
+public class EntityFieldsDeserializer extends JsonDeserializer<EntityFields> {
 
 	@Override
-	public CreationEntity deserialize(JsonParser jsonParser, DeserializationContext ctxt)
+	public EntityFields deserialize(JsonParser jsonParser, DeserializationContext ctxt)
 			throws IOException, JsonProcessingException {
 		ObjectNode node = jsonParser.getCodec().readTree(jsonParser);
 		Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
@@ -46,7 +46,7 @@ public class CreationEntityDeserializer extends JsonDeserializer<CreationEntity>
 			}
 				
 		}
-		return new CreationEntity(entityFields);
+		return new EntityFields(entityFields);
 	}
 
 	private void raiseFormatException() {

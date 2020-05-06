@@ -56,7 +56,7 @@ public class EntityResource extends TyphonDALResource {
 	
 	@PATCH
 	public Response updateEntity(@PathParam("entityName") String entityName, @PathParam("uuid") String uuid, 
-			CreationEntity entity) throws IOException {
+			EntityFields entity) throws IOException {
 		String query = "update " + entityName + " e where e.@id == #" + uuid + " set { "
 				+ concatenateFields(entity.getFields()) + "}";
 		QLRestServer.RestArguments args = getRestArguments();
