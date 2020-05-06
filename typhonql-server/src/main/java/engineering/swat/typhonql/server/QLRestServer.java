@@ -44,6 +44,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
 import engineering.swat.typhonql.server.crud.CreationEntity;
+import engineering.swat.typhonql.server.crud.CreationEntityDeserializer;
 import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
@@ -74,44 +75,9 @@ public class QLRestServer {
 			return;
 		}
 		XMIPolystoreConnection engine = new XMIPolystoreConnection();
-		
-		ObjectMapper mapper = new ObjectMapper();
-
-		SimpleModule module = new SimpleModule();
-		// adding our custom serializer and deserializer
-		module.addDeserializer(CreationEntity.class, new JsonDeserializer<CreationEntity>() {
-
-			@Override
-			public CreationEntity deserialize(JsonParser jsonParser, DeserializationContext ctxt)
-					throws IOException, JsonProcessingException {
-				ObjectNode node = jsonParser.getCodec().readTree(jsonParser);
-				Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-				Map<String, Object> entityFields = new HashMap<String, Object>();
-				while (fields.hasNext()) {
-					Map.Entry<String, JsonNode> entry = fields.next();
-					String key = entry.getKey();
-					JsonNode val = entry.getValue();
-					if (val instanceof TextNode) {
-						entityFields.put(key, val.asText());
-					}
-				}
-				return new CreationEntity(entityFields);
-			}
-
-		});
-		// registering the module with ObjectMapper
-		mapper.registerModule(module);
-		// create JsonProvider to provide custom ObjectMapper
-		JacksonJaxbJsonProvider provider = new JacksonJaxbJsonProvider();
-		provider.setMapper(mapper);
-
-		// configure REST service
-		ResourceConfig rc = new ResourceConfig();
-		rc.register(provider);
-
 
 		Server server = new Server();
-		
+
 		ServerConnector http = new ServerConnector(server);
 		http.setHost("0.0.0.0");
 		http.setPort(Integer.parseInt(args[0]));
@@ -119,7 +85,7 @@ public class QLRestServer {
 		server.addConnector(http);
 
 		ServletContextHandler context = new ServletContextHandler();
-		
+
 		context.setContextPath("/");
 
 		context.setMaxFormContentSize(100 * 1024 * 1024); // 100MB should be max for parameters
@@ -132,25 +98,33 @@ public class QLRestServer {
 		// REST DAL
 
 		context.setAttribute(QUERY_ENGINE, engine);
-
 		
+		ObjectMapper crudMapper = new ObjectMapper();
+
+		SimpleModule module = new SimpleModule();
+		// adding our custom serializer and deserializer
+		module.addDeserializer(CreationEntity.class, new CreationEntityDeserializer());
+		// registering the module with ObjectMapper
+		crudMapper.registerModule(module);
+		// create JsonProvider to provide custom ObjectMapper
+		JacksonJaxbJsonProvider provider = new JacksonJaxbJsonProvider();
+		provider.setMapper(crudMapper);
+
+		// configure REST service
+		ResourceConfig rc = new ResourceConfig();
+		rc.register(provider);
 		rc.packages("engineering.swat.typhonql.server.crud");
-		ServletHolder servletHolder  = new ServletHolder(new ServletContainer(rc));
-	
 		
-		context.addServlet(servletHolder, "/crud/*");
-		
-		//ServletHolder servletHolder  = new ServletHolder(new ServletContainer(rc));
-		//ServletHolder servletHolder = context.addServlet(ServletContainer.class, "/crud/*");
-		
-		
-		servletHolder.setInitOrder(0);
-		servletHolder.setInitParameter("jersey.config.server.provider.packages",
-				"engineering.swat.typhonql.server.crud");
+		ServletHolder servletHolder = new ServletHolder(new ServletContainer(rc));
 
-		
+		context.addServlet(servletHolder, "/crud/*");
+
+		servletHolder.setInitOrder(0);
+		//servletHolder.setInitParameter("jersey.config.server.provider.packages",
+		//		"engineering.swat.typhonql.server.crud");
+
 		server.setHandler(wrapCompression(context));
-		
+
 		server.start();
 		System.err.println("Server is running, press Ctrl-C to terminate");
 		server.join();
@@ -291,8 +265,7 @@ public class QLRestServer {
 							w.write("\nOrigin: " + e.getCause().getMessage());
 						}
 					}
-				}
-				else { 
+				} else {
 					// we cannot reset the stream, so we just write some broken json
 					responseStream.println("\' \" <<< } {{{{ Error: " + e.getMessage());
 				}
