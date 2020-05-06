@@ -17,8 +17,8 @@ import lang::typhonml::Util;
  */
  
 
-str HOST = "192.168.178.78";
-//str HOST = "localhost";
+//str HOST = "192.168.178.78";
+str HOST = "localhost";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
@@ -443,7 +443,7 @@ void runTests(Log log = NO_LOG()) {
 	  , test7
 	  , test8
 	  , test9
-	  , test10
+	  //, test10
 	  , test11
 	  , test12
 	  , test13
