@@ -55,9 +55,10 @@ public class EntityResource extends TyphonDALResource {
 	}
 	
 	@PATCH
-	public Response updateEntity(@PathParam("entityName") String entityName, @PathParam("uuid") String uuid, Map<String, Object> fields) throws IOException {
+	public Response updateEntity(@PathParam("entityName") String entityName, @PathParam("uuid") String uuid, 
+			CreationEntity entity) throws IOException {
 		String query = "update " + entityName + " e where e.@id == #" + uuid + " set { "
-				+ concatenateFields(fields) + "}";
+				+ concatenateFields(entity.getFields()) + "}";
 		QLRestServer.RestArguments args = getRestArguments();
 		CommandResult cr = getEngine().executeUpdate(args.xmi, args.databaseInfo, query);
 		return Response.ok().build();
@@ -67,7 +68,7 @@ public class EntityResource extends TyphonDALResource {
 		return String.join(", ",
 				fields.entrySet().stream().map(e -> keyValue2String(e.getKey(), e.getValue())).collect(Collectors.toList()).toArray(new String[0]));
 	}
-
+	
 	private String keyValue2String(String key, Object value) {
 		StringBuffer sb = new StringBuffer();
 		String keyAndColon = null;

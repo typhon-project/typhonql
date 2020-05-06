@@ -46,7 +46,7 @@ public class EntitiesResource extends TyphonDALResource {
 	@POST
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response createEntity(@PathParam("entityName") String entityName, 
-			@JsonDeserialize(using = CreationEntityDeserializer.class) CreationEntity entity) throws IOException {
+			CreationEntity entity) throws IOException {
 		String query = "insert " + entityName + " { " + concatenateFields(entity.getFields()) + "}";
  		try {
  			QLRestServer.RestArguments args = getRestArguments();
