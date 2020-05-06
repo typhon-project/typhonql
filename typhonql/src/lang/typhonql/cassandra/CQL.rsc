@@ -20,8 +20,40 @@ data CQLStat
       bool allowFiltering=false, 
       bool distinct=false, 
       bool json=false)
+      
+  | cInsert(str name, list[str] columnNames, list[CQLValue] values, 
+       bool ifNotExists=false, 
+       list[CQLUpdateParam] using=[])
+  
+  | cUpdate(str name, list[CQLAssignment] sets, list[CQLExpr] wheres,
+      list[CQLUpdateParam] using=[],
+      bool ifExists=false,
+      list[CQLExpr] conditions=[])
+      
+  | cDelete(str name, list[CQLExpr] wheres,
+      list[CQLSimpleSelection] columnSelection=[],
+      list[CQLUpdateParam] using=[],
+      bool ifExists=false,
+      list[CQLExpr] conditions=[])
   ;
 
+data CQLUpdateParam
+  = cTimestamp(int microSeconds)
+  | cTTL(int seconds)
+  ;
+
+data CQLSimpleSelection
+ = cColumn(str name)
+ | cIndexed(str name, CQLExpr index)
+ | cSubfield(str name, str field)
+ ;
+
+data CQLAssignment
+  = cSimple(CQLSimpleSelection selection, CQLExpr term)
+  | cIncr(str target, str other, CQLExpr term)
+  | cDecr(str target, str other, CQLExpr term)
+  | cConcat(str target, CQLValue collection, str other)
+  ;
 
 data CQLSelectClause
   = cStar()
