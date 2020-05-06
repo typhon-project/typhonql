@@ -69,6 +69,12 @@ data CQLExpr
   | cCast(CQLExpr arg, CQLType \type)
   | cCall(str name, list[CQLExpr] args)
   | cCount()
+  | cUMinus(CQLExpr arg)
+  | cPlus(CQLExpr lhs, CQLExpr rhs)
+  | cMinus(CQLExpr lhs, CQLExpr rhs)
+  | cTimes(CQLExpr lhs, CQLExpr rhs)
+  | cDiv(CQLExpr lhs, CQLExpr rhs)
+  | cMod(CQLExpr lhs, CQLExpr rhs)
   | cEq(CQLExpr lhs, CQLExpr rhs)
   | cNeq(CQLExpr lhs, CQLExpr rhs)
   | cLeq(CQLExpr lhs, CQLExpr rhs)
@@ -78,6 +84,8 @@ data CQLExpr
   | cIn(CQLExpr lhs, CQLExpr rhs)
   | cContains(CQLExpr lhs, CQLExpr rhs)
   | cContainsKey(CQLExpr lhs, CQLExpr rhs)
+  | cBindMarker(str name = "")
+  | cTypeHint(CQLType \type, CQLExp arg)
   ;
   
   

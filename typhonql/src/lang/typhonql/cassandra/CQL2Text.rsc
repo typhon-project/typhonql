@@ -42,11 +42,19 @@ str pp(cOrder(str name, bool asc)) = "<name> <asc ? "ASC" : "DESC">";
  * Expressions
  */
 
-str pp(cColumn(str name)) = name;
+str pp(cColumn(str name)) = "\"<name>\"";
 str pp(cTerm(CQLValue val)) = pp(val);
 str pp(cCast(CQLExpr arg, CQLType \type)) = "CAST(<pp(arg)> AS <pp(\type)>)";
 str pp(cCall(str name, list[CQLExpr] args)) = "<name>(<intercalate(", ", [ pp(a) | CQLExpr a <- args ])>)";
 str pp(cCount()) = "COUNT(*)";
+
+str pp(cUMinus(CQLExpr arg)) = "-(<pp(arg)>)";
+str pp(cPlus(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> + <pp(rhs)>";
+str pp(cMinus(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> - <pp(rhs)>";
+str pp(cTimes(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> * <pp(rhs)>";
+str pp(cDiv(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> / <pp(rhs)>";
+str pp(cMod(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> % <pp(rhs)>";
+
 str pp(cEq(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> = <pp(rhs)>";
 str pp(cNeq(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> != <pp(rhs)>";
 str pp(cLeq(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> \<= <pp(rhs)>";
@@ -56,6 +64,11 @@ str pp(cGt(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> \> <pp(rhs)>";
 str pp(cIn(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> IN <pp(rhs)>";
 str pp(cContains(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> CONTAINS <pp(rhs)>";
 str pp(cContainsKey(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> CONTAINS KEY <pp(rhs)>";
+
+str pp(cBindMarker(name = str name))
+  = name == "" ? "?" : ":<name>";
+  
+str pp(cTypeHint(CQLType t, CQLExpr e)) = "(<pp(t)>)<pp(e)>";
 
 /*
  * Types
@@ -97,9 +110,8 @@ str pp(cFrozen(CQLType arg)) = "frozen\<<pp(arg)>\>";
 /*
  * Values
  */
- 
-// todo: escaping etc.
-str pp(cString(str s)) = "\'<s>\'";
+
+str pp(cString(str s)) = "\'<escape(s, ("\'": "\'\'"))>\'";
 
 str pp(cInteger(int i)) = "<i>";
 
