@@ -128,6 +128,7 @@ data CQLType
   | cList(CQLType listType)
   | cUserDefined(str name, str keySpace="")
   | cTuple(list[CQLType] \types)
+  | cFrozen(CQLType arg)
   ;
   
 data CQLValue
