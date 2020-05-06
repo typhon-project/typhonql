@@ -18,12 +18,15 @@ import javax.ws.rs.core.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
 import engineering.swat.typhonql.server.QLRestServer;
 import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
+
 @Path("/{entityName}")
 public class EntitiesResource extends TyphonDALResource {
-
+	
 	private static final Logger logger = LogManager.getLogger(EntitiesResource.class);
 
 	@GET
@@ -42,8 +45,9 @@ public class EntitiesResource extends TyphonDALResource {
 
 	@POST
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response createEntity(@PathParam("entityName") String entityName, Map<String, Object> fields) throws IOException {
-		String query = "insert " + entityName + " { " + concatenateFields(fields) + "}";
+	public Response createEntity(@PathParam("entityName") String entityName, 
+			@JsonDeserialize(using = CreationEntityDeserializer.class) CreationEntity entity) throws IOException {
+		String query = "insert " + entityName + " { " + concatenateFields(entity.getFields()) + "}";
  		try {
  			QLRestServer.RestArguments args = getRestArguments();
 			CommandResult cr = getEngine().executeUpdate(args.xmi, args.databaseInfo, query);
