@@ -43,13 +43,13 @@ void setup(PolystoreInstance p, bool doTest) {
 	     [["tv", "TV", "Flat", $2020-04-12T22:00:00.000+00:00$], ["radio", "Radio", "Loud", $2020-04-12T22:00:00.000+00:00$]]>);
 	}
 	
-	p.runUpdate((Request) `insert Review { @id: #rev1, contents: "Good TV", user: #pablo, product: #tv }`);
-	p.runUpdate((Request) `insert Review { @id: #rev2, contents: "", user: #davy, product: #tv }`);
-	p.runUpdate((Request) `insert Review { @id: #rev3, contents: "***", user: #davy, product: #radio }`);
+	p.runUpdate((Request) `insert Review { @id: #rev1, content: "Good TV", user: #pablo, product: #tv }`);
+	p.runUpdate((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv }`);
+	p.runUpdate((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio }`);
 	
 	if (doTest) {
-	  rs = p.runQuery((Request)`from Review r select r.@id, r.contents, r.user, r.product`);
-	  p.assertResultEquals("reviews were inserted", rs, <["r.@id", "r.contents", "r.user", "r.product"], 
+	  rs = p.runQuery((Request)`from Review r select r.@id, r.content, r.user, r.product`);
+	  p.assertResultEquals("reviews were inserted", rs, <["r.@id", "r.content", "r.user", "r.product"], 
 	     [["rev1", "Good TV", "pablo", "tv"], 
 	      ["rev2", "", "davy", "tv"],
 	      ["rev3", "***", "davy", "radio"]
@@ -64,11 +64,11 @@ void setup(PolystoreInstance p, bool doTest) {
 	
 	
 	
-	p.runUpdate((Request) `insert Biography { @id: #bio1, text: "Chilean", user: #pablo }`);
+	p.runUpdate((Request) `insert Biography { @id: #bio1, content: "Chilean", user: #pablo }`);
 	
 	if (doTest) {
-	  rs = p.runQuery((Request)`from Biography b select b.@id, b.text, b.user`);
-	  p.assertResultEquals("bios were inserted", rs, <["b.@id", "b.text", "b.user"], 
+	  rs = p.runQuery((Request)`from Biography b select b.@id, b.content, b.user`);
+	  p.assertResultEquals("bios were inserted", rs, <["b.@id", "b.content", "b.user"], 
 	    [["bio1", "Chilean", "pablo"]]>);
 	    
 	  rs = p.runQuery((Request)`from User u select u.biography`);
@@ -213,10 +213,10 @@ void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
 }
 
 void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, contents: "expensive", user: #davy}`);
+  p.runUpdate((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy}`);
   p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", reviews: [#newReview]}`);
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, p.reviews == #newReview`);
-  p.assertResultEquals("InsertManyContainSQLtoExternal", rs, <["r.content"], [["iPhone"]]>);
+  p.assertResultEquals("InsertManyContainSQLtoExternal", rs, <["r.content"], [["expensive"]]>);
 }
 
 
@@ -262,7 +262,7 @@ void testUpdateManyXrefSQLLocalSetToEmpty(PolystoreInstance p) {
 
 
 void testUpdateManyContainSQLtoExternal(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, contents: "super!", user: #davy}`);
+  p.runUpdate((Request)`insert Review { @id: #newReview, content: "super!", user: #davy}`);
   p.runUpdate((Request)`update Product p where p.@id == #tv set {reviews +: [#newReview]}`);
   
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #tv, p.reviews == r`);
@@ -278,7 +278,7 @@ void testUpdateManyContainSQLtoExternalRemove(PolystoreInstance p) {
 
 
 void testUpdateManyContainSQLtoExternalSet(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, contents: "super!", user: #davy}`);
+  p.runUpdate((Request)`insert Review { @id: #newReview, content: "super!", user: #davy}`);
   p.runUpdate((Request)`update Product p where p.@id == #tv set {reviews: [#newReview]}`);
   
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #tv, p.reviews == r`);
@@ -320,8 +320,8 @@ void test2(PolystoreInstance p) {
 }
 
 void test3(PolystoreInstance p) {
-	rs = p.runQuery((Request) `from Review r select r.contents`);
-	p.assertResultEquals("review contents is selected", rs,  <["r.contents"],[["Good TV"],[""],["***"]]>);
+	rs = p.runQuery((Request) `from Review r select r.content`);
+	p.assertResultEquals("review content is selected", rs,  <["r.content"],[["Good TV"],[""],["***"]]>);
 }
 
 void test4(PolystoreInstance p) {
@@ -330,24 +330,24 @@ void test4(PolystoreInstance p) {
 }
 
 void test5(PolystoreInstance p) {
-	rs = p.runQuery((Request) `from User u select u.biography.text where u == #pablo`);
-	p.assertResultEquals("two-level navigation to attribute", rs,  <["biography_0.text"],[["Chilean"]]>);
+	rs = p.runQuery((Request) `from User u select u.biography.content where u == #pablo`);
+	p.assertResultEquals("two-level navigation to attribute", rs,  <["biography_0.content"],[["Chilean"]]>);
 }
 
 void test6(PolystoreInstance p) {
-	rs = p.runQuery((Request) `from User u, Biography b select b.text where u.biography == b, u == #pablo`);
-	p.assertResultEquals("navigating via where-clauses", rs,   <["b.text"],[["Chilean"]]>);
+	rs = p.runQuery((Request) `from User u, Biography b select b.content where u.biography == b, u == #pablo`);
+	p.assertResultEquals("navigating via where-clauses", rs,   <["b.content"],[["Chilean"]]>);
 }
 
 void test7(PolystoreInstance p) {
-	rs = p.runQuery((Request) `from User u, Review r select u.name, r.user where u.reviews == r, r.contents == "***"`);
+	rs = p.runQuery((Request) `from User u, Review r select u.name, r.user where u.reviews == r, r.content == "***"`);
 	p.assertResultEquals("fields from different entities", rs, <["u.name","r.user"],[["Davy","davy"]]>);
 }
 
 void test8(PolystoreInstance p) {
-	p.runUpdate((Request) `update Biography b where b.@id == #bio1 set { text:  "Simple" }`);
-	rs = p.runQuery((Request) `from Biography b select b.text where b.@id == #bio1`);
-	p.assertResultEquals("basic update of attribute on mongo", rs, <["b.text"],[["Simple"]]>);
+	p.runUpdate((Request) `update Biography b where b.@id == #bio1 set { content:  "Simple" }`);
+	rs = p.runQuery((Request) `from Biography b select b.content where b.@id == #bio1`);
+	p.assertResultEquals("basic update of attribute on mongo", rs, <["b.content"],[["Simple"]]>);
 }
 
 void test9(PolystoreInstance p) {
