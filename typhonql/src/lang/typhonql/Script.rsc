@@ -108,7 +108,7 @@ str runScript(Script scr, Session session, Schema schema) {
       }
 
       case finish(): {
-        println("WARNING: not yet executed: <s>");
+        session.finish();
       }
 
   	  	
