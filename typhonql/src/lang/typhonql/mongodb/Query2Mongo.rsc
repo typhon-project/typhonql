@@ -366,8 +366,31 @@ default tuple[str, Prop] expr2pattern(Expr e, Ctx ctx) {
   
 tuple[str, Prop] makeComparison(str op, Expr lhs, Expr rhs, Ctx ctx) 
   = <ent, <path, object([<op, expr2obj(other, ctx)>])>> 
-  when
+  when !isGeoDistanceCall(lhs),!isGeoDistanceCall(lhs),
     <str ent, str path, Expr other> := split(lhs, rhs, ctx);
+
+
+bool isGeoDistanceCall((Expr)`distance(<Expr _>, <Expr _>)`) = true;
+default bool isGeoDistanceCall(_) = false;
+
+tuple[tuple[str ent, str path, Expr other] ori, Expr other2] 
+    distanceSplit((Expr)`distance(<Expr lhs1>, <Expr rhs1>)`, Expr rhs, Ctx ctx)
+    = <split(lhs1, rhs1, ctx), rhs>;
+
+tuple[tuple[str ent, str path, Expr other] ori, Expr other2] 
+    distanceSplit(Expr lhs, (Expr)`distance(<Expr lhs1>, <Expr rhs1>)`, Ctx ctx)
+    = <split(lhs1, rhs1, ctx), lhs>;
+    
+
+tuple[str, Prop] makeComparison(str op, Expr lhs, Expr rhs, Ctx ctx) 
+    = <ent, <path, object([
+        <"$nearSphere", object([
+            <"$geometry", expr2obj(other, ctx)>, 
+            <((op == "$gte") ? "$minDistance" : "$maxDistance"), expr2obj(other2, ctx)>
+            ])>
+      ])>>
+    when isGeoDistanceCall(lhs) || isGeoDistanceCall(lhs),
+        <<str ent, str path, Expr other>, Expr other2> := distanceSplit(lhs, rhs, ctx);
     
 
 // NB: restriction is that the same collection cannot be queried with different vars
@@ -395,6 +418,7 @@ tuple[str ent, str path, Expr other] split(Expr lhs, Expr rhs, Ctx ctx) {
   if ((Expr)`<VId x>` := rhs, "<x>" notin ctx.dyns) {
     return <ctx.env["<x>"], "_id", lhs>; 
   }
+  
   
   throw "One of binary expr must contain field navigation, but got: `<lhs>` and `<rhs>`";
 }    
@@ -430,6 +454,20 @@ DBObject expr2obj((Expr)`<DateTime d>`, Ctx _)
 DBObject expr2obj((Expr)`<Int i>`, Ctx _) = \value(toInt("<i>"));
 
 DBObject expr2obj((Expr)`<Real r>`, Ctx _) = \value(toReal("<r>"));
+
+
+// warning, clones of Insert2Script!
+DBObject expr2obj((Expr)`#point(<Real x> <Real y>)`, _) 
+  = object([<"type", \value("Point")>, 
+      <"coordinates", array([\value(toReal("<x>")), \value(toReal("<y>"))])>]);
+
+DBObject expr2obj((Expr)`#polygon(<{Segment ","}* segs>)`, _) 
+  = object([<"type", \value("Polygon")>,
+      <"coordinates", array([ seg2array(s) | Segment s <- segs ])>]);
+
+
+DBObject seg2array((Segment)`(<{XY ","}* xys>)`)
+  = array([ array([\value(toReal("<x>")), \value(toReal("<y>"))]) | (XY)`<Real x> <Real y>` <- xys ]);
 
 // todo: unescaping
 DBObject expr2obj((Expr)`<Str s>`, Ctx _) = \value("<s>"[1..-1]);

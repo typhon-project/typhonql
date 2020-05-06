@@ -46,6 +46,7 @@ alias MongoOperations = tuple[
 	void (str dbName, str coll, str query, str update, Bindings bindings) findAndUpdateOne,
 	void (str dbName, str coll, str query, Bindings bindings) deleteOne,
 	void (str dbName, str coll) createCollection,
+    void (str dbName, str coll, str selector, str index) createIndex,
 	void (str dbName, str coll, str newName) renameCollection,
 	void (str dbName, str coll) dropCollection,
 	void (str dbName, str coll) dropDatabase
