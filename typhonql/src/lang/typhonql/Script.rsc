@@ -15,6 +15,7 @@ data Step
   // executeQuery("x", "relational", "select p.name from Person as p", ())
   = step(str result, Call call, Bindings bindings, list[Path] signature = [])
   | read(list[Path] path)
+  | finish()
   | newId(str var)
   ;
   
@@ -98,7 +99,6 @@ str runScript(Script scr, Session session, Schema schema) {
       case step(str r, mongo(findAndUpdateMany(str db, str coll, str query, str update)), Bindings ps):
         println("WARNING: not yet executed: <s>");
       
-       
       case newId(str var): {
         result = session.newId(var);
       }
@@ -106,6 +106,11 @@ str runScript(Script scr, Session session, Schema schema) {
       case read(list[Path path] paths): {
       	session.readAndStore(paths);
       }
+
+      case finish(): {
+        session.finish();
+      }
+
   	  	
       default: throw "Unsupported call: <s>";
     }

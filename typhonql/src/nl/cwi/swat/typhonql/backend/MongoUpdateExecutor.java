@@ -1,5 +1,6 @@
 package nl.cwi.swat.typhonql.backend;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.text.StringSubstitutor;
@@ -14,9 +15,9 @@ public abstract class MongoUpdateExecutor extends UpdateExecutor {
 	protected String collectionName;
 	private String query;
 
-	public MongoUpdateExecutor(ResultStore store, Map<String, String> uuids, String collectionName, String query,
+	public MongoUpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, String> uuids, String collectionName, String query,
 			Map<String, Binding> bindings, MongoDatabase db) {
-		super(store, uuids, bindings);
+		super(store, updates, uuids, bindings);
 		this.db = db;
 		this.collectionName = collectionName;
 		this.query = query;
