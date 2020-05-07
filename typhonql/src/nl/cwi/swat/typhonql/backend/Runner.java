@@ -27,6 +27,8 @@ public class Runner {
 			}
 		});
 		script.get(0).accept(new ArrayList<Record>());
+		// Removes executed updates
+		updates.clear();
 	}
 
 	private static ResultTable toResultTable(List<Path> paths, List<List<Record>> result) {

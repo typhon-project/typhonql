@@ -360,7 +360,8 @@ void test9(PolystoreInstance p) {
 void test10(PolystoreInstance p) {
 	p.runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description }`,
 						  ["name", "description"],
-						  [["\"IPhone\"", "\"Apple\""],
+						  [
+						   ["\"IPhone\"", "\"Apple\""],
 				           ["\"Samsung S10\"", "\"Samsung\""]]);
 	rs = p.runQuery((Request) `from Product p select p.name, p.description`);		    
 	p.assertResultEquals("prepared insert statement on sql", rs,   
@@ -443,7 +444,7 @@ void runTests(Log log = NO_LOG()) {
 	  , test7
 	  , test8
 	  , test9
-	  //, test10
+	  , test10
 	  , test11
 	  , test12
 	  , test13
