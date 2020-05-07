@@ -28,6 +28,7 @@ data Call
   
 data CassandraCall
  = execute(str dbName, str cql)
+ | queryExecute(str dbName, str cql)
  ;  
   
 data SQLCall
