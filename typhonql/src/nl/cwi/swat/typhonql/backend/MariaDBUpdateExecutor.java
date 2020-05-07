@@ -19,8 +19,8 @@ public class MariaDBUpdateExecutor extends UpdateExecutor {
 	private PreparedStatement pstmt;
 	private List<String> vars = new ArrayList<String>();
 	
-	public MariaDBUpdateExecutor(ResultStore store, Map<String, String> uuids, String query, Map<String, Binding> bindings, Connection connection) {
-		super(store, uuids, bindings);
+	public MariaDBUpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, String> uuids, String query, Map<String, Binding> bindings, Connection connection) {
+		super(store, updates, uuids, bindings);
 		System.out.println(query);
 		Pattern pat =  Pattern.compile("\\$\\{(\\w*?)\\}");
 		Matcher m = pat.matcher(query);

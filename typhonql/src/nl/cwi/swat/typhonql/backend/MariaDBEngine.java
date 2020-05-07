@@ -12,8 +12,8 @@ public class MariaDBEngine extends Engine {
 
 	private Connection connection;
 
-	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, Connection sqlConnection) {
-		super(store, script, uuids);
+	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids, Connection sqlConnection) {
+		super(store, script, updates, uuids);
 		this.connection = sqlConnection;
 	}
 
@@ -26,7 +26,7 @@ public class MariaDBEngine extends Engine {
 	}
 
 	public void executeUpdate(String query, Map<String, Binding> bindings) {
-		new MariaDBUpdateExecutor(store, uuids, query, bindings, connection).executeUpdate();		
+		new MariaDBUpdateExecutor(store, updates, uuids, query, bindings, connection).executeUpdate();		
 	}
 
 }

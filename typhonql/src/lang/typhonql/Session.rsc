@@ -12,6 +12,7 @@ alias Session = tuple[
 	ResultTable () getResult,
 	value () getJavaResult,
 	void (list[Path path] paths) readAndStore,
+	void () finish,
 	void () done,
 	str (str) newId,
 	SQLOperations sql,
