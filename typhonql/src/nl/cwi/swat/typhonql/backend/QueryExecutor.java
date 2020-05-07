@@ -72,7 +72,7 @@ public abstract class QueryExecutor {
 	}
 
 	private Record horizontalAdd(Record row, Record r) {
-		Map<Field, Object> map = new HashMap<Field, Object>();
+		Map<Field, Object> map = new HashMap<>();
 		map.putAll(row.getObjects());
 		map.putAll(r.getObjects());
 		return new Record(map);

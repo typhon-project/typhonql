@@ -149,6 +149,33 @@ public class XMIPolystoreConnection {
 		});
 	}
 	
+	public ResultTable executeGetEntity(String xmiModel, List<DatabaseInfo> connections, String entity, String uuid) {
+		return evaluators.useAndReturn(evaluator -> {
+			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, evaluator)) {
+				synchronized (evaluator) {
+					// str src, str xmiString, Session session
+					IValue v = evaluator.call("runGetEntity", 
+							"lang::typhonql::RunUsingCompiler",
+                    		Collections.emptyMap(),
+                    		VF.string(entity), 
+							VF.string(uuid), 
+							VF.string(xmiModel),
+							session.getTuple());
+					return (ResultTable) v;
+				}
+			} catch (StaticError e) {
+				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				throw e;
+			} catch (Throw e) {
+				throwMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				throw e;
+			} catch (Throwable e) {
+				throwableMessage(evaluator.getStdErr(), e, evaluator.getStackTrace(), VALUE_PRINTER);
+				throw e;
+			}
+		});
+	}
+	
 	public void executeDDLUpdate(String xmiModel, List<DatabaseInfo> connections, String update) {
 		evaluators.useAndReturn(evaluator -> {
 			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, evaluator)) {

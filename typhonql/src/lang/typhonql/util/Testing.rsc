@@ -55,8 +55,10 @@ alias PolystoreInstance =
 
 alias TestExecuter =
 	tuple[
-		void(void(PolystoreInstance)) runTest,
-		void(list[void(PolystoreInstance)]) runTests];
+		void(void(PolystoreInstance, bool), bool) runSetup,
+		void(void(PolystoreInstance proxy)) runTest,
+		void(list[void(PolystoreInstance proxy)]) runTests,
+		Schema() fetchSchema];
 		
 TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password, Log log = NO_LOG()) {
 	Conn conn = <host, port, user, password>;
@@ -149,10 +151,18 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		stats = assertException(testName, block, stats);
 	};
 	
-	PolystoreInstance proxy = <myResetStats, myGetStats, mySetStat, myResetDatabases, myStartSession, 
+	PolystoreInstance proxy = <myResetStats, myGetStats, mySetStat,
+		myResetDatabases, myStartSession, 
 		myCloseSession, myRunQuery, myRunQueryForSchema,
 		myRunUpdate, myRunUpdateForSchema, myRunDDL, myRunPreparedUpdate, 
-		myFetchSchema, myPrintSchema, myAssertEquals, myAssertResultEquals, myAssertException>;
+		myFetchSchema, myPrintSchema,  myAssertEquals, myAssertResultEquals,
+		myAssertException>;
+		
+	void(void(PolystoreInstance, bool), bool) myRunSetup = void(void(PolystoreInstance, bool) setupFun, bool doTests) {
+		proxy.startSession();
+		setupFun(proxy, doTests);
+		proxy.closeSession();
+	};
 	
 	void(void(PolystoreInstance)) myRunTest = void(void(PolystoreInstance proxy) t) {
 		proxy.resetStats();
@@ -164,7 +174,11 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		runTests(proxy, setup, ts, log = log);
 	};
 	
-	return <myRunTest, myRunTests>;
+	Schema() myfetchSchema = Schema() {
+		return proxy.fetchSchema;
+	};
+	
+	return <myRunSetup, myRunTest, myRunTests, myFetchSchema>;
 	
 }
 

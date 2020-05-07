@@ -16,7 +16,7 @@ public interface ResultIterator {
 	Object getCurrentField(String label, String type, String name);
 	void beforeFirst();
 	default Record buildRecord(List<Path> signature) {
-		Map<Field, Object> vs = new HashMap<Field, Object>();
+		Map<Field, Object> vs = new HashMap<>();
 		if (signature.isEmpty())
 			return new Record(vs);
 		Path first = signature.get(0);

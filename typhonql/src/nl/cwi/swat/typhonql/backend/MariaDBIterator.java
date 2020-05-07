@@ -2,8 +2,6 @@ package nl.cwi.swat.typhonql.backend;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
 
 public class MariaDBIterator implements ResultIterator {
 
@@ -53,7 +51,14 @@ public class MariaDBIterator implements ResultIterator {
 	@Override
 	public Object getCurrentField(String label, String type, String name) {
 		try {
-			return rs.getObject(label + "." + type + "." + name);
+			if (type.startsWith("string") || type.equals("text")) {
+				return rs.getString(label + "." + type + "." + name);
+			} if (type.startsWith("int") || type.equals("bigint")) {
+				return rs.getString(label + "." + type + "." + name);
+			} else {
+				// TODO rest of the cases!!!
+				return rs.getObject(label + "." + type + "." + name);
+			}
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -67,5 +72,7 @@ public class MariaDBIterator implements ResultIterator {
 			throw new RuntimeException(e);
 		}
 	}
+	
+	
 
 }

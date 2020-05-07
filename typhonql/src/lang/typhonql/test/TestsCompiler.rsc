@@ -121,7 +121,6 @@ void setup(PolystoreInstance p, bool doTest) {
 		
 }
 
-
 void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
   println("Doing sanity check on setup");
   p.resetDatabases();
@@ -195,13 +194,13 @@ void testDeleteKidsRemovesParentLinksSQLLocal(PolystoreInstance p) {
   p.runUpdate((Request)`delete Item i where i.product == #tv`);
   
   rs = p.runQuery((Request)`from Product p select p.inventory`);
-  p.assertResultEquals("delete items removes from inventory", <["p.inventory"], []>);
+  p.assertResultEquals("delete items removes from inventory", rs, <["p.inventory"], []>);
 }
 void testDeleteKidsRemovesParentLinksSQLCross(PolystoreInstance p) {
   p.runUpdate((Request)`delete Review r where r.product == #tv`);
   
   rs = p.runQuery((Request)`from Product p select p.reviews`);
-  p.assertResultEquals("delete reviews removes from product reviews", <["p.reviews"], []>);
+  p.assertResultEquals("delete reviews removes from product reviews", rs, <["p.reviews"], []>);
 }
 
 
