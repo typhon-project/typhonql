@@ -16,8 +16,8 @@ data CQLStat
   | cSelect(list[CQLSelectClause] selectClauses, str tableName, list[CQLExpr] wheres, 
       list[str] groupBy=[],
       list[CQLOrderBy] orderBy=[], 
-      int perPartitionLimit=-1,
-      int limit=-1,
+      CQLExpr perPartitionLimit=cTerm(cInteger(-1)),
+      CQLExpr limit=cTerm(cInteger(-1)),
       bool allowFiltering=false, 
       bool distinct=false, 
       bool json=false)

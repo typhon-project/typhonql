@@ -42,10 +42,62 @@ str pp(cDropType(str name, ifExists=bool ie))
   = "DROP TYPE<ppIE(ie)> <ppId(name)>;";
 
 
+str pp(cSelect(list[CQLSelectClause] selectClauses, str tableName, list[CQLExpr] wheres, 
+      groupBy=list[str] groupBy,
+      orderBy=list[CQLOrderBy] orderBy, 
+      perPartitionLimit=CQLExpr perPartitionLimit,
+      limit=CQLExpr limit,
+      allowFiltering=bool allowFiltering, 
+      distinct=bool distinct, 
+      json=bool json)) {
+      
+  str s = "SELECT";
+ 
+  if (json) {
+    s += " JSON ";
+  }
+ 
+  if (distinct) {
+    s += " DISTINCT ";
+  }    
+ 
+  s += intercalate(", ", [ pp(sc) | CQLSelectClause sc <- selectClauses ]);
+
+  s += " FROM <ppId(tableName)>";
+
+  if (wheres != []) {
+    s += " WHERE " + intercalate(" AND ", [ pp(e) | CQLExpr e <- wheres]);
+  }
+
+  if (groupBy != []) {
+    s += " GROUP BY <intercalate(", ", groupBy)>";
+  }
+
+  if (orderBy != []) {
+    s += " ORDER BY <intercalate(", ", [ pp(ob) | CQLOrderBy ob <- orderBy ])>";
+  }
+
+  if (perPatitionLimit != cTerm(cInteger(-1))) {
+    s += " PER PARTITION LIMIT <pp(perPartitionLimit)>";
+  }
+
+  if (limit != cTerm(cInteger(-1))) {
+    s += " LIMIT <pp(limit)>";
+  }
+
+  if (allowFiltering) {
+    s += " ALLOW FILTERING";
+  }
+
+  s += ";";
+
+  return s;
+}
+
 /*
  * Auxiliar
  */
-
+ 
 str pp(cAdd(str name, CQLType \type))
   = "ADD <ppId(name)> <pp(\type)>";
   
@@ -119,7 +171,7 @@ str pp(cConcat(str target, CQLValue lst, str other))
 str pp(cStar()) = "*";
 
 str pp(cSelector(CQLExpr e, as=str as))
-  = as == "" ? pp(e) : "<pp(e)> AS <as>";
+  = as == "" ? pp(e) : "<pp(e)> AS <ppId(as)>";
 
 str pp(cOrder(str name, bool asc)) = "<name> <asc ? "ASC" : "DESC">";
 
