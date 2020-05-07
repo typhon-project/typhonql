@@ -31,7 +31,7 @@ public class MongoDBIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentField(String label, String type, String name) {
+	public Object getCurrentField(String label, String type, String name) {
 		// TODO TEMPORARY!!!!!
 		//return current.get(type + "." + name);
 		Object fromDB = current.get(name);

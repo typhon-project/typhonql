@@ -31,13 +31,13 @@ public class EntitiesResource extends TyphonDALResource {
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	public List<Map<String, String>> getEntites(@PathParam("entityName") String entityName) throws IOException {
+	public List<Map<String, Object>> getEntites(@PathParam("entityName") String entityName) throws IOException {
 		logger.trace("Getting all entities of type: " + entityName);
 		QLRestServer.RestArguments args = getRestArguments();
 		ResultTable result = getEngine().executeQuery(args.xmi, args.databaseInfo,
 				"from " + entityName + " e select e");
 		return result.getValues().stream().map(vs -> { 
-					Map<String, String> map = new HashMap<>();
+					Map<String, Object> map = new HashMap<>();
 					map.put("@id", vs.get(0)); 
 					return map; })
 				.collect(Collectors.toList());

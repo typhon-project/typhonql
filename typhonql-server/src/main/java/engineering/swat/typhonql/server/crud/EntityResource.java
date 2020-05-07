@@ -37,11 +37,11 @@ public class EntityResource extends TyphonDALResource {
 		if (result.isEmpty()) {
 			throw new NotFoundException();
 		}
-		List<String> fields = result.getValues().iterator().next();
-		Map<String, String> r = new HashMap<String, String>();
+		List<Object> fields = result.getValues().iterator().next();
+		Map<String, String> r = new HashMap<>();
 		r.put("@id", "#" + uuid);
 		for (int i = 0; i < result.getColumnNames().size(); i++) {
-			r.put(result.getColumnNames().get(i), fields.get(i));
+			r.put(result.getColumnNames().get(i), ResultTable.serializeAsString(fields.get(i)));
 		}
 		return r;
 	}

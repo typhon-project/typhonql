@@ -2,8 +2,6 @@ package nl.cwi.swat.typhonql.backend;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
 
 public class MariaDBIterator implements ResultIterator {
 
@@ -51,21 +49,19 @@ public class MariaDBIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentField(String label, String type, String name) {
+	public Object getCurrentField(String label, String type, String name) {
 		try {
-			Object fromDB = rs.getObject(label + "." + type + "." + name);
-			return toGenericString(fromDB);
+			if (type.startsWith("string") || type.equals("text")) {
+				return rs.getString(label + "." + type + "." + name);
+			} if (type.startsWith("int") || type.equals("bigint")) {
+				return rs.getString(label + "." + type + "." + name);
+			} else {
+				// TODO rest of the cases!!!
+				return rs.getObject(label + "." + type + "." + name);
+			}
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	private String toGenericString(Object fromDB) {
-		if (fromDB == null)
-			return "null";
-		// Here how to convert SQL objects into neutral typhon strings
-		// TODO for now only calling toString
-		return fromDB.toString();
 	}
 
 	@Override
@@ -76,5 +72,7 @@ public class MariaDBIterator implements ResultIterator {
 			throw new RuntimeException(e);
 		}
 	}
+	
+	
 
 }

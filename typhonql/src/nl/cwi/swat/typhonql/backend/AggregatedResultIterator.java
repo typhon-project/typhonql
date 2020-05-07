@@ -46,7 +46,7 @@ public class AggregatedResultIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentField(String label, String type, String name) {
+	public Object getCurrentField(String label, String type, String name) {
 		return results.get(index).getCurrentField(label, type, name);
 	}
 

@@ -3,6 +3,7 @@ package nl.cwi.swat.typhonql.client.resulttable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -15,7 +16,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import io.usethesource.vallang.IBool;
 import io.usethesource.vallang.IExternalValue;
@@ -42,9 +42,9 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	}
 				
 	private List<String> columnNames;
-	private List<List<String>> values;
+	private List<List<Object>> values;
 	
-	public ResultTable(List<String> columnNames, List<List<String>> values) {
+	public ResultTable(List<String> columnNames, List<List<Object>> values) {
 		this.columnNames = columnNames;
 		this.values = values;
 	}
@@ -57,7 +57,7 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		return columnNames;
 	}
 
-	public List<List<String>> getValues() {
+	public List<List<Object>> getValues() {
 		return values;
 	}
 	
@@ -108,7 +108,7 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 			cnw.append(vf.string(cn));
 		IListWriter vsw = vf.listWriter();
 		
-		for (List<String> row : values) {
+		for (List<Object> row : values) {
 			IListWriter osw = vf.listWriter();
 			for (Object o : row) {
 				osw.append(toIValue(vf, o));
@@ -158,7 +158,7 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	@JsonIgnore
 	public void print() {
 		System.out.println(String.join(", ", columnNames));
-		for (List<String> vs : values) {
+		for (List<Object> vs : values) {
 			System.out.println(String.join(",", 
 					vs.stream().map(o -> o.toString()).collect(Collectors.toList())));
 		}
@@ -189,6 +189,19 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		else if (type.equals("int") || type.equals("integer"))
 			return s;
 		return s;
+	}
+
+	public static String serializeAsString(Object object) {
+		// TODO complete all the cases
+		if (object == null)
+			return "null";
+		if (object instanceof String)
+			return "\"" + object + "\"";
+		else if (object instanceof Integer || object instanceof BigInteger)
+			return object.toString();
+		else
+			return object.toString();
+		
 	}
 
 }

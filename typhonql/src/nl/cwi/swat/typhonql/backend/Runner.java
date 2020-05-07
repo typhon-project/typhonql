@@ -11,6 +11,7 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class Runner {
+	
 	public static ResultTable computeResultTable(List<Consumer<List<Record>>> script, List<Path> paths) {
 		List<List<Record>> result = new ArrayList<List<Record>>();
 		script.add((List<Record> row) -> {
@@ -35,7 +36,7 @@ public class Runner {
 		// TODO Auto-generated method stub
 		List<String> columnNames = buildColumnNames(paths);
 		List<Field> fields = paths.stream().map(p -> toField(p)).collect(Collectors.toList());
-		List<List<String>> values = toValues(fields, result);
+		List<List<Object>> values = toValues(fields, result);
 		return new ResultTable(columnNames, values);
 	}
 
@@ -43,10 +44,10 @@ public class Runner {
 		return new Field(p.getDbName(), p.getVar(), p.getEntityType(), p.getSelectors()[0]);
 	}
 
-	private static List<List<String>> toValues(List<Field> fields, List<List<Record>> rs) {
-		List<List<String>> vs = new ArrayList<>();
+	private static List<List<Object>> toValues(List<Field> fields, List<List<Record>> rs) {
+		List<List<Object>> vs = new ArrayList<>();
 		for (List<Record> records : rs) {
-			List<String> os = new ArrayList<String>();
+			List<Object> os = new ArrayList<>();
 			for (Record r : records) {
 				for (Field f : fields) {
 					os.add(r.getObject(f));
@@ -76,7 +77,7 @@ public class Runner {
 	}
 
 	private static Record project(Record r, List<Path> paths) {
-		Map<Field, String> os = new HashMap<Field, String>();
+		Map<Field, Object> os = new HashMap<>();
 		for (Path p : paths) {
 			Field f = match(r, p);
 			if (f != null) {
