@@ -155,5 +155,6 @@ data CQLValue
   | cList(list[CQLValue] listVals)
   | cTuple(list[CQLValue] tupleVals)
   | cUserDefined(map[str field, CQLValue \value] udtValues)
+  | cNull()
   ;
   

@@ -42,7 +42,7 @@ list[CQLColumnDefinition] entityCols(str ent, Schema s) {
 
 CQLType type2cql("date") = cDate();
 
-CQLType type2cql("datetime") = cTime();
+CQLType type2cql("datetime") = cTimestamp();
 
 CQLType type2cql(/^string.<n:[0-9]+>./) = cText();
 
