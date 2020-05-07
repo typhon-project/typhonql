@@ -25,7 +25,7 @@ str pp(cDropKeySpace(str name, ifExists=bool ifExists))
   = "DROP KEYSPACE<ppIE(ifExists)> <ppId(name)>;";
 
  
-str pp(cCreateTable(str name, list[CQLColumnDefinition] columns, CQLPrimaryKey primaryKey
+str pp(cCreateTable(str name, list[CQLColumnDefinition] columns, primaryKey=CQLPrimaryKey primaryKey
       , ifNotExists=bool ifNotExists, with=map[str, value] with))
   = "CREATE TABLE<ppINE(ifNotExists)> <ppId(name)> (<ppColumns(columns, primaryKey)>)<ppWith(with)>;";
  
@@ -163,16 +163,19 @@ str pp(cWith(map[str, CQLValue] options))
   = ppWith(options);
 
 str ppColumns(list[CQLColumnDefinition] cols, CQLPrimaryKey pk)
-  = intercalate(",\n  ", [ pp(c) | CQLColumnDefinition c <- cols ] + [ "(<pp(pk)>)" ]);
+  = intercalate(",\n  ", [ pp(c) | CQLColumnDefinition c <- cols ] 
+  + [ "PRIMARY KEY (<pp(pk)>)" | pk != cNoPrimaryKey() ]);
+
+str pp(cNoPrimaryKey()) = "";
 
 str pp(cPrimaryKey(list[str] pk, clusteringColumns=list[str] cols))
-  = "<pks><cols != [] ? ", " + intercalate(", ", cols) : "">"
+  = "<pks><cols != [] ? ", " + intercalate(", ", [ ppId(x) | str x <- cols ]) : "">"
   when 
-    str pks := (size(pk) == 1 ? pk[0] : "(<intercalate(", ", pk)>)");
+    str pks := (size(pk) == 1 ? ppId(pk[0]) : "(<intercalate(", ", [ ppId(x) | str x <- pk ])>)");
 
 
 str pp(cColumnDef(str name, CQLType \type, static=bool static, primaryKey=bool pk))
-  = "<ppId(name)> <pp(\type)><static ? " STATIC" : " "><pk ? " PRIMARY KEY" : " ">";
+  = "<ppId(name)> <pp(\type)><static ? " STATIC" : ""><pk ? " PRIMARY KEY" : "">";
  
  
 str ppINE(bool b) = b ? " IF NOT EXISTS" : "";

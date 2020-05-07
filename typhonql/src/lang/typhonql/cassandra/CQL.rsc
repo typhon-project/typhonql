@@ -5,7 +5,7 @@ data CQLStat
   = cCreateKeySpace(str name, bool ifNotExists=false, map[str,CQLValue] with=())
   | cAlterKeySpace(str name, map[str,CQLValue] with=()) 
   | cDropKeySpace(str name, bool ifExists=false)
-  | cCreateTable(str name, list[CQLColumnDefinition] columns, CQLPrimaryKey primaryKey, bool ifNotExists=false, map[str, CQLValue] with=())
+  | cCreateTable(str name, list[CQLColumnDefinition] columns, CQLPrimaryKey primaryKey=cNoPrimaryKey(), bool ifNotExists=false, map[str, CQLValue] with=())
   | cAlterTable(str name, CQLAlterTableInstruction instruction)
   | cDropTable(str name, bool ifExists=false)
   | cTruncate(str name)
@@ -95,7 +95,9 @@ data CQLColumnDefinition
   = cColumnDef(str name, CQLType \type, bool static=false, bool primaryKey=false);
 
 data CQLPrimaryKey
-  = cPrimaryKey(list[str] partitionKey, list[str] clusteringColumns=[]);
+  = cPrimaryKey(list[str] partitionKey, list[str] clusteringColumns=[])
+  | cNoPrimaryKey()
+  ;
 
 data CQLAlterTableInstruction
   = cAdd(list[CQLColumnDefinition] columns)
