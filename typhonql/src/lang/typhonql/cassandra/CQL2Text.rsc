@@ -6,12 +6,61 @@ import List;
 import String;
 
 
+str ppId(str name) = "\"<name>\"";
+
+str pp(cCreateKeySpace(str name, ifNotExists=bool ine, with=map[str,CQLValue] with)) 
+  = "CREATE KEYSPACE <ppId(name)><ppINE(ine)><ppWith(with)>;";
+
+str pp(cAlterKeySpace(str name, with=map[str,CQLValue] with))
+  = "ALTER KEYSPACE <ppId(name)><ppWith(with)>;"; 
+
+str pp(cDropKeySpace(str name, ifExists=bool ifExists)) 
+  = "DROP KEYSPACE<ppIE(ifExists)> <ppId(name)>;";
+
+ 
+str pp(cCreateTable(str name, list[CQLColumnDefinition] columns, CQLPrimaryKey primaryKey
+      , ifNotExists=bool ifNotExists, with=map[str, value] with))
+  = "CREATE TABLE <ppId(name)> (<ppColumns(columns, primaryKey)>)<ppWith(with)>;";
+ 
+
+
+
+str ppColumns(list[CQLColumnDefinition] cols, CQLPrimaryKey pk)
+  = intercalate(",\n  ", [ pp(c) | CQLColumnDefinition c <- cols ] + [ "(<pp(pk)>)" ]);
+
+str pp(cPrimaryKey(list[str] pk, clusteringColumns=list[str] cols))
+  = "<pks><cols != [] ? ", " + intercalate(", ", cols) : "">"
+  when 
+    str pks := size(pk) == 1 ? pk[0] : "(<intercalate(", ", pk)>)";
+
+
+str pp(cColumnDef(str name, CQLType \type, static=bool static, primaryKey=bool pk))
+  = "<ppId(name)> <pp(\type)><static ? " STATIC" : " "><pk ? " PRIMARY KEY" : " ">";
+ 
+ 
+str ppINE(bool b) = b ? " IF NOT EXISTS" : "";
+str ppIE(bool b) = b ? " IF EXISTS" : "";
+
+str ppWith(map[str, CQLValue] with) 
+  = with() == () ? "" 
+  : " WITH <intercalate(" AND ", [ "<k> = <pp(with[k])>" | str k <- with ])>";
+
+  //| cDropKeySpace(str name, bool ifExists=false)
+  //| 
+  //| cAlterTable(str name, CQLAlterTableInstruction instruction)
+  //| cDropTable(str name, bool ifExists=false)
+  //| cTruncate(str name)
+  //| cCreateType(str name, lrel[str name, CQLType \type] fields, bool ifNotExists=false)
+  //| cAlterType(str name, CQLAlterTypeModification modification)
+  //| cDropType(str name, bool ifExists=false)
+  
+
 
 str pp(cTimestamp(int microSeconds)) = "TIMESTAMP <microSeconds>";
 
 str pp(cTTL(int seconds)) = "TTL <seconds>";
 
-str pp(cColumn(str name)) = name;
+str pp(cColumn(str name)) = ppId(name);
 
 str pp(cIndexed(str name, CQLExpr index))
   = "<name>[<pp(index)>]";
@@ -42,7 +91,7 @@ str pp(cOrder(str name, bool asc)) = "<name> <asc ? "ASC" : "DESC">";
  * Expressions
  */
 
-str pp(cColumn(str name)) = "\"<name>\"";
+str pp(cColumn(str name)) = ppId(name);
 str pp(cTerm(CQLValue val)) = pp(val);
 str pp(cCast(CQLExpr arg, CQLType \type)) = "CAST(<pp(arg)> AS <pp(\type)>)";
 str pp(cCall(str name, list[CQLExpr] args)) = "<name>(<intercalate(", ", [ pp(a) | CQLExpr a <- args ])>)";

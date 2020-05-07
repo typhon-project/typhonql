@@ -2,9 +2,10 @@ module lang::typhonql::cassandra::CQL
 
 
 data CQLStat
-  = cCreateKeySpace(str name, bool ifNotExists=false, map[str,value] with=())
+  = cCreateKeySpace(str name, bool ifNotExists=false, map[str,CQLValue] with=())
+  | cAlterKeySpace(str name, map[str,CQLValue] with=()) 
   | cDropKeySpace(str name, bool ifExists=false)
-  | cCreateTable(str name, list[CQLColumnDefinition] columns, CQLPrimaryKey primaryKey, bool ifNotExists=false, map[str, value] with=())
+  | cCreateTable(str name, list[CQLColumnDefinition] columns, CQLPrimaryKey primaryKey, bool ifNotExists=false, map[str, CQLValue] with=())
   | cAlterTable(str name, CQLAlterTableInstruction instruction)
   | cDropTable(str name, bool ifExists=false)
   | cTruncate(str name)
@@ -85,7 +86,7 @@ data CQLExpr
   | cContains(CQLExpr lhs, CQLExpr rhs)
   | cContainsKey(CQLExpr lhs, CQLExpr rhs)
   | cBindMarker(str name = "")
-  | cTypeHint(CQLType \type, CQLExp arg)
+  | cTypeHint(CQLType \type, CQLExpr arg)
   ;
   
   
