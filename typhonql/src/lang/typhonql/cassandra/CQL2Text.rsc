@@ -139,7 +139,7 @@ str ppWhere(list[CQLExpr] wheres)
 
 str ppUsing(list[CQLUpdateParam] using)
   = using == [] ? ""
-  : "USING <intercalate(" AND ", [ pp(up) | CQLUpdateParam up <- using ])>";
+  : " USING <intercalate(" AND ", [ pp(up) | CQLUpdateParam up <- using ])>";
   
 str pp(cTimestamp(CQLExpr mus))
   = "TIMESTAMP <pp(mus)>";
@@ -235,22 +235,22 @@ str pp(cCast(CQLExpr arg, CQLType \type)) = "CAST(<pp(arg)> AS <pp(\type)>)";
 str pp(cCall(str name, list[CQLExpr] args)) = "<name>(<intercalate(", ", [ pp(a) | CQLExpr a <- args ])>)";
 str pp(cCount()) = "COUNT(*)";
 
-str pp(cUMinus(CQLExpr arg)) = "-(<pp(arg)>)";
-str pp(cPlus(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> + <pp(rhs)>";
-str pp(cMinus(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> - <pp(rhs)>";
-str pp(cTimes(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> * <pp(rhs)>";
-str pp(cDiv(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> / <pp(rhs)>";
-str pp(cMod(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> % <pp(rhs)>";
+str pp(cUMinus(CQLExpr arg)) = "(-<pp(arg)>)";
+str pp(cPlus(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> + <pp(rhs)>)";
+str pp(cMinus(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> - <pp(rhs)>)";
+str pp(cTimes(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> * <pp(rhs)>)";
+str pp(cDiv(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> / <pp(rhs)>)";
+str pp(cMod(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> % <pp(rhs)>)";
 
-str pp(cEq(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> = <pp(rhs)>";
-str pp(cNeq(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> != <pp(rhs)>";
-str pp(cLeq(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> \<= <pp(rhs)>";
-str pp(cGeq(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> \>= <pp(rhs)>";
-str pp(cLt(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> \< <pp(rhs)>";
-str pp(cGt(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> \> <pp(rhs)>";
-str pp(cIn(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> IN <pp(rhs)>";
-str pp(cContains(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> CONTAINS <pp(rhs)>";
-str pp(cContainsKey(CQLExpr lhs, CQLExpr rhs)) = "<pp(lhs)> CONTAINS KEY <pp(rhs)>";
+str pp(cEq(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> = <pp(rhs)>)";
+str pp(cNeq(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> != <pp(rhs)>)";
+str pp(cLeq(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> \<= <pp(rhs)>)";
+str pp(cGeq(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> \>= <pp(rhs)>)";
+str pp(cLt(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> \< <pp(rhs)>)";
+str pp(cGt(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> \> <pp(rhs)>)";
+str pp(cIn(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> IN <pp(rhs)>)";
+str pp(cContains(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> CONTAINS <pp(rhs)>)";
+str pp(cContainsKey(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> CONTAINS KEY <pp(rhs)>)";
 
 str pp(cBindMarker(name = str name))
   = name == "" ? "?" : ":<name>";
