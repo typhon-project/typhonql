@@ -98,9 +98,9 @@ data CQLPrimaryKey
   = cPrimaryKey(list[str] partitionKey, list[str] clusteringColumns=[]);
 
 data CQLAlterTableInstruction
-  = cAdd(lrel[str name, CQLType \type] columns)
+  = cAdd(list[CQLColumnDefinition] columns)
   | cDrop(list[str] columnNames)
-  | cWith(map[str, value] options)
+  | cWith(map[str, CQLValue] options)
   ;
   
 data CQLAlterTypeModification

@@ -4,12 +4,13 @@ import lang::typhonql::cassandra::CQL;
 
 import List;
 import String;
+import IO;
 
 
 str ppId(str name) = "\"<name>\"";
 
 str pp(cCreateKeySpace(str name, ifNotExists=bool ine, with=map[str,CQLValue] with)) 
-  = "CREATE KEYSPACE <ppId(name)><ppINE(ine)><ppWith(with)>;";
+  = "CREATE KEYSPACE<ppINE(ine)> <ppId(name)><ppWith(with)>;";
 
 str pp(cAlterKeySpace(str name, with=map[str,CQLValue] with))
   = "ALTER KEYSPACE <ppId(name)><ppWith(with)>;"; 
@@ -20,10 +21,45 @@ str pp(cDropKeySpace(str name, ifExists=bool ifExists))
  
 str pp(cCreateTable(str name, list[CQLColumnDefinition] columns, CQLPrimaryKey primaryKey
       , ifNotExists=bool ifNotExists, with=map[str, value] with))
-  = "CREATE TABLE <ppId(name)> (<ppColumns(columns, primaryKey)>)<ppWith(with)>;";
+  = "CREATE TABLE<ppINE(ifNotExists)> <ppId(name)> (<ppColumns(columns, primaryKey)>)<ppWith(with)>;";
  
+str pp(cAlterTable(str name, CQLAlterTableInstruction instruction))
+  = "ALTER TABLE <ppId(name)><pp(instruction)>;";
+
+str pp(cDropTable(str name, ifExists=bool ifExists))
+  = "DROP TABLE<ppIE(ifExists)> <ppId(name)>;";
+
+str pp(cTruncate(str name)) = "TRUNCATE TABLE <ppId(name)>;";
+
+str pp(cCreateType(str name, lrel[str name, CQLType \type] fields, ifNotExists=bool ine))
+  = "CREATE TYPE<ppINE(ine)> (<intercalate(", ", [ "<ppId(n)> <pp(t)>" | <str n, CQLTYpe t> <- fields ])>);";
 
 
+str pp(cAlterType(str name, CQLAlterTypeModification modification))
+  = "ALTER TYPE <ppId(name) <pp(modification)>;";
+  
+str pp(cDropType(str name, ifExists=bool ie))
+  = "DROP TYPE<ppIE(ie)> <ppId(name)>;";
+
+
+/*
+ * Auxiliar
+ */
+
+str pp(cAdd(str name, CQLType \type))
+  = "ADD <ppId(name)> <pp(\type)>";
+  
+str pp(cRename(map[str old, str new] renamings))
+  = "RENAME <intercalate(" ", [ "<ppId(x)> TO <ppId(renamings[x])>" | str x <- renamings ])>";
+
+str pp(cAdd(list[CQLColumnDefinition] columns)) 
+  = " ADD <intercalate(", ", [ "<ppId(c.name)> <pp(c.\type)>" | CQLColumnDefinition c <- columns ])>";
+  
+str pp(cDrop(list[str] columnNames))
+  = " DROP <intercalate(" ", columnNames)>";
+  
+str pp(cWith(map[str, CQLValue] options))
+  = ppWith(options);
 
 str ppColumns(list[CQLColumnDefinition] cols, CQLPrimaryKey pk)
   = intercalate(",\n  ", [ pp(c) | CQLColumnDefinition c <- cols ] + [ "(<pp(pk)>)" ]);
@@ -90,6 +126,11 @@ str pp(cOrder(str name, bool asc)) = "<name> <asc ? "ASC" : "DESC">";
 /*
  * Expressions
  */
+
+test bool smokePPExpr(CQLExpr e) {
+  println(pp(e));
+  return true;
+}
 
 str pp(cColumn(str name)) = ppId(name);
 str pp(cTerm(CQLValue val)) = pp(val);
@@ -184,5 +225,5 @@ str pp(cTuple(list[CQLValue] l))
   
   
 str pp(cUserDefined(map[str,CQLValue] m))
-  = "{<intercalate(", ", [ "<k>: <pp(m[k])>" | CQLValue k <- m ])>}";
+  = "{<intercalate(", ", [ "<k>: <pp(m[k])>" | str k <- m ])>}";
   
