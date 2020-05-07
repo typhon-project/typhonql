@@ -35,7 +35,7 @@ public class Runner {
 		// TODO Auto-generated method stub
 		List<String> columnNames = buildColumnNames(paths);
 		List<Field> fields = paths.stream().map(p -> toField(p)).collect(Collectors.toList());
-		List<List<Object>> values = toValues(fields, result);
+		List<List<String>> values = toValues(fields, result);
 		return new ResultTable(columnNames, values);
 	}
 
@@ -43,10 +43,10 @@ public class Runner {
 		return new Field(p.getDbName(), p.getVar(), p.getEntityType(), p.getSelectors()[0]);
 	}
 
-	private static List<List<Object>> toValues(List<Field> fields, List<List<Record>> rs) {
-		List<List<Object>> vs = new ArrayList<>();
+	private static List<List<String>> toValues(List<Field> fields, List<List<Record>> rs) {
+		List<List<String>> vs = new ArrayList<>();
 		for (List<Record> records : rs) {
-			List<Object> os = new ArrayList<Object>();
+			List<String> os = new ArrayList<String>();
 			for (Record r : records) {
 				for (Field f : fields) {
 					os.add(r.getObject(f));
@@ -76,7 +76,7 @@ public class Runner {
 	}
 
 	private static Record project(Record r, List<Path> paths) {
-		Map<Field, Object> os = new HashMap<Field, Object>();
+		Map<Field, String> os = new HashMap<Field, String>();
 		for (Path p : paths) {
 			Field f = match(r, p);
 			if (f != null) {
