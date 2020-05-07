@@ -139,6 +139,26 @@ public class MongoOperations implements Operations {
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
 		});
 	}
+	
+	private ICallableValue makeFindAndUpdateMany(ResultStore store, List<Consumer<List<Record>>> script,
+			List<Runnable> updates, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType,
+			IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+		return makeFunction(ctx, state, executeType, args -> {
+			String dbName = ((IString) args[0]).getValue();
+			String collection = ((IString) args[1]).getValue();
+			String query = ((IString) args[2]).getValue();
+			String update = ((IString) args[3]).getValue();
+			IMap bindings = (IMap) args[4];
+
+			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
+
+			engine(store, script, updates, uuids, dbName).executeFindAndUpdateMany(dbName, collection, query, update,
+					bindingsMap);
+
+			// sessionData.put(resultName, query);
+			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+		});
+	}
 
 	private ICallableValue makeDeleteOne(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
 			TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx,
@@ -152,6 +172,24 @@ public class MongoOperations implements Operations {
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 
 			engine(store, script, updates, uuids, dbName).executeDeleteOne(dbName, collection, query, bindingsMap);
+
+			// sessionData.put(resultName, query);
+			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+		});
+	}
+	
+	private ICallableValue makeDeleteMany(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
+			TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx,
+			IValueFactory vf, TypeFactory tf) {
+		return makeFunction(ctx, state, executeType, args -> {
+			String dbName = ((IString) args[0]).getValue();
+			String collection = ((IString) args[1]).getValue();
+			String query = ((IString) args[2]).getValue();
+			IMap bindings = (IMap) args[3];
+
+			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
+
+			engine(store, script, updates, uuids, dbName).executeDeleteMany(dbName, collection, query, bindingsMap);
 
 			// sessionData.put(resultName, query);
 			return ResultFactory.makeResult(tf.voidType(), null, ctx);
@@ -228,21 +266,25 @@ public class MongoOperations implements Operations {
 		FunctionType executeType2 = (FunctionType) aliasedTuple.getFieldType("findWithProjection");
 		FunctionType executeType3 = (FunctionType) aliasedTuple.getFieldType("insertOne");
 		FunctionType executeType4 = (FunctionType) aliasedTuple.getFieldType("findAndUpdateOne");
-		FunctionType executeType5 = (FunctionType) aliasedTuple.getFieldType("deleteOne");
-		FunctionType executeType6 = (FunctionType) aliasedTuple.getFieldType("createCollection");
-		FunctionType executeType7 = (FunctionType) aliasedTuple.getFieldType("renameCollection");
-		FunctionType executeType8 = (FunctionType) aliasedTuple.getFieldType("dropCollection");
-		FunctionType executeType9 = (FunctionType) aliasedTuple.getFieldType("dropDatabase");
+		FunctionType executeType5 = (FunctionType) aliasedTuple.getFieldType("findAndUpdateMany");
+		FunctionType executeType6 = (FunctionType) aliasedTuple.getFieldType("deleteOne");
+		FunctionType executeType7 = (FunctionType) aliasedTuple.getFieldType("deleteMany");
+		FunctionType executeType8 = (FunctionType) aliasedTuple.getFieldType("createCollection");
+		FunctionType executeType9 = (FunctionType) aliasedTuple.getFieldType("renameCollection");
+		FunctionType executeType10 = (FunctionType) aliasedTuple.getFieldType("dropCollection");
+		FunctionType executeType11 = (FunctionType) aliasedTuple.getFieldType("dropDatabase");
 
 		return vf.tuple(makeFind(store, script, updates, state, uuids, executeType1, ctx, vf, tf),
 				makeFindWithProjection(store, script, updates, state, uuids, executeType2, ctx, vf, tf),
 				makeInsertOne(store, script, updates, state, uuids, executeType3, ctx, vf, tf),
 				makeFindAndUpdateOne(store, script, updates, state, uuids, executeType4, ctx, vf, tf),
-				makeDeleteOne(store, script, updates, state, uuids, executeType5, ctx, vf, tf),
-				makeCreateCollection(store, script, updates, state, uuids, executeType6, ctx, vf, tf),
-				makeRenameCollection(store, script, updates, state, uuids, executeType7, ctx, vf, tf),
-				makeDropCollection(store, script, updates, state, uuids, executeType8, ctx, vf, tf),
-				makeDropDatabase(store, script, updates, state, uuids, executeType9, ctx, vf, tf));
+				makeFindAndUpdateMany(store, script, updates, state, uuids, executeType5, ctx, vf, tf),
+				makeDeleteOne(store, script, updates, state, uuids, executeType6, ctx, vf, tf),
+				makeDeleteMany(store, script, updates, state, uuids, executeType7, ctx, vf, tf),
+				makeCreateCollection(store, script, updates, state, uuids, executeType8, ctx, vf, tf),
+				makeRenameCollection(store, script, updates, state, uuids, executeType9, ctx, vf, tf),
+				makeDropCollection(store, script, updates, state, uuids, executeType10, ctx, vf, tf),
+				makeDropDatabase(store, script, updates, state, uuids, executeType11, ctx, vf, tf));
 	}
 
 	public void close() {

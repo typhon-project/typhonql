@@ -42,12 +42,26 @@ public class MongoDBEngine extends Engine {
 		new MongoFindOneAndUpdateExecutor(store, updates, uuids, collectionName, query, update, bindings, db).executeUpdate();
 	}
 	
+	public void executeFindAndUpdateMany(String dbName, String collectionName, String query, String update, Map<String, Binding> bindings) {
+		new MongoFindManyAndUpdateExecutor(store, updates, uuids, collectionName, query, update, bindings, db).executeUpdate();
+	}
+	
 	public void executeDeleteOne(String dbName, String collectionName, String query, Map<String, Binding> bindings) {
 		new MongoUpdateExecutor(store, updates, uuids, collectionName, query, bindings, db) {
 			
 			@Override
 			protected void performUpdate(MongoCollection<Document> coll, Document resolveQuery) {
 				coll.deleteOne(resolveQuery);
+			}
+		}.executeUpdate();
+	}
+	
+	public void executeDeleteMany(String dbName, String collectionName, String query, Map<String, Binding> bindings) {
+		new MongoUpdateExecutor(store, updates, uuids, collectionName, query, bindings, db) {
+			
+			@Override
+			protected void performUpdate(MongoCollection<Document> coll, Document resolveQuery) {
+				coll.deleteMany(resolveQuery);
 			}
 		}.executeUpdate();
 	}
