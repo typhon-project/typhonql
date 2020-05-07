@@ -39,8 +39,8 @@ data CQLStat
   ;
 
 data CQLUpdateParam
-  = cTimestamp(int microSeconds)
-  | cTTL(int seconds)
+  = cTimestamp(CQLExpr microSeconds)
+  | cTTL(CQLExpr seconds)
   ;
 
 data CQLSimpleSelection

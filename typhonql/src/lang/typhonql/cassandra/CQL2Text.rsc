@@ -65,10 +65,8 @@ str pp(cSelect(list[CQLSelectClause] selectClauses, str tableName, list[CQLExpr]
 
   s += " FROM <ppId(tableName)>";
 
-  if (wheres != []) {
-    s += " WHERE " + intercalate(" AND ", [ pp(e) | CQLExpr e <- wheres]);
-  }
-
+  s += ppWhere(wheres);
+  
   if (groupBy != []) {
     s += " GROUP BY <intercalate(", ", groupBy)>";
   }
@@ -94,9 +92,45 @@ str pp(cSelect(list[CQLSelectClause] selectClauses, str tableName, list[CQLExpr]
   return s;
 }
 
+str pp(cInsert(str name, list[str] cols, list[CQLValue] values, 
+       ifNotExists=bool ine, 
+       using=list[CQLUpdateParam] using)) 
+  = "INSERT INTO <ppId(name)> (<intercalate(", ", cols)>) VALUES <pp(cTuple(values))><ppINE(ine)><ppUsing(using)>;";
+
+
+str pp(cUpdate(str name, list[CQLAssignment] sets, list[CQLExpr] wheres,
+      using=list[CQLUpdateParam] using,
+      ifExists=bool ie,
+      conditions=list[CQLExpr] conditions))
+  = "UPDATE <ppId(name)><ppUsing(using)> <ppSets(sets)><ppWheres(wheres)><ppConds(io, conditions)>;";
+
+
+
 /*
  * Auxiliar
  */
+ 
+str ppConds(bool ifExists, list[CQLExpr] conds)
+  = ifExists ? " IF EXISTS"
+  : " IF <intercalate(" AND ", [ pp(c) | CQLExpr c <- conds ])>";
+
+str ppSets(list[CQLAssignment] sets)
+  = "SET <intercalate(", ", [ pp(s) | CQLAssignment s <- sets ])>";
+
+str ppWhere(list[CQLExpr] wheres)
+  = wheres != [] ? ""
+    : " WHERE " + intercalate(" AND ", [ pp(e) | CQLExpr e <- wheres]);
+  
+
+str ppUsing(list[CQLUpdateParam] using)
+  = using == [] ? ""
+  : "USING <intercalate(" AND ", [ pp(up) | CQLUpdateParam up <- using ])>";
+  
+str pp(cTimeStamp(CQLExpr mus))
+  = "TIMESTAMP <pp(mus)>";
+  
+str pp(cTTL(CQLExpr s))
+  = "TTL <pp(s)>";
  
 str pp(cAdd(str name, CQLType \type))
   = "ADD <ppId(name)> <pp(\type)>";
@@ -143,10 +177,6 @@ str ppWith(map[str, CQLValue] with)
   //| cDropType(str name, bool ifExists=false)
   
 
-
-str pp(cTimestamp(int microSeconds)) = "TIMESTAMP <microSeconds>";
-
-str pp(cTTL(int seconds)) = "TTL <seconds>";
 
 str pp(cColumn(str name)) = ppId(name);
 
