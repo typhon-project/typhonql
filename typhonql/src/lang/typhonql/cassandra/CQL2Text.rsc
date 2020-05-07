@@ -9,6 +9,12 @@ import IO;
 
 str ppId(str name) = "\"<name>\"";
 
+
+test bool smokeStat(CQLStat stat) {
+  println(pp(stat));
+  return true;
+}
+
 str pp(cCreateKeySpace(str name, ifNotExists=bool ine, with=map[str,CQLValue] with)) 
   = "CREATE KEYSPACE<ppINE(ine)> <ppId(name)><ppWith(with)>;";
 
@@ -32,7 +38,7 @@ str pp(cDropTable(str name, ifExists=bool ifExists))
 str pp(cTruncate(str name)) = "TRUNCATE TABLE <ppId(name)>;";
 
 str pp(cCreateType(str name, lrel[str name, CQLType \type] fields, ifNotExists=bool ine))
-  = "CREATE TYPE<ppINE(ine)> (<intercalate(", ", [ "<ppId(n)> <pp(t)>" | <str n, CQLTYpe t> <- fields ])>);";
+  = "CREATE TYPE<ppINE(ine)> (<intercalate(", ", [ "<ppId(n)> <pp(t)>" | <str n, CQLType t> <- fields ])>);";
 
 
 str pp(cAlterType(str name, CQLAlterTypeModification modification))
@@ -75,7 +81,7 @@ str pp(cSelect(list[CQLSelectClause] selectClauses, str tableName, list[CQLExpr]
     s += " ORDER BY <intercalate(", ", [ pp(ob) | CQLOrderBy ob <- orderBy ])>";
   }
 
-  if (perPatitionLimit != cTerm(cInteger(-1))) {
+  if (perPartitionLimit != cTerm(cInteger(-1))) {
     s += " PER PARTITION LIMIT <pp(perPartitionLimit)>";
   }
 
@@ -102,13 +108,22 @@ str pp(cUpdate(str name, list[CQLAssignment] sets, list[CQLExpr] wheres,
       using=list[CQLUpdateParam] using,
       ifExists=bool ie,
       conditions=list[CQLExpr] conditions))
-  = "UPDATE <ppId(name)><ppUsing(using)> <ppSets(sets)><ppWheres(wheres)><ppConds(io, conditions)>;";
+  = "UPDATE <ppId(name)><ppUsing(using)> <ppSets(sets)><ppWhere(wheres)><ppConds(ie, conditions)>;";
 
-
+str pp(cDelete(str name, list[CQLExpr] wheres,
+      columnSelection=list[CQLSimpleSelection] columnSelection,
+      using=list[CQLUpdateParam] using,
+      ifExists=bool ie,
+      conditions=list[CQLExpr] conditions))
+  = "DELETE <ppSels(columnSelection)> FROM <ppId(name)><ppUsing(using)><ppWhere(wheres)><ppConds(ie, conditions)>;";
 
 /*
  * Auxiliar
  */
+ 
+str ppSels(list[CQLSimpleSelection] cols)
+  = intercalate(", ", [ pp(s) | CQLSimpleSelection s <- cols ]);
+ 
  
 str ppConds(bool ifExists, list[CQLExpr] conds)
   = ifExists ? " IF EXISTS"
@@ -126,7 +141,7 @@ str ppUsing(list[CQLUpdateParam] using)
   = using == [] ? ""
   : "USING <intercalate(" AND ", [ pp(up) | CQLUpdateParam up <- using ])>";
   
-str pp(cTimeStamp(CQLExpr mus))
+str pp(cTimestamp(CQLExpr mus))
   = "TIMESTAMP <pp(mus)>";
   
 str pp(cTTL(CQLExpr s))
@@ -153,7 +168,7 @@ str ppColumns(list[CQLColumnDefinition] cols, CQLPrimaryKey pk)
 str pp(cPrimaryKey(list[str] pk, clusteringColumns=list[str] cols))
   = "<pks><cols != [] ? ", " + intercalate(", ", cols) : "">"
   when 
-    str pks := size(pk) == 1 ? pk[0] : "(<intercalate(", ", pk)>)";
+    str pks := (size(pk) == 1 ? pk[0] : "(<intercalate(", ", pk)>)");
 
 
 str pp(cColumnDef(str name, CQLType \type, static=bool static, primaryKey=bool pk))
@@ -164,7 +179,7 @@ str ppINE(bool b) = b ? " IF NOT EXISTS" : "";
 str ppIE(bool b) = b ? " IF EXISTS" : "";
 
 str ppWith(map[str, CQLValue] with) 
-  = with() == () ? "" 
+  = with == () ? "" 
   : " WITH <intercalate(" AND ", [ "<k> = <pp(with[k])>" | str k <- with ])>";
 
   //| cDropKeySpace(str name, bool ifExists=false)
@@ -178,7 +193,7 @@ str ppWith(map[str, CQLValue] with)
   
 
 
-str pp(cColumn(str name)) = ppId(name);
+str pp(CQLSimpleSelection::cColumn(str name)) = ppId(name);
 
 str pp(cIndexed(str name, CQLExpr index))
   = "<name>[<pp(index)>]";
@@ -214,7 +229,7 @@ test bool smokePPExpr(CQLExpr e) {
   return true;
 }
 
-str pp(cColumn(str name)) = ppId(name);
+str pp(CQLExpr::cColumn(str name)) = ppId(name);
 str pp(cTerm(CQLValue val)) = pp(val);
 str pp(cCast(CQLExpr arg, CQLType \type)) = "CAST(<pp(arg)> AS <pp(\type)>)";
 str pp(cCall(str name, list[CQLExpr] args)) = "<name>(<intercalate(", ", [ pp(a) | CQLExpr a <- args ])>)";
