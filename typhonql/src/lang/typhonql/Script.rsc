@@ -23,7 +23,13 @@ data Step
 data Call
   = sql(SQLCall jdbc)
   | mongo(MongoCall mongo) 
+  | cassandra(CassandraCall cassandra)
   ;
+  
+data CassandraCall
+ = execute(str dbName, str cql)
+ ;  
+  
 data SQLCall
   = executeQuery(str dbName, str query)
   | executeStatement(str dbName, str stat)
@@ -60,6 +66,9 @@ str runScript(Script scr, Session session, Schema schema) {
   str result = "";
   for (Step s <- scr.steps) {
     switch (s) {
+      case step(str r, cassandra(execute(str db, str q), Bindings ps)):
+        ; // todo:
+    
       case step(str r, sql(executeQuery(str db, str q)), Bindings ps):
         session.sql.executeQuery(r, db, q, ps, s.signature);
         

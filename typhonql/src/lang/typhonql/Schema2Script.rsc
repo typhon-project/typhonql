@@ -9,6 +9,9 @@ import lang::typhonml::Util;
 import lang::typhonql::Script;
 import lang::typhonql::Session;
 import lang::typhonql::relational::SchemaToSQL;
+import lang::typhonql::cassandra::Schema2CQL;
+import lang::typhonql::cassandra::CQL;
+import lang::typhonql::cassandra::CQL2Text;
 
 import lang::typhonql::util::Log;
 
@@ -18,10 +21,15 @@ import lang::typhonql::relational::SQL2Text;
 Script schema2script(Schema s, Log log = noLog) {
 	list[Step] steps = [];
 	for (Place p <- s.placement<0>) {
-    	log("[schema2script] generatig script for <p>");
+    	log("[schema2script] generating script for <p>");
     	steps += place2script(p, s, log = log);
   	}
   	return script(steps);
+}
+
+list[Step] place2script(p:<cassandra(), str db>, Schema s, Log log = noLog) {
+  return [ step(db, cassandra(execute(pp(stmt))), ()) 
+     | CQLStat stmt <-  schema2cql(s, p, s.placement[p]) ];
 }
 
 list[Step] place2script(p: <sql(), str db>, Schema s, Log log = noLog) {
