@@ -65,7 +65,7 @@ Script createAttribute(p:<sql(), str dbName>, str entity, str attribute, str ty,
 
 Script createAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
 	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "", "{$set: { \"<attribute>\" : null}}"));
+				findAndUpdateMany(dbName, entity, "{}", "{$set: { \"<attribute>\" : null}}"));
 	return script([step(dbName, call, ())]);
 }
 
@@ -113,7 +113,7 @@ Script createRelation(p:<sql(), str dbName>, str entity, str relation, Cardinali
 
 Script createRelation(p:<mongodb(), str dbName>, str entity, str relation,Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
 	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "", "{$set: { \"<relation>\" : null}}"));
+				findAndUpdateMany(dbName, entity, "{}", "{$set: { \"<relation>\" : null}}"));
 	return script([step(dbName, call, ())]);
 }
 
