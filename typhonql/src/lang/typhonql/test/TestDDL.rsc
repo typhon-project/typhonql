@@ -17,7 +17,8 @@ str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
 
-Log LOG = void(value v) {;};
+public Log PRINT() = void(value v) { println("LOG: <v>"); };
+
 
 void setup(PolystoreInstance p, bool _) {
 }
@@ -104,7 +105,7 @@ void test6(PolystoreInstance p) {
 // drop attribute (relational)
 void test7(PolystoreInstance p) {
 	 s = p.fetchSchema();
-	 p.runDDL((Request) `drop Product.description`);
+	 p.runDDL((Request) `drop attribute Product.description`);
 	 
 	 // We need to fake the schema update
 	 s.attrs -= < {"Product", "description", "string(256)"} >;
@@ -115,7 +116,7 @@ void test7(PolystoreInstance p) {
 // drop attribute (document)
 void test8(PolystoreInstance p) {
 	 s = p.fetchSchema();
-	 p.runDDL((Request) `drop Review.content`);
+	 p.runDDL((Request) `drop attribute Review.content`);
 	 
 	 // We need to fake the schema update
 	 s.attrs -= < {"Review", "content", "text"} >;
@@ -125,16 +126,17 @@ void test8(PolystoreInstance p) {
 
 
 
-TestExecutor getExecutor() = initTest(setup, HOST, PORT, USER, PASSWORD);
+TestExecuter getExecuter(Log log = NO_LOG()) = 
+	initTest(setup, HOST, PORT, USER, PASSWORD, log = log);
 
-void runTest(void(PolystoreInstance) t) {
-	getExecutor().runTest(t); 
+void runTest(void(PolystoreInstance) t, Log log = NO_LOG()) {
+	getExecuter(log = log).runTest(t); 
 }
 
 void runTests(list[void(PolystoreInstance)] ts) {
-	getExecutor().runTests(ts); 
+	getExecuter().runTests(ts); 
 }
 
 void runAll() {
-	runTests([test1, test2, test3, test4]);
+	runTests([test1, test2, test3, test4, test5, test6, test7, test8]);
 }
