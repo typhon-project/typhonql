@@ -17,7 +17,6 @@ import String;
 import Map;
 
 Log NO_LOG() = void(value v){ return; /*println("LOG: <v>"); */};
-Log LOG = NO_LOG();
 
 alias Conn = tuple[str host, str port, str user, str password];
 
@@ -81,7 +80,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	
 	void() myStartSession = void() {
-		session = newSession(connections, log = LOG);
+		session = newSession(connections, log = log);
 	};
 	
 	void() myCloseSession = void() {
@@ -89,44 +88,44 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	
 	void() myResetDatabases = void() {
-		ses = newSession(connections, log = LOG);
-		resetDatabasesInTest(sch, ses);
+		ses = newSession(connections, log = log);
+		resetDatabasesInTest(sch, ses, log);
 		ses.done();
 	};
 	ResultTable(Request req) myRunQuery = ResultTable(Request req) {
-		ses = newSession(connections, log = LOG);
-		result = runQueryInTest(req, sch, ses);
+		ses = newSession(connections, log = log);
+		result = runQueryInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
 	ResultTable(Request req, Schema s) myRunQueryForSchema = ResultTable(Request req, Schema s) {
-		ses = newSession(connections, log = LOG);
-		result = runQueryInTest(req, s, ses);
+		ses = newSession(connections, log = log);
+		result = runQueryInTest(req, s, ses, log);
 		ses.done();
 		return result;
 	};
 	CommandResult(Request req) myRunUpdate = CommandResult(Request req) {
-		ses = newSession(connections, log = LOG);
-		result = runUpdateInTest(req, sch, ses);
+		ses = newSession(connections, log = log);
+		result = runUpdateInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
 	CommandResult(Request req, Schema s) myRunUpdateForSchema = CommandResult(Request req, Schema s) {
-		ses = newSession(connections, log = LOG);
-		result = runUpdateInTest(req, s, ses);
+		ses = newSession(connections, log = log);
+		result = runUpdateInTest(req, s, ses, log);
 		ses.done();
 		return result;
 	};
 	CommandResult(Request req) myRunDDL = CommandResult(Request req) {
-		ses = newSession(connections, log = LOG);
-		result = runDDLInTest(req, sch, ses);
+		ses = newSession(connections, log = log);
+		result = runDDLInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
 	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs)
 		myRunPreparedUpdate = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
-	    ses = newSession(connections, log = LOG); 
-		result = runPreparedUpdateInTest(req, columnNames, vs, sch, ses);
+	    ses = newSession(connections, log = log); 
+		result = runPreparedUpdateInTest(req, columnNames, vs, sch, ses, log);
 		ses.done();
 		return result;
 	};
@@ -204,24 +203,24 @@ Schema fetchSchema(Conn c) {
 	return sch;
 }
 
-CommandResult runDDLInTest(Request req, Schema s, Session session) {
-	runDDL(req, s, session, log = LOG);
+CommandResult runDDLInTest(Request req, Schema s, Session session, Log log) {
+	runDDL(req, s, session, log = log);
 	return <-1, ()>;
 }
 
-CommandResult runUpdateInTest(Request req, Schema s, Session session) {
-	return runUpdate(req, s, session, log = LOG);
+CommandResult runUpdateInTest(Request req, Schema s, Session session, Log log) {
+	return runUpdate(req, s, session, log = log);
 }
 
-list[CommandResult] runPreparedUpdateInTest(Request req, list[str] columnNames, list[list[str]] vs, Schema s, Session session) {
-	return runPrepared(req, columnNames, vs, s, session, log = LOG);
+list[CommandResult] runPreparedUpdateInTest(Request req, list[str] columnNames, list[list[str]] vs, Schema s, Session session, Log log) {
+	return runPrepared(req, columnNames, vs, s, session, log = log);
 }
 
-ResultTable runQueryInTest(Request req, Schema s, Session session) {
-	return runQuery(req, s, session, log = LOG);
+ResultTable runQueryInTest(Request req, Schema s, Session session, Log log) {
+	return runQuery(req, s, session, log = log);
 }
 
-void resetDatabasesInTest(Schema sch, Session session, Log log = LOG) {
+void resetDatabasesInTest(Schema sch, Session session, Log log) {
 	runSchema(sch, session, log = log);
 }
 
@@ -229,8 +228,6 @@ void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(
 	println("Running test: <t>");
 	proxy.resetDatabases();
 	setup(proxy, runTestsInSetup);
-	oldLog = LOG;
-	LOG = log;
 	try {
 		t(proxy);		
 	}
@@ -238,7 +235,6 @@ void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(
 		proxy.setStat("<t>", threw("<e>"));
 		println (" <detailEmoji>: exception for `<t>`: <e>");
 	}
-	LOG = oldLog;
 }
 
 str successEmoji = "\u001b[32m☀ \u001b[0m";
