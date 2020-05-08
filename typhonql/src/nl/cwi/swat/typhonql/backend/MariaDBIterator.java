@@ -54,7 +54,7 @@ public class MariaDBIterator implements ResultIterator {
 			if (type.startsWith("string") || type.equals("text")) {
 				return rs.getString(label + "." + type + "." + name);
 			} if (type.startsWith("int") || type.equals("bigint")) {
-				return rs.getString(label + "." + type + "." + name);
+				return rs.getInt(label + "." + type + "." + name);
 			} else {
 				// TODO rest of the cases!!!
 				return rs.getObject(label + "." + type + "." + name);
