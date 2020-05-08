@@ -46,7 +46,7 @@ void setup(PolystoreInstance p, bool doTest) {
 	
 	p.runUpdate((Request) `insert Review { @id: #rev1, content: "Good TV", user: #pablo, product: #tv, location: #point(2.0 3.0) }`);
 	p.runUpdate((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv, location: #point(20.0 30.0) }`);
-	p.runUpdate((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio, location: #point(2.0 3.0) }`);
+	p.runUpdate((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio, location: #point(3.0 2.0) }`);
 	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Review r select r.@id, r.content, r.user, r.product`);
@@ -331,15 +331,35 @@ void testGISonSQL(PolystoreInstance p) {
 
 void testGISonMongo(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Review r select r.@id where distance(#point(2.0 3.0), r.location) \< 200.0`);
-  p.assertResultEquals("testGISonMongo - distance query", rs, <["r.@id"], [["rev1"],["rev3"]]>);
+  p.assertResultEquals("testGISonMongo - distance query", rs, <["r.@id"], [["rev1"]]>);
+
+  rs = p.runQuery((Request)`from Review r select r.@id where distance(#point(2.0 3.0), r.location) \<= 200.0`);
+  p.assertResultEquals("testGISonMongo - distance query2", rs, <["r.@id"], [["rev1"]]>);
+
+  rs = p.runQuery((Request)`from Review r select r.@id where distance(r.location, #point(2.0 3.0)) \>= 200.0`);
+  p.assertResultEquals("testGISonMongo - mindistance query", rs, <["r.@id"], [["rev2"],["rev3"]]>);
+
+  rs = p.runQuery((Request)`from Review r select r.@id where distance(r.location, #point(2.0 3.0)) \> 200.0`);
+  p.assertResultEquals("testGISonMongo - mindistance query", rs, <["r.@id"], [["rev2"],["rev3"]]>);
   
   rs = p.runQuery((Request)`from Review r select r.@id where r.location in #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0))`);
-  p.assertResultEquals("testGISonMongo - contained in polygon", rs, <["r.@id"], [["#rev1"],["#rev3"]]>);
+  p.assertResultEquals("testGISonMongo - contained in polygon", rs, <["r.@id"], [["rev1"],["rev3"]]>);
 
-  // TODO: polygon intersection
+  rs = p.runQuery((Request)`from Review r select r.@id where r.location & #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0))`);
+  p.assertResultEquals("testGISonMongo - intersect with polygon", rs, <["r.@id"], [["rev1"],["rev3"]]>);
+
+  rs = p.runQuery((Request)`from Review r select r.@id where r.location & #point(2.0 3.0)`);
+  p.assertResultEquals("testGISonMongo - intersect with point", rs, <["r.@id"], [["rev1"]]>);
 }
 
+
 void testGISonCrossMongoSQL(PolystoreInstance p) {
+  // TODO: Tijs add support for cross delayed clauses
+  rs = p.runQuery((Request)`from Product p, Review r select r, p.name where r.location in p.availabilityRegion`);
+  p.assertResultEquals("testGISonCrossMongoSQL - contained", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
+  
+  rs = p.runQuery((Request)`from Product p, Review r select r, p.name where distance(r.location in p.availabilityRegion) \< 200`);
+  p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
 }
 
 

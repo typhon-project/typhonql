@@ -354,9 +354,33 @@ tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> \>= <Expr rhs>`, Ctx ctx)
 tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> \<= <Expr rhs>`, Ctx ctx)
   = makeComparison("$lte", lhs, rhs, ctx);
 
+tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> in <Expr rhs>`, Ctx ctx) {
+    if ((Expr)`<Polygon _>` := rhs && <str ent, str path, rhs> := split(lhs, rhs, ctx)) {
+        return <ent, <path, object([
+            <"$geoWithin", object([
+                <"$geometry", expr2obj(rhs, ctx)>
+            ])>
+        ])>>;
+    }
+    else {
+        throw "MongoDB only supports a literal polygon on the right side of in, <rhs> not supported";
+    }
+}
   
-// TODO: &&, ||, in, like
+tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> & <Expr rhs>`, Ctx ctx) {
+    if (<str ent, str path, Expr other> := split(lhs, rhs, ctx) && ((Expr)`<Polygon _>` := other || ((Expr)`<Point _>` := other))) {
+        return <ent, <path, object([
+            <"$geoIntersects", object([
+                <"$geometry", expr2obj(other, ctx)>
+            ])>
+        ])>>;
+    }
+    else {
+        throw "MongoDB only supports intersection with at least one side a literal point or polygon";
+    }
+}
 
+// TODO: &&, ||, in, like
 
 default tuple[str, Prop] expr2pattern(Expr e, Ctx ctx) { 
   throw "Unsupported expression: <e>"; 
@@ -382,11 +406,17 @@ tuple[tuple[str ent, str path, Expr other] ori, Expr other2]
     = <split(lhs1, rhs1, ctx), lhs>;
     
 
+str translateOp("$gte") = "$minDistance";
+str translateOp("$gt") = "$minDistance";
+str translateOp("$lt") = "$maxDistance";
+str translateOp("$lte") = "$maxDistance";
+default str translateOp(str op) { throw "<op> not supported for distance clause, only \<, \<=, \>, and \>= are supported"; }
+
 tuple[str, Prop] makeComparison(str op, Expr lhs, Expr rhs, Ctx ctx) 
     = <ent, <path, object([
         <"$nearSphere", object([
             <"$geometry", expr2obj(other, ctx)>, 
-            <((op == "$gte") ? "$minDistance" : "$maxDistance"), expr2obj(other2, ctx)>
+            <translateOp(op), expr2obj(other2, ctx)>
             ])>
       ])>>
     when isGeoDistanceCall(lhs) || isGeoDistanceCall(lhs),
