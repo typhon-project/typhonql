@@ -25,7 +25,13 @@ import IO;
 import List;
 import util::Maybe;
 
-Script ddl2script((Request) `create <EId eId> at <Id dbName>`, Schema s, Log log = noLog) {
+Script ddl2script(Request req, Schema s, Log log = noLog) {
+	Script script = ddl2scriptAux(req, s, log = log);
+	script.steps = script.steps + [ finish() ];
+	return script;
+}
+
+Script ddl2scriptAux((Request) `create <EId eId> at <Id dbName>`, Schema s, Log log = noLog) {
   if (p:<db, name> <- s.placement<0>, name == "<dbName>") {
      return createEntity(p, "<eId>", s, log=log);
   }
@@ -45,7 +51,7 @@ default Script createEntity(p:<db, str dbName>, str entity, Schema s, Log log = 
 	throw "Unrecognized backend: <db>";
 }
 
-Script ddl2script((Request) `create <EId eId>.<Id attribute> : <Type ty>`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `create <EId eId>.<Id attribute> : <Type ty>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	return createAttribute(p, entity, "<attribute>", "<ty>", s, log = log);
   }
@@ -67,14 +73,14 @@ default Script createAttribute(p:<db, str dbName>, str entity, str attribute, st
 	throw "Unrecognized backend: <db>";
 }
 
-Script ddl2script((Request) `create <EId eId>.<Id relation> ( <Id inverse> ) <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `create <EId eId>.<Id relation> ( <Id inverse> ) <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	return createRelation(p, entity, "<relation>", "<targetId>", toCardinality("<lower>", "<upper>"), (Arrow) `:-\>` := arrow, just("<inverse>"), s, log = log);
   }
   throw "Not found entity <eId>";
 }
 
-Script ddl2script((Request) `create <EId eId>.<Id relation> <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `create <EId eId>.<Id relation> <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	return createRelation(p, entity, "<relation>", "<targetId>", toCardinality("<lower>", "<upper>"), (Arrow) `:-\>` := arrow, nothing(), s, log = log);
   }
@@ -115,7 +121,7 @@ default Script createRelation(p:<db, str dbName>,  str entity, str relation,Card
 	throw "Unrecognized backend: <db>";
 }
 
-Script ddl2script((Request) `drop <EId eId>`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `drop <EId eId>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	return dropEntity(p, entity, s, log = log);
   }
@@ -135,7 +141,7 @@ default Script dropEntity(p:<db, str dbName>, str entity, Schema s, Log log = no
 	throw "Unrecognized backend: <db>";
 }
 
-Script ddl2script((Request) `drop attribute <EId eId>.<Id attribute>`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `drop attribute <EId eId>.<Id attribute>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	return dropAttribute(p, entity, "<attribute>", s, log = log);
   }
@@ -157,7 +163,7 @@ default Script dropAttribute(p:<db, str dbName>, str entity, str attribute, Sche
 	throw "Unrecognized backend: <db>";
 }
 
-Script ddl2script((Request) `drop relation <EId eId>.<Id relation>`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `drop relation <EId eId>.<Id relation>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
   	if (<entity, _, "<relation>", str toRole, _, str to, bool containment> <- s.rels) {
 		return dropRelation(p, entity, "<relation>", to, toRole, containment, s, log = log);
@@ -203,7 +209,7 @@ default Script dropRelation(p:<db, str dbName>,  str entity, str relation, str t
 	throw "Unrecognized backend: <db>";
 }
 
-Script ddl2script((Request) `rename <EId eId> to <EId newName>`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `rename <EId eId> to <EId newName>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
      return renameEntity(p, "<eId>", "<newName>", s, log=log);
   }
@@ -228,7 +234,7 @@ default Script renameEntity(p:<db, str dbName>, str entity, str newName, Schema 
 	throw "Unrecognized backend: <db>";
 }
 
-Script ddl2script((Request) `rename attribute <EId eId>.<Id name> to <Id newName>`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `rename attribute <EId eId>.<Id name> to <Id newName>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	return renameAttribute(p, entity, "<name>", "<newName>", s, log = log);
   }
@@ -256,7 +262,7 @@ default Script renameAttribute(p:<db, str dbName>, str entity, str attribute, st
 }
 
 
-Script ddl2script((Request) `rename relation <EId eId>.<Id name> to <Id newName>`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `rename relation <EId eId>.<Id name> to <Id newName>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	return renameRelation(p, entity, "<name>", "<newName>", s, log = log);
   }
