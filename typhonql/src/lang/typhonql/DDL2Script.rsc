@@ -148,14 +148,14 @@ Script ddl2scriptAux((Request) `drop attribute <EId eId>.<Id attribute>`, Schema
   throw "Not found entity <eId>";
 }
 
-Script dropAttribute(p:<sql(), str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
+Script dropAttribute(p:<sql(), str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
 	SQLStat stat = alterTable(tableName(entity), [dropColumn(columnName(attribute, entity))]);
 	return script([step(dbName, sql(executeStatement(dbName, pp(stat))), ())]);
 }
 
 Script dropAttribute(p:<mongodb(), str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
 	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "", "{$unset: { \"<attribute>\" : 1}}"));
+				findAndUpdateMany(dbName, entity, "{}", "{$unset: { \"<attribute>\" : 1}}"));
 	return script([step(dbName, call, ())]);
 }
 
@@ -200,7 +200,7 @@ Script dropRelation(p:<mongodb(), str dbName>, str entity, str relation, str to,
 		return script([]);
 	} else {
 		Call call = mongo(
-				findAndUpdateMany(dbName, entity, "", "{$unset: { \"<fromRole>\" : 1}}"));
+				findAndUpdateMany(dbName, entity, "{}", "{$unset: { \"<fromRole>\" : 1}}"));
 		return script([step(dbName, call, ())]);
 	}
 }
@@ -253,7 +253,7 @@ Script renameAttribute(p:<sql(), str dbName>, str entity, str attribute, str new
 
 Script renameAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
 	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "", "{ $rename : { \"<attribute>\" : \"<newName>\" }}"));
+				findAndUpdateMany(dbName, entity, "{}", "{ $rename : { \"<attribute>\" : \"<newName>\" }}"));
 	return script([step(dbName, call, ())]);
 }
 

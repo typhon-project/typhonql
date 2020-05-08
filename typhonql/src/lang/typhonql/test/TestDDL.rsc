@@ -95,11 +95,11 @@ void test6(PolystoreInstance p) {
 	 s = p.fetchSchema();
 	 
 	 // We need to fake the schema update
-	 s.attrs += { <"Biography", "rating", "int">};
+	 s.attrs += { <"Biography", "country", "string(256)">};
 	 p.runDDL((Request) `create Biography.rating : int`);
-	 p.runUpdateForSchema((Request) `insert Biography {@id: #bio1, content: "Good guy", rating: 5 }`, s);
-	 rs = p.runQueryForSchema((Request) `from Biography b select b.@id, b.rating`, s);
-	 p.assertEquals("test6", rs,  <["b.@id", "b.rating"],[[ "bio1", 5 ]]>);
+	 p.runUpdateForSchema((Request) `insert Biography {@id: #bio1, content: "Good guy", country: "CL" }`, s);
+	 rs = p.runQueryForSchema((Request) `from Biography b select b.@id, b.country`, s);
+	 p.assertEquals("test6", rs,  <["b.@id", "b.country"],[[ "bio1", "CL" ]]>);
 }
 
 // drop attribute (relational)
@@ -108,7 +108,7 @@ void test7(PolystoreInstance p) {
 	 p.runDDL((Request) `drop attribute Product.description`);
 	 
 	 // We need to fake the schema update
-	 s.attrs -= < {"Product", "description", "string(256)"} >;
+	 s.attrs -=  {<"Product", "description", "string(256)">};
 	 p.assertException("test7",
 	 	void() { p.runQuery((Request) `from Product p select p.description`);});
 }
@@ -119,9 +119,9 @@ void test8(PolystoreInstance p) {
 	 p.runDDL((Request) `drop attribute Review.content`);
 	 
 	 // We need to fake the schema update
-	 s.attrs -= < {"Review", "content", "text"} >;
+	 s.attrs -= {<"Review", "content", "text">};
 	 p.assertException("test8",
-	 	void() { p.runQuery((Request) `from Review r select r.content`);});
+	 	void() { rt = p.runQuery((Request) `from Review r select r.content`); });
 }
 
 

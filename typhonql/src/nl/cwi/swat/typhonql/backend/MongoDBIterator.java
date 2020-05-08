@@ -35,15 +35,12 @@ public class MongoDBIterator implements ResultIterator {
 		// TODO TEMPORARY!!!!!
 		//return current.get(type + "." + name);
 		Object fromDB = current.get(name);
-		return toGenericString(fromDB);
+		return toTypedObject(fromDB, type);
 	}
 
-	private String toGenericString(Object fromDB) {
-		if (fromDB == null)
-			return null;
-		// Here how to convert MongoDB objects into neutral typhon strings
-		// TODO for now only calling toString
-		return fromDB.toString();
+	private Object toTypedObject(Object fromDB, String type) {
+		// TODO for now only returning the way it comes from Mongo
+		return fromDB;
 	}
 
 	@Override
