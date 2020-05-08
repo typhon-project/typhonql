@@ -8,15 +8,19 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import org.bson.Document;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.WKBReader;
+import org.locationtech.jts.io.WKTWriter;
 import org.rascalmpl.values.ValueFactoryFactory;
-
+import org.wololo.geojson.GeoJSON;
+import org.wololo.jts2geojson.GeoJSONReader;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
+import com.mongodb.client.model.geojson.codecs.GeoJsonCodecProvider;
 import io.usethesource.vallang.IBool;
 import io.usethesource.vallang.IExternalValue;
 import io.usethesource.vallang.IInteger;
@@ -177,6 +181,26 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		}
 		else if (v instanceof EntityRef) {
 			return vf.tuple(vf.bool(true), vf.string(((EntityRef) v).getUuid()));
+		}
+		else if (v instanceof byte[]) {
+			// can be multiple things, for example a Geo field
+			try {
+				return vf.string(new WKBReader().read((byte[]) v).toText());
+			}
+			catch (Exception e) {
+				// swallow, most likely it wasn't a geo field
+				;
+			}
+		}
+		else if (v instanceof Document) {
+			// try to read it as a GeoJSON field
+			try {
+				return vf.string(new GeoJSONReader().read(((Document) v).toJson()).toText());
+			}
+			catch(Exception e) {
+				;
+			}
+			
 		}
 		throw new RuntimeException("Unknown conversion for Java type " + v.getClass());
 	}

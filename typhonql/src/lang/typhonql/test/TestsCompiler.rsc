@@ -363,6 +363,17 @@ void testGISonCrossMongoSQL(PolystoreInstance p) {
 }
 
 
+void testGISPrint(PolystoreInstance p) {
+    rs = p.runQuery((Request)`from Product p select p.availabilityRegion`);
+    p.assertResultEquals("GIS Print - SQL", rs, <["p.availabilityRegion"], [["POLYGON ((10 10, 40 10, 40 40, 10 40, 10 10))"],["POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))"]]>);
+
+
+    rs = p.runQuery((Request)`from Review r select r.location`);
+    p.assertResultEquals("GIS Print - Mongo", rs, <["r.location"], [["POINT (2 3)"],["POINT (20 30)"], ["POINT (3 2)"]]>);
+}
+
+
+
 void test1(PolystoreInstance p) {
 	rs = p.runQuery((Request) `from Product p select p.name`);
 	p.assertResultEquals("name is selected from product", rs, <["p.name"],[["Radio"],["TV"]]>);

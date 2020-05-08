@@ -56,6 +56,7 @@ data SQLExpr
   | notIn(SQLExpr arg, list[Value] vals)
   | \in(SQLExpr arg, list[Value] vals)
   | fun(str name, list[SQLExpr] args)
+  | asWKB(SQLExpr arg)
   ;
 
 

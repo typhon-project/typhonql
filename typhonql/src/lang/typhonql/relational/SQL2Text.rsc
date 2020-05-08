@@ -146,6 +146,8 @@ str pp(desc()) = "desc";
 str pp(column(str c, ColumnType t, list[ColumnConstraint] cos))
   = "<q(c)> <intercalate(" ", [pp(t)] + [ pp(co) | ColumnConstraint co <- cos ])>";
   
+  
+str pp(asWKB(SQLExpr arg)) = "ST_AsWKB(<pp(arg)>)";
 
 // Value
 
