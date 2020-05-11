@@ -304,7 +304,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
     log("# an attribute <entity>.<role>");
     normalAccess = column("<x>", columnName(role, entity));
     if (atype in {"point", "polygon"}) {
-        return asWKB(normalAccess);
+        return fun("ST_AsWKB", [normalAccess]);
     }
     return normalAccess;
   }

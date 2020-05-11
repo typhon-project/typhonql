@@ -501,6 +501,8 @@ void runTests(Log log = NO_LOG()) {
 	  , testSQLDateEquals
 	  
 	  , testGISonSQL
+	  , testGISonMongo
+	  , testGISPrint
 	  
 	  , test1
 	  , test2
