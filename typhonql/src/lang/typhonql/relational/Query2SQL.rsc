@@ -300,7 +300,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
   	// return the column of the target
   	return column(tbl2, junctionFkName(to, toRole));
   }
-  else if (<entity, role, atype> <- ctx.schema.attrs) { 
+  else if (<entity, role, str atype> <- ctx.schema.attrs) { 
     log("# an attribute <entity>.<role>");
     normalAccess = column("<x>", columnName(role, entity));
     if (atype in {"point", "polygon"}) {
@@ -309,7 +309,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
     return normalAccess;
   }
   else {
-    throw "Unsupported navigation <entity>.<role>";
+    throw "Unsupported navigation <entity> <x>.<role>";
   }
 }  
   
