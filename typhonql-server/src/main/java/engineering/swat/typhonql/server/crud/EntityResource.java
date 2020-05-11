@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -56,40 +57,29 @@ public class EntityResource extends TyphonDALResource {
 	
 	@PATCH
 	public Response updateEntity(@PathParam("entityName") String entityName, @PathParam("uuid") String uuid, 
-			EntityFields entity) throws IOException {
+			EntityDeltaFields delta) throws IOException {
 		String query = "update " + entityName + " e where e.@id == #" + uuid + " set { "
-				+ concatenateFields(entity.getFields()) + "}";
+				+ concatenateFields(delta) + "}";
 		QLRestServer.RestArguments args = getRestArguments();
 		CommandResult cr = getEngine().executeUpdate(args.xmi, args.databaseInfo, query);
 		return Response.ok().build();
 	}
 	
-	protected String concatenateFields(Map<String, Object> fields) throws IOException {
+	protected String concatenateFields(EntityDeltaFields delta) throws IOException {
 		return String.join(", ",
-				fields.entrySet().stream().map(e -> keyValue2String(e.getKey(), e.getValue())).collect(Collectors.toList()).toArray(new String[0]));
+				Stream.concat(delta.getFieldsAndSimpleRelations().entrySet().stream()
+					.map(e -> e.getKey() + " : " +  e.getValue()),
+					Stream.concat(
+							delta.getAdd().entrySet().stream().map(e -> e.getKey() + " +: " +  getArray(e.getValue())),
+							Stream.concat(
+									delta.getRemove().entrySet().stream().map(e -> e.getKey() + " -: " +  getArray(e.getValue())),
+									delta.getSet().entrySet().stream().map(e -> e.getKey() + " : " +  getArray(e.getValue()))))).collect(Collectors.toList()).toArray(new String[0]));
+				
+						
 	}
 	
-	private String keyValue2String(String key, Object value) {
-		StringBuffer sb = new StringBuffer();
-		String keyAndColon = null;
-		if (key.endsWith("+")) {
-			keyAndColon = key.substring(0, key.length()-1) + " +: ";
-		} else if (key.endsWith("-")) {
-			keyAndColon = key.substring(0, key.length()-1) + " -: ";
-		} else {
-			keyAndColon = key + " : ";
-		}
-		sb.append(keyAndColon);
-		if (value instanceof String) {
-			sb.append((String) value);
-		}
-		else if (value instanceof String[]) {
-			sb.append("[" + String.join(", ", (String[]) value) + "]");
-		}
-		else {
-			throw new RuntimeException("Failure to parse json body representing entity");
-		}
-		return sb.toString();
+	private String getArray(List<String> value) {
+		return"[" + String.join(", ", value.toArray(new String[0])) + "]";
 	}
 
 }

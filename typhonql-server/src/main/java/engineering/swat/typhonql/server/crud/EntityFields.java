@@ -17,12 +17,5 @@ public class EntityFields {
 	public Map<String, Object> getFields() {
 		return fields;
 	}
-
-	public void setFields(Map<String, Object> fields) {
-		this.fields = fields;
-	}
-	
-	
-	
 	
 }

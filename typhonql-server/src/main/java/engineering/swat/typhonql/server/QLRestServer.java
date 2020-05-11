@@ -5,10 +5,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
@@ -30,19 +27,14 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
+import engineering.swat.typhonql.server.crud.EntityDeltaFields;
+import engineering.swat.typhonql.server.crud.EntityDeltaFieldsDeserializer;
 import engineering.swat.typhonql.server.crud.EntityFields;
 import engineering.swat.typhonql.server.crud.EntityFieldsDeserializer;
 import nl.cwi.swat.typhonql.client.CommandResult;
@@ -104,6 +96,7 @@ public class QLRestServer {
 		SimpleModule module = new SimpleModule();
 		// adding our custom serializer and deserializer
 		module.addDeserializer(EntityFields.class, new EntityFieldsDeserializer());
+		module.addDeserializer(EntityDeltaFields.class, new EntityDeltaFieldsDeserializer());
 		// registering the module with ObjectMapper
 		crudMapper.registerModule(module);
 		// create JsonProvider to provide custom ObjectMapper
