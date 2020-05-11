@@ -15,6 +15,7 @@ data Step
   // executeQuery("x", "relational", "select p.name from Person as p", ())
   = step(str result, Call call, Bindings bindings, list[Path] signature = [])
   | read(list[Path] path)
+  | finish()
   | newId(str var)
   ;
   
@@ -26,6 +27,7 @@ data Call
 data SQLCall
   = executeQuery(str dbName, str query)
   | executeStatement(str dbName, str stat)
+  | executeGlobalStatement(str dbName, str stat)
   ;
   
 data MongoCall
@@ -36,6 +38,11 @@ data MongoCall
   | findAndUpdateMany(str dbName, str coll, str query, str update)
   | deleteOne(str dbName, str coll, str query)
   | deleteMany(str dbName, str coll, str query)
+  | createCollection(str dbName, str coll)
+  | createIndex(str dbName, str coll, str selector, str index)
+  | renameCollection(str dbName, str coll, str newName)
+  | dropCollection(str dbName, str coll)
+  | dropDatabase(str dbName)
   ;
   
 EntityModels schema2entityModels(Schema s) 
@@ -44,7 +51,11 @@ EntityModels schema2entityModels(Schema s)
            | str e <- entities(s) };
   
 
-  
+str runScriptAndClose(Script scr, Session session, Schema schema) {
+	str result = runScript(scr, session, schema);
+	session.done();
+	return result;
+}
   
 str runScript(Script scr, Session session, Schema schema) {
   str result = "";
@@ -54,7 +65,10 @@ str runScript(Script scr, Session session, Schema schema) {
         session.sql.executeQuery(r, db, q, ps, s.signature);
         
       case step(str r, sql(executeStatement(str db, str st)), Bindings ps):
-        session.sql.executeStatement(db, st, ps);  
+        session.sql.executeStatement(db, st, ps);
+      
+      case step(str r, sql(executeGlobalStatement(str db, str st)), Bindings ps):
+        session.sql.executeGlobalStatement(db, st, ps);  
 
       case step(str r, mongo(find(str db, str coll, str json)), Bindings ps):
         session.mongo.find(r, db, coll, json, ps, s.signature);
@@ -72,12 +86,23 @@ str runScript(Script scr, Session session, Schema schema) {
         session.mongo.deleteOne(db, coll, query, ps); 
       
       case step(str r, mongo(deleteMany(str db, str coll, str query)), Bindings ps):
-        println("WARNING: not yet executed: <s>"); 
+        session.mongo.deleteMany(db, coll, query, ps); 
+        
+      case step(str r, mongo(createCollection(str db, str coll)), Bindings ps):
+        session.mongo.createCollection(db, coll); 
+
+      case step(str r, mongo(createIndex(str db, str coll, str selector, str index)), Bindings ps):
+        session.mongo.createIndex(db, coll, selector, index); 
+        
+      case step(str r, mongo(dropCollection(str db, str coll)), Bindings ps):
+        session.mongo.dropCollection(db, coll); 
+        
+      case step(str r, mongo(dropDatabase(str db)), Bindings ps):
+        session.mongo.dropDatabase(db);   
        
       case step(str r, mongo(findAndUpdateMany(str db, str coll, str query, str update)), Bindings ps):
-        println("WARNING: not yet executed: <s>");
+        session.mongo.findAndUpdateMany(db, coll, query, update, ps);
       
-       
       case newId(str var): {
         result = session.newId(var);
       }
@@ -85,6 +110,11 @@ str runScript(Script scr, Session session, Schema schema) {
       case read(list[Path path] paths): {
       	session.readAndStore(paths);
       }
+
+      case finish(): {
+        session.finish();
+      }
+
   	  	
       default: throw "Unsupported call: <s>";
     }

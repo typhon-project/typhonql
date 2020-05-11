@@ -243,7 +243,7 @@ int filterWeight((Request)`<Query q>`, Place p, Schema s) {
 }
 
 int filterWeight(Expr e, Place p, map[str, str] env, Schema s)
-  = ( 0 | it + 1 | /VId x := e, <p, env["<x>"]> in s.placement ); 
+  = ( 0 | it + 1 | /VId x := e, "<x>" in env, <p, env["<x>"]> in s.placement ); 
   
 
   

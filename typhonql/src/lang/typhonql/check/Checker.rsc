@@ -173,7 +173,12 @@ void collectKeyVal(current:(KeyVal)`<Id key> : <Expr val>`, EId entity, Collecto
     collect(val, c);
     c.useViaType(entity, key, {fieldRole()});
     c.require("valid assignment", current, [key, val], void (Solver s) {
-        s.requireTrue(s.equal(key, val) || s.subtype(val, key), error(current, "Expected %t but got %t", key, val));
+        if (atypeList([uuidType()]) := s.getType(val)) {
+            requireValidCardinality(current, key, entity, s);
+        }
+        else {
+            s.requireTrue(s.equal(key, val) || s.subtype(val, key), error(current, "Expected %t but got %t", key, val));
+        }
     });
 }
 
@@ -190,11 +195,15 @@ void collectKVUpdate(KeyVal current, Id key, Expr val, EId entity, Collector c) 
     c.useViaType(entity, key, {fieldRole()});
     c.requireEqual(atypeList([uuidType()]), val, error(val, "Currently only lists of uuids are supported in the update syntax"));
     c.require("valid update", current, [key, val], void (Solver s) {
-        keyType = s.getType(key);
-        s.requireTrue(entityType(_) := keyType, error(key, "Expected entity type, got %t", key));
-        cardinality = getCardinality(entity, key, s);
-        s.requireTrue(cardinality in {zero_many(), one_many()}, error(current, "update not supported on cardinality one or zero-to-one"));
+        requireValidCardinality(current, key, entity, s);
     });
+}
+
+void requireValidCardinality(KeyVal current, Id key, EId entity, Solver s) {
+    keyType = s.getType(key);
+    s.requireTrue(entityType(_) := keyType, error(key, "Expected entity type, got %t", key));
+    cardinality = getCardinality(entity, key, s);
+    s.requireTrue(cardinality in {zero_many(), one_many()}, error(current, "update not supported on cardinality one or zero-to-one"));
 }
 
 
@@ -236,8 +245,32 @@ void collect(current:(Expr)`- <Expr arg>`, Collector c) {
 }
 
 void collect(current:(Expr)`<VId name> (<{Expr ","}* args>)`, Collector c) {
-    reportUnsupported(current, c);
+    collect(args, c);
+    collectBuildinFunction(current, name, [e | e <- args], c);
 }
+
+
+void requirePointOrPolygon(Solver s, Tree t) {
+    s.requireTrue(s.getType(t) in {polygonType(), pointType()}, error(t, "Expected polygon or point, got %t", t));
+}
+
+void collectBuildinFunction(Tree current, (VId)`distance`, list[Expr] args, Collector c) {
+    c.fact(current, floatType());
+    if ([from, to] := args) {
+        c.require("check valid argument types", current, [from, to], void (Solver s) {
+            requirePointOrPolygon(s, from);
+            requirePointOrPolygon(s, to);
+        });
+    }
+    else {
+        c.report(error(current, "Invalid number of arguments for distance function, required: 2, gotten: %v", size(args)));
+    }
+}
+
+default void collectBuildinFunction(Tree current, _, _, Collector c) {
+    c.report(error(current, "Unknown buildin function"));
+}
+
 
 void collect(current:(Expr)`! <Expr arg>`, Collector c) {
     collect(arg, c);
@@ -288,11 +321,27 @@ void collect(current:(Expr)`<Expr lhs> \< <Expr rhs>`, Collector c) {
 }
 
 void collect(current:(Expr)`<Expr lhs> in <Expr rhs>`, Collector c) {
-    reportUnsupported(current, c);
+    c.fact(current, boolType());
+    c.require("Valid in expression", current, [lhs, rhs], void (Solver s) {
+        switch (s.getType(rhs)) {
+            case polygonType(): 
+                requirePointOrPolygon(s, lhs);
+            case AType tp:
+                s.report(error(rhs, "Unsupported in expression for %t", tp));
+        }
+    });
+    collect(lhs, rhs, c);
 }
 
 void collect(current:(Expr)`<Expr lhs> like <Expr rhs>`, Collector c) {
     reportUnsupported(current, c);
+}
+
+void collect(current:(Expr)`<Expr lhs> & <Expr rhs>`, Collector c) {
+    c.fact(current, boolType());
+    c.requireEqual(polygonType(), lhs, error(lhs, "intersection can only be between polygons (got %t)", lhs));
+    c.requireEqual(polygonType(), rhs, error(rhs, "intersection can only be between polygons (got %t)", rhs));
+    collect(lhs, rhs, c);
 }
 
 void collect(current:(Expr)`<Expr lhs> && <Expr rhs>`, Collector c) {
@@ -402,7 +451,7 @@ void collect((Where)`where <{Expr ","}+ clauses>`, Collector c) {
     }
 }
 
-void collect((GroupBy)`group <{VId ","}+ vars> <Having? having>`, Collector c) {
+void collect((GroupBy)`group <{Expr ","}+ vars> <Having? having>`, Collector c) {
     collect(vars, c);
     if (h <- having) {
         collect(h, c);
@@ -416,7 +465,7 @@ void collect((Having)`having <{Expr ","}+ clauses>`, Collector c) {
     }
 }
 
-void collect((OrderBy)`order <{VId ","}+ vars>`, Collector c) {
+void collect((OrderBy)`order <{Expr ","}+ vars>`, Collector c) {
     collect(vars, c);
 }
 
@@ -565,7 +614,7 @@ CheckerMLSchema convertModel(Schema mlSchema)
         entityType(tpn) : 
         (( fn : <calcMLType(ftp), \one()> | <fn, ftp> <- mlSchema.attrs[tpn])
         + (fr : <entityType(to), fc> | <fc, fr, _, _, to, _> <- mlSchema.rels[tpn])
-        + (tr : <entityType(from), tc> | <from, _, _, tr, tc, tpn, _> <- mlSchema.rels[tpn])) // inverse roles
+        + (tr : <entityType(from), tc> | <from, _, _, tr, tc, tpn, _> <- mlSchema.rels)) // inverse roles
     | tpn <- entities(mlSchema)
     );
 

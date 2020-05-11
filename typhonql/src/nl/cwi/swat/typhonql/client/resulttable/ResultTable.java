@@ -3,18 +3,20 @@ package nl.cwi.swat.typhonql.client.resulttable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import org.bson.Document;
+import org.locationtech.jts.io.WKBReader;
 import org.rascalmpl.values.ValueFactoryFactory;
-
+import org.wololo.jts2geojson.GeoJSONReader;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.usethesource.vallang.IBool;
 import io.usethesource.vallang.IExternalValue;
 import io.usethesource.vallang.IInteger;
@@ -25,8 +27,6 @@ import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
-import nl.cwi.swat.typhonql.workingset.EntityRef;
-import nl.cwi.swat.typhonql.workingset.JsonSerializableResult;
 
 
 public class ResultTable implements JsonSerializableResult, IExternalValue {
@@ -36,6 +36,8 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	static {
 		//mapper.configure(DeserializationFeature.
 		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+		mapper.canDeserialize(mapper.getTypeFactory().constructSimpleType(EntityRef.class, new JavaType[0]));
+		mapper.canSerialize(EntityRef.class);
 
 	}
 				
@@ -58,41 +60,12 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	public List<List<Object>> getValues() {
 		return values;
 	}
-
-	@JsonIgnore
-	public static ResultTable fromIValue(IValue v) {
-		// map[str entity, list[Entity] entities];
-		if (v instanceof ITuple) {
-			ITuple tuple = (ITuple) v;
-			IList columns = (IList) tuple.get(0);
-			IList vs = (IList) tuple.get(1);
-			
-			Iterator<IValue> columnIter = columns.iterator();
-			List<String> columnNames = new ArrayList<String>();
-			while (columnIter.hasNext()) {
-				IString c = (IString) columnIter.next();
-				columnNames.add(c.getValue());
-			}
-			
-			Iterator<IValue> rowsIter = vs.iterator();
-			List<List<Object>> values = new ArrayList<>();
-			while (rowsIter.hasNext()) {
-				IList row = (IList) rowsIter.next();
-				Iterator<IValue> oneRowIter = row.iterator();
-				List<Object> objects = new ArrayList<>();
-				while (oneRowIter.hasNext()) {
-					IValue o = oneRowIter.next();
-					objects.add(toJava(o)); 
-				}
-				values.add(objects);
-			}
-			
-			return new ResultTable(columnNames, values);
-		} else
-			throw new RuntimeException("IValue does not represent a working set");
-
-	}
 	
+	@JsonIgnore
+	public boolean isEmpty() {
+		return values == null || values.size() == 0;
+	}
+
 	@JsonIgnore
 	public static Object toJava(IValue object) {
 		if (object instanceof IInteger) {
@@ -174,6 +147,26 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		else if (v instanceof EntityRef) {
 			return vf.tuple(vf.bool(true), vf.string(((EntityRef) v).getUuid()));
 		}
+		else if (v instanceof byte[]) {
+			// can be multiple things, for example a Geo field
+			try {
+				return vf.string(new WKBReader().read((byte[]) v).toText());
+			}
+			catch (Exception e) {
+				// swallow, most likely it wasn't a geo field
+				;
+			}
+		}
+		else if (v instanceof Document) {
+			// try to read it as a GeoJSON field
+			try {
+				return vf.string(new GeoJSONReader().read(((Document) v).toJson()).toText());
+			}
+			catch(Exception e) {
+				;
+			}
+			
+		}
 		throw new RuntimeException("Unknown conversion for Java type " + v.getClass());
 	}
 
@@ -207,6 +200,28 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	public static ResultTable fromJSON(InputStream is) throws IOException {
 		ResultTable rt = mapper.readValue(is, ResultTable.class);
 		return rt;
+	}
+
+	public static String serialize(String type, String s) {
+		// TODO complete all the cases
+		if (type.equals("str") || type.equals("string"))
+			return "\"" + s + "\"";
+		else if (type.equals("int") || type.equals("integer"))
+			return s;
+		return s;
+	}
+
+	public static String serializeAsString(Object object) {
+		// TODO complete all the cases
+		if (object == null)
+			return "null";
+		if (object instanceof String)
+			return "\"" + object + "\"";
+		else if (object instanceof Integer || object instanceof BigInteger)
+			return object.toString();
+		else
+			return object.toString();
+		
 	}
 
 }

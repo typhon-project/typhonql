@@ -34,7 +34,13 @@ public class MongoDBIterator implements ResultIterator {
 	public Object getCurrentField(String label, String type, String name) {
 		// TODO TEMPORARY!!!!!
 		//return current.get(type + "." + name);
-		return current.get(name);
+		Object fromDB = current.get(name);
+		return toTypedObject(fromDB, type);
+	}
+
+	private Object toTypedObject(Object fromDB, String type) {
+		// TODO for now only returning the way it comes from Mongo
+		return fromDB;
 	}
 
 	@Override

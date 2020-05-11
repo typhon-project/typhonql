@@ -1,5 +1,8 @@
 package nl.cwi.swat.typhonql.backend.test;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -9,16 +12,10 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import nl.cwi.swat.typhonql.backend.Binding;
-import nl.cwi.swat.typhonql.backend.EntityModel;
-import nl.cwi.swat.typhonql.backend.Field;
 import nl.cwi.swat.typhonql.backend.GeneratedIdentifier;
 import nl.cwi.swat.typhonql.backend.MariaDBEngine;
-import nl.cwi.swat.typhonql.backend.MongoDBEngine;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
-import nl.cwi.swat.typhonql.backend.TyphonType;
-import nl.cwi.swat.typhonql.workingset.Entity;
-import nl.cwi.swat.typhonql.workingset.WorkingSet;
 
 public class TestInsertFromScript1 {
 	
@@ -35,15 +32,18 @@ public class TestInsertFromScript1 {
   ])
 	 */
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws SQLException {
 		
 		ResultStore store = new ResultStore();
 		
 		Map<String, String> uuids = new HashMap<String, String>();
 		
 		List<Consumer<List<Record>>> script = new ArrayList<Consumer<List<Record>>>();
+		List<Runnable> updates = new ArrayList<>();
 		
-		MariaDBEngine e1 = new MariaDBEngine(store, script, uuids, "localhost", 3306, "Inventory", "root", "example");
+		Connection conn = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
+		
+		MariaDBEngine e1 = new MariaDBEngine(store, script, updates,uuids, conn);
 		
 		uuids.put("param_0", UUID.randomUUID().toString());
 		HashMap<String, Binding> map1 = new LinkedHashMap<String, Binding>();

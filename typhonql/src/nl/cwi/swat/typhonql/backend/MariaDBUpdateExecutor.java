@@ -19,8 +19,8 @@ public class MariaDBUpdateExecutor extends UpdateExecutor {
 	private PreparedStatement pstmt;
 	private List<String> vars = new ArrayList<String>();
 	
-	public MariaDBUpdateExecutor(ResultStore store, Map<String, String> uuids, String query, Map<String, Binding> bindings, String connectionString) {
-		super(store, uuids, bindings);
+	public MariaDBUpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, String> uuids, String query, Map<String, Binding> bindings, Connection connection) {
+		super(store, updates, uuids, bindings);
 		System.out.println(query);
 		Pattern pat =  Pattern.compile("\\$\\{(\\w*?)\\}");
 		Matcher m = pat.matcher(query);
@@ -33,8 +33,6 @@ public class MariaDBUpdateExecutor extends UpdateExecutor {
 		StringSubstitutor sub = new StringSubstitutor(map);
 		String jdbcQuery = sub.replace(query);
 		try {
-			Connection connection = DriverManager
-					.getConnection(connectionString);
 			pstmt = connection.prepareStatement(jdbcQuery);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);

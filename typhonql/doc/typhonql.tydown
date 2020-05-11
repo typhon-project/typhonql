@@ -1,11 +1,33 @@
 
-# TyphonQL: an Evolving Reference Manual
+# TyphonQL: an Evolving User Manual
 
 ## Introduction
 
+TyphonQL is a query language and data-manipulation language (DML) to access polystores (federations of 
+different kinds of database back-ends, relational, document, key-value etc.) while at the same time
+abstracting as much as possible from how the data is actually stored.
+
+Executing TyphonQL queries is parameterized by a TyphonML model, which provides the logical data schema in the
+form of an object-oriented information model. A TyphonML model declares entities with primitively-typed attributes, 
+and bi-directional (many-valued) relations (which can be containment/ownership) relations. 
+
+TyphonQL is designed to allow the query writer to think at the level of TyphonML entities as much as possible. 
+With TyphonQL one does not manipulate tables, graphs, documents, or key-value pairs, but sets of objects which 
+may have relations to each other, and which conform to the entity types declared in the TyphonML model. 
+
+The present document aims to describe the TyphonQL in sufficient detail for end-users of the language. 
+Thus, it is not a formal reference document, but rather a short overview, touching upon the most common and 
+most quirky features in equal amount.
+
+The next section presents an abstract overview of the language, and after we present the language using numerous examples.
+
+*NB*: like TyphonQL itself, this manual, is work-in-progress. It describes how the designers of TyphonQL 
+(Tijs van der Storm, Pablo Inostroza, Davy Landman) expect the language to work, -- there might be bugs.
 
 
 ## The Language
+
+This section provides a cursory overview of the language.
 
 ### Literal expressions
 
@@ -19,21 +41,125 @@ TyphonQL supports the following literal (constant) expressions:
 - Date and time values:  `$2020-03-31T18:08:28.477+00:00$`
 - Geographical points: `#point(23.4 343.34)`
 - Polygons: `#polygon((23.4 343.34), (2.0 0.0))`;
+- Null (indicating absence of a reference or value): `null`
 
 Furthermore, TyphonQL supports syntax for dealing with objects (instances of entity types):
 
 - Object literals (tagged with the entity type, in this case `Person`): `Person {name: "Pablo", age: 30, reviews: [#879b4559-f590-48ea-968c-ff3b69ec5363, #23275eec-4746-4f23-a854-660160cafed2]}`
 - Reference values (pointers), represented as UUIDs: `#879b4559-f590-48ea-968c-ff3b69ec5363`
 - Collections of pointers to objects:  `[#8bc3f0a0-5cf4-42e5-a664-0617feb2d400, #23275eec-4746-4f23-a854-660160cafed2, #879b4559-f590-48ea-968c-ff3b69ec5363]`
-     
-Note that object literals and collections of object references can only be used in insert and update statements. 
-      
 
+Object literals are used as argument to insert statements, and (lists of) references are used in 
+both insert and update statements to create links/relations between objects. 
+In the future we might support nesting of object literals and within-insert symbolic cross referencing
+to manipulate complete object graphs all at once.      
+
+### Other expressions
+
+Select queries as well as update and delete statements use expressions to filter results and find objects to operate on 
+respectively. For instance, a from-select query specifies a number of result expressions and conditions in the where-clause.
+Update and delete find the object(s) to be update resp. deleted using similar conditions in a where-clause.
+
+TyphonQL supports the following non-literal expressions:
+
+- Attribute or relation access: `entity.field`
+- Accessing the identity of an object: `entity.@id`
+- Boolean operators: `!exp` (negation), `exp1 && exp2` (conjunction), `exp1 || exp2` (disjunction)
+- Arithmetic operators: `exp1 * exp2`, `exp1 / exp2`, `exp1 + exp2`, `exp1 - exp2`
+- Comparison operators: `exp1 == exp2`, `exp1 != exp1`, `exp1 > exp2`, `exp1 >= exp2`, etc.
+
+The prefix and infix operators follow the precedence levels of Java-like languages.
+
+To be implemented:
+- member operator: `exp1 in exp2`
+- textual match operator: `exp1 like exp2`
+
+#### Geographical expressions
+
+
+```
+pt1 = point(1.3,2.5)
+pt2 = point(3.5,4.6)
+pg1 = polygon([
+  [point(0,0), pt1], 
+  [pt1, point(1,1)], 
+  [point(1,1), pt2], 
+  [pt2, point(0,0)]
+])
+pg2 = polygon([
+  [point(3,0), pt1], 
+  [pt1, point(2,2)], 
+  [point(2,2), pt2], 
+  [pt2, point(3,2)]
+])
+```
+
+- distance in meters:
+  - two points: `distance(pt1, pt2)` (better idea for a infix operator are welcome, but it looked a bit strange to me)
+  - one point and closest edge of polygon: `distance(pt1, pg2)`
+- containment:
+  - point inside a polygon: `pt1 in pg2`
+  - polygon fully inside another polygon: `pg1 in pg2`
+- overlap:
+  - polygon partially overlaps another polygon: `pg1 & pg2`
+
+
+*note*: on mongodb backends distance is limited to the where query and only in presence of a comparision operator. 
+
+### Queries
+
+Queries follow the tradition of SQL queries, except that the select and from parts are swapped. 
+A basic query thus has the form of "*from* bindings *select* results *where* conditions".
+Bindings consist of a list of "Entity Variable" pairs, separated by comma, which introduce the scope of the query.
+Results is a list of expressions (separated by commas) that will make up the final result of the query.
+The where-clause is optional, but if present it consists of a list of expressions (separated by commas)
+filtering the result set. 
+
+For now, in results the only allowed expressions are `x` (an entity variable introduced in the bindings), `x.@id`, and `x.f` 
+(attribute or relation access). 
+
+### DML
+
+The general form of the insert statement is "*insert* Entity { assignments }".
+The entity is the type of the object to be inserted as defined in the TyphonML statement.
+The assignments are bindings of the form "attrOrRelation: expression". 
+The TyphonQL type checker will check that all assignments are correctly typed according
+the TyphonML model, including multiplicity constraints. 
+
+Update and delete statements specify the objects to work on via where-clauses.
+For instance, update has the form "*update* Entity x *where* conditions *set* { assignments }".
+The assignments are the same as in insert, except that for many-valued relations, they can specify
+additions ("relation +: expression") and removals ("relation -: expression").
+
+Delete has the form "*delete* Entity x *where* conditions", which will delete all entities of type Entity satisfying
+the conditions in the where-clause. 
+
+All three DML statements ensure (as much as possible) that relational integrity is preserved, 
+even across database back-ends. In particular
+this means:
+
+- creating resp. breaking a relation between entities entail creating resp. breaking the inverse link as well 
+(if so declared in the TyphonML model)
+- deleting an object will delete all objects "owned" by it via containment relations (cascading delete).
+
+Cascading delete of contained object is currently limited to one hop across database boundaries. 
+In other words, if a sequence of containment relations alternatingly cross multiple database back-ends
+the cascade is only performed for the first relation.
+
+
+
+
+
+
+
+
+
+
+
+  
 
 
 # TyphonQL by Example
-
-
 
 
 ```typhonML
@@ -147,6 +273,9 @@ from User u, Product p, Review r select u.name, p.name
  where u.reviews == r, p.reviews == r, r.text like "bad"
 ```
 
+Note the use of "==" even for many-valued references.
+You may wonder why not use the `x in y` operator for
+
 
 ## Manipulating Data
 
@@ -197,10 +326,6 @@ set { cards +: [#the-id-of-the-new-creditcard] }
 
 Or, (better), inserting into owner directly:
 
-```
-insert CreditCard { number: "1762376287", expires:  $2020-02-21T14:03:45.274+00:00$ }
-  into #751772d3-d378-471a-8d84-555c44e2f822.cards
-```
 
 
 ### Update
@@ -275,6 +400,9 @@ Named placeholders:
 update User u where u.@id == ??param
   set { cards +: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
 ``` 
+
+## Miscellaneous
+ 
 
  
  

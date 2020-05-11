@@ -1,6 +1,7 @@
 package nl.cwi.swat.typhonql.backend;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
@@ -9,11 +10,13 @@ import org.rascalmpl.values.ValueFactoryFactory;
 public abstract class UpdateExecutor {
 	
 	private ResultStore store;
+	private List<Runnable> updates;
 	private Map<String, Binding> bindings;
 	private Map<String, String> uuids;
 
-	public UpdateExecutor(ResultStore store, Map<String, String> uuids, Map<String, Binding> bindings) {
+	public UpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, String> uuids, Map<String, Binding> bindings) {
 		this.store = store;
+		this.updates = updates;
 		this.bindings = bindings;
 		this.uuids = uuids;
 	}
@@ -22,9 +25,13 @@ public abstract class UpdateExecutor {
 		executeUpdate(new HashMap<String, String>());
 	}
 	
+	private void executeUpdate(HashMap<String, String> values) {
+		updates.add(() -> {  executeUpdateOperation(values); });
+	}
+
 	protected abstract void performUpdate(Map<String, String> values);
 	
-	private void executeUpdate(Map<String, String> values) {
+	private void executeUpdateOperation(Map<String, String> values) {
 		if (values.size() == bindings.size()) {
 			performUpdate(values); 
 		}
@@ -34,7 +41,6 @@ public abstract class UpdateExecutor {
 			if (binding instanceof Field) {
 				Field field = (Field) binding;
 				ResultIterator results =  store.getResults(field.getReference());
-				
 				if (results == null) {
 					throw RuntimeExceptionFactory.illegalArgument(ValueFactoryFactory.getValueFactory().string(field.toString()), null, null, 
 							"Results was null for field " + field.toString() + " and store " + store);
@@ -46,13 +52,13 @@ public abstract class UpdateExecutor {
 					results.nextResult();
 					String value = (field.getAttribute().equals("@id"))? serialize(results.getCurrentId(field.getLabel(), field.getType())) : serialize(results.getCurrentField(field.getLabel(), field.getType(), field.getAttribute()));
 					values.put(var, value);
-					executeUpdate(values);
+					executeUpdateOperation(values);
 				}
 			}
 			else {
 				GeneratedIdentifier id = (GeneratedIdentifier) binding;
 				values.put(var, serialize(uuids.get(id.getName())));
-				executeUpdate(values);
+				executeUpdateOperation(values);
 			}
 			
 		}

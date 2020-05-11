@@ -12,7 +12,7 @@ Technically the bundler only has to be run on every version bump of the bundler.
 
 # Documentation
 
-The language is documented here: [TODO](link).
+The language is documented here: [TyphonQL: an Evolving User Manual](/typhonql/doc/typhonql.md).
 
 # Feature support
 
@@ -34,10 +34,10 @@ Basic primitive types.
 |----|:---:|:---:|---|
 | `int` | 🌕 | 🌕 | |
 | `bigint` | 🌓 | 🌓 | |
-| `string(maxSize)` | 🌓 | 🌓 | currently `str` exists, but this will be renamed to `text`, and `string` will get a length field |
-| `text` | 🌔 | 🌕 | in current syntax this is still called `str` |
-| `point` | 🌑 | 🌑 | |
-| `point` | 🌑 | 🌑 | |
+| `string[maxSize]` | 🌕 | 🌕 |  |
+| `text` | 🌕 | 🌕 |  |
+| `point` | 🌔  | 🌒 | operations are not yet implemented |
+| `polygon` | 🌔  | 🌒 | operations are not yet implemented |
 | `bool` | 🌕 | 🌕 | |
 | `float` | 🌕 | 🌔 | |
 | `blob` | 🌑 | 🌑 | We have to decide on a syntax for blobs |
@@ -80,12 +80,12 @@ TODO: make table about different kind of relations in relation to cross database
 | --- | :--: | --- |
 | Query across different backends | 🌔 | |
 | Query validation | 🌔 | Syntax is validated and checked against the ML model |
-| Query type checking in IDE | 🌑 | |
+| Query type checking in IDE | 🌓 | |
 | Query optimization | 🌒 | We try to get where clauses on the correct backend |
-| Unicode Support | 🌔 | It should be possible to use unicode anywhere. Collation is currently fixed (we have to think about extending this in ML if needed) |
+| Unicode Support | 🌔 | It should be possible to use unicode anywhere. Collation is currently fixed to utf8 (we have to think about extending this in ML if needed) |
 | DAL/Generated API | 🌑 | |
 | Navigation based queries (path, reachability, transitive closure) | 🌑 | |
 | Transactions | 🌑 | unclear if we can add decent support for this |
-| Parametrized/Bulk queries | 🌒 | Currently doesn't provide a lot of performance benefit, but can in the future |
+| Parametrized/Bulk queries | 🌓 | Currently doesn't provide a lot of performance benefit, but can in the future |
 | DDL Operations | 🌓 | |
 | Operations on `freetext` attributes | 🌑 | Working with NLP team to get this integrated |
