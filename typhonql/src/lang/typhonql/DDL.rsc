@@ -9,7 +9,7 @@ syntax Statement
   | \dropEntity: "drop" EId eId
   | \dropAttribute: "drop" "attribute" EId eId "." Id name
   | \dropRelation: "drop" "relation" EId eId "." Id name
-  | \renameEntity: "rename" EId eId "to" EId newName
+  | \renameEntity: "rename" EId eId "to" EId newEntityName
   | \renameAttribute: "rename" "attribute" EId eId "." Id name"to" Id newName  
   | \renameRelation: "rename" "relation" EId eId  "." Id name "to" Id newName  
   ;
