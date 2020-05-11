@@ -79,3 +79,8 @@ ColumnType typhonType2SQL("natural_language") = text();
 
 
 default ColumnType typhonType2SQL(str t) { throw "Unsupported Typhon type <t>"; }
+
+
+list[ColumnConstraint] typhonType2Constrains("point") = [notNull()];
+list[ColumnConstraint] typhonType2Constrains("polygon") = [notNull()];
+default list[ColumnConstraint] typhonType2Constrains(str t) = [];

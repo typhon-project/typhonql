@@ -300,12 +300,16 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
   	// return the column of the target
   	return column(tbl2, junctionFkName(to, toRole));
   }
-  else if (<entity, role, _> <- ctx.schema.attrs) { 
+  else if (<entity, role, str atype> <- ctx.schema.attrs) { 
     log("# an attribute <entity>.<role>");
-    return column("<x>", columnName(role, entity));
+    normalAccess = column("<x>", columnName(role, entity));
+    if (atype in {"point", "polygon"}) {
+        return fun("ST_AsWKB", [normalAccess]);
+    }
+    return normalAccess;
   }
   else {
-    throw "Unsupported navigation <entity>.<role>";
+    throw "Unsupported navigation <entity> <x>.<role>";
   }
 }  
   
@@ -321,6 +325,14 @@ SQLExpr expr2sql((Expr)`<Str s>`, Ctx ctx, Log log = noLog) = lit(text("<s>"[1..
 SQLExpr expr2sql((Expr)`<DateAndTime d>`, Ctx ctx, Log log = noLog) = lit(dateTime(readTextValueString(#datetime, "<d>")));
 
 SQLExpr expr2sql((Expr)`<JustDate d>`, Ctx ctx, Log log = noLog) = lit(date(readTextValueString(#datetime, "<d>")));
+
+SQLExpr expr2sql((Expr)`#point(<Real x> <Real y>)`, Ctx ctx, Log log = noLog) = lit(point(toReal("<x>"), toReal("<y>")));
+
+SQLExpr expr2sql((Expr)`#polygon(<{Segment ","}* segments>)`, Ctx ctx, Log log = noLog) 
+    = lit(polygon([ [<toReal("<x>"), toReal("<y>")> | (XY)`<Real x> <Real y>` <- s.points] | s <- segments]));
+
+
+SQLExpr expr2sql((Expr)`false`, Ctx ctx, Log log = noLog) = lit(boolean(false));
 
 SQLExpr expr2sql((Expr)`<UUID u>`, Ctx ctx, Log log = noLog) = lit(text("<u>"[1..]));
 
@@ -377,6 +389,17 @@ SQLExpr expr2sql((Expr)`<Expr lhs> && <Expr rhs>`, Ctx ctx, Log log = noLog)
 SQLExpr expr2sql((Expr)`<Expr lhs> || <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = or(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
+SQLExpr removeWKB(fun("ST_AsWKB", [a])) = a;
+default SQLExpr removeWKB(SQLExpr other) = other;
+
+SQLExpr expr2sql((Expr)`<Expr lhs> & <Expr rhs>`, Ctx ctx, Log log = noLog) 
+  = equ(fun("ST_Intersects", [removeWKB(expr2sql(lhs, ctx)), removeWKB(expr2sql(rhs, ctx))]), lit(integer(1)));
+
+SQLExpr expr2sql((Expr)`<Expr lhs> in <Expr rhs>`, Ctx ctx, Log log = noLog) 
+  = equ(fun("ST_Within", [removeWKB(expr2sql(lhs, ctx)), removeWKB(expr2sql(rhs, ctx))]), lit(integer(1)));
+
+SQLExpr expr2sql((Expr)`distance(<Expr from>, <Expr to>)`, Ctx ctx, Log log = noLog)
+  = fun("ST_Distance", [removeWKB(expr2sql(from, ctx)), removeWKB(expr2sql(from, ctx))]);
 
 default SQLExpr expr2sql(Expr e, Ctx _) { throw "Unsupported expression: <e>"; }
 

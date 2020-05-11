@@ -434,18 +434,19 @@ DBObject obj2dbObj((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
 
 DBObject obj2dbObj((Expr)`<UUID id>`) = \value("<id>"[1..]);
 
-DBObject obj2DbObj((Expr)`<DateTime d>`) 
+DBObject obj2dbObj((Expr)`<DateTime d>`) 
   = object([<"$date", \value(readTextValueString(#datetime, "<d>"))>]);
 
-DBObject obj2DbObj((Expr)`#point(<Real x> <Real y>)`) 
+DBObject obj2dbObj((Expr)`#point(<Real x> <Real y>)`) 
   = object([<"type", \value("Point")>, 
       <"coordinates", array([\value(toReal("<x>")), \value(toReal("<y>"))])>]);
 
-DBObject obj2DbObj((Expr)`#polygon(<{Segment ","}* segs>)`) 
-  = object([<"$polygon", array([ seg2array(s) | Segment s <- segs ])>]);
+DBObject obj2dbObj((Expr)`#polygon(<{Segment ","}* segs>)`) 
+  = object([<"type", \value("Polygon")>,
+      <"coordinates", array([ seg2array(s) | Segment s <- segs ])>]);
 
 DBObject seg2array((Segment)`(<{XY ","}* xys>)`)
-  = array([ array([\value(toReal(x)), \value(toReal("<y>"))]) | (XY)`<Real x> <Real y>` <- xys ]);
+  = array([ array([\value(toReal("<x>")), \value(toReal("<y>"))]) | (XY)`<Real x> <Real y>` <- xys ]);
 
 
 DBObject obj2dbObj((Expr)`<Real r>`) = \value(toReal("<r>"));
@@ -501,7 +502,7 @@ Value evalExpr((Expr)`<UUID u>`) = text("<u>"[1..]);
 
 Value evalExpr((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
 
-default Value evalExpr(Expr _) = null();
+default Value evalExpr(Expr ex) { throw "missing case for <ex>"; }
 
 bool isAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) = <e, "<x>", _> <- s.attrs;
 

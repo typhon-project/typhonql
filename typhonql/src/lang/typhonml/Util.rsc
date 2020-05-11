@@ -230,37 +230,42 @@ ChangeOps model2changeOperators(Model m) {
   return result;
 }
 
+str builtinDataType2str(DataType dt) {
+  str typeName = "";
+  switch (dt) {
+    case DataType(IntType()): typeName = "int";
+    case DataType(BigintType()): typeName = "bigint";
+    case DataType(StringType(maxSize = int n)): typeName = "string(<n>)";
+    case DataType(BlobType()): typeName = "blob";
+    case DataType(BoolType()): typeName = "bool";
+    case DataType(TextType()): typeName = "text";
+    case DataType(DateType()): typeName = "date";
+    case DataType(PointType()): typeName = "point";
+    case DataType(DatetimeType()): typeName = "datetime";
+    case DataType(PolygonType()): typeName = "polygon";
+    case DataType(FloatType()): typeName = "float";
+    case DataType(ft:FreetextType(list[NlpTask] tasks)):  {
+      typeName = "freetext[";
+      typeName += intercalate(", ",  [ "<getName(t.\type)>[<t.workflowName>]" | NlpTask t <- tasks ]);
+      typeName += "]";
+    }
+    default: throw "Unknown primitive data type: <dt>";
+  }
+  return typeName;
+}
+
 Attrs model2attrs(Model m) {
   Attrs result = {};
-  for (Entity(str from, list[EntityAttribute] attrs, _, _, _) <- m.entities, EntityAttribute(Attribute a) <- attrs) {
+  for (Entity(str from, list[EntityAttributeKind] attrs, _, _, _) <- m.entities, EntityAttributeKind(Attribute a) <- attrs) {
       DataType dt = a.\type; //lookup(m, #DataType, a.\type);
       
-      str typeName = "";
+      str typeName = builtinDataType2str(dt);
       
-      switch (dt) {
-        case DataType(PrimitiveDataType(IntType())): typeName = "int";
-        case DataType(PrimitiveDataType(BigintType())): typeName = "bigint";
-        case DataType(PrimitiveDataType(StringType(maxSize = int n))): typeName = "string(<n>)";
-        case DataType(PrimitiveDataType(BlobType())): typeName = "blob";
-        case DataType(PrimitiveDataType(BoolType())): typeName = "bool";
-        case DataType(PrimitiveDataType(TextType())): typeName = "text";
-        case DataType(PrimitiveDataType(DateType())): typeName = "date";
-        case DataType(PrimitiveDataType(PointType())): typeName = "point";
-        case DataType(PrimitiveDataType(DatetimeType())): typeName = "datetime";
-        case DataType(PrimitiveDataType(PolygonType())): typeName = "polygon";
-        case DataType(PrimitiveDataType(FloatType())): typeName = "float";
-        case DataType(PrimitiveDataType(ft:FreetextType(list[NlpTask] tasks))):  {
-          typeName = "freetext[";
-          typeName += intercalate(", ",  [ "<getName(t.\type)>[<t.workflowName>]" | NlpTask t <- tasks ]);
-          typeName += "]";
-        }
-        default: throw "Unknown primitive data type: <dt>";
-        
-      }
+      
       result += {<from, a.name, typeName>};
   }
   
-  for (Entity(str from, list[EntityAttribute] attrs, _, _, _) <- m.entities, EntityAttribute(CustomAttribute a) <- attrs) {
+  for (Entity(str from, list[EntityAttributeKind] attrs, _, _, _) <- m.entities, EntityAttributeKind(CustomAttribute a) <- attrs) {
       CustomDataType dt = lookup(m, #CustomDataType, a.\type);
       result += {<from, a.name, dt.name>};
   }
@@ -269,12 +274,19 @@ Attrs model2attrs(Model m) {
 
 Attrs model2customs(Model m) {
   Attrs result = {};
-  for (CustomDataType(str from, list[CustomDataTypeItem] elements) <- m.customDataTypes) {
-  	for (CustomDataTypeItem e <- elements) {
-      DataType dt = lookup(m, #DataType, e.\type);
-      assert (DataType(PrimitiveDataType(_)) := dt || DataType(CustomDataType, _(_)) := dt) :
-      	 "Only built-in and custom primitives allowed for elements (for now).";
-      result += {<from, e.name, dt.name>};
+  for (CustomDataType(str from, list[SuperDataType] elements) <- m.customDataTypes) {
+  	for (SuperDataType e <- elements) {
+  	  str dtName = "";
+  	  if (e has simpleDataType) {
+  	    dtName = builtinDataType2str(e.simpleDataType.\type);
+  	  }
+  	  else {
+  	    dtName = lookup(m, #CustomDataType, e.complexDataType.\type).name;
+  	  }
+
+      //assert (DataType(PrimitiveDataType(_)) := dt || DataType(CustomDataType, _(_)) := dt) :
+      //	 "Only built-in and custom primitives allowed for elements (for now).";
+      result += {<from, e.name, dtName>};
     }
   }
   return result;

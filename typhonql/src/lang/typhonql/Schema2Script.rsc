@@ -24,6 +24,7 @@ Script schema2script(Schema s, Log log = noLog) {
     	log("[schema2script] generating script for <p>");
     	steps += place2script(p, s, log = log);
   	}
+  	steps+= finish();
   	return script(steps);
 }
 
@@ -52,6 +53,12 @@ list[Step] place2script(p:<mongodb(), str db>, Schema s, Log log = noLog) {
     log("[RUN-schema/mongodb/<db>] creating collection <entity>");
     steps += [step(db, mongo(dropCollection(db, entity)), ())];
     steps += [step(db, mongo(createCollection(db, entity)), ())];
+
+
+    // add geo indexes
+    steps += [step(db, mongo(createIndex(db, entity, attr, "2dsphere")), ()) 
+        | <str attr, str typ> <- s.attrs[entity], typ == "point" || typ == "polygon"];
+    // TODO: add other kinds of indexes from model
   }
   return steps;
 }

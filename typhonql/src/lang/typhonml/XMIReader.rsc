@@ -22,7 +22,7 @@ list[str] typhonMLexamples() = [
 ];
 
 list[loc] copiedModels() = [
-|project://typhonql/src/lang/typhonml/newexample.xmi|
+|project://typhonql/src/lang/typhonql/test/resources/user-review-product/user-review-product.xmi|
 //|project://typhonql/src/lang/typhonml/alphabank.xmi|,
 //|project://typhonql/src/lang/typhonml/complexModelWithChangeOperators.xmi|,
 //|project://typhonql/src/lang/typhonml/customdatatypes.xmi|,
@@ -103,7 +103,7 @@ Model xmiNode2Model(node n) {
   map[str, CustomDataType] customMap = ();
   map[str, Relation] relMap = ();
   map[str, Database] dbMap = ();
-  map[str, EntityAttribute] attrMap = ();
+  map[str, EntityAttributeKind] attrMap = ();
   
   
   Entity ensureEntity(str path) {
@@ -113,20 +113,20 @@ Model xmiNode2Model(node n) {
     return entityMap[path];
   }
 
-  PrimitiveDataType makePrimitive(str name, list[value] params) {
+  DataType makePrimitive(str name, list[value] params) {
     switch (<name, params>) {
-      case <"IntType", []> : return PrimitiveDataType(realm.new(#IntType, IntType()));
-      case <"BigintType", []> : return PrimitiveDataType(realm.new(#BigintType, BigintType()));
-      case <"StringType", [int n]> : return PrimitiveDataType(realm.new(#StringType, StringType(maxSize=n)));
-      case <"BlobType", []> : return PrimitiveDataType(realm.new(#BlobType, BlobType()));
-      case <"BoolType", []> : return PrimitiveDataType(realm.new(#BoolType, BoolType()));
-      case <"TextType", []> : return PrimitiveDataType(realm.new(#TextType, TextType()));
-      case <"DateType", []> : return PrimitiveDataType(realm.new(#DateType, DateType()));
-      case <"PointType", []> : return PrimitiveDataType(realm.new(#PointType, PointType()));
-      case <"DatetimeType", []> : return PrimitiveDataType(realm.new(#DatetimeType, DatetimeType()));
-      case <"PolygonType", []> : return PrimitiveDataType(realm.new(#PolygonType, PolygonType()));
-      case <"FloatType", []> : return PrimitiveDataType(realm.new(#FloatType, FloatType()));
-      case <"FreetextType", [list[NlpTask] tasks]> : return PrimitiveDataType(realm.new(#FreetextType, FreetextType(tasks)));
+      case <"IntType", []> : return DataType(realm.new(#IntType, IntType()));
+      case <"BigintType", []> : return DataType(realm.new(#BigintType, BigintType()));
+      case <"StringType", [int n]> : return DataType(realm.new(#StringType, StringType(maxSize=n)));
+      case <"BlobType", []> : return DataType(realm.new(#BlobType, BlobType()));
+      case <"BoolType", []> : return DataType(realm.new(#BoolType, BoolType()));
+      case <"TextType", []> : return DataType(realm.new(#TextType, TextType()));
+      case <"DateType", []> : return DataType(realm.new(#DateType, DateType()));
+      case <"PointType", []> : return DataType(realm.new(#PointType, PointType()));
+      case <"DatetimeType", []> : return DataType(realm.new(#DatetimeType, DatetimeType()));
+      case <"PolygonType", []> : return DataType(realm.new(#PolygonType, PolygonType()));
+      case <"FloatType", []> : return DataType(realm.new(#FloatType, FloatType()));
+      case <"FreetextType", [list[NlpTask] tasks]> : return DataType(realm.new(#FreetextType, FreetextType(tasks)));
       default: throw "Unsupported primitive: <name>(<params>)";
     }
   }  
@@ -147,21 +147,21 @@ Model xmiNode2Model(node n) {
     return relMap[path];
   }
   
-  EntityAttribute ensureAttr(str path) {
+  EntityAttributeKind ensureAttr(str path) {
     if (path notin attrMap) {
-      DataType dt = DataType(PrimitiveDataType(realm.new(#IntType, IntType()))); // dummy;
-      attrMap[path] = EntityAttribute(realm.new(#Attribute, Attribute("", dt)));
+      DataType dt = DataType(realm.new(#IntType, IntType())); // dummy;
+      attrMap[path] = EntityAttributeKind(realm.new(#Attribute, Attribute("", dt)));
     }
     return attrMap[path];
   }
   
-  if ("typhonml:Model"(list[node] kids) := n) {
+  if ("typhonml-Model"(list[node] kids) := n) {
 	int dbPos = 0;
     for (xdb:"databases"(list[node] xelts) <- kids) {
     
       dbPath = "//@databases.<dbPos>";
       
-      switch (get(xdb, "xsi:type")) {
+      switch (get(xdb, "xsi-type")) {
         case "typhonml:RelationalDB": {
           tbls = [];
           for (xtbl:"tables"(_) <- xelts) {
@@ -202,30 +202,30 @@ Model xmiNode2Model(node n) {
     for (xen:"entities"(list[node] xelts) <- kids) {
       entPath = "//@entities.<entPos>";
       
-      list[EntityAttribute] attrs = [];
+      list[EntityAttributeKind] attrs = [];
       attrPos = 0;
       
       for (xattr:"attributes"(list[node] attrElts) <- xelts) {
          attrPath = "<entPath>/@attributes.<attrPos>";
-         if (get(xattr, "xsi:type") == "typhonml:Attribute", xtype:"type"(list[node] typeElts) <- attrElts) {
-           DataType dt = DataType(PrimitiveDataType(realm.new(#IntType, IntType()))); // dummy;
+         if (get(xattr, "xsi-type") == "typhonml:Attribute", xtype:"type"(list[node] typeElts) <- attrElts) {
+           DataType dt = DataType(realm.new(#IntType, IntType())); // dummy;
          
-           switch (get(xtype, "xsi:type")) {
+           switch (get(xtype, "xsi-type")) {
              case "typhonml:FreetextType" : {
                list[NlpTask] tasks = [ realm.new(#NlpTask, NlpTask(get(x, "workflowName"), make(#NlpTaskType, get(x, "type"), []))) 
                                           | x:"tasks"(_) <- typeElts ];
-               dt = DataType(makePrimitive("FreetextType", [tasks]));
+               dt = makePrimitive("FreetextType", [tasks]);
              }
              case "typhonml:StringType" : {
-               dt = DataType(makePrimitive("StringType", [has(xtype, "maxSize") ? toInt(get(xtype, "maxSize")) : 0])); 
+               dt = makePrimitive("StringType", [has(xtype, "maxSize") ? toInt(get(xtype, "maxSize")) : 0]); 
              }
              case /^typhonml:<rest:.*>$/: {
-               dt = DataType(makePrimitive(rest, []));
+               dt = makePrimitive(rest, []);
              } 
              default: throw "Unknown attribute type: <xtype>";
            }
 
-           attr = EntityAttribute(realm.new(#Attribute, Attribute(get(xattr, "name"), dt)));
+           attr = EntityAttributeKind(realm.new(#Attribute, Attribute(get(xattr, "name"), dt)));
            attrs += [attr];
            attrMap[attrPath] = attr;
            attrPos += 1;
@@ -236,7 +236,7 @@ Model xmiNode2Model(node n) {
            // the first one is xsi:type (which should be "typhonml:CustomAttribute")
            // the other one is just type; we thus assume that type
            // refers to the typhonML type, not the Ecore type. 
-           attr = EntityAttribute(realm.new(#CustomAttribute, 
+           attr = EntityAttributeKind(realm.new(#CustomAttribute, 
               CustomAttribute(get(xattr, "name"), referTo(#CustomDataType, ensureCustom(get(xattr, "type"))))));
            attrs += [attr];
          }
@@ -290,12 +290,36 @@ Model xmiNode2Model(node n) {
        //println("Data type path: <dtPath>");
        //println(xdt);
            
-       list[CustomDataTypeItem] elements = [];
-       for (xattr:"elements"(_) <- xelts) {
-         el = realm.new(#DataTypeItem, DataTypeItem(get(xattr, "name"), DataTypeImplementationPackage()));
-         aPath = get(xattr, "type");
-         el.\type = referTo(#DataType, ensurePrimitive(aPath));
-         elements += [el]; 
+       list[SuperDataType] elements = [];
+       
+       for (xattr:"elements"([node xtype]) <- xelts) {
+         switch (get(xattr, "xsi-type")) {
+           case "typhonml:SimpleDataType": {
+             dt = makePrimitive("IntType", []); // dummy
+             switch (get(xtype, "xsi-type")) {
+               case "typhonml:FreetextType" : {
+                 list[NlpTask] tasks = [ realm.new(#NlpTask, NlpTask(get(x, "workflowName"), make(#NlpTaskType, get(x, "type"), []))) 
+                                          | x:"tasks"(_) <- typeElts ];
+                 dt = makePrimitive("FreetextType", [tasks]);
+               }
+               
+               case "typhonml:StringType" : {
+                 dt = makePrimitive("StringType", [has(xtype, "maxSize") ? toInt(get(xtype, "maxSize")) : 0]); 
+               }
+             
+               case /^typhonml:<rest:.*>$/: {
+                 dt = makePrimitive(rest, []);
+               } 
+               default: throw "Unknown attribute type: <xtype>";
+             }
+             el = SuperDataType(realm.new(#SimpleDataType, SimpleDataType(get(xattr, "name"), dt)));
+             elements += [el];
+           }
+           case "typhonml:ComplexDataType": {
+             el = ComplexDataType(get(xattr, "name"), ensureCustom(dtPath));
+             elements += [el];
+           }
+         }
        }
        custom = ensureCustom(dtPath);
        custom.name = get(xdt, "name");
@@ -306,7 +330,7 @@ Model xmiNode2Model(node n) {
     }
     
     for (xcho:"changeOperators"(list[node] xelts) <- kids) {
-      switch (get(xcho, "xsi:type")) {
+      switch (get(xcho, "xsi-type")) {
       
         case "typhonml:AddEntity":{
         	entPath = "//@entities.<entPos>";
