@@ -389,14 +389,17 @@ SQLExpr expr2sql((Expr)`<Expr lhs> && <Expr rhs>`, Ctx ctx, Log log = noLog)
 SQLExpr expr2sql((Expr)`<Expr lhs> || <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = or(expr2sql(lhs, ctx), expr2sql(rhs, ctx));
 
+SQLExpr removeWKB(fun("ST_AsWKB", [a])) = a;
+default SQLExpr removeWKB(SQLExpr other) = other;
+
 SQLExpr expr2sql((Expr)`<Expr lhs> & <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = equ(fun("ST_Intersects", [expr2sql(lhs, ctx), expr2sql(rhs, ctx)]), lit(integer(1)));
+  = equ(fun("ST_Intersects", [removeWKB(expr2sql(lhs, ctx)), removeWKB(expr2sql(rhs, ctx))]), lit(integer(1)));
 
 SQLExpr expr2sql((Expr)`<Expr lhs> in <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = equ(fun("ST_Within", [expr2sql(lhs, ctx), expr2sql(rhs, ctx)]), lit(integer(1)));
+  = equ(fun("ST_Within", [removeWKB(expr2sql(lhs, ctx)), removeWKB(expr2sql(rhs, ctx))]), lit(integer(1)));
 
 SQLExpr expr2sql((Expr)`distance(<Expr from>, <Expr to>)`, Ctx ctx, Log log = noLog)
-  = fun("ST_Distance", [expr2sql(from, ctx), expr2sql(from, ctx)]);
+  = fun("ST_Distance", [removeWKB(expr2sql(from, ctx)), removeWKB(expr2sql(from, ctx))]);
 
 default SQLExpr expr2sql(Expr e, Ctx _) { throw "Unsupported expression: <e>"; }
 
