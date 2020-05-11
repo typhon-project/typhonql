@@ -21,6 +21,7 @@ Script schema2script(Schema s, Log log = noLog) {
     	log("[schema2script] generatig script for <p>");
     	steps += place2script(p, s, log = log);
   	}
+  	steps+= finish();
   	return script(steps);
 }
 

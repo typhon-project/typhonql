@@ -17,7 +17,8 @@ str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
 
-Log LOG = void(value v) {;};
+public Log PRINT() = void(value v) { println("LOG: <v>"); };
+
 
 void setup(PolystoreInstance p, bool _) {
 }
@@ -94,20 +95,20 @@ void test6(PolystoreInstance p) {
 	 s = p.fetchSchema();
 	 
 	 // We need to fake the schema update
-	 s.attrs += { <"Biography", "rating", "int">};
+	 s.attrs += { <"Biography", "country", "string(256)">};
 	 p.runDDL((Request) `create Biography.rating : int`);
-	 p.runUpdateForSchema((Request) `insert Biography {@id: #bio1, content: "Good guy", rating: 5 }`, s);
-	 rs = p.runQueryForSchema((Request) `from Biography b select b.@id, b.rating`, s);
-	 p.assertEquals("test6", rs,  <["b.@id", "b.rating"],[[ "bio1", 5 ]]>);
+	 p.runUpdateForSchema((Request) `insert Biography {@id: #bio1, content: "Good guy", country: "CL" }`, s);
+	 rs = p.runQueryForSchema((Request) `from Biography b select b.@id, b.country`, s);
+	 p.assertEquals("test6", rs,  <["b.@id", "b.country"],[[ "bio1", "CL" ]]>);
 }
 
 // drop attribute (relational)
 void test7(PolystoreInstance p) {
 	 s = p.fetchSchema();
-	 p.runDDL((Request) `drop Product.description`);
+	 p.runDDL((Request) `drop attribute Product.description`);
 	 
 	 // We need to fake the schema update
-	 s.attrs -= < {"Product", "description", "string(256)"} >;
+	 s.attrs -=  {<"Product", "description", "string(256)">};
 	 p.assertException("test7",
 	 	void() { p.runQuery((Request) `from Product p select p.description`);});
 }
@@ -115,26 +116,27 @@ void test7(PolystoreInstance p) {
 // drop attribute (document)
 void test8(PolystoreInstance p) {
 	 s = p.fetchSchema();
-	 p.runDDL((Request) `drop Review.content`);
+	 p.runDDL((Request) `drop attribute Review.content`);
 	 
 	 // We need to fake the schema update
-	 s.attrs -= < {"Review", "content", "text"} >;
+	 s.attrs -= {<"Review", "content", "text">};
 	 p.assertException("test8",
-	 	void() { p.runQuery((Request) `from Review r select r.content`);});
+	 	void() { rt = p.runQuery((Request) `from Review r select r.content`); });
 }
 
 
 
-TestExecutor getExecutor() = initTest(setup, HOST, PORT, USER, PASSWORD);
+TestExecuter getExecuter(Log log = NO_LOG()) = 
+	initTest(setup, HOST, PORT, USER, PASSWORD, log = log);
 
-void runTest(void(PolystoreInstance) t) {
-	getExecutor().runTest(t); 
+void runTest(void(PolystoreInstance) t, Log log = NO_LOG()) {
+	getExecuter(log = log).runTest(t); 
 }
 
 void runTests(list[void(PolystoreInstance)] ts) {
-	getExecutor().runTests(ts); 
+	getExecuter().runTests(ts); 
 }
 
 void runAll() {
-	runTests([test1, test2, test3, test4]);
+	runTests([test1, test2, test3, test4, test5, test6, test7, test8]);
 }
