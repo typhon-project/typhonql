@@ -1,7 +1,6 @@
 package nl.cwi.swat.typhonql.client.resulttable;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.sql.Timestamp;
@@ -9,13 +8,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.bson.Document;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.WKBReader;
 import org.rascalmpl.values.ValueFactoryFactory;
 import org.wololo.jts2geojson.GeoJSONReader;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.usethesource.vallang.IExternalValue;
 import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.ITuple;
@@ -29,9 +33,12 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	private static final ObjectMapper mapper;
 	
 	static {
-		//mapper.configure(DeserializationFeature.
 		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
-		mapper.canDeserialize(mapper.getTypeFactory().constructSimpleType(EntityRef.class, new JavaType[0]));
+		SimpleModule geomModule = new SimpleModule();
+		geomModule.addSerializer(Geometry.class, new GeometrySerializer());
+		geomModule.addSerializer(Polygon.class, new GeometrySerializer());
+		geomModule.addSerializer(Point.class, new GeometrySerializer());
+		mapper.registerModule(geomModule);
 		mapper.canSerialize(EntityRef.class);
 
 	}
@@ -128,6 +135,9 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 			}
 			
 		}
+		else if (v instanceof Geometry) {
+			return vf.string(((Geometry) v).toText());
+		}
 		throw new RuntimeException("Unknown conversion for Java type " + v.getClass());
 	}
 
@@ -195,6 +205,20 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 			return object.toString();
 		else
 			return object.toString();
+		
+	}
+	
+	@SuppressWarnings("serial")
+	private static class GeometrySerializer extends StdSerializer<Geometry> {
+		public GeometrySerializer() {
+			super(Geometry.class);
+		}
+
+		@Override
+		public void serialize(Geometry value, JsonGenerator gen, SerializerProvider provider)
+				throws IOException {
+			gen.writeString(value.toText());
+		}
 		
 	}
 
