@@ -26,6 +26,7 @@ import Message;
 import Boolean;
 
 import util::Reflective;
+import lang::json::IO;
 import lang::manifest::IO;
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
@@ -38,7 +39,7 @@ java str readHttpModel(loc polystoreUri, str user, str password);
 java bool executeResetDatabases(loc polystoreUri, str user, str password);
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
-java ResultTable executeQuery(loc polystoreUri, str user, str password, str query);
+java str executeQuery(loc polystoreUri, str user, str password, str query);
 
 @javaClass{nl.cwi.swat.typhonql.TyphonQL}
 java void executeDDLUpdate(loc polystoreUri, str user, str password, str query);
@@ -110,6 +111,8 @@ Session getSession(Tree tree) {
   return newSession(connections);
 }
 
+data TableResultJSON = contents(list[str] columnNames, list[list[value]] values);
+
 void setupIDE(bool isDevMode = false) {
   Schema sch = schema({}, {});
   CheckerMLSchema cSch = ();
@@ -180,8 +183,7 @@ void setupIDE(bool isDevMode = false) {
           	  try {
           		if ((Request) `<Query q>` := req) {
                     <polystoreUri, user, password> = readTyphonConfig(tree@\loc);
-	      	  		ResultTable ws = executeQuery(polystoreUri, user, password, "<req>");
-	          		text(ws);
+	          		text(parseJSON(#TableResultJSON, "{\"contents\": <executeQuery(polystoreUri, user, password, "<req>")> }"));
 	          	}
 	          	else if ((Request) `<Statement s>` := req)  {
 	          		if (isDDL(s)) {

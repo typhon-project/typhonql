@@ -6,7 +6,6 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.bson.Document;
@@ -17,12 +16,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.usethesource.vallang.IBool;
 import io.usethesource.vallang.IExternalValue;
-import io.usethesource.vallang.IInteger;
-import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IListWriter;
-import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
@@ -64,40 +59,6 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	@JsonIgnore
 	public boolean isEmpty() {
 		return values == null || values.size() == 0;
-	}
-
-	@JsonIgnore
-	public static Object toJava(IValue object) {
-		if (object instanceof IInteger) {
-			return ((IInteger) object).intValue();
-		}
-		
-		else if (object instanceof IString) {
-			return ((IString) object).getValue();
-		}
-		else if (object instanceof IList) {
-			Iterator<IValue> iter = ((IList) object).iterator();
-			List<Object> lst = new ArrayList<Object>();
-			while (iter.hasNext()) {
-				IValue v = iter.next();
-				lst.add(toJava(v));
-			}
-			return lst;
-		}
-		else if (object instanceof ITuple) {
-			// TODO do the resolution for entities
-			ITuple tuple = (ITuple) object;
-			IBool isNotNull = (IBool) tuple.get(0);
-			if (isNotNull.getValue()) {
-				IString uuid = (IString) tuple.get(1);
-				return new EntityRef(uuid.getValue());
-			} else {
-				return null;
-			}
-			
-		}
-		
-		throw new RuntimeException("Unknown conversion for Rascal value of type " + object.getClass());
 	}
 	
 	@JsonIgnore
@@ -175,13 +136,41 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		mapper.writeValue(target, this);
 	}
 	
-	@JsonIgnore
-	public void print() {
-		System.out.println(String.join(", ", columnNames));
-		for (List<Object> vs : values) {
-			System.out.println(String.join(",", 
-					vs.stream().map(o -> o.toString()).collect(Collectors.toList())));
+	@Override
+	public String toString() {
+		StringBuilder result = new StringBuilder();
+		result.append("ResultTable { \n");
+		result.append("\tcolumns: \n");
+		boolean first = true;
+		for (String c : columnNames) {
+			if (first) {
+				first = false;
+				result.append('\t');
+				result.append('\t');
+			}
+			else {
+				result.append(',');
+			}
+			result.append(c);
 		}
+		result.append("\n\trows: \n");
+		for (List<Object> r : values) {
+            result.append('\t');
+            result.append('\t');
+            result.append('[');
+            first = true;
+            for (Object o : r) {
+            	if (first) {
+            		first = false;
+            	}
+            	else {
+            		result.append(',');
+            	}
+            	result.append(o.toString());
+            }
+            result.append(']');
+		}
+		return result.toString();
 	}
 	
 	@Override
@@ -195,21 +184,6 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	public boolean isAnnotatable() {
         return false;
     }
-
-	@JsonIgnore
-	public static ResultTable fromJSON(InputStream is) throws IOException {
-		ResultTable rt = mapper.readValue(is, ResultTable.class);
-		return rt;
-	}
-
-	public static String serialize(String type, String s) {
-		// TODO complete all the cases
-		if (type.equals("str") || type.equals("string"))
-			return "\"" + s + "\"";
-		else if (type.equals("int") || type.equals("integer"))
-			return s;
-		return s;
-	}
 
 	public static String serializeAsString(Object object) {
 		// TODO complete all the cases
