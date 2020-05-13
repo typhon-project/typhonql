@@ -193,6 +193,7 @@ public class TyphonSession implements Operations {
 		return makeFunction(ctx, state, readAndStoreType, args -> {
 			ResultTable rt = computeResultTable(store, script, args);
 			state.setResult(rt);
+			script.clear();
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
@@ -201,6 +202,7 @@ public class TyphonSession implements Operations {
 			TyphonSessionState state, FunctionType readAndStoreType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, readAndStoreType, args -> {
 			Runner.executeUpdates(script, updates);
+			script.clear();
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
