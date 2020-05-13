@@ -196,6 +196,20 @@ public class MongoOperations implements Operations {
 		});
 	}
 
+	private ICallableValue makeCreateIndex(ResultStore store, List<Consumer<List<Record>>> script,
+		 	List<Runnable> updates, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx,
+			IValueFactory vf, TypeFactory tf) {
+		return makeFunction(ctx, state, executeType, args -> {
+			String dbName = ((IString) args[0]).getValue();
+			String collection = ((IString) args[1]).getValue();
+			String selector = ((IString) args[2]).getValue();
+			String index = ((IString) args[3]).getValue();
+
+			engine(store, script, updates, uuids, dbName).executeCreateIndex(collection, selector, index);
+			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+		});
+	}
+	
 	private ICallableValue makeCreateCollection(ResultStore store, List<Consumer<List<Record>>> script,
 			List<Runnable> updates, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType,
 			IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
@@ -273,6 +287,7 @@ public class MongoOperations implements Operations {
 		FunctionType executeType9 = (FunctionType) aliasedTuple.getFieldType("renameCollection");
 		FunctionType executeType10 = (FunctionType) aliasedTuple.getFieldType("dropCollection");
 		FunctionType executeType11 = (FunctionType) aliasedTuple.getFieldType("dropDatabase");
+		FunctionType cit = (FunctionType) aliasedTuple.getFieldType("createIndex");
 
 		return vf.tuple(makeFind(store, script, updates, state, uuids, executeType1, ctx, vf, tf),
 				makeFindWithProjection(store, script, updates, state, uuids, executeType2, ctx, vf, tf),
@@ -282,6 +297,7 @@ public class MongoOperations implements Operations {
 				makeDeleteOne(store, script, updates, state, uuids, executeType6, ctx, vf, tf),
 				makeDeleteMany(store, script, updates, state, uuids, executeType7, ctx, vf, tf),
 				makeCreateCollection(store, script, updates, state, uuids, executeType8, ctx, vf, tf),
+				makeCreateIndex(store, script, updates, state, uuids, cit, ctx, vf, tf),
 				makeRenameCollection(store, script, updates, state, uuids, executeType9, ctx, vf, tf),
 				makeDropCollection(store, script, updates, state, uuids, executeType10, ctx, vf, tf),
 				makeDropDatabase(store, script, updates, state, uuids, executeType11, ctx, vf, tf));

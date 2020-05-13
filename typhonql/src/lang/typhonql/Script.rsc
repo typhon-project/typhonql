@@ -39,6 +39,7 @@ data MongoCall
   | deleteOne(str dbName, str coll, str query)
   | deleteMany(str dbName, str coll, str query)
   | createCollection(str dbName, str coll)
+  | createIndex(str dbName, str coll, str selector, str index)
   | renameCollection(str dbName, str coll, str newName)
   | dropCollection(str dbName, str coll)
   | dropDatabase(str dbName)
@@ -89,6 +90,9 @@ str runScript(Script scr, Session session, Schema schema) {
         
       case step(str r, mongo(createCollection(str db, str coll)), Bindings ps):
         session.mongo.createCollection(db, coll); 
+
+      case step(str r, mongo(createIndex(str db, str coll, str selector, str index)), Bindings ps):
+        session.mongo.createIndex(db, coll, selector, index); 
         
       case step(str r, mongo(dropCollection(str db, str coll)), Bindings ps):
         session.mongo.dropCollection(db, coll); 

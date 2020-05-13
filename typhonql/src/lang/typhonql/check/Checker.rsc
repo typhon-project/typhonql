@@ -245,8 +245,32 @@ void collect(current:(Expr)`- <Expr arg>`, Collector c) {
 }
 
 void collect(current:(Expr)`<VId name> (<{Expr ","}* args>)`, Collector c) {
-    reportUnsupported(current, c);
+    collect(args, c);
+    collectBuildinFunction(current, name, [e | e <- args], c);
 }
+
+
+void requirePointOrPolygon(Solver s, Tree t) {
+    s.requireTrue(s.getType(t) in {polygonType(), pointType()}, error(t, "Expected polygon or point, got %t", t));
+}
+
+void collectBuildinFunction(Tree current, (VId)`distance`, list[Expr] args, Collector c) {
+    c.fact(current, floatType());
+    if ([from, to] := args) {
+        c.require("check valid argument types", current, [from, to], void (Solver s) {
+            requirePointOrPolygon(s, from);
+            requirePointOrPolygon(s, to);
+        });
+    }
+    else {
+        c.report(error(current, "Invalid number of arguments for distance function, required: 2, gotten: %v", size(args)));
+    }
+}
+
+default void collectBuildinFunction(Tree current, _, _, Collector c) {
+    c.report(error(current, "Unknown buildin function"));
+}
+
 
 void collect(current:(Expr)`! <Expr arg>`, Collector c) {
     collect(arg, c);
@@ -297,11 +321,27 @@ void collect(current:(Expr)`<Expr lhs> \< <Expr rhs>`, Collector c) {
 }
 
 void collect(current:(Expr)`<Expr lhs> in <Expr rhs>`, Collector c) {
-    reportUnsupported(current, c);
+    c.fact(current, boolType());
+    c.require("Valid in expression", current, [lhs, rhs], void (Solver s) {
+        switch (s.getType(rhs)) {
+            case polygonType(): 
+                requirePointOrPolygon(s, lhs);
+            case AType tp:
+                s.report(error(rhs, "Unsupported in expression for %t", tp));
+        }
+    });
+    collect(lhs, rhs, c);
 }
 
 void collect(current:(Expr)`<Expr lhs> like <Expr rhs>`, Collector c) {
     reportUnsupported(current, c);
+}
+
+void collect(current:(Expr)`<Expr lhs> & <Expr rhs>`, Collector c) {
+    c.fact(current, boolType());
+    c.requireEqual(polygonType(), lhs, error(lhs, "intersection can only be between polygons (got %t)", lhs));
+    c.requireEqual(polygonType(), rhs, error(rhs, "intersection can only be between polygons (got %t)", rhs));
+    collect(lhs, rhs, c);
 }
 
 void collect(current:(Expr)`<Expr lhs> && <Expr rhs>`, Collector c) {

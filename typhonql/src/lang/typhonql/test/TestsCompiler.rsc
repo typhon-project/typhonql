@@ -26,26 +26,27 @@ str PASSWORD = "admin1@";
 public Log PRINT() = void(value v) { println("LOG: <v>"); };
 
 void setup(PolystoreInstance p, bool doTest) {
-	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo" }`);
-	p.runUpdate((Request) `insert User { @id: #davy, name: "Davy" }`);
+	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo", location: #point(2.0 3.0) }`);
+	p.runUpdate((Request) `insert User { @id: #davy, name: "Davy", location: #point(20.0 30.0)  }`);
 	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from User u select u.@id, u.name`);
 	  p.assertResultEquals("users were inserted", rs, <["u.@id", "u.name"], [["pablo", "Pablo"], ["davy", "Davy"]]>);
 	}
 	
-	p.runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat", productionDate:  $2020-04-13$ }`);
-	p.runUpdate((Request) `insert Product {@id: #radio, name: "Radio", description: "Loud" , productionDate:  $2020-04-13$ }`);
+	p.runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat", productionDate:  $2020-04-13$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);
+	p.runUpdate((Request) `insert Product {@id: #radio, name: "Radio", description: "Loud" , productionDate:  $2020-04-13$, availabilityRegion: #polygon((10.0 10.0, 40.0 10.0, 40.0 40.0, 10.0 40.0, 10.0 10.0)) }`);
+	
 	
 	if (doTest) {
-	  rs = p.runQuery((Request)`from Product p select p.@id, p.name, p.description, p.productionDate`);
+	  rs = p.runQuery((Request)`from Product p select p.@id, p.name, p.description, p.productionDate`); // TODO: include polygon in this test
 	  p.assertResultEquals("products were inserted", rs, <["p.@id", "p.name", "p.description", "p.productionDate"], 
 	     [["tv", "TV", "Flat", $2020-04-12T22:00:00.000+00:00$], ["radio", "Radio", "Loud", $2020-04-12T22:00:00.000+00:00$]]>);
 	}
 	
-	p.runUpdate((Request) `insert Review { @id: #rev1, content: "Good TV", user: #pablo, product: #tv }`);
-	p.runUpdate((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv }`);
-	p.runUpdate((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio }`);
+	p.runUpdate((Request) `insert Review { @id: #rev1, content: "Good TV", user: #pablo, product: #tv, location: #point(2.0 3.0) }`);
+	p.runUpdate((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv, location: #point(20.0 30.0) }`);
+	p.runUpdate((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio, location: #point(3.0 2.0) }`);
 	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Review r select r.@id, r.content, r.user, r.product`);
@@ -137,6 +138,7 @@ void testInsertSingleValuedSQLCross(PolystoreInstance p) {
   					 '  name: "Nespresso", 
   					 '  price: 23, 
   					 '  productionDate: $2020-04-15$,
+  					 '  availabilityRegion: #polygon((1.0 1.0)),
   					 '  category: #appliances
   					 '}`);
 
@@ -149,7 +151,7 @@ void testInsertManyValuedSQLLocal(PolystoreInstance p) {
   p.runUpdate((Request)`insert Item { @id: #laptop1, shelf: 1, product: #laptop}`);	
   p.runUpdate((Request)`insert Item { @id: #laptop2, shelf: 1, product: #laptop}`);	
 	
-  p.runUpdate((Request)`insert Product { @id: #laptop, name: "MacBook", inventory: [#laptop1, #laptop2]}`);
+  p.runUpdate((Request)`insert Product { @id: #laptop, name: "MacBook", inventory: [#laptop1, #laptop2], availabilityRegion: #polygon((1.0 1.0))}`);
   
   rs = p.runQuery((Request)`from Product p select p.inventory where p.@id == #laptop`);
   
@@ -204,14 +206,14 @@ void testDeleteKidsRemovesParentLinksSQLCross(PolystoreInstance p) {
 }
 
 void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", tags: [#fun, #social]}`);
+  p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", tags: [#fun, #social], availabilityRegion: #polygon((1.0 1.0))}`);
   rs = p.runQuery((Request)`from Product p select p.name where p.tags == #fun`);
   p.assertResultEquals("insertManyXrefsSQLLocal", rs, <["p.name"], [["iPhone"]]>);
 }
 
 void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
   p.runUpdate((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy}`);
-  p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", reviews: [#newReview]}`);
+  p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", reviews: [#newReview], availabilityRegion: #polygon((1.0 1.0))}`);
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, p.reviews == #newReview`);
   p.assertResultEquals("InsertManyContainSQLtoExternal", rs, <["r.content"], [["expensive"]]>);
 }
@@ -306,6 +308,70 @@ void testSQLDateEquals(PolystoreInstance p) {
   p.assertResultEquals("sqlDateEquals", rs, <["p.name"], [["Radio"],["TV"]]>);
 }
 
+
+void testGISonSQL(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from Product p select p.name where #point(2.0 3.0) in p.availabilityRegion`);
+  p.assertResultEquals("testGISonSQLLiteralPoint", rs, <["p.name"], [["TV"]]>);
+  rs = p.runQuery((Request)`from Product p select p.name where #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0)) in p.availabilityRegion`);
+  p.assertResultEquals("testGISonSQLLiteralPolygon", rs, <["p.name"], [["TV"]]>);
+  rs = p.runQuery((Request)`from User u select u.name where u.location in #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0))`);
+  p.assertResultEquals("testGISonSQLLiteralPolygonRhs", rs, <["u.name"], [["Pablo"]]>);
+
+  rs = p.runQuery((Request)`from Product p, User u select u.name, p.name where u.location in p.availabilityRegion`);
+  p.assertResultEquals("testGISonSQLJoin", rs, <["u.name", "p.name"], [["Pablo", "TV"], ["Davy", "Radio"]]>);
+
+
+  rs = p.runQuery((Request)`from Product p select p.name where #point(2.0 3.0) & p.availabilityRegion`);
+  p.assertResultEquals("testGISonSQLIntersectLiteral", rs, <["p.name"], [["TV"]]>);
+  
+
+}
+
+void testGISonMongo(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from Review r select r.@id where distance(#point(2.0 3.0), r.location) \< 200.0`);
+  p.assertResultEquals("testGISonMongo - distance query", rs, <["r.@id"], [["rev1"]]>);
+
+  rs = p.runQuery((Request)`from Review r select r.@id where distance(#point(2.0 3.0), r.location) \<= 200.0`);
+  p.assertResultEquals("testGISonMongo - distance query2", rs, <["r.@id"], [["rev1"]]>);
+
+  rs = p.runQuery((Request)`from Review r select r.@id where distance(r.location, #point(2.0 3.0)) \>= 200.0`);
+  p.assertResultEquals("testGISonMongo - mindistance query", rs, <["r.@id"], [["rev2"],["rev3"]]>);
+
+  rs = p.runQuery((Request)`from Review r select r.@id where distance(r.location, #point(2.0 3.0)) \> 200.0`);
+  p.assertResultEquals("testGISonMongo - mindistance query", rs, <["r.@id"], [["rev2"],["rev3"]]>);
+  
+  rs = p.runQuery((Request)`from Review r select r.@id where r.location in #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0))`);
+  p.assertResultEquals("testGISonMongo - contained in polygon", rs, <["r.@id"], [["rev1"],["rev3"]]>);
+
+  rs = p.runQuery((Request)`from Review r select r.@id where r.location & #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0))`);
+  p.assertResultEquals("testGISonMongo - intersect with polygon", rs, <["r.@id"], [["rev1"],["rev3"]]>);
+
+  rs = p.runQuery((Request)`from Review r select r.@id where r.location & #point(2.0 3.0)`);
+  p.assertResultEquals("testGISonMongo - intersect with point", rs, <["r.@id"], [["rev1"]]>);
+}
+
+
+void testGISonCrossMongoSQL(PolystoreInstance p) {
+  // TODO: Tijs add support for cross delayed clauses
+  rs = p.runQuery((Request)`from Product p, Review r select r, p.name where r.location in p.availabilityRegion`);
+  p.assertResultEquals("testGISonCrossMongoSQL - contained", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
+  
+  rs = p.runQuery((Request)`from Product p, Review r select r, p.name where distance(r.location in p.availabilityRegion) \< 200`);
+  p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
+}
+
+
+void testGISPrint(PolystoreInstance p) {
+    rs = p.runQuery((Request)`from Product p select p.availabilityRegion`);
+    p.assertResultEquals("GIS Print - SQL", rs, <["p.availabilityRegion"], [["POLYGON ((10 10, 40 10, 40 40, 10 40, 10 10))"],["POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))"]]>);
+
+
+    rs = p.runQuery((Request)`from Review r select r.location`);
+    p.assertResultEquals("GIS Print - Mongo", rs, <["r.location"], [["POINT (2 3)"],["POINT (20 30)"], ["POINT (3 2)"]]>);
+}
+
+
+
 void test1(PolystoreInstance p) {
 	rs = p.runQuery((Request) `from Product p select p.name`);
 	p.assertResultEquals("name is selected from product", rs, <["p.name"],[["Radio"],["TV"]]>);
@@ -355,7 +421,7 @@ void test9(PolystoreInstance p) {
 
 
 void test10(PolystoreInstance p) {
-	p.runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description }`,
+	p.runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description, availabilityRegion: #polygon((1.0 1.0)) }`,
 						  ["name", "description"],
 						  [
 						   ["\"IPhone\"", "\"Apple\""],
@@ -373,18 +439,19 @@ void test11(PolystoreInstance p) {
 }
 
 void test12(PolystoreInstance p) {
-	p.runUpdate((Request) `insert User { @id: #tijs, name: "Tijs" }`);
+	p.runUpdate((Request) `insert User { @id: #tijs, name: "Tijs", location: #point(1.0 1.0) }`);
 	rs = p.runQuery((Request) `from User u select u where u.@id == #tijs`);
 	p.assertResultEquals("basic insert in sql", rs, <["u.@id"],[["tijs"]]>);
 }
 
 void test13(PolystoreInstance p) {
-	<_, names> = p.runUpdate((Request) `insert User { name: "Tijs" }`);
+	<_, names> = p.runUpdate((Request) `insert User { name: "Tijs", location: #point(1.0 1.0) }`);
 	p.assertEquals("one insert is one object inserted", size(names), 1);
 	uuid = names["uuid"];
 	rs = p.runQuery([Request] "from User u select u where u.@id == #<uuid>");
 	p.assertResultEquals("generated id is in the result", rs, <["u.@id"],[["<uuid>"]]>);
 }
+
 
 TestExecuter executer(Log log = NO_LOG()) = initTest(setup, HOST, PORT, USER, PASSWORD, log = log);
 
@@ -431,6 +498,10 @@ void runTests(Log log = NO_LOG()) {
 	  , testUpdateManyContainSQLtoExternalSetToEmpty	  
 	  
 	  , testSQLDateEquals
+	  
+	  , testGISonSQL
+	  , testGISonMongo
+	  , testGISPrint
 	  
 	  , test1
 	  , test2

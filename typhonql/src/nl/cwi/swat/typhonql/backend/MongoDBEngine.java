@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.bson.Document;
-
+import com.mongodb.BasicDBObject;
 import com.mongodb.MongoNamespace;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -82,6 +82,11 @@ public class MongoDBEngine extends Engine {
 	public void executeRenameCollection(String dbName, String collection, String newName) {
 		MongoCollection<Document> coll = db.getCollection(collection);
 		coll.renameCollection(new MongoNamespace(newName));
+	}
+
+	public void executeCreateIndex(String collectionName, String selector, String index) {
+		MongoCollection<Document> coll = db.getCollection(collectionName);
+		coll.createIndex(new BasicDBObject(selector, index));
 	}
 
 }
