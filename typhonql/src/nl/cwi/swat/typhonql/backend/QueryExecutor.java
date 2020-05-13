@@ -2,12 +2,12 @@ package nl.cwi.swat.typhonql.backend;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
-
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public abstract class QueryExecutor {
@@ -34,28 +34,41 @@ public abstract class QueryExecutor {
 	public void executeSelect(String resultId) {
 		int nxt = script.size() + 1;
 	    script.add((List<Record> rows) -> {
-	       Map<String, Object> values = rowsToValues(rows);
-	       ResultIterator iter = executeSelect(values);
-	       this.storeResults(resultId, iter);
-	       while (iter.hasNextResult()) {
-	    	  iter.nextResult();
-	    	  Record r = iter.buildRecord(signature);
-	    	  List<Record> newRow = horizontalAdd(rows, r);
-	    	  script.get(nxt).accept(newRow);
-	       }
+	    	if (rows.size() <= 1) {
+               ResultIterator iter = executeSelect( rows.size() == 0 ? Collections.emptyMap(): bind(rows.get(0)));
+               storeResults(resultId, iter);
+               processResults(script.get(nxt), rows, iter);
+	    	}
+	    	else {
+                List<ResultIterator> results = new ArrayList<>(rows.size());
+                for (Record record : rows) {
+                   ResultIterator iter = executeSelect(bind(record));
+                   results.add(iter);
+                   processResults(script.get(nxt), rows, iter);
+                }
+                storeResults(resultId, new AggregatedResultIterator(results));
+	    	}
 	    });
 	}
+
+	private void processResults(Consumer<List<Record>> consumer, List<Record> rows, ResultIterator iter) {
+		while (iter.hasNextResult()) {
+		      iter.nextResult();
+		      Record r = iter.buildRecord(signature);
+		      List<Record> newRow = horizontalAdd(rows, r);
+		      consumer.accept(newRow);
+		   }
+	}
 	
-	private Map<String, Object> rowsToValues(List<Record> rows) {
+	
+	private Map<String, Object> bind(Record record) {
 		Map<String, Object> values = new HashMap<String, Object>();
-		for (Record record : rows) {
-			for (Field f : record.getObjects().keySet()) {
-				if (inverseBindings.containsKey(f)) {
-					String var = inverseBindings.get(f);
-					values.put(var, record.getObject(f));
-				}
-			}
-		}
+        for (Field f : record.getObjects().keySet()) {
+            if (inverseBindings.containsKey(f)) {
+                String var = inverseBindings.get(f);
+                values.put(var, record.getObject(f));
+            }
+        }
 		return values;
 	}
 	
