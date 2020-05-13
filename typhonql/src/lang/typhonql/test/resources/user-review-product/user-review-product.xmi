@@ -57,9 +57,11 @@
     <attributes xsi:type="typhonml:Attribute" name="address">
       <type xsi:type="typhonml:StringType" maxSize="256"/>
     </attributes>
+    <attributes xsi:type="typhonml:CustomAttribute" name="billing" type="//@customDataTypes.0"/>
     <attributes xsi:type="typhonml:Attribute" name="location">
       <type xsi:type="typhonml:PointType"/>
     </attributes>
+    <relations name="country" type="//@entities.7"/>
     <relations name="biography" type="//@entities.6" opposite="//@entities.6/@relations.0" isContainment="true"/>
     <relations name="reviews" type="//@entities.0" cardinality="zero_many" opposite="//@entities.0/@relations.1"/>
   </entities>
@@ -67,7 +69,15 @@
     <attributes xsi:type="typhonml:Attribute" name="content">
       <type xsi:type="typhonml:StringType" maxSize="256"/>
     </attributes>
-    <relations name="user" type="//@entities.5" cardinality="one" opposite="//@entities.5/@relations.0"/>
+    <relations name="user" type="//@entities.5" cardinality="one" opposite="//@entities.5/@relations.1"/>
+  </entities>
+  <entities name="Country">
+    <attributes xsi:type="typhonml:Attribute" name="name">
+      <type xsi:type="typhonml:StringType" maxSize="128"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="code">
+      <type xsi:type="typhonml:StringType" maxSize="4"/>
+    </attributes>
   </entities>
   <databases xsi:type="typhonml:RelationalDB" name="Inventory">
     <tables name="UserDB" entity="//@entities.5"/>
@@ -80,4 +90,18 @@
     <collections name="Biography" entity="//@entities.6"/>
     <collections name="Category" entity="//@entities.2"/>
   </databases>
+  <customDataTypes name="address">
+    <elements xsi:type="typhonml:SimpleDataType" name="street">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </elements>
+    <elements xsi:type="typhonml:SimpleDataType" name="city">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </elements>
+    <elements xsi:type="typhonml:SimpleDataType" name="zipcode">
+      <type xsi:type="typhonml:StringType" maxSize="42"/>
+    </elements>
+    <elements xsi:type="typhonml:SimpleDataType" name="location">
+      <type xsi:type="typhonml:PointType"/>
+    </elements>
+  </customDataTypes>
 </typhonml:Model>

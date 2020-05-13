@@ -1,3 +1,11 @@
+
+customdatatype address {
+	street: string[256],
+	city: string[256],
+	zipcode: string[42],
+	location: point
+}
+
 entity Review {
 	content : text
 	location: point
@@ -36,7 +44,10 @@ entity Tag {
 entity User {
 	name : string[256]
 	address: string[256]
+	billing: address
 	location: point
+
+	country -> Country [0..1]
 	
 	biography :-> Biography."Biography.user"[0..1]
 	reviews -> Review."Review.user"[0..*]
@@ -48,6 +59,14 @@ entity Biography {
 	user -> User."User.biography"[1]
 
 }
+
+entity Country {
+	name: string[128]
+	code: string[4]
+}
+
+  
+
 
 relationaldb Inventory {
 	tables {
@@ -61,6 +80,12 @@ relationaldb Inventory {
 		table { ItemDB: Item }
 	}
 }
+
+//keyvaluedb Stuff {
+//	elements {
+//		Country { Country -> Country } 
+//	}
+//}
 
 documentdb Reviews {
 	collections {
