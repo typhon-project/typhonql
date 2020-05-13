@@ -34,7 +34,7 @@ public abstract class QueryExecutor {
 	public void executeSelect(String resultId) {
 		int nxt = script.size() + 1;
 	    script.add((List<Record> rows) -> {
-	       Map<String, String> values = rowsToValues(rows);
+	       Map<String, Object> values = rowsToValues(rows);
 	       ResultIterator iter = executeSelect(values);
 	       this.storeResults(resultId, iter);
 	       while (iter.hasNextResult()) {
@@ -46,13 +46,13 @@ public abstract class QueryExecutor {
 	    });
 	}
 	
-	private Map<String, String> rowsToValues(List<Record> rows) {
-		Map<String, String> values = new HashMap<String, String>();
+	private Map<String, Object> rowsToValues(List<Record> rows) {
+		Map<String, Object> values = new HashMap<String, Object>();
 		for (Record record : rows) {
 			for (Field f : record.getObjects().keySet()) {
 				if (inverseBindings.containsKey(f)) {
 					String var = inverseBindings.get(f);
-					values.put(var, serialize(record.getObject(f)));
+					values.put(var, record.getObject(f));
 				}
 			}
 		}
@@ -82,9 +82,9 @@ public abstract class QueryExecutor {
 		executeSelect(resultId, query);
 	}
 	
-	protected abstract ResultIterator performSelect(Map<String, String> values);
+	protected abstract ResultIterator performSelect(Map<String, Object> values);
 	
-	private ResultIterator executeSelect(Map<String, String> values) {
+	private ResultIterator executeSelect(Map<String, Object> values) {
 		if (values.size() == bindings.size()) {
 			return performSelect(values); 
 		}
@@ -98,7 +98,7 @@ public abstract class QueryExecutor {
 				results.beforeFirst();
 				while (results.hasNextResult()) {
 					results.nextResult();
-					String value = (field.getAttribute().equals("@id"))? serialize(results.getCurrentId(field.getLabel(), field.getType())) : serialize(results.getCurrentField(field.getLabel(), field.getType(), field.getAttribute()));
+					Object value = (field.getAttribute().equals("@id"))? results.getCurrentId(field.getLabel(), field.getType()) : results.getCurrentField(field.getLabel(), field.getType(), field.getAttribute());
 					values.put(var, value);
 					lst.add(executeSelect(values));
 				}
@@ -117,17 +117,4 @@ public abstract class QueryExecutor {
 		store.put(resultId,  results);
 	}
 
-	private String serialize(Object obj) {
-		if (obj == null) {
-			return "null";
-		}
-		if (obj instanceof Integer) {
-			return String.valueOf(obj);
-		}
-		else if (obj instanceof String) {
-			return "\"" + (String) obj + "\"";
-		}
-		else
-			throw new RuntimeException("Query executor does not know how to serialize object of type " +obj.getClass());
-	}
 }

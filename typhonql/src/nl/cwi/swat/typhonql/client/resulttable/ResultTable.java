@@ -3,17 +3,16 @@ package nl.cwi.swat.typhonql.client.resulttable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
-import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.bson.Document;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.io.WKBReader;
 import org.rascalmpl.values.ValueFactoryFactory;
-import org.wololo.jts2geojson.GeoJSONReader;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -100,11 +99,13 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		else if (v instanceof String) {
 			return vf.string((String) v);
 		}
-		else if (v instanceof Timestamp) {
-			return vf.datetime(((Timestamp) v).getTime());
+		else if (v instanceof LocalDate) {
+			LocalDate ld = (LocalDate) v;
+			return vf.date(ld.getYear(), ld.getMonthValue(), ld.getDayOfMonth());
 		}
-		else if (v instanceof java.sql.Date) {
-			return vf.datetime(((java.sql.Date)v).getTime());
+		else if (v instanceof LocalDateTime) {
+			LocalDateTime ld = (LocalDateTime) v;
+			return vf.datetime(ld.getYear(), ld.getMonthValue(), ld.getDayOfMonth(), ld.getHour(), ld.getMinute(), ld.getSecond(), ld.get(ChronoField.MILLI_OF_SECOND));
 		}
 		else if (v instanceof List) {
 			IListWriter lw = vf.listWriter();
@@ -114,26 +115,6 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		}
 		else if (v instanceof EntityRef) {
 			return vf.tuple(vf.bool(true), vf.string(((EntityRef) v).getUuid()));
-		}
-		else if (v instanceof byte[]) {
-			// can be multiple things, for example a Geo field
-			try {
-				return vf.string(new WKBReader().read((byte[]) v).toText());
-			}
-			catch (Exception e) {
-				// swallow, most likely it wasn't a geo field
-				;
-			}
-		}
-		else if (v instanceof Document) {
-			// try to read it as a GeoJSON field
-			try {
-				return vf.string(new GeoJSONReader().read(((Document) v).toJson()).toText());
-			}
-			catch(Exception e) {
-				;
-			}
-			
 		}
 		else if (v instanceof Geometry) {
 			return vf.string(((Geometry) v).toText());

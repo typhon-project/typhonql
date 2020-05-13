@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBReader;
 import org.mariadb.jdbc.internal.ColumnType;
@@ -34,6 +36,7 @@ public class MariaDBIterator implements ResultIterator {
 	}
 	
 	private static final Map<String, ColumnMapperFunction> columnMapperFuncs;
+	private static final GeometryFactory wsgFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
 	static {
 		columnMapperFuncs = new HashMap<>();
@@ -47,7 +50,7 @@ public class MariaDBIterator implements ResultIterator {
 		columnMapperFuncs.put(ColumnType.FLOAT.getClassName(), (r, i) -> r.getDouble(i));
 		columnMapperFuncs.put(ColumnType.GEOMETRY.getClassName(), (r, i) -> {
 			try {
-				return new WKBReader().read(r.getBytes(i));
+				return new WKBReader(wsgFactory).read(r.getBytes(i));
 			} catch (ParseException e) {
 				// TODO, this class name overlaps with all other things that can give bytes, so we have to map them
 				throw new SQLException(e);
