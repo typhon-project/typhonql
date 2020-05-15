@@ -57,6 +57,6 @@ public class TestSelect2 {
 						new Path("Inventory", "u", "User", new String[] { "name" }),
 						new Path("Reviews", "r", "Review", new String[] { "user" }) ));
 		
-		result.print();
+		System.out.println(result.toString());
 	}
 }

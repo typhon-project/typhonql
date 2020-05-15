@@ -100,9 +100,8 @@ public class XMIPolystoreConnection {
 		evaluators = new ConcurrentSoftReferenceObjectPool<>(10, TimeUnit.MINUTES, 1, calculateMaxEvaluators(), () -> {
 			// we construct a new evaluator for every concurrent call
 			GlobalEnvironment  heap = new GlobalEnvironment();
-			Evaluator result = new Evaluator(ValueFactoryFactory.getValueFactory(), 
-					new PrintWriter(System.err, true), new PrintWriter(System.out, false),
-					new ModuleEnvironment("$typhonql$", heap), heap);
+			Evaluator result = new Evaluator(ValueFactoryFactory.getValueFactory(), System.in, 
+					System.err, System.out, new ModuleEnvironment("$typhonql$", heap), heap);
 
 			result.addRascalSearchPathContributor(StandardLibraryContributor.getInstance());
 			result.addRascalSearchPath(pcfg.getBin());
@@ -137,13 +136,13 @@ public class XMIPolystoreConnection {
 					return (ResultTable) v;
 				}
 			} catch (StaticError e) {
-				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				staticErrorMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
 				throw e;
 			} catch (Throw e) {
-				throwMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				throwMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
 				throw e;
 			} catch (Throwable e) {
-				throwableMessage(evaluator.getStdErr(), e, evaluator.getStackTrace(), VALUE_PRINTER);
+				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
 				throw e;
 			}
 		});
@@ -164,13 +163,13 @@ public class XMIPolystoreConnection {
 					return (ResultTable) v;
 				}
 			} catch (StaticError e) {
-				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				staticErrorMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
 				throw e;
 			} catch (Throw e) {
-				throwMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				throwMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
 				throw e;
 			} catch (Throwable e) {
-				throwableMessage(evaluator.getStdErr(), e, evaluator.getStackTrace(), VALUE_PRINTER);
+				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
 				throw e;
 			}
 		});
@@ -188,13 +187,13 @@ public class XMIPolystoreConnection {
 							session.getTuple());
 				}
 			} catch (StaticError e) {
-				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				staticErrorMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
 				throw e;
 			} catch (Throw e) {
-				throwMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				throwMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
 				throw e;
 			} catch (Throwable e) {
-				throwableMessage(evaluator.getStdErr(), e, evaluator.getStackTrace(), VALUE_PRINTER);
+				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
 				throw e;
 			}
 		});
@@ -221,13 +220,13 @@ public class XMIPolystoreConnection {
 							session.getTuple());
 				}
 			} catch (StaticError e) {
-				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				staticErrorMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
 				throw e;
 			} catch (Throw e) {
-				throwMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				throwMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
 				throw e;
 			} catch (Throwable e) {
-				throwableMessage(evaluator.getStdErr(), e, evaluator.getStackTrace(), VALUE_PRINTER);
+				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
 				throw e;
 			}
 		});
@@ -259,13 +258,13 @@ public class XMIPolystoreConnection {
 							session.getTuple());
 				}
 			} catch (StaticError e) {
-				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				staticErrorMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
 				throw e;
 			} catch (Throw e) {
-				throwMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				throwMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
 				throw e;
 			} catch (Throwable e) {
-				throwableMessage(evaluator.getStdErr(), e, evaluator.getStackTrace(), VALUE_PRINTER);
+				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
 				throw e;
 			}
 		});
@@ -283,13 +282,13 @@ public class XMIPolystoreConnection {
                     		session.getTuple());
 				}
 			} catch (StaticError e) {
-				staticErrorMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				staticErrorMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
 				throw e;
 			} catch (Throw e) {
-				throwMessage(evaluator.getStdErr(), e, VALUE_PRINTER);
+				throwMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
 				throw e;
 			} catch (Throwable e) {
-				throwableMessage(evaluator.getStdErr(), e, evaluator.getStackTrace(), VALUE_PRINTER);
+				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
 				throw e;
 			}
 		});
