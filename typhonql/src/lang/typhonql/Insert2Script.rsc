@@ -104,7 +104,6 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   addSteps([ newId(myId) | !hasId(kvs) ]);
   
   // initialize
-  println(size(theScript.steps));
   updateSQLInsert(SQLStat(SQLStat ins) { return ins; });
   updateMongoInsert(DBObject(DBObject obj) { return obj; });
   updateNLPTask(NLPTask(NLPTask tsk) { return tsk; });
@@ -144,7 +143,6 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   }
 
   theScript.steps += [finish()];
-  println(theScript.steps);
   return theScript;
 }
 // tuple[str entityType, str fieldName, str id, list[str] features, str text]
