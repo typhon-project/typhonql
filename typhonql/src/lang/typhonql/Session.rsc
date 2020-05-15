@@ -1,6 +1,5 @@
 module lang::typhonql::Session
 
-
 //public /*const*/ str ID_PARAM = "TYPHON_ID";
 //Field generatedIdField() = <"ID_STORE", "", "", "@id">;
 
@@ -16,7 +15,8 @@ alias Session = tuple[
 	void () done,
 	str (str) newId,
 	SQLOperations sql,
-   	MongoOperations mongo
+   	MongoOperations mongo,
+   	NLPOperations nlp
 ];
 
 alias ResultTable
@@ -53,6 +53,10 @@ alias MongoOperations = tuple[
 	void (str dbName, str coll, str newName) renameCollection,
 	void (str dbName, str coll) dropCollection,
 	void (str dbName, str coll) dropDatabase
+];
+
+alias NLPOperations = tuple[
+	void(lrel[str entityType, str fieldName, str id, list[str] features, str text] processes) sendRequests
 ];
 
 data Connection

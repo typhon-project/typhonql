@@ -22,8 +22,10 @@ data Step
 
 data Call
   = sql(SQLCall jdbc)
-  | mongo(MongoCall mongo) 
+  | mongo(MongoCall mongo)
+  | nlp(NLPCall object) 
   ;
+  
 data SQLCall
   = executeQuery(str dbName, str query)
   | executeStatement(str dbName, str stat)
@@ -43,6 +45,10 @@ data MongoCall
   | renameCollection(str dbName, str coll, str newName)
   | dropCollection(str dbName, str coll)
   | dropDatabase(str dbName)
+  ;
+  
+data NLPCall
+  = sendRequests(lrel[str entityType, str fieldName, str id, list[str] features, str text] requests)
   ;
   
 EntityModels schema2entityModels(Schema s) 
@@ -102,6 +108,9 @@ str runScript(Script scr, Session session, Schema schema) {
        
       case step(str r, mongo(findAndUpdateMany(str db, str coll, str query, str update)), Bindings ps):
         session.mongo.findAndUpdateMany(db, coll, query, update, ps);
+        
+      case step(str r, nlp(lrel[str entityType, str fieldName, str id, list[str] features, str text] processes), Bindings ps):
+        session.nlp.sendRequests(processes, ps);
       
       case newId(str var): {
         result = session.newId(var);
