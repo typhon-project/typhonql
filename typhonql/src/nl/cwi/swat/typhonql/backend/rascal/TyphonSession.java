@@ -78,6 +78,7 @@ public class TyphonSession implements Operations {
 	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
+		// TODO only to prevent  
 		ConnectionData theNlpConnection = null;
 		for (DatabaseInfo db : connections) {
 			switch (db.getDbType()) {
@@ -88,7 +89,7 @@ public class TyphonSession implements Operations {
 				mariaDbConnections.put(db.getDbName(), new ConnectionData(db));
 				break;
 			case nlp:
-				
+				theNlpConnection = new ConnectionData(db);
 			default:
 				throw new RuntimeException("Missing type: " + db.getDbType());
 			}
@@ -140,7 +141,8 @@ public class TyphonSession implements Operations {
 				makeClose(store, state, closeType, ctx),
 				makeNewId(uuids, state, newIdType, ctx),
 				mariaDBOperations.newSQLOperations(store, script, updates, state, uuids, ctx, vf, TF),
-				mongoOperations.newMongoOperations(store, script, updates, state, uuids, ctx, vf, TF)), state);
+				mongoOperations.newMongoOperations(store, script, updates, state, uuids, ctx, vf, TF),
+				nlpOperations.newNLPOperations(store, script, updates, state, uuids, ctx, vf, TF)), state);
 	}
 
 	private IValue makeNewId(Map<String, String> uuids, TyphonSessionState state, FunctionType newIdType,
