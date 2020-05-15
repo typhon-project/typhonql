@@ -12,10 +12,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
-
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.WKBWriter;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class MariaDBQueryExecutor extends QueryExecutor {
@@ -44,17 +43,19 @@ public class MariaDBQueryExecutor extends QueryExecutor {
 	}
 
 	@Override
-	protected ResultIterator performSelect(Map<String, String> values) {
+	protected ResultIterator performSelect(Map<String, Object> values) {
 		try {
 			int i = 1;
 			for (String varName : vars) {
-				Object decoded = decode(values.get(varName));
-				if (decoded instanceof String)
-					pstmt.setString(i, (String) decoded);
-				else if (decoded instanceof Integer)
-					pstmt.setInt(i, (Integer) decoded);
-				else if (decoded instanceof Boolean)
-					pstmt.setBoolean(i, (Boolean) decoded);
+				Object value = values.get(varName);
+				if (value instanceof Geometry) {
+					pstmt.setBytes(i, new WKBWriter().write((Geometry) value));
+				}
+				else {
+					// TODO: what to do with NULL?
+					// other classes jdbc can take care of itself
+					pstmt.setObject(i, value);
+				}
 				i++;
 			}
 			ResultSet rs = pstmt.executeQuery(); 
@@ -63,16 +64,6 @@ public class MariaDBQueryExecutor extends QueryExecutor {
 		} catch (SQLException e1) {
 			throw new RuntimeException(e1);
 		}
-	}
-	
-	private Object decode(String v) {
-		if (v.startsWith("\"")) {
-			return v.substring(1, v.length()-1);
-		}
-		else if (StringUtils.isNumeric(v)) {
-			return Integer.parseInt(v);
-		}
-		throw new RuntimeException("Not known how to decode: " + v);
 	}
 
 	public static void main(String[] args) {

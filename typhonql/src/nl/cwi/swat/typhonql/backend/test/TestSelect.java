@@ -59,8 +59,7 @@ public class TestSelect {
 		ResultTable result = Runner.computeResultTable(script,
 				Arrays.asList(new Path("Inventory", "p", "Product", new String[] { "name" }) ));
 		
-		result.print();
-
+		System.out.println(result.toString());
 		
 	}
 }

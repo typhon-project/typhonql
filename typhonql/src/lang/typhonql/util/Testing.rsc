@@ -36,8 +36,6 @@ alias PolystoreInstance =
 		Stats() getStats,
 		void(str key, TestResult result) setStat,		
 		void() resetDatabases,
-		void() startSession,
-		void() closeSession,
 		ResultTable(Request req) runQuery,
 		ResultTable(Request req, Schema s) runQueryForSchema,
 		CommandResult(Request req) runUpdate,
@@ -57,13 +55,13 @@ alias TestExecuter =
 		void(void(PolystoreInstance, bool), bool) runSetup,
 		void(void(PolystoreInstance proxy)) runTest,
 		void(list[void(PolystoreInstance proxy)]) runTests,
-		Schema() fetchSchema];
+		Schema() fetchSchema,
+		void() resetDatabases];
 		
 TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password, Log log = NO_LOG()) {
 	Conn conn = <host, port, user, password>;
 	Schema sch = fetchSchema(conn);
 	map[str, Connection] connections =  readConnectionsInfo(conn.host, toInt(conn.port), conn.user, conn.password);
-	Session session;
 	
 	Stats stats = ();
 	
@@ -79,52 +77,44 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		stats[key] = result;
 	};
 	
-	void() myStartSession = void() {
-		session = newSession(connections, log = log);
-	};
-	
-	void() myCloseSession = void() {
-		session.done();
-	};
-	
 	void() myResetDatabases = void() {
-		ses = newSession(connections, log = log);
+		Session ses = newSession(connections, log = log);
 		resetDatabasesInTest(sch, ses, log);
 		ses.done();
 	};
 	ResultTable(Request req) myRunQuery = ResultTable(Request req) {
-		ses = newSession(connections, log = log);
+		Session ses = newSession(connections, log = log);
 		result = runQueryInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
 	ResultTable(Request req, Schema s) myRunQueryForSchema = ResultTable(Request req, Schema s) {
-		ses = newSession(connections, log = log);
+		Session ses = newSession(connections, log = log);
 		result = runQueryInTest(req, s, ses, log);
 		ses.done();
 		return result;
 	};
 	CommandResult(Request req) myRunUpdate = CommandResult(Request req) {
-		ses = newSession(connections, log = log);
+		Session ses = newSession(connections, log = log);
 		result = runUpdateInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
 	CommandResult(Request req, Schema s) myRunUpdateForSchema = CommandResult(Request req, Schema s) {
-		ses = newSession(connections, log = log);
+		Session ses = newSession(connections, log = log);
 		result = runUpdateInTest(req, s, ses, log);
 		ses.done();
 		return result;
 	};
 	CommandResult(Request req) myRunDDL = CommandResult(Request req) {
-		ses = newSession(connections, log = log);
+		Session ses = newSession(connections, log = log);
 		result = runDDLInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
 	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs)
 		myRunPreparedUpdate = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
-	    ses = newSession(connections, log = log); 
+	    Session ses = newSession(connections, log = log); 
 		result = runPreparedUpdateInTest(req, columnNames, vs, sch, ses, log);
 		ses.done();
 		return result;
@@ -151,16 +141,13 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	
 	PolystoreInstance proxy = <myResetStats, myGetStats, mySetStat,
-		myResetDatabases, myStartSession, 
-		myCloseSession, myRunQuery, myRunQueryForSchema,
+		myResetDatabases, myRunQuery, myRunQueryForSchema,
 		myRunUpdate, myRunUpdateForSchema, myRunDDL, myRunPreparedUpdate, 
 		myFetchSchema, myPrintSchema,  myAssertEquals, myAssertResultEquals,
 		myAssertException>;
 		
 	void(void(PolystoreInstance, bool), bool) myRunSetup = void(void(PolystoreInstance, bool) setupFun, bool doTests) {
-		proxy.startSession();
 		setupFun(proxy, doTests);
-		proxy.closeSession();
 	};
 	
 	void(void(PolystoreInstance)) myRunTest = void(void(PolystoreInstance proxy) t) {
@@ -177,7 +164,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		return proxy.fetchSchema;
 	};
 	
-	return <myRunSetup, myRunTest, myRunTests, myFetchSchema>;
+	return <myRunSetup, myRunTest, myRunTests, myFetchSchema, myResetDatabases>;
 	
 }
 

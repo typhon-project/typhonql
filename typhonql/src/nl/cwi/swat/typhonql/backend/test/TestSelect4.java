@@ -34,7 +34,7 @@ public class TestSelect4 {
 				Arrays.asList(new Path("Inventory", "p", "Product", new String[] { "name" })));
 		ResultTable result = Runner.computeResultTable(script, Arrays.asList(new Path("Inventory", "p", "Product", new String[] { "name" }) ));
 		
-		result.print();
+		System.out.println(result.toString());
 
 		
 	}

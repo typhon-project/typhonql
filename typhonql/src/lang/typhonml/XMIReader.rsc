@@ -105,7 +105,6 @@ Model xmiNode2Model(node n) {
   map[str, Database] dbMap = ();
   map[str, Attribute] attrMap = ();
   
-  
   Entity ensureEntity(str path) {
     if (path notin entityMap) {
       entityMap[path] = realm.new(#Entity, Entity("", [], [], [], []));

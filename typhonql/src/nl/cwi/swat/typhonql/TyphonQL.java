@@ -71,22 +71,9 @@ public class TyphonQL {
 		return vf.bool(Boolean.parseBoolean(isReset));
 	}
 	
-	public ITuple executeQuery(ISourceLocation path, IString user, IString password, IString query) {
+	public IString executeQuery(ISourceLocation path, IString user, IString password, IString query) {
 		URI uri = buildUri(path.getURI(), "/api/query");
-		String json = doPost(uri, user.getValue(), password.getValue(), query.getValue());
-		//Document doc = Document.parse(json);
-		//String contents = doc.getString("response");
-		// TODO this is a workaround
-		// The response object does not escape quotes, then it is not parseable
-		String contents = json.substring(15,  json.length()-3);
-		ResultTable rt;
-		try {
-			rt = ResultTable.fromJSON(new ByteArrayInputStream(contents.getBytes()));
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw RuntimeExceptionFactory.io(vf.string("Problem parsing HTTP response"), null, null);
-		}
-		return rt.toIValue();
+		return vf.string(doPost(uri, user.getValue(), password.getValue(), query.getValue()));
 	}
 	
 	public void executeDDLUpdate(ISourceLocation path, IString user, IString password, IString query) {
@@ -254,7 +241,7 @@ public class TyphonQL {
 		
 		IMap  m = ql.readConnectionsInfo(vf.string("localhost"), vf.integer(8080), vf.string("pablo"), vf.string("antonio"));
 		System.out.println(m);
-		ITuple t = ql.executeQuery(vf.sourceLocation(new URI("http://localhost:8080")),
+		IString t = ql.executeQuery(vf.sourceLocation(new URI("http://localhost:8080")),
 				vf.string("pablo"), vf.string("antonio"), vf.string("from User u select u"));
 		
 		System.out.println(t);
