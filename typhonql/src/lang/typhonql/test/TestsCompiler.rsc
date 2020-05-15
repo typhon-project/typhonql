@@ -202,10 +202,8 @@ void testDeleteKidsRemovesParentLinksSQLCross(PolystoreInstance p) {
   p.runUpdate((Request)`delete Review r where r.product == #tv`);
   
   rs = p.runQuery((Request)`from Product p select p.reviews`);
-  p.assertResultEquals("delete reviews removes from product reviews", rs, <["p.reviews"], []>);
+  p.assertResultEquals("delete reviews removes from product reviews", rs, <["p.reviews"], [["rev3"]]>);
 }
-
-
 
 void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
   p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", tags: [#fun, #social], availabilityRegion: #polygon((1.0 1.0))}`);
