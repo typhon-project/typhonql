@@ -14,10 +14,13 @@ import lang::typhonql::relational::SQL2Text;
 
 import lang::typhonql::mongodb::DBCollection;
 
+import lang::typhonql::nlp::NLP;
+
 import IO;
 import ValueIO;
 import List;
 import String;
+
 
 bool hasId({KeyVal ","}* kvs) = hasId([ kv | KeyVal kv <- kvs ]);
 
@@ -34,7 +37,9 @@ alias InsertContext = tuple[
   Bindings myParams,
   SQLExpr sqlMe,
   DBObject mongoMe,
+  str nlpMe,
   void (list[Step]) addSteps,
+  void (NLPTask(NLPTask)) updateNLPInsert,
   void (SQLStat(SQLStat)) updateSQLInsert,
   void (DBObject(DBObject)) updateMongoInsert,
   Schema schema
@@ -45,12 +50,14 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   Place p = placeOf(entity, s);
   str myId = newParam();
   Bindings myParams = ( myId: generatedId(myId) | !hasId(kvs) );
+  
   SQLExpr sqlMe = hasId(kvs) ? lit(text(evalId(kvs))) : SQLExpr::placeholder(name=myId);
   DBObject mongoMe = hasId(kvs) ? \value(evalId(kvs)) : DBObject::placeholder(name=myId);
+  str nlpMe = hasId(kvs) ? "<evalId(kvs)>" : "$<myId>";
   
-
   SQLStat theInsert = \insert(tableName("<e>"), [], []);
   DBObject theObject = object([ ]);
+  NLPTask theNLPTask = nlpIngestion([ ]);
 
   Script theScript = script([]);
   
@@ -73,6 +80,12 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
     }
   }
   
+  void updateNLPTask(NLPTask(NLPTask) block) {
+  	int idx = hasId(kvs) ? 1 : 2;
+    theNLPTask = block(theNLPTask);
+    updateStep(idx, step(p.name, nlp(sendRequests(theNLPTask.requests)), myParams));
+  }
+  
   void updateSQLInsert(SQLStat(SQLStat) block) {
     int idx = hasId(kvs) ? 0 : 1;
     //println("Updating the insert statement:");
@@ -91,20 +104,25 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   addSteps([ newId(myId) | !hasId(kvs) ]);
   
   // initialize
+  println(size(theScript.steps));
   updateSQLInsert(SQLStat(SQLStat ins) { return ins; });
   updateMongoInsert(DBObject(DBObject obj) { return obj; });
+  updateNLPTask(NLPTask(NLPTask tsk) { return tsk; });
 
   InsertContext ctx = <
     entity,
     myParams,
     sqlMe,
     mongoMe,
+    nlpMe,
     addSteps,
+    updateNLPTask,
     updateSQLInsert,
     updateMongoInsert,
     s
   >;
   
+  compileNLPAttrs([ kv | KeyVal kv <- kvs, isNLPAttr(kv, entity, s) ], ctx);
   compileAttrs(p, [ kv | KeyVal kv <- kvs, isAttr(kv, entity, s) ], ctx);
   
   //iprintln(s.rels);
@@ -126,10 +144,18 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   }
 
   theScript.steps += [finish()];
-
+  println(theScript.steps);
   return theScript;
 }
-
+// tuple[str entityType, str fieldName, str id, list[str] features, str text]
+void compileNLPAttrs(list[KeyVal] kvs, InsertContext ctx) {
+  ctx.updateNLPInsert(NLPTask(NLPTask tsk) {
+  	 map[str, str] types = (() | it + (a:ty) | <e, a, ty> <- ctx.schema.attrs, kv <- kvs, a := "<kv.key>", e := ctx.entity);
+  	 tsk.requests = [ <ctx.entity, "<kv.key>", ctx.nlpMe, fs,
+  	 	"<evalExpr(kv.\value)>"> | KeyVal kv  <- kvs, fs := freetextType2features(types["<kv.key>"])];
+     return tsk;
+  });
+} 
 
 void compileAttrs(<DB::sql(), str dbName>, list[KeyVal] kvs, InsertContext ctx) {
   ctx.updateSQLInsert(SQLStat(SQLStat ins) {
@@ -512,4 +538,7 @@ bool isAttr((KeyVal)`<Id x> -: <Expr _>`, str e, Schema s) = false;
 
 bool isAttr((KeyVal)`@id: <Expr _>`, str _, Schema _) = false;
   
+bool isNLPAttr((KeyVal) `<Id x>: <Expr _>`, str e, Schema s) =
+	( _ <- {t | t:<e, "<x>", ty> <- s.attrs, startsWith(ty, "freetext")}); 
 
+default bool isNLPAttr(KeyVal kv, str e, Schema s) = false;
