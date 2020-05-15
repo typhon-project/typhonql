@@ -305,7 +305,7 @@ void testSelectViaSQLKidLocal(PolystoreInstance p) {
 
 void testSQLDateEquals(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Product p select p.name, p.productionDate where p.productionDate == $2020-04-13$`);
-  p.assertResultEquals("sqlDateEquals", rs, <["p.name", "p.productionDate"], [["Radio", $2020-04-13$],["TV", $2020-04-13$]]>);
+  p.assertResultEquals("sqlDateEquals", rs, <["p.name", "p.productionDate"], [["Radio", "2020-04-13"],["TV", "2020-04-13"]]>);
 }
 
 
