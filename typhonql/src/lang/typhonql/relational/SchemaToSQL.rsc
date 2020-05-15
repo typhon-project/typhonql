@@ -45,18 +45,19 @@ void printSQLSchema(Schema schema, str dbName) {
 }
 
  SQLStat attrs2create(str e, rel[str, str] attrs, Schema schema) {
+ 
   	return create(tableName(e), [typhonIdColumn(e)]
       + [column(columnName(attr, e), typhonType2SQL(typ), typhonType2Constrains(typ)) | <str attr, str typ> <- attrs, 
-      		typ notin schema.customs<0>]
+      		typ notin schema.customs<from>]
       + [column(columnName(attr, e, typ, element), typhonType2SQL(elementType), []) | <str attr, str typ> <- attrs,
-      	 typ in schema.customs<0>, <str typ, str element, str elementType> <- schema.customs]
+      	 <typ, str element, str elementType> <- schema.customs]
       , [primaryKey(typhonId(e))] + indexes(e, attrs, schema));
 }
 
 list[TableConstraint] indexes(str e, rel[str, str] attrs, Schema schema) 
     = [
         index("<e>_<attr>_spatial", spatial(), [columnName(attr, e)])
-        | <str attr, str typ> <- attrs, typhonType2SQL(typ) in {polygon(), point()}
+        | <str attr, str typ> <- attrs, typ notin schema.customs<from>, typhonType2SQL(typ) in {polygon(), point()}
     ]
     + [] // TODO: add user defined indexes after we've added them to the Schema import
     ; 
