@@ -49,6 +49,7 @@ public class TyphonSession implements Operations {
 	public SessionWrapper newSessionWrapper(IMap connections, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
+		ConnectionData theNlpConnection = null;
 
 		Iterator<Entry<IValue, IValue>> connIter = connections.entryIterator();
 
@@ -65,13 +66,16 @@ public class TyphonSession implements Operations {
 				mariaDbConnections.put(dbName, data);
 			else if (cons.getName().equals("mongoConnection"))
 				mongoConnections.put(dbName, data);
+			else if (cons.getName().equals("nlpConnection"))
+				theNlpConnection = data;
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, theNlpConnection, ctx);
 	}
 
 	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
+		ConnectionData theNlpConnection = null;
 		for (DatabaseInfo db : connections) {
 			switch (db.getDbType()) {
 			case documentdb:
@@ -80,15 +84,17 @@ public class TyphonSession implements Operations {
 			case relationaldb:
 				mariaDbConnections.put(db.getDbName(), new ConnectionData(db));
 				break;
+			case nlp:
+				
 			default:
 				throw new RuntimeException("Missing type: " + db.getDbType());
 			}
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, theNlpConnection, ctx);
 	}
 
 	private SessionWrapper newSessionWrapper(Map<String, ConnectionData> mariaDbConnections,
-			Map<String, ConnectionData> mongoConnections, IEvaluatorContext ctx) {
+			Map<String, ConnectionData> mongoConnections, ConnectionData theNlpConnection, IEvaluatorContext ctx) {
 		// checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function
 		// type ourself
@@ -120,6 +126,8 @@ public class TyphonSession implements Operations {
 		MariaDBOperations mariaDBOperations = new MariaDBOperations(mariaDbConnections);
 		state.setMariaDBOperations(mariaDBOperations);
 		MongoOperations mongoOperations = new MongoOperations(mongoConnections);
+		state.setMongoOperations(mongoOperations);
+		NLPOperations nlpOperations = new NLPOperations(theNlpConnection);
 		state.setMongoOperations(mongoOperations);
 
 		return new SessionWrapper(vf.tuple(makeGetResult(store, script, state, getResultType, ctx),

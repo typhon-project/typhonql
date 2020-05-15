@@ -10,6 +10,9 @@ public enum DBType {
 		@Override 
 		DBMS[] getPossibleDBMSs() { return new DBMS[] { new MongoDB() }; }
 		
+	},
+	nlp() {
+		DBMS[] getPossibleDBMSs() { return new DBMS[] { }; }
 	};
 
 	abstract DBMS[] getPossibleDBMSs();
