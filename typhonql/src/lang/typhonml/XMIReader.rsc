@@ -66,8 +66,8 @@ void smokeTest2() {
 void smokeTest3() {
   str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product/user-review-product.xmi|);
   Model m = xmiString2Model(xmi);
-  Schema s = model2schema(m);
   iprintln(m);
+  Schema s = model2schema(m);
   iprintln(s);
 }
 
@@ -103,7 +103,7 @@ Model xmiNode2Model(node n) {
   map[str, CustomDataType] customMap = ();
   map[str, Relation] relMap = ();
   map[str, Database] dbMap = ();
-  map[str, EntityAttributeKind] attrMap = ();
+  map[str, Attribute] attrMap = ();
   
   
   Entity ensureEntity(str path) {
@@ -147,10 +147,10 @@ Model xmiNode2Model(node n) {
     return relMap[path];
   }
   
-  EntityAttributeKind ensureAttr(str path) {
+  Attribute ensureAttr(str path) {
     if (path notin attrMap) {
       DataType dt = DataType(realm.new(#IntType, IntType())); // dummy;
-      attrMap[path] = EntityAttributeKind(realm.new(#Attribute, Attribute("", dt)));
+      attrMap[path] = realm.new(#Attribute, Attribute("", dt));
     }
     return attrMap[path];
   }
@@ -190,8 +190,22 @@ Model xmiNode2Model(node n) {
           dbs += [db];
         }
         
+        case "typhonml:KeyValueDB": {
+          list[KeyValueElement] elts = [];
+          for (xelt:"elements"(_) <- xelts) {
+            elt = realm.new(#KeyValueElement, KeyValueElement(get(xelt, "name"), []));
+            elt.key = get(xelt, "key");
+            valsStr = get(xelt, "values");
+            elt.values =  [ referTo(#Attribute, ensureAttr(path)) | str path <- split(" ", valsStr) ];
+            elts += [elt];
+          }
+          db = realm.new(#Database, Database(KeyValueDB(get(xdb, "name"), elts)));
+          dbMap[dbPath] = db;
+          dbs += [db];
+        }
+        
         default:
-          throw "Non implemented database type: <xdb.\type>";
+          throw "Non implemented database type: <get(xdb, "xsi-type")>";
       }
       dbPos += 1;
       
@@ -225,9 +239,10 @@ Model xmiNode2Model(node n) {
              default: throw "Unknown attribute type: <xtype>";
            }
 
-           attr = EntityAttributeKind(realm.new(#Attribute, Attribute(get(xattr, "name"), dt)));
-           attrs += [attr];
-           attrMap[attrPath] = attr;
+           Attribute attr = ensureAttr(attrPath);
+           attr.name = get(xattr, "name");
+           attr.\type = dt;
+           attrs += [EntityAttributeKind(attr)];
            attrPos += 1;
          }
          else {
@@ -239,6 +254,13 @@ Model xmiNode2Model(node n) {
            attr = EntityAttributeKind(realm.new(#CustomAttribute, 
               CustomAttribute(get(xattr, "name"), referTo(#CustomDataType, ensureCustom(get(xattr, "type"))))));
            attrs += [attr];
+           // TODO: we need to put it in the map as well, 
+           // so that evolution operators can refer to it;
+           // however, this means that the map should indeed
+           // be from path to EntityAttributeKind, which is
+           // for now a bit involved.
+           //attrMap[attrPath] = attr;
+           attrPos += 1;
          }
          
           
