@@ -109,9 +109,9 @@ str runScript(Script scr, Session session, Schema schema) {
       case step(str r, mongo(findAndUpdateMany(str db, str coll, str query, str update)), Bindings ps):
         session.mongo.findAndUpdateMany(db, coll, query, update, ps);
         
-      case step(str r, nlp(lrel[str entityType, str fieldName, str id, list[str] features, str text] processes), Bindings ps):
-        session.nlp.sendRequests(processes, ps);
-      
+      case step(str r, nlp(sendRequests(lrel[str entityType, str fieldName, str id, list[str] features, str text] requests)), Bindings ps):
+        session.nlp.sendRequests(requests, ps);
+        
       case newId(str var): {
         result = session.newId(var);
       }
