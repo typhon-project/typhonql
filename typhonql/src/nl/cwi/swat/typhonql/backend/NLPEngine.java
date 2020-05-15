@@ -25,14 +25,14 @@ import nl.cwi.swat.typhonql.backend.rascal.ConnectionData;
 public class NLPEngine extends Engine {
 
 	private ConnectionData connection;
-	private URI uri;
 
-	public NLPEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids, ConnectionData connection) throws URISyntaxException {
+	public NLPEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids, ConnectionData connection) {
 		super(store, script, updates, uuids);
-		this.uri = new URI("http://" + connection.getHost() + ":" + connection.getPort());
+		this.connection = connection;
 	}
 
-	public void sendRequests(IList requests, Map<String, Binding> bindingsMap) {
+	public void sendRequests(IList requests, Map<String, Binding> bindingsMap) throws URISyntaxException {
+		//URI uri = new URI("http://" + connection.getHost() + ":" + connection.getPort());
 		//String json = doGet(uri, connection.getUser(), connection.getPassword());
 		System.out.println("Simulating request to NLP server...");
 	}
