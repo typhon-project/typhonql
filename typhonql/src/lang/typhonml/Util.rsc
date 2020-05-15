@@ -89,6 +89,27 @@ Placement place(Database(RelationalDB(str name, list[Table] tables)), Model m)
 Placement place(Database(DocumentDB(str name, list[Collection] colls)), Model m) 
   = {<<mongodb(), name>, lookup(m, #Entity, c.entity).name> | Collection c <- colls };
 
+
+Placement place(Database(KeyValueDB(str name, list[KeyValueElement] elts)), Model m) {
+
+ set[str] props = {};
+ 
+ for (KeyValueElement e <- elts) {
+   for (Ref[Attribute] ref <- e.values, Attribute a0 := lookup(m, #Attribute, ref)) { 
+     if (Entity e <- m.entities, EntityAttributeKind(Attribute a) <- e.attributes, a == a0) {
+        props += {"<e.name>.<a.name>"};
+     }
+     else {
+       throw "Could not find owner entity of attribute <a0>";
+     }
+   }
+ } 
+
+ return { <<cassandra(), name>, p> | str p <- props }; 
+} 
+  //= {<<cassandra(), name>, lookup(m, #Attribute, c.entity).name> | KeyValueElement e <- elts };
+
+
 default Placement place(Database db, Model m) {
   throw "Unsupported database: <db>";
 } 

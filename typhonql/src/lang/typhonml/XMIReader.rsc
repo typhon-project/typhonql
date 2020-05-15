@@ -258,7 +258,8 @@ Model xmiNode2Model(node n) {
            // so that evolution operators can refer to it;
            // however, this means that the map should indeed
            // be from path to EntityAttributeKind, which is
-           // for now a bit involved.
+           // for now a bit involved, since no ChangeOperator
+           // every refers to a custom data type attribute AFAIK
            //attrMap[attrPath] = attr;
            attrPos += 1;
          }
