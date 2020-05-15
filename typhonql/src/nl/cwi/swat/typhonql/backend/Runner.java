@@ -33,7 +33,6 @@ public class Runner {
 	}
 
 	private static ResultTable toResultTable(List<Path> paths, List<List<Record>> result) {
-		// TODO Auto-generated method stub
 		List<String> columnNames = buildColumnNames(paths);
 		List<Field> fields = paths.stream().map(p -> toField(p)).collect(Collectors.toList());
 		List<List<Object>> values = toValues(fields, result);

@@ -1,5 +1,7 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -9,17 +11,18 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
-
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.env.ModuleEnvironment;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
+import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
@@ -173,11 +176,60 @@ public class TyphonSession implements Operations {
 			TyphonSessionState state, FunctionType getResultType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, getResultType, args -> {
 			// alias ResultTable = tuple[list[str] columnNames, list[list[value]] values];
-			return ResultFactory.makeResult(
-					TF.tupleType(new Type[] { TF.listType(TF.stringType()), TF.listType(TF.listType(TF.valueType())) },
-							new String[] { "columnNames", "values" }),
-					state.getResult().toIValue(), ctx);
+			try (ByteArrayOutputStream json = new ByteArrayOutputStream()) {
+				state.getResult().serializeJSON(json);
+                return ResultFactory.makeResult(
+                        TF.tupleType(new Type[] { TF.listType(TF.stringType()), TF.listType(TF.listType(TF.valueType())) },
+                                new String[] { "columnNames", "values" }),
+                        parseTable(json.toByteArray()), ctx);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		});
+	}
+
+	private IValue parseTable(byte[] json) {
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			JsonNode tbl = objectMapper.readTree(json);
+			JsonNode columns = tbl.get("columnNames");
+			if (columns == null || !columns.isArray()) {
+				throw new RuntimeException("Incorrect result table json");
+			}
+			IListWriter columnList = vf.listWriter();
+			columns.iterator().forEachRemaining(c -> columnList.append(vf.string(c.asText())));
+			
+			IListWriter valueList = vf.listWriter();
+			tbl.get("values").iterator().forEachRemaining(row -> {
+				IListWriter rowList = vf.listWriter();
+				row.iterator().forEachRemaining(c -> rowList.append(toIValue(c)));
+				valueList.append(rowList.done());
+			});
+			return vf.tuple(columnList.done(), valueList.done());
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private IValue toIValue(JsonNode c) {
+		if (c.isNumber()) {
+			if (c.canConvertToInt()) {
+				return vf.integer(c.asInt());
+			}
+			return vf.real(c.asDouble());
+		}
+		else if (c.isBoolean()) {
+			return vf.bool(c.asBoolean());
+		}
+		else if (c.isNull()) {
+			return vf.string("null");
+		}
+		else if (c.isTextual()) {
+			return vf.string(c.asText());
+		}
+		else {
+			throw new RuntimeException("Cannot convert " + c + " into an IValue");
+		}
 	}
 
 	private ICallableValue makeGetJavaResult(ResultStore store, List<Consumer<List<Record>>> script,
