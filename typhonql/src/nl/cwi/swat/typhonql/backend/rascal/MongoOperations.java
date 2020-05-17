@@ -1,22 +1,18 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Consumer;
-
+import java.util.function.Function;
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
-
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
-
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
@@ -29,7 +25,9 @@ import nl.cwi.swat.typhonql.backend.MongoDBEngine;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 
-public class MongoOperations implements Operations {
+public class MongoOperations implements Operations, AutoCloseable {
+
+	private static final TypeFactory TF = TypeFactory.getInstance();
 
 	private final Map<String, MongoDatabase> connections;
 	private final Map<String, MongoClient> clients;
@@ -53,9 +51,8 @@ public class MongoOperations implements Operations {
 		});
 	}
 
-	private ICallableValue makeFind(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
-			TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx,
-			IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeFind(Function<String, MongoDBEngine> engine, TyphonSessionState state, FunctionType executeType, IEvaluatorContext ctx,
+			IValueFactory vf) {
 		return makeFunction(ctx, state, executeType, args -> {
 			String resultId = ((IString) args[0]).getValue();
 			String dbName = ((IString) args[1]).getValue();
@@ -67,21 +64,14 @@ public class MongoOperations implements Operations {
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 			List<Path> signature = rascalToJavaSignature(signatureList);
 
-			engine(store, script, updates, uuids, dbName).executeFind(resultId, collection, query, bindingsMap, signature);
+			engine.apply(dbName).executeFind(resultId, collection, query, bindingsMap, signature);
 
-			// sessionData.put(resultName, query);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 
-	private MongoDBEngine engine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
-			Map<String, String> uuids, String dbName) {
-		return new MongoDBEngine(store, script, updates, uuids, getDatabase(dbName));
-	}
-
-	private ICallableValue makeFindWithProjection(ResultStore store, List<Consumer<List<Record>>> script,
-			List<Runnable> updates, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType,
-			IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeFindWithProjection(Function<String, MongoDBEngine> engine, TyphonSessionState state, FunctionType executeType,
+			IEvaluatorContext ctx, IValueFactory vf) {
 		return makeFunction(ctx, state, executeType, args -> {
 			String resultId = ((IString) args[0]).getValue();
 			String dbName = ((IString) args[1]).getValue();
@@ -94,17 +84,16 @@ public class MongoOperations implements Operations {
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 			List<Path> signature = rascalToJavaSignature(signatureList);
 
-			engine(store, script, updates, uuids, dbName).executeFindWithProjection(resultId, collection, query, projection,
-					bindingsMap, signature);
+			engine.apply(dbName).executeFindWithProjection(resultId, collection, query, projection, bindingsMap, signature);
 
 			// sessionData.put(resultName, query);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 
-	private ICallableValue makeInsertOne(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
-			TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx,
-			IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeInsertOne(Function<String, MongoDBEngine> engine, TyphonSessionState state, 
+			FunctionType executeType, IEvaluatorContext ctx,
+			IValueFactory vf) {
 		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
@@ -113,16 +102,14 @@ public class MongoOperations implements Operations {
 
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 
-			engine(store, script, updates, uuids, dbName).executeInsertOne(dbName, collection, doc, bindingsMap);
+			engine.apply(dbName).executeInsertOne(dbName, collection, doc, bindingsMap);
 
-			// sessionData.put(resultName, query);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 
-	private ICallableValue makeFindAndUpdateOne(ResultStore store, List<Consumer<List<Record>>> script,
-			List<Runnable> updates, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType,
-			IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeFindAndUpdateOne(Function<String, MongoDBEngine> engine, TyphonSessionState state,
+			FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf) {
 		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
@@ -132,17 +119,15 @@ public class MongoOperations implements Operations {
 
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 
-			engine(store, script, updates, uuids, dbName).executeFindAndUpdateOne(dbName, collection, query, update,
+			engine.apply(dbName).executeFindAndUpdateOne(dbName, collection, query, update,
 					bindingsMap);
 
-			// sessionData.put(resultName, query);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 	
-	private ICallableValue makeFindAndUpdateMany(ResultStore store, List<Consumer<List<Record>>> script,
-			List<Runnable> updates, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType,
-			IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeFindAndUpdateMany(Function<String, MongoDBEngine> engine, TyphonSessionState state, 
+			FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf) {
 		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
@@ -152,17 +137,14 @@ public class MongoOperations implements Operations {
 
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 
-			engine(store, script, updates, uuids, dbName).executeFindAndUpdateMany(dbName, collection, query, update,
-					bindingsMap);
+			engine.apply(dbName).executeFindAndUpdateMany(dbName, collection, query, update, bindingsMap);
 
-			// sessionData.put(resultName, query);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 
-	private ICallableValue makeDeleteOne(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
-			TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx,
-			IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeDeleteOne(Function<String, MongoDBEngine> engine, TyphonSessionState state, 
+			FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf) {
 		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
@@ -171,16 +153,13 @@ public class MongoOperations implements Operations {
 
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 
-			engine(store, script, updates, uuids, dbName).executeDeleteOne(dbName, collection, query, bindingsMap);
-
-			// sessionData.put(resultName, query);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+			engine.apply(dbName).executeDeleteOne(dbName, collection, query, bindingsMap);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 	
-	private ICallableValue makeDeleteMany(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
-			TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx,
-			IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeDeleteMany(Function<String, MongoDBEngine> engine, TyphonSessionState state, 
+			FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf) {
 		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
@@ -189,119 +168,101 @@ public class MongoOperations implements Operations {
 
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 
-			engine(store, script, updates, uuids, dbName).executeDeleteMany(dbName, collection, query, bindingsMap);
-
-			// sessionData.put(resultName, query);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+			engine.apply(dbName).executeDeleteMany(dbName, collection, query, bindingsMap);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 
-	private ICallableValue makeCreateIndex(ResultStore store, List<Consumer<List<Record>>> script,
-		 	List<Runnable> updates, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx,
-			IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeCreateIndex(Function<String, MongoDBEngine> engine, TyphonSessionState state, 
+			FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf) {
 		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
 			String selector = ((IString) args[2]).getValue();
 			String index = ((IString) args[3]).getValue();
 
-			engine(store, script, updates, uuids, dbName).executeCreateIndex(collection, selector, index);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+			engine.apply(dbName).executeCreateIndex(collection, selector, index);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 	
-	private ICallableValue makeCreateCollection(ResultStore store, List<Consumer<List<Record>>> script,
-			List<Runnable> updates, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType,
-			IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeCreateCollection(Function<String, MongoDBEngine> engine, TyphonSessionState state, FunctionType executeType,
+			IEvaluatorContext ctx, IValueFactory vf) {
 		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
 
-			engine(store, script, updates, uuids, dbName).executeCreateCollection(dbName, collection);
+			engine.apply(dbName).executeCreateCollection(dbName, collection);
 
-			// sessionData.put(resultName, query);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 
-	private ICallableValue makeRenameCollection(ResultStore store, List<Consumer<List<Record>>> script,
-			List<Runnable> updates, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType,
-			IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeRenameCollection(Function<String, MongoDBEngine> engine, TyphonSessionState state, 
+			FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf) {
 		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
 			String newName = ((IString) args[2]).getValue();
 
-			MongoDatabase conn = connections.get(dbName);
-			new MongoDBEngine(store, script, updates, uuids, conn).executeRenameCollection(dbName, collection, newName);
+			engine.apply(dbName).executeRenameCollection(dbName, collection, newName);
 
-			// sessionData.put(resultName, query);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 
-	private ICallableValue makeDropCollection(ResultStore store, List<Consumer<List<Record>>> script,
-			List<Runnable> updates, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType,
-			IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeDropCollection(Function<String, MongoDBEngine> engine, TyphonSessionState state, 
+			FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf) {
 		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
 
-			engine(store, script, updates, uuids, dbName).executeDropCollection(dbName, collection);
+			engine.apply(dbName).executeDropCollection(dbName, collection);
 
-			// sessionData.put(resultName, query);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 
-	private ICallableValue makeDropDatabase(ResultStore store, List<Consumer<List<Record>>> script,
-			List<Runnable> updates, TyphonSessionState state, Map<String, String> uuids, FunctionType executeType,
-			IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeDropDatabase(Function<String, MongoDBEngine> engine, TyphonSessionState state, 
+			FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf) {
 		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 
-			engine(store, script, updates, uuids, dbName).executeDropDatabase(dbName);
+			engine.apply(dbName).executeDropDatabase(dbName);
 
-			// sessionData.put(resultName, query);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 
+	
+	private static FunctionType func(Type source, String name) {
+		return (FunctionType) source.getFieldType(name);
+	}
+	
 	public ITuple newMongoOperations(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
-			TyphonSessionState state, Map<String, String> uuids, IEvaluatorContext ctx, IValueFactory vf,
-			TypeFactory tf) {
+			TyphonSessionState state, Map<String, String> uuids, IEvaluatorContext ctx, IValueFactory vf) {
 
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("MongoOperations"));
 		while (aliasedTuple.isAliased()) {
 			aliasedTuple = aliasedTuple.getAliased();
 		}
-		// get the function types
-		FunctionType executeType1 = (FunctionType) aliasedTuple.getFieldType("find");
-		FunctionType executeType2 = (FunctionType) aliasedTuple.getFieldType("findWithProjection");
-		FunctionType executeType3 = (FunctionType) aliasedTuple.getFieldType("insertOne");
-		FunctionType executeType4 = (FunctionType) aliasedTuple.getFieldType("findAndUpdateOne");
-		FunctionType executeType5 = (FunctionType) aliasedTuple.getFieldType("findAndUpdateMany");
-		FunctionType executeType6 = (FunctionType) aliasedTuple.getFieldType("deleteOne");
-		FunctionType executeType7 = (FunctionType) aliasedTuple.getFieldType("deleteMany");
-		FunctionType executeType8 = (FunctionType) aliasedTuple.getFieldType("createCollection");
-		FunctionType executeType9 = (FunctionType) aliasedTuple.getFieldType("renameCollection");
-		FunctionType executeType10 = (FunctionType) aliasedTuple.getFieldType("dropCollection");
-		FunctionType executeType11 = (FunctionType) aliasedTuple.getFieldType("dropDatabase");
-		FunctionType cit = (FunctionType) aliasedTuple.getFieldType("createIndex");
 
-		return vf.tuple(makeFind(store, script, updates, state, uuids, executeType1, ctx, vf, tf),
-				makeFindWithProjection(store, script, updates, state, uuids, executeType2, ctx, vf, tf),
-				makeInsertOne(store, script, updates, state, uuids, executeType3, ctx, vf, tf),
-				makeFindAndUpdateOne(store, script, updates, state, uuids, executeType4, ctx, vf, tf),
-				makeFindAndUpdateMany(store, script, updates, state, uuids, executeType5, ctx, vf, tf),
-				makeDeleteOne(store, script, updates, state, uuids, executeType6, ctx, vf, tf),
-				makeDeleteMany(store, script, updates, state, uuids, executeType7, ctx, vf, tf),
-				makeCreateCollection(store, script, updates, state, uuids, executeType8, ctx, vf, tf),
-				makeCreateIndex(store, script, updates, state, uuids, cit, ctx, vf, tf),
-				makeRenameCollection(store, script, updates, state, uuids, executeType9, ctx, vf, tf),
-				makeDropCollection(store, script, updates, state, uuids, executeType10, ctx, vf, tf),
-				makeDropDatabase(store, script, updates, state, uuids, executeType11, ctx, vf, tf));
+		Function<String, MongoDBEngine> getEngine = dbName -> new MongoDBEngine(store, script, updates, uuids, getDatabase(dbName));
+
+		return vf.tuple(makeFind(getEngine, state, func(aliasedTuple, "find"), ctx, vf),
+				makeFindWithProjection(getEngine, state, func(aliasedTuple, "findWithProjection"), ctx, vf),
+				makeInsertOne(getEngine, state, func(aliasedTuple, "insertOne"), ctx, vf),
+				makeFindAndUpdateOne(getEngine, state, func(aliasedTuple, "findAndUpdateOne"), ctx, vf),
+				makeFindAndUpdateMany(getEngine, state, func(aliasedTuple, "findAndUpdateMany"), ctx, vf),
+				makeDeleteOne(getEngine, state, func(aliasedTuple, "deleteOne"), ctx, vf),
+				makeDeleteMany(getEngine, state, func(aliasedTuple, "deleteMany"), ctx, vf),
+				makeCreateCollection(getEngine, state, func(aliasedTuple, "createCollection"), ctx, vf),
+				makeCreateIndex(getEngine, state, func(aliasedTuple, "createIndex"), ctx, vf),
+				makeRenameCollection(getEngine, state, func(aliasedTuple, "renameCollection"), ctx, vf),
+				makeDropCollection(getEngine, state, func(aliasedTuple, "dropCollection"), ctx, vf),
+				makeDropDatabase(getEngine, state, func(aliasedTuple, "dropDatabase"), ctx, vf));
 	}
+
 
 	public void close() {
 		Exception failed = null;

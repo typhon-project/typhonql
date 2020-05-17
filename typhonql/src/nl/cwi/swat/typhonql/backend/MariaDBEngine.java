@@ -10,7 +10,7 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class MariaDBEngine extends Engine {
 
-	private Connection connection;
+	private final Connection connection;
 
 	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids, Connection sqlConnection) {
 		super(store, script, updates, uuids);
