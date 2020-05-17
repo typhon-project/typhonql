@@ -1,4 +1,4 @@
-package nl.cwi.swat.typhonql.backend;
+package nl.cwi.swat.typhonql.backend.mongodb;
 
 import java.util.List;
 import java.util.Map;
@@ -11,7 +11,10 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-
+import nl.cwi.swat.typhonql.backend.Binding;
+import nl.cwi.swat.typhonql.backend.Engine;
+import nl.cwi.swat.typhonql.backend.Record;
+import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class MongoDBEngine extends Engine {

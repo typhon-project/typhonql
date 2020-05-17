@@ -1,10 +1,14 @@
-package nl.cwi.swat.typhonql.backend;
+package nl.cwi.swat.typhonql.backend.mongodb;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.bson.Document;
 import com.mongodb.client.MongoDatabase;
+import nl.cwi.swat.typhonql.backend.Binding;
+import nl.cwi.swat.typhonql.backend.Record;
+import nl.cwi.swat.typhonql.backend.ResultIterator;
+import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class MongoQueryWithProjectionExecutor extends MongoQueryExecutor {

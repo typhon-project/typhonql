@@ -1,4 +1,4 @@
-package nl.cwi.swat.typhonql.backend;
+package nl.cwi.swat.typhonql.backend.mongodb;
 
 import java.time.ZoneId;
 import java.util.Date;
@@ -11,6 +11,7 @@ import org.locationtech.jts.geom.LinearRing;
 import org.locationtech.jts.geom.PrecisionModel;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoIterable;
+import nl.cwi.swat.typhonql.backend.ResultIterator;
 
 public class MongoDBIterator implements ResultIterator {
 	private MongoIterable<Document> results;

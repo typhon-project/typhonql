@@ -1,4 +1,4 @@
-package nl.cwi.swat.typhonql.backend;
+package nl.cwi.swat.typhonql.backend.mongodb;
 
 import java.util.List;
 import java.util.Map;
@@ -8,6 +8,9 @@ import org.bson.Document;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import nl.cwi.swat.typhonql.backend.Binding;
+import nl.cwi.swat.typhonql.backend.ResultStore;
+import nl.cwi.swat.typhonql.backend.UpdateExecutor;
 
 public abstract class MongoUpdateExecutor extends UpdateExecutor {
 

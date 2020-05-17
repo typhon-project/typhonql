@@ -15,11 +15,11 @@ import com.mongodb.client.MongoDatabase;
 
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Field;
-import nl.cwi.swat.typhonql.backend.MariaDBEngine;
-import nl.cwi.swat.typhonql.backend.MongoDBEngine;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.Runner;
+import nl.cwi.swat.typhonql.backend.mariadb.MariaDBEngine;
+import nl.cwi.swat.typhonql.backend.mongodb.MongoDBEngine;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 

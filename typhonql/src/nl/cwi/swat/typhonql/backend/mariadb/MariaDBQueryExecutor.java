@@ -1,4 +1,4 @@
-package nl.cwi.swat.typhonql.backend;
+package nl.cwi.swat.typhonql.backend.mariadb;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -15,6 +15,11 @@ import java.util.regex.Pattern;
 import org.apache.commons.text.StringSubstitutor;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKBWriter;
+import nl.cwi.swat.typhonql.backend.Binding;
+import nl.cwi.swat.typhonql.backend.QueryExecutor;
+import nl.cwi.swat.typhonql.backend.Record;
+import nl.cwi.swat.typhonql.backend.ResultIterator;
+import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class MariaDBQueryExecutor extends QueryExecutor {

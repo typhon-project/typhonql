@@ -1,4 +1,4 @@
-package nl.cwi.swat.typhonql.backend;
+package nl.cwi.swat.typhonql.backend.mongodb;
 
 import java.util.List;
 import java.util.Map;
@@ -8,12 +8,14 @@ import org.bson.Document;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import nl.cwi.swat.typhonql.backend.Binding;
+import nl.cwi.swat.typhonql.backend.ResultStore;
 
-public class MongoFindOneAndUpdateExecutor extends MongoUpdateExecutor {
+public class MongoFindManyAndUpdateExecutor extends MongoUpdateExecutor {
 
 	private String update;
 
-	public MongoFindOneAndUpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, String> uuids, String collectionName,
+	public MongoFindManyAndUpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, String> uuids, String collectionName,
 			String query, String update, Map<String, Binding> bindings, MongoDatabase db) {
 		super(store, updates, uuids, collectionName, query, bindings, db);
 		this.update = update;
@@ -21,7 +23,7 @@ public class MongoFindOneAndUpdateExecutor extends MongoUpdateExecutor {
 
 	@Override
 	protected void performUpdate(MongoCollection<Document> coll, Document filter, Document update) {
-		coll.findOneAndUpdate(filter, update);
+		coll.updateMany(filter, update);
 	}
 	
 	@Override

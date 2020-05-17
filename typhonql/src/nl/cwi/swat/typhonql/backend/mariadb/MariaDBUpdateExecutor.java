@@ -1,4 +1,4 @@
-package nl.cwi.swat.typhonql.backend;
+package nl.cwi.swat.typhonql.backend.mariadb;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -13,6 +13,9 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
+import nl.cwi.swat.typhonql.backend.Binding;
+import nl.cwi.swat.typhonql.backend.ResultStore;
+import nl.cwi.swat.typhonql.backend.UpdateExecutor;
 
 public class MariaDBUpdateExecutor extends UpdateExecutor {
 	

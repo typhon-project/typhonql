@@ -13,9 +13,9 @@ import java.util.function.Consumer;
 
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.GeneratedIdentifier;
-import nl.cwi.swat.typhonql.backend.MariaDBEngine;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
+import nl.cwi.swat.typhonql.backend.mariadb.MariaDBEngine;
 
 public class TestInsertFromScript1 {
 	

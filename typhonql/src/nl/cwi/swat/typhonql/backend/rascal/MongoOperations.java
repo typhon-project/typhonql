@@ -21,9 +21,9 @@ import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import nl.cwi.swat.typhonql.backend.Binding;
-import nl.cwi.swat.typhonql.backend.MongoDBEngine;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
+import nl.cwi.swat.typhonql.backend.mongodb.MongoDBEngine;
 
 public class MongoOperations implements Operations, AutoCloseable {
 

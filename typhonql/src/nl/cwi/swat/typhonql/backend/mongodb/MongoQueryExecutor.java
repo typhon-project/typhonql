@@ -1,4 +1,4 @@
-package nl.cwi.swat.typhonql.backend;
+package nl.cwi.swat.typhonql.backend.mongodb;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,6 +15,11 @@ import org.wololo.jts2geojson.GeoJSONWriter;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import nl.cwi.swat.typhonql.backend.Binding;
+import nl.cwi.swat.typhonql.backend.QueryExecutor;
+import nl.cwi.swat.typhonql.backend.Record;
+import nl.cwi.swat.typhonql.backend.ResultIterator;
+import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class MongoQueryExecutor extends QueryExecutor {
