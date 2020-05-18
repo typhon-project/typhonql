@@ -8,10 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.result.ICallableValue;
+import org.rascalmpl.interpreter.result.Result;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
 
@@ -19,15 +21,18 @@ import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
+import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import nl.cwi.swat.typhonql.backend.Binding;
-import nl.cwi.swat.typhonql.backend.MariaDBEngine;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
+import nl.cwi.swat.typhonql.backend.mariadb.MariaDBEngine;
 
-public class MariaDBOperations implements Operations {
+public class MariaDBOperations implements Operations, AutoCloseable {
+	
+	private static final TypeFactory TF = TypeFactory.getInstance();
 
 	private final Map<String, Connection> connections;
 	private final Map<String, ConnectionData> connectionSettings;
@@ -63,9 +68,8 @@ public class MariaDBOperations implements Operations {
 		return DriverManager.getConnection("jdbc:mariadb://" + cd.getHost() + ":" + cd.getPort() + "/" + dbName + "?user=" + cd.getUser() + "&password=" + cd.getPassword());
 	}
 
-	private ICallableValue makeExecuteQuery(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
-			TyphonSessionState state, Map<String, String> uuids, FunctionType executeType, IEvaluatorContext ctx,
-			IValueFactory vf, TypeFactory tf) {
+	private ICallableValue makeExecuteQuery(BiFunction<String, Boolean, MariaDBEngine> getEngine, TyphonSessionState state, FunctionType executeType, IEvaluatorContext ctx,
+			IValueFactory vf) {
 		return makeFunction(ctx, state, executeType, args -> {
 			String resultId = ((IString) args[0]).getValue();
 			String dbName = ((IString) args[1]).getValue();
@@ -76,49 +80,34 @@ public class MariaDBOperations implements Operations {
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 			List<Path> signature = rascalToJavaSignature(signatureList);
 
-			new MariaDBEngine(store, script, updates, uuids, getConnection(dbName, true)).executeSelect(resultId, query, bindingsMap, signature);
-
-			// sessionData.put(resultName, query);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
+			getEngine.apply(dbName, true).executeSelect(resultId, query, bindingsMap, signature);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 
-	private ICallableValue makeExecuteStatement(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
-			TyphonSessionState state, Map<String, String> uuids, FunctionType executeStmtType, IEvaluatorContext ctx,
-			IValueFactory vf, TypeFactory tf) {
-		return makeFunction(ctx, state, executeStmtType, args -> {
-			String dbName = ((IString) args[0]).getValue();
-			String query = ((IString) args[1]).getValue();
-			IMap bindings = (IMap) args[2];
-
-			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
-
-			new MariaDBEngine(store, script, updates, uuids, getConnection(dbName, true)).executeUpdate(query, bindingsMap);
-
-			// sessionData.put(resultName, query);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
-		});
+	private ICallableValue makeExecuteStatement(BiFunction<String, Boolean, MariaDBEngine> getEngine, TyphonSessionState state, 
+			FunctionType executeStmtType, IEvaluatorContext ctx, IValueFactory vf) {
+		return makeFunction(ctx, state, executeStmtType, args -> executeUpdate(getEngine, args, false, ctx));
 	}
 
-	private ICallableValue makeExecuteGlobalStatement(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, 
-			TyphonSessionState state, Map<String, String> uuids, FunctionType executeStmtType, IEvaluatorContext ctx,
-			IValueFactory vf, TypeFactory tf) {
-		return makeFunction(ctx, state, executeStmtType, args -> {
-			String dbName = ((IString) args[0]).getValue();
-			String query = ((IString) args[1]).getValue();
-			IMap bindings = (IMap) args[2];
-
-			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
-
-			new MariaDBEngine(store, script, updates, uuids, getConnection(dbName, false)).executeUpdate(query, bindingsMap);
-
-			// sessionData.put(resultName, query);
-			return ResultFactory.makeResult(tf.voidType(), null, ctx);
-		});
+	private ICallableValue makeExecuteGlobalStatement(BiFunction<String, Boolean, MariaDBEngine> getEngine, TyphonSessionState state, 
+			FunctionType executeStmtType, IEvaluatorContext ctx,
+			IValueFactory vf) {
+		return makeFunction(ctx, state, executeStmtType, args -> executeUpdate(getEngine, args, true, ctx));
 	}
+	
+	private Result<IValue> executeUpdate(BiFunction<String, Boolean, MariaDBEngine> getEngine, IValue[] args, boolean global, IEvaluatorContext ctx) {
+        String dbName = ((IString) args[0]).getValue();
+        String query = ((IString) args[1]).getValue();
+        IMap bindings = (IMap) args[2];
+
+        getEngine.apply(dbName, !global).executeUpdate(query, rascalToJavaBindings(bindings));
+        return ResultFactory.makeResult(TF.voidType(), null, ctx);
+	}
+
 
 	public ITuple newSQLOperations(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, 
-			TyphonSessionState state, Map<String, String> uuids, IEvaluatorContext ctx, IValueFactory vf, TypeFactory tf) {
+			TyphonSessionState state, Map<String, String> uuids, IEvaluatorContext ctx, IValueFactory vf) {
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("SQLOperations"));
 		while (aliasedTuple.isAliased()) {
 			aliasedTuple = aliasedTuple.getAliased();
@@ -127,13 +116,15 @@ public class MariaDBOperations implements Operations {
 		FunctionType executeQueryType = (FunctionType) aliasedTuple.getFieldType("executeQuery");
 		FunctionType executeStatementType = (FunctionType) aliasedTuple.getFieldType("executeStatement");
 		FunctionType executeGlobalStatementType = (FunctionType) aliasedTuple.getFieldType("executeGlobalStatement");
+		
+		BiFunction<String, Boolean, MariaDBEngine> getEngine = (dbName, scoped) -> new MariaDBEngine(store, script, updates, uuids, getConnection(dbName, scoped));
 
-		return vf.tuple(makeExecuteQuery(store, script, updates, state, uuids, executeQueryType, ctx, vf, tf),
-				makeExecuteStatement(store, script, updates, state, uuids, executeStatementType, ctx, vf, tf),
-				makeExecuteGlobalStatement(store, script, updates, state, uuids, executeGlobalStatementType, ctx, vf, tf));
+		return vf.tuple(makeExecuteQuery(getEngine, state, executeQueryType, ctx, vf),
+				makeExecuteStatement(getEngine, state, executeStatementType, ctx, vf),
+				makeExecuteGlobalStatement(getEngine, state, executeGlobalStatementType, ctx, vf));
 	}
 
-	private void initializeDriver() {
+	private static void initializeDriver() {
 		try {
 			Class.forName("org.mariadb.jdbc.Driver");
 		} catch (ClassNotFoundException e) {
@@ -141,6 +132,7 @@ public class MariaDBOperations implements Operations {
 		}
 	}
 
+	@Override
 	public void close() {
 		String firstFailureDB = null;
 		SQLException firstFailure = null;

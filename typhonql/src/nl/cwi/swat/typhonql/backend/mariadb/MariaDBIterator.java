@@ -1,4 +1,4 @@
-package nl.cwi.swat.typhonql.backend;
+package nl.cwi.swat.typhonql.backend.mariadb;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -13,6 +13,7 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBReader;
 import org.mariadb.jdbc.internal.ColumnType;
+import nl.cwi.swat.typhonql.backend.ResultIterator;
 
 public class MariaDBIterator implements ResultIterator {
 

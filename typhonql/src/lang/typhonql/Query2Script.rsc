@@ -91,3 +91,7 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schem
   }
   return [];
 }
+
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<cassandra(), str dbName>, Schema s, Log log = noLog) {
+  return [];
+}

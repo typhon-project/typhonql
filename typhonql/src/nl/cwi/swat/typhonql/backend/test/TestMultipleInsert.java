@@ -14,10 +14,10 @@ import java.util.function.Consumer;
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Field;
 import nl.cwi.swat.typhonql.backend.GeneratedIdentifier;
-import nl.cwi.swat.typhonql.backend.MariaDBEngine;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.Runner;
+import nl.cwi.swat.typhonql.backend.mariadb.MariaDBEngine;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class TestMultipleInsert {

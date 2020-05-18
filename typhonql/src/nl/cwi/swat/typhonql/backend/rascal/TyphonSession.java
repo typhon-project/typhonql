@@ -125,14 +125,14 @@ public class TyphonSession implements Operations {
 		MongoOperations mongoOperations = new MongoOperations(mongoConnections);
 		state.setMongoOperations(mongoOperations);
 
-		return new SessionWrapper(vf.tuple(makeGetResult(store, script, state, getResultType, ctx),
-				makeGetJavaResult(store, script, state, getJavaResultType, ctx),
+		return new SessionWrapper(vf.tuple(makeGetResult(state, getResultType, ctx),
+				makeGetJavaResult(state, getJavaResultType, ctx),
 				makeReadAndStore(store, script, state, readAndStoreType, ctx),
-				makeFinish(store, script, updates, state, doneType, ctx),
+				makeFinish(script, updates, state, doneType, ctx),
 				makeClose(store, state, closeType, ctx),
 				makeNewId(uuids, state, newIdType, ctx),
-				mariaDBOperations.newSQLOperations(store, script, updates, state, uuids, ctx, vf, TF),
-				mongoOperations.newMongoOperations(store, script, updates, state, uuids, ctx, vf, TF)), state);
+				mariaDBOperations.newSQLOperations(store, script, updates, state, uuids, ctx, vf),
+				mongoOperations.newMongoOperations(store, script, updates, state, uuids, ctx, vf)), state);
 	}
 
 	private IValue makeNewId(Map<String, String> uuids, TyphonSessionState state, FunctionType newIdType,
@@ -172,8 +172,8 @@ public class TyphonSession implements Operations {
 		}
 	}
 
-	private ICallableValue makeGetResult(ResultStore store, List<Consumer<List<Record>>> script,
-			TyphonSessionState state, FunctionType getResultType, IEvaluatorContext ctx) {
+	private ICallableValue makeGetResult(TyphonSessionState state, FunctionType getResultType,
+			IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, getResultType, args -> {
 			// alias ResultTable = tuple[list[str] columnNames, list[list[value]] values];
 			try (ByteArrayOutputStream json = new ByteArrayOutputStream()) {
@@ -232,10 +232,9 @@ public class TyphonSession implements Operations {
 		}
 	}
 
-	private ICallableValue makeGetJavaResult(ResultStore store, List<Consumer<List<Record>>> script,
-			TyphonSessionState state, FunctionType getResultType, IEvaluatorContext ctx) {
+	private ICallableValue makeGetJavaResult(TyphonSessionState state, FunctionType getResultType,
+			IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, getResultType, args -> {
-			// alias ResultTable = tuple[list[str] columnNames, list[list[value]] values];
 			return ResultFactory.makeResult(TF.externalType(TF.valueType()), state.getResult(), ctx);
 		});
 	}
@@ -250,8 +249,8 @@ public class TyphonSession implements Operations {
 		});
 	}
 
-	private ICallableValue makeFinish(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
-			TyphonSessionState state, FunctionType readAndStoreType, IEvaluatorContext ctx) {
+	private ICallableValue makeFinish(List<Consumer<List<Record>>> script, List<Runnable> updates, TyphonSessionState state,
+			FunctionType readAndStoreType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, readAndStoreType, args -> {
 			Runner.executeUpdates(script, updates);
 			script.clear();
