@@ -377,6 +377,12 @@ void testNLPInsertion(PolystoreInstance p) {
   p.assertResultEquals("testNLPInsertion", rs, <["u.motto"], [["on a long journey"]]>);
 }
 
+void testNLPQuery(PolystoreInstance p) {
+  p.runUpdate((Request)`insert User { @id: #paul, name: "Paul", motto: "on a long journey" }`);
+  
+  rs = p.runQuery((Request)`from User u select u.motto where u.@id == #paul`);
+  p.assertResultEquals("testNLPInsertion", rs, <["u.motto"], [["on a long journey"]]>);
+}
 
 
 
