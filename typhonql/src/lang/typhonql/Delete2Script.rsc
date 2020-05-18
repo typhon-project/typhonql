@@ -76,15 +76,19 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   >;
  
   for (Rel r:<ent, Cardinality _, _, _, _, str to, true> <- s.rels) {
+     //println("Deleting kids: <ent> -\> <to>");
      deleteKids(p, placeOf(to, s), r, ctx);
   }
   
   for (Rel r:<str ref, _, _, _, _, ent, _> <- s.rels) {
      // NB: r is not in the direction of p and placeOf(ref, s)
+     //println("Deleting inbound: <ref> -\> <ent>");
+     
      breakInboundPointers(p, placeOf(ref, s), r, ctx);
   }
 
   for (Rel r:<ent, _, _, _, _, str to, false> <- s.rels) {
+     //println("Outbound: <ent> -\> <to>");
      breakOutboundPointers(p, placeOf(to, s), r, ctx);
   }
 
@@ -207,8 +211,13 @@ void breakInboundPointers(
   DeleteContext ctx
 ) {
   // local junction tables are updated because of cascade delete
-  
-  ctx.addSteps(removeAllObjectPointers(other, from, fromRole, fromCard, ctx.mongoMe, ctx.myParams));
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    ;
+    // it has been deleted via deleteKids
+  }
+  else {
+    ctx.addSteps(removeAllObjectPointers(other, from, fromRole, fromCard, ctx.mongoMe, ctx.myParams));
+  }
 }
 
 
@@ -269,7 +278,7 @@ void breakOutboundPointers(
   // automatic because of foreign keys from junction table to from on this db
   
   // but not for the inverse on other:
-  ctx.addSteps(removeAllObjectPointers(other, to, toRole, toCard, ctx.mongoMe, ctx.myParams));
+   ctx.addSteps(removeAllObjectPointers(other, to, toRole, toCard, ctx.mongoMe, ctx.myParams));
 }
 
 
