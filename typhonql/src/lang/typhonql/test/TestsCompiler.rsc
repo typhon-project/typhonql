@@ -17,8 +17,8 @@ import lang::typhonml::Util;
  */
  
 
-//str HOST = "192.168.178.78";
-str HOST = "localhost";
+str HOST = "192.168.178.78";
+//str HOST = "localhost";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
@@ -41,7 +41,7 @@ void setup(PolystoreInstance p, bool doTest) {
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Product p select p.@id, p.name, p.description, p.productionDate`); // TODO: include polygon in this test
 	  p.assertResultEquals("products were inserted", rs, <["p.@id", "p.name", "p.description", "p.productionDate"], 
-	     [["tv", "TV", "Flat", $2020-04-12T22:00:00.000+00:00$], ["radio", "Radio", "Loud", $2020-04-12T22:00:00.000+00:00$]]>);
+	     [["tv", "TV", "Flat", "2020-04-13"], ["radio", "Radio", "Loud", "2020-04-13"]]>);
 	}
 	
 	p.runUpdate((Request) `insert Review { @id: #rev1, content: "Good TV", user: #pablo, product: #tv, location: #point(2.0 3.0) }`);
@@ -75,7 +75,7 @@ void setup(PolystoreInstance p, bool doTest) {
 	  rs = p.runQuery((Request)`from User u select u.biography`);
 	  // the fact that there's null (i.e., <false, "">) here means that
 	  // there are users without bios
-	  p.assertResultEquals("bio obtained from user", rs, <["u.biography"], [["bio1"], [<false, "">]]>);  
+	  p.assertResultEquals("bio obtained from user", rs, <["u.biography"], [["bio1"], ["null"]]>);  
 	}
 	
 	p.runUpdate((Request) `insert Tag { @id: #fun, name: "fun" }`);
@@ -173,22 +173,22 @@ void testDeleteAllSQLBasic(PolystoreInstance p) {
 void testDeleteAllWithCascade(PolystoreInstance p) {
   p.runUpdate((Request)`delete Product p where p.name == "Radio"`);
 
-  //rs = p.runQuery((Request)`from Product p select p.@id where p.name == "Radio"`);
-  //p.assertResultEquals("deleting a product by name deletes it", rs, <["p.@id"], []>);
+  rs = p.runQuery((Request)`from Product p select p.@id where p.name == "Radio"`);
+  p.assertResultEquals("deleting a product by name deletes it", rs, <["p.@id"], []>);
 
-  //p.runUpdate((Request)`delete Product p where p.@id == #tv`);
+  p.runUpdate((Request)`delete Product p where p.@id == #tv`);
   
-  //rs = p.runQuery((Request)`from Product p select p.@id where p.@id == #tv`);
-  //p.assertResultEquals("deleting a product by id deletes it", rs, <["p.@id"], []>);
+  rs = p.runQuery((Request)`from Product p select p.@id where p.@id == #tv`);
+  p.assertResultEquals("deleting a product by id deletes it", rs, <["p.@id"], []>);
   
-  //rs = p.runQuery((Request)`from Item i select i.@id where i.product == #tv`);
-  //p.assertResultEquals("deleting products deletes items", rs, <["i.@id"], []>);
+  rs = p.runQuery((Request)`from Item i select i.@id where i.product == #tv`);
+  p.assertResultEquals("deleting products deletes items", rs, <["i.@id"], []>);
   
-  //rs = p.runQuery((Request)`from Review r select r.@id where r.product == #tv`);
-  //p.assertResultEquals("deleting products deletes reviews", rs, <["t.@id"], []>);
+  rs = p.runQuery((Request)`from Review r select r.@id where r.product == #tv`);
+  p.assertResultEquals("deleting products deletes reviews", rs, <["r.@id"], []>);
 
-  //rs = p.runQuery((Request)`from Tag t select t.@id`);
-  //p.assertResultEquals("deleting products does not delete tags", rs, <["t.@id"], [["fun"], ["kitchen"], ["music"], ["social"]]>);
+  rs = p.runQuery((Request)`from Tag t select t.@id`);
+  p.assertResultEquals("deleting products does not delete tags", rs, <["t.@id"], [["fun"], ["kitchen"], ["music"], ["social"]]>);
 }
 
 
