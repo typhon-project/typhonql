@@ -53,6 +53,115 @@ Request elicitBindings(req:(Request)`from <{Binding ","}+ bs> select <{Result ",
 
 }
 
+
+void smokeKeyValInf() {
+  s = schema(
+  {
+    <"Review",\one(),"user","reviews",zero_many(),"User",false>,
+    <"Product",zero_many(),"tags","tags^",zero_one(),"Tag",false>,
+    <"Product",zero_many(),"reviews","product",\one(),"Review",true>,
+    <"Product",\one(),"category","category^",zero_one(),"Category",false>,
+    <"Item",\one(),"product","inventory",zero_many(),"Product",false>,
+    <"Product",zero_many(),"inventory","product",\one(),"Item",true>,
+    <"User",zero_many(),"reviews","user",\one(),"Review",false>,
+    <"Review",\one(),"product","reviews",zero_many(),"Product",false>,
+    <"User",zero_one(),"biography","user",\one(),"Biography",true>,
+    <"Biography",\one(),"user","biography",zero_one(),"User",false>,
+    <"User",\one(),"Stuff__","",\one(),"User__Stuff",true>
+  },
+  {
+    <"User","name","string(256)">,
+    <"Review","location","point">,
+    <"Product","productionDate","date">,
+    <"User","address","string(256)">,
+    <"Product","description","string(256)">,
+    <"Product","name","string(256)">,
+    <"Product","price","int">,
+    <"Tag","name","string(64)">,
+    <"User","billing","address">,
+    <"User__Stuff","photoURL","string(256)">,
+    <"Category","name","string(32)">,
+    <"Biography","content","string(256)">,
+    <"User__Stuff","avatarURL","string(256)">,
+    <"Product","availabilityRegion","polygon">,
+    <"Category","id","string(32)">,
+    <"Review","content","text">,
+    <"Item","shelf","int">,
+    <"User","location","point">
+  },
+  customs={
+    <"address","location","point">,
+    <"address","zipcode","string(42)">,
+    <"address","street","string(256)">,
+    <"address","city","string(256)">
+  },
+  placement={
+    <<cassandra(),"Stuff">,"User__Stuff">,
+    <<sql(),"Inventory">,"User">,
+    <<sql(),"Inventory">,"Product">,
+    <<sql(),"Inventory">,"Item">,
+    <<sql(),"Inventory">,"Tag">,
+    <<mongodb(),"Reviews">,"Biography">,
+    <<mongodb(),"Reviews">,"Review">,
+    <<mongodb(),"Reviews">,"Category">
+  },
+  changeOperators=[]);
+  
+  Request r = (Request)`from User u select u.avatarURL, u.photoURL where u.photoURL == 34`;
+  println(inferKeyValLinks(r, s));
+  println(expandNavigation(inferKeyValLinks(r, s), s));
+
+  r = (Request)`from Review r select r.user.avatarURL, r.user.photoURL where r.user.photoURL == 34`;
+  println(inferKeyValLinks(r, s));
+  println(expandNavigation(inferKeyValLinks(r, s), s));
+}
+
+Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
+  // rewrite x.f -> x.A__B.f if f is an attribute that is mapped from keyVal
+  Env env = queryEnv(bs);
+  
+  list[str] isKeyValAttr(str ent, Id f) {
+    // return the inferred entity role if f is a key val attribute
+    // otherwise return empty.
+    str x = "<f>";
+    return [ role | <ent, \one(), str role, _, \one(), str kve, true> <- s.rels
+              , <kve, x, _> <- s.attrs
+              , <<cassandra(), _>, kve> <- s.placement ];
+    
+  } 
+  
+  str inferTarget(str src, list[Id] ids) {
+    if (ids == []) {
+      return src;
+    }
+    str via = "<ids[0]>";
+    if (<src, Cardinality _, via,  str _, Cardinality _, str trg, _> <- s.rels) {
+      return inferTarget(trg, ids[1..]);
+    }
+    else {
+      throw "Invalid role `<via>` for entity <src>";
+    }
+  }
+  
+  return visit (req) {
+    case (Expr)`<VId x>.<Id f>`: {
+      str src = inferTarget(env["<x>"], []);
+      if ([str role] := isKeyValAttr(src, f)) {
+        Id inf = [Id]role;
+        insert (Expr)`<VId x>.<Id inf>.<Id f>`;
+      }
+    }
+    // whoa bug: mathcing {Id "."}+ against {Id ","}+ is true.
+    case (Expr)`<VId x>.<{Id "."}+ fs>.<Id f>`: {
+      str src = inferTarget(env["<x>"], [ a | Id a <- fs ]);
+      if ([str role] := isKeyValAttr(src, f)) {
+        Id inf = [Id]role;
+        insert (Expr)`<VId x>.<{Id "."}+ fs>.<Id inf>.<Id f>`;
+      }
+    }
+  }
+}
+
 Request expandNavigation(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
   Env env = queryEnv(bs);
   
