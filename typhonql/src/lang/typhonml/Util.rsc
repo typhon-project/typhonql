@@ -121,7 +121,7 @@ Schema model2schema(Model m)
 
 str keyValEntity(str db, str ent) = "<ent>__<db>";
 
-str keyValRole(str db, str ent) = "__<db>";
+str keyValRole(str db, str ent) = "<db>__";
 
 
 
