@@ -116,19 +116,21 @@ void smokeKeyValInf() {
   println(expandNavigation(inferKeyValLinks(r, s), s));
 }
 
+
+list[str] isKeyValAttr(str ent, str f, Schema s) {
+    // return the inferred entity role if f is a key val attribute
+    // otherwise return empty.
+    return [ role | <ent, \one(), str role, _, \one(), str kve, true> <- s.rels
+              , <kve, f, _> <- s.attrs
+              , <<cassandra(), _>, kve> <- s.placement ];
+    
+} 
+
 Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
   // rewrite x.f -> x.A__B.f if f is an attribute that is mapped from keyVal
   Env env = queryEnv(bs);
   
-  list[str] isKeyValAttr(str ent, Id f) {
-    // return the inferred entity role if f is a key val attribute
-    // otherwise return empty.
-    str x = "<f>";
-    return [ role | <ent, \one(), str role, _, \one(), str kve, true> <- s.rels
-              , <kve, x, _> <- s.attrs
-              , <<cassandra(), _>, kve> <- s.placement ];
-    
-  } 
+  
   
   str inferTarget(str src, list[Id] ids) {
     if (ids == []) {
@@ -146,15 +148,15 @@ Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result 
   return visit (req) {
     case (Expr)`<VId x>.<Id f>`: {
       str src = inferTarget(env["<x>"], []);
-      if ([str role] := isKeyValAttr(src, f)) {
+      if ([str role] := isKeyValAttr(src, "<f>", s)) {
         Id inf = [Id]role;
         insert (Expr)`<VId x>.<Id inf>.<Id f>`;
       }
     }
-    // whoa bug: mathcing {Id "."}+ against {Id ","}+ is true.
+    // whoa bug: mathcing {Id "."}+ against {Id ","}+ pattern succeeds
     case (Expr)`<VId x>.<{Id "."}+ fs>.<Id f>`: {
       str src = inferTarget(env["<x>"], [ a | Id a <- fs ]);
-      if ([str role] := isKeyValAttr(src, f)) {
+      if ([str role] := isKeyValAttr(src, "<f>", s)) {
         Id inf = [Id]role;
         insert (Expr)`<VId x>.<{Id "."}+ fs>.<Id inf>.<Id f>`;
       }
