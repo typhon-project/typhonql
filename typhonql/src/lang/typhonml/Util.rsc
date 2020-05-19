@@ -116,8 +116,59 @@ default Placement place(Database db, Model m) {
 
 
 Schema model2schema(Model m)
-  = schema(model2rels(m), model2attrs(m), customs = model2customs(m), placement=model2placement(m), changeOperators = model2changeOperators(m));
+  = inferAuxEntities(schema(model2rels(m), model2attrs(m), customs = model2customs(m), placement=model2placement(m), changeOperators = model2changeOperators(m)));
 
+
+str keyValEntity(str db, str ent) = "<ent>__<db>";
+
+str keyValRole(str db, str ent) = "__<db>";
+
+
+
+Schema inferAuxEntities(Schema s) {
+  /*
+  KeyValueDB normalization:
+   - attributes that are mapped to cassandra:
+      - remove them from entity
+      - add to new entity
+   
+  */
+  
+  rel[str, str, str] cassandraAttrs
+    = { <db, ent, name> | <<cassandra(), str db>, str attr> <- s.placement,
+         [str ent, str name] := split(".", attr) };
+  
+  // remove the attribute placements       
+  s.placement -= { p | p:<<cassandra(), str _>, str _> <- s.placement };
+         
+         
+  // for each db/entity pair
+  for (<str db, str ent> <- cassandraAttrs<0,1>) {
+    set[str] names = cassandraAttrs[db][ent];
+    str newEnt = keyValEntity(db, ent);
+    
+    // create new attrs, while old attrs still there
+    Attrs newAttrs = { <newEnt, n, t> | str n <- names,
+      <ent, n, str t> <- s.attrs };
+    
+    // remove old attrs
+    s.attrs -= {  <ent, n, t> | str n <- names,  <ent, n, str t> <- s.attrs  };
+    
+    // add containment
+    s.rels += {<ent, \one(), keyValRole(db, ent), "", \one(), newEnt, true>};
+      
+    // add new attrs
+    s.attrs += newAttrs;
+    
+    // add new placement
+    s.placement += {<<cassandra(), db>, newEnt>};
+  }
+  
+  
+  
+
+  return s;
+}
 
 ChangeOps model2changeOperators(Model m) {
   ChangeOps result = [];
