@@ -22,7 +22,7 @@ data CQLStat
       bool distinct=false, 
       bool json=false)
       
-  | cInsert(str name, list[str] columnNames, list[CQLValue] values, 
+  | cInsert(str name, list[str] columnNames, list[CQLExpr] values, 
        bool ifNotExists=false, 
        list[CQLUpdateParam] using=[])
   

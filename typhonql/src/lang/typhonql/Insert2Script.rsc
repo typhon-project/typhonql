@@ -14,6 +14,9 @@ import lang::typhonql::relational::SQL2Text;
 
 import lang::typhonql::mongodb::DBCollection;
 
+import lang::typhonql::cassandra::CQL; 
+import lang::typhonql::cassandra::CQL2Text; 
+
 import IO;
 import ValueIO;
 import List;
@@ -34,11 +37,22 @@ alias InsertContext = tuple[
   Bindings myParams,
   SQLExpr sqlMe,
   DBObject mongoMe,
+  CQLExpr cqlMe,
   void (list[Step]) addSteps,
   void (SQLStat(SQLStat)) updateSQLInsert,
   void (DBObject(DBObject)) updateMongoInsert,
   Schema schema
 ];
+
+/*
+
+Insert with key value things:
+first insert the keyvalue props, with
+primary key SQL/Mongo me
+
+Then insert the rest.
+
+*/
 
 Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s) {
   str entity = "<e>";
@@ -47,7 +61,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   Bindings myParams = ( myId: generatedId(myId) | !hasId(kvs) );
   SQLExpr sqlMe = hasId(kvs) ? lit(text(evalId(kvs))) : SQLExpr::placeholder(name=myId);
   DBObject mongoMe = hasId(kvs) ? \value(evalId(kvs)) : DBObject::placeholder(name=myId);
-  
+  CQLExpr cqlMe = hasId(kvs) ? cTerm(cUUID(evalId(kvs))) : cBindMarker(name=myId);
 
   SQLStat theInsert = \insert(tableName("<e>"), [], []);
   DBObject theObject = object([ ]);
@@ -99,16 +113,43 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
     myParams,
     sqlMe,
     mongoMe,
+    cqlMe,
     addSteps,
     updateSQLInsert,
     updateMongoInsert,
     s
   >;
   
-  compileAttrs(p, [ kv | KeyVal kv <- kvs, isAttr(kv, entity, s) ], ctx);
+  lrel[str, KeyVal] keyValueDeps = {};
+  for (KeyVal kv <- kvs, [str _, str kve] := isKeyValAttr(entity, "<kv.key>", s)) {
+    keyValueDeps += {<kve, kv>};
+  } 
   
-  //iprintln(s.rels);
   
+  // this functions doesn't add steps
+  // but modifies the mongo/sql insert
+  // statements
+  compileAttrs(p, [ kv | KeyVal kv <- kvs, isAttr(kv, entity, s), !isKeyValAttr(kv, entity, s) ], ctx);
+  
+  
+  // Then we insert the keyval things
+  // using the 'me' id as key for looking up
+  for (str keyValEntity <- keyValueDeps<0>) {
+    if (<<cassandra(), str dbName>, keyValEntity> <- s.placement) {
+      list[str] colNames = [ "@id" ] 
+        + [ "<kv.key>" | KeyVal kv <- keyValueDeps[keyValEntity] ];
+      
+      list[CQLExpr] vals = [cqlMe] 
+        + [ expr2cql(e) | (KeyVal)`<Id _>: <Expr e>` <- keyValueDeps[keyValEntity] ];
+      CQLStat cqlIns = cInsert(kvTable, colNames, vals);
+      addSteps([step(dbName, cassandra(execute(dbName, pp(cqlIns))), myParams)]);
+    }
+    else {
+      throw "Cannot find <keyValEntity> on cassandra; bug";
+    }
+  }
+  
+    
   
   for ((KeyVal)`<Id x>: <UUID ref>` <- kvs) {
     str fromRole = "<x>"; 
@@ -503,6 +544,11 @@ Value evalExpr((Expr)`<UUID u>`) = text("<u>"[1..]);
 Value evalExpr((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
 
 default Value evalExpr(Expr ex) { throw "missing case for <ex>"; }
+
+bool isKeyValAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) 
+  = isKeyValAttr(e, "<x>", s) != [];
+
+default bool isKeyVal(KeyVal _, str _, Schema _) = false;
 
 bool isAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) = <e, "<x>", _> <- s.attrs;
 
