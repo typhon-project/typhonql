@@ -3,6 +3,7 @@ module lang::typhonql::Insert2Script
 import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
 import lang::typhonql::Script;
+import lang::typhonql::Normalize;
 import lang::typhonql::Session;
 import lang::typhonql::TDBC;
 import lang::typhonql::Order;
@@ -16,6 +17,7 @@ import lang::typhonql::mongodb::DBCollection;
 
 import lang::typhonql::cassandra::CQL; 
 import lang::typhonql::cassandra::CQL2Text; 
+import lang::typhonql::cassandra::Query2CQL;
 
 import IO;
 import ValueIO;
@@ -120,10 +122,6 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
     s
   >;
   
-  lrel[str, KeyVal] keyValueDeps = {};
-  for (KeyVal kv <- kvs, [str _, str kve] := isKeyValAttr(entity, "<kv.key>", s)) {
-    keyValueDeps += {<kve, kv>};
-  } 
   
   
   // this functions doesn't add steps
@@ -134,6 +132,12 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   
   // Then we insert the keyval things
   // using the 'me' id as key for looking up
+  
+  lrel[str, KeyVal] keyValueDeps = [];
+  for (KeyVal kv <- kvs, [str _, str kve] := isKeyValAttr(entity, "<kv.key>", s)) {
+    keyValueDeps += [<kve, kv>];
+  } 
+  
   for (str keyValEntity <- keyValueDeps<0>) {
     if (<<cassandra(), str dbName>, keyValEntity> <- s.placement) {
       list[str] colNames = [ "@id" ] 
@@ -141,7 +145,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
       
       list[CQLExpr] vals = [cqlMe] 
         + [ expr2cql(e) | (KeyVal)`<Id _>: <Expr e>` <- keyValueDeps[keyValEntity] ];
-      CQLStat cqlIns = cInsert(kvTable, colNames, vals);
+      CQLStat cqlIns = cInsert(keyValEntity, colNames, vals);
       addSteps([step(dbName, cassandra(execute(dbName, pp(cqlIns))), myParams)]);
     }
     else {

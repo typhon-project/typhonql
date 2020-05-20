@@ -101,9 +101,10 @@ str pp(cSelect(list[CQLSelectClause] selectClauses, str tableName, list[CQLExpr]
 str pp(cInsert(str name, list[str] cols, list[CQLExpr] values, 
        ifNotExists=bool ine, 
        using=list[CQLUpdateParam] using)) 
-  = "INSERT INTO <ppId(name)> (<intercalate(", ", cols)>) VALUES <pp(cTuple(vals))><ppINE(ine)><ppUsing(using)>;"
+  = "INSERT INTO <ppId(name)> <colStr> VALUES <vals><ppINE(ine)><ppUsing(using)>;"
   when
-    list[CQLValue] vals := [ term.val | CQLExpr term <- values ];
+    str colStr := "(<intercalate(", ", [ ppId(c) | str c <- cols])>)",
+    str vals := "(<intercalate(", ", [ pp(e) | CQLExpr e <- values ])>)";
 
 
 str pp(cUpdate(str name, list[CQLAssignment] sets, list[CQLExpr] wheres,

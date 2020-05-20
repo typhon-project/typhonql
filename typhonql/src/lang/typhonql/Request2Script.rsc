@@ -89,18 +89,24 @@ void smokeScript() {
   s = schema({
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Person", zero_many(), "cash", "owner", \one(), "Cash", true>,
+    <"Person", \one(), "SomeStuff__", "", \one(), "SomeStuff", true>,
+    <"Person", \one(), "MoreStuff__", "", \one(), "MoreStuff", true>,
     <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
     <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
     <"Comment", zero_many(), "replies", "owner", \zero_many(), "Comment", true>
   }, {
     <"Person", "name", "text">,
     <"Person", "age", "int">,
+    <"SomeStuff", "photo", "text">,
+    <"MoreStuff", "bitcoin", "text">,
     <"Cash", "amount", "int">,
     <"Review", "text", "text">,
     <"Comment", "contents", "text">,
     <"Reply", "reply", "text">
   },
   placement = {
+    <<cassandra(), "Stuff">, "SomeStuff">,
+    <<cassandra(), "Stuff">, "MoreStuff">,
     <<sql(), "Inventory">, "Person">,
     <<sql(), "Inventory">, "Cash">,
     <<mongodb(), "Reviews">, "Review">,
@@ -220,4 +226,8 @@ void smokeScript() {
 
   smokeIt((Request)`from Person p select p.reviews where p == #victor`);
 
+  smokeIt((Request)`insert Person {name: "Pablo", age: 23, photo: "hello"}`);
+  
+  smokeIt((Request)`insert Person {name: "Pablo", age: 23, photo: "hello", bitcoin: "bla"}`);
+  
 }

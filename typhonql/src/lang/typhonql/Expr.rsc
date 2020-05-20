@@ -88,7 +88,7 @@ lexical Label = "@" VId label;
 syntax KeyVal 
   = keyValue: Id key ":" Expr value
   // needed for insert/update from workingset so that uuids can be used as identities
-  | storedKey: "@id" ":" Expr value 
+  | storedKey: "@id" key ":" Expr value 
   ;
 
 lexical PlaceHolder = "??" Id name;

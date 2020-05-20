@@ -172,6 +172,24 @@ void deleteKids(
   ctx.addSteps(cascadeViaJunction(other, to, toRole, from, fromRole, ctx.sqlMe, ctx.myParams));  
 }
 
+
+void deleteKids(
+  <sql(), str dbName>, <cassandra(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
+  DeleteContext ctx
+) {
+  // todo  
+}
+
+void deleteKids(
+  <mongodb(), str dbName>, <cassandra(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
+  DeleteContext ctx
+) {
+  // todo;
+}
+
+
 /*
  * Break pointers into the deleted objects
  */
