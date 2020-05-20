@@ -42,6 +42,8 @@ TODO:
 */
 
 
+bool hitsBackend((Request)`<Query q>`, Place p, Schema s) 
+  = ( false | it || (<p, "<b.entity>"> in s.placement) | Binding b <- q.bindings );
 
 
 Script request2script(Request r, Schema s, Log log = noLog) {
@@ -54,7 +56,8 @@ Script request2script(Request r, Schema s, Log log = noLog) {
       list[Place] order = orderPlaces(r, s);
       r = expandNavigation(inferKeyValLinks(addWhereIfAbsent(r), s), s);
       log("NORMALIZED: <r>");
-      Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) | Place p <- order]);
+      Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) 
+         | Place p <- order, hitsBackend(r, p, s)]);
       scr.steps += [read(results2paths(r.qry.selected, queryEnv(r.qry), s))];
       return scr;
     }
@@ -90,7 +93,6 @@ void smokeScript() {
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Person", zero_many(), "cash", "owner", \one(), "Cash", true>,
     <"Person", \one(), "SomeStuff__", "", \one(), "SomeStuff", true>,
-    <"Person", \one(), "MoreStuff__", "", \one(), "MoreStuff", true>,
     <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
     <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
     <"Comment", zero_many(), "replies", "owner", \zero_many(), "Comment", true>
@@ -98,7 +100,7 @@ void smokeScript() {
     <"Person", "name", "text">,
     <"Person", "age", "int">,
     <"SomeStuff", "photo", "text">,
-    <"MoreStuff", "bitcoin", "text">,
+    <"SomeStuff", "bitcoin", "text">,
     <"Cash", "amount", "int">,
     <"Review", "text", "text">,
     <"Comment", "contents", "text">,
@@ -106,7 +108,6 @@ void smokeScript() {
   },
   placement = {
     <<cassandra(), "Stuff">, "SomeStuff">,
-    <<cassandra(), "Stuff">, "MoreStuff">,
     <<sql(), "Inventory">, "Person">,
     <<sql(), "Inventory">, "Cash">,
     <<mongodb(), "Reviews">, "Review">,
