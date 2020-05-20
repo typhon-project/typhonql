@@ -24,6 +24,11 @@ import lang::typhonql::relational::Query2SQL;
 import lang::typhonql::mongodb::Query2Mongo;
 import lang::typhonql::mongodb::DBCollection;
 
+import lang::typhonql::cassandra::CQL; 
+import lang::typhonql::cassandra::CQL2Text; 
+import lang::typhonql::cassandra::Query2CQL;
+
+
 import IO;
 import List;
 
@@ -32,6 +37,7 @@ alias DeleteContext = tuple[
   Bindings myParams,
   SQLExpr sqlMe,
   DBObject mongoMe,
+  CQLExpr cqlMe,
   void (list[Step]) addSteps,
   Schema schema
 ];
@@ -46,6 +52,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   str myId = newParam();
   SQLExpr sqlMe = lit(Value::placeholder(name=myId));
   DBObject mongoMe = DBObject::placeholder(name=myId);
+  CQLExpr cqlMe = cBindMarker(name=myId);
   Bindings myParams = ( myId: toBeDeleted );
   Script theScript = script([]);
   
@@ -71,6 +78,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
     myParams,
     sqlMe,
     mongoMe,
+    cqlMe,
     addSteps,
     s
   >;
@@ -172,13 +180,17 @@ void deleteKids(
   ctx.addSteps(cascadeViaJunction(other, to, toRole, from, fromRole, ctx.sqlMe, ctx.myParams));  
 }
 
+/*
+ * KeyValueDBs only have incoming ownership pointers
+ */
 
 void deleteKids(
   <sql(), str dbName>, <cassandra(), str other>,
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
   DeleteContext ctx
 ) {
-  // todo  
+  CQLStat stmt = cDelete(to, [cEq(CQLExpr::cColumn("@id"), ctx.cqlMe)]);
+  ctx.addSteps([step(other, cassandra(execute(other, pp(stmt))), ctx.myParams)]);  
 }
 
 void deleteKids(
@@ -186,9 +198,9 @@ void deleteKids(
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
   DeleteContext ctx
 ) {
-  // todo;
+  CQLStat stmt = cDelete(to, [cEq(CQLExpr::cColumn("@id"), ctx.cqlMe)]);
+  ctx.addSteps([step(other, cassandra(execute(other, pp(stmt))), ctx.myParams)]);  
 }
-
 
 /*
  * Break pointers into the deleted objects

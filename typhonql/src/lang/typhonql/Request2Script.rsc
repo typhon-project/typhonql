@@ -201,15 +201,7 @@ void smokeScript() {
 
 
 
-  smokeIt((Request)`delete Comment c where c.contents == "Bad"`);
 
-  smokeIt((Request)`delete Person p`);
-
-  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
-
-  smokeIt((Request)`delete Review r`);
-
-  smokeIt((Request)`delete Review r where r.text == "Bad"`);
 
   smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
 
@@ -229,5 +221,16 @@ void smokeScript() {
   smokeIt((Request)`insert Person {name: "Pablo", age: 23, photo: "hello"}`);
   
   smokeIt((Request)`insert Person {name: "Pablo", age: 23, photo: "hello", bitcoin: "bla"}`);
-  
+ 
+ 
+  smokeIt((Request)`delete Review r`);
+
+  smokeIt((Request)`delete Review r where r.text == "Bad"`);
+
+  smokeIt((Request)`delete Comment c where c.contents == "Bad"`);
+
+  smokeIt((Request)`delete Person p`);
+
+  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
+   
 }

@@ -125,19 +125,19 @@ str pp(cDelete(str name, list[CQLExpr] wheres,
  */
  
 str ppSels(list[CQLSimpleSelection] cols)
-  = intercalate(", ", [ pp(s) | CQLSimpleSelection s <- cols ]);
+  = cols == [] ? "*" : intercalate(", ", [ pp(s) | CQLSimpleSelection s <- cols ]);
  
  
 str ppConds(bool ifExists, list[CQLExpr] conds)
   = ifExists ? " IF EXISTS"
-  : " IF <intercalate(" AND ", [ pp(c) | CQLExpr c <- conds ])>";
+  : (conds != [] ? " IF <intercalate(" AND ", [ pp(c) | CQLExpr c <- conds ])>" : "");
 
 str ppSets(list[CQLAssignment] sets)
   = "SET <intercalate(", ", [ pp(s) | CQLAssignment s <- sets ])>";
 
 str ppWhere(list[CQLExpr] wheres)
-  = wheres != [] ? ""
-    : " WHERE " + intercalate(" AND ", [ pp(e) | CQLExpr e <- wheres]);
+  = wheres == [] ? ""
+  : " WHERE " + intercalate(" AND ", [ pp(e) | CQLExpr e <- wheres]);
   
 
 str ppUsing(list[CQLUpdateParam] using)
