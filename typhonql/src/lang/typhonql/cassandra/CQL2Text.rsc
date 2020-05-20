@@ -125,7 +125,7 @@ str pp(cDelete(str name, list[CQLExpr] wheres,
  */
  
 str ppSels(list[CQLSimpleSelection] cols)
-  = cols == [] ? "*" : intercalate(", ", [ pp(s) | CQLSimpleSelection s <- cols ]);
+  = intercalate(", ", [ pp(s) | CQLSimpleSelection s <- cols ]);
  
  
 str ppConds(bool ifExists, list[CQLExpr] conds)
