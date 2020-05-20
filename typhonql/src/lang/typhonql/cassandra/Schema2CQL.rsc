@@ -8,8 +8,8 @@ import lang::typhonql::cassandra::CQL2Text;
 import IO;
 
 str cTableName(str entity) = entity;
-str cColName(str entity, str x) = "<entity>.<x>";
-str cTyphonId(str entity) = "<entity>.@id";
+str cColName(str entity, str x) = x;
+str cTyphonId(str entity) = "@id";
 
 list[CQLStat] schema2cql(Schema s, Place p, set[str] entities) {
   list[CQLStat] stmts = [];

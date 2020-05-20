@@ -52,7 +52,7 @@ Script request2script(Request r, Schema s, Log log = noLog) {
 
     case (Request)`<Query q>`: {
       list[Place] order = orderPlaces(r, s);
-      r = expandNavigation(addWhereIfAbsent(r), s);
+      r = expandNavigation(inferKeyValLinks(addWhereIfAbsent(r), s), s);
       log("NORMALIZED: <r>");
       Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) | Place p <- order]);
       scr.steps += [read(results2paths(r.qry.selected, queryEnv(r.qry), s))];
@@ -230,5 +230,24 @@ void smokeScript() {
   smokeIt((Request)`delete Person p`);
 
   smokeIt((Request)`delete Person p where p.name == "Pablo"`);
-   
+ 
+  
+  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
+
+  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
+
+  smokeIt((Request)`from Person u, Review r select r where r.user == u, u.name == "Pablo"`);
+
+  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
+
+  smokeIt((Request)`from Person p, Cash c select p.name where p.name == "Pablo", p.cash == c, c.amount \> 0`);
+
+
+  smokeIt((Request)`from Person u, Review r select u.name, r.user where u.reviews == r, r.text == ""`);
+
+  smokeIt((Request)`from Person p select p.reviews where p == #victor`);
+
+  smokeIt((Request)`from Person p select p.photo where p == #victor`);
+
+    
 }

@@ -5,6 +5,7 @@ import lang::typhonql::Normalize;
 import lang::typhonql::Order;
 import lang::typhonql::Script;
 import lang::typhonql::Session;
+
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::SQL2Text;
 import lang::typhonql::relational::Util;

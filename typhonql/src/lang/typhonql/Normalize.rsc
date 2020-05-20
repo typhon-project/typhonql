@@ -145,23 +145,67 @@ Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result 
     }
   }
   
-  return visit (req) {
+  int varId = 0;
+  map[str, VId] memo = ();
+  list[Binding] newBindings = [ b | Binding b <- bs ];
+  
+  VId newBinding(str entity, str path) {
+    if (path notin memo) {
+      str x = "<uncapitalize(entity)>_kv_<varId>";
+      varId += 1;
+      VId var = [VId]x;
+      memo[path] = var;
+      EId ent = [EId]entity;
+      newBindings += [(Binding)`<EId ent> <VId var>`]; 
+    }
+    return memo[path];
+  }
+  
+  
+  // NB: empty, because they are rewritten, so added later
+  list[Result] newResults = [];
+  list[Expr] newWheres = [];
+  
+  req = visit (req) {
     case (Expr)`<VId x>.<Id f>`: {
       str src = inferTarget(env["<x>"], []);
-      if ([str role, _] := isKeyValAttr(src, "<f>", s)) {
-        Id inf = [Id]role;
-        insert (Expr)`<VId x>.<Id inf>.<Id f>`;
+      if ([str role, str kvEntity] := isKeyValAttr(src, "<f>", s)) {
+        VId kvX = newBinding(kvEntity, "<x>");
+        EId ent = [EId]kvEntity;
+        newWheres += [(Expr)`<VId kvX>.@id == <VId x>.@id`];
+        insert (Expr)`<VId kvX>.<Id f>`;
+        
+        /*
+          add binding: kvEntity kvVar
+          add where:  kvVar.@id == x.@id
+          replace with: kvVar.f
+        */
       }
     }
     // whoa bug: mathcing {Id "."}+ against {Id ","}+ pattern succeeds
     case (Expr)`<VId x>.<{Id "."}+ fs>.<Id f>`: {
       str src = inferTarget(env["<x>"], [ a | Id a <- fs ]);
-      if ([str role, _] := isKeyValAttr(src, "<f>", s)) {
-        Id inf = [Id]role;
-        insert (Expr)`<VId x>.<{Id "."}+ fs>.<Id inf>.<Id f>`;
+      if ([str role, str kvEntity] := isKeyValAttr(src, "<f>", s)) {
+        VId kvX = newBinding(kvEntity, "<x>.<fs>");
+        EId ent = [EId]kvEntity;
+        newWheres += [(Expr)`<VId kvX>.@id == <VId x>.<{Id "."}+ fs>`];
+        insert (Expr)`<VId kvX>.<Id f>`;
+        /*
+          add binding: kvEntity kvVar
+          add where:  kvVar.@id == x.<fs>.@id
+          replace with: kvVar.f
+        */
       }
     }
   }
+  
+  if ((Request)`from <{Binding ","}+ _> select <{Result ","}+ rs> where <{Expr ","}+ ws>` := req) {
+    newResults = [ r | Result r <- rs ] + newResults;
+    newWheres = [ w | Expr w <- ws ] + newWheres;
+  }
+  
+  Query newQuery = buildQuery(newBindings, newResults, newWheres);
+  return (Request)`<Query newQuery>`;
 }
 
 Request expandNavigation(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
