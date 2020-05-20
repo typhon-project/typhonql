@@ -220,7 +220,21 @@ void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
 void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
   p.runUpdate((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy}`);
   p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", reviews: [#newReview], availabilityRegion: #polygon((1.0 1.0))}`);
-  rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, p.reviews == #newReview`);
+  
+  // this below query is not as intended, r remains unconstrained, so you get all review contents.
+  //rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, p.reviews == #newReview`);
+  
+  // this throws: could not find source tbl for outer join...
+  // seems to be the case when you have two wheres conditions on a junction table field...
+  //rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, p.reviews == #newReview, p.reviews == r`);
+
+  
+  // this works, but doesn't show that it's found via p.reviews:
+  //rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, r == #newReview`);
+  
+  // so we use this:
+  rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, p.reviews == r`);
+  
   p.assertResultEquals("InsertManyContainSQLtoExternal", rs, <["r.content"], [["expensive"]]>);
 }
 
@@ -362,7 +376,7 @@ void testGISonCrossMongoSQL(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Product p, Review r select r, p.name where r.location in p.availabilityRegion`);
   p.assertResultEquals("testGISonCrossMongoSQL - contained", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
   
-  rs = p.runQuery((Request)`from Product p, Review r select r, p.name where distance(r.location in p.availabilityRegion) \< 200`);
+  rs = p.runQuery((Request)`from Product p, Review r select r, p.name where distance(r.location, p.availabilityRegion) \< 200`);
   p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
 }
 
@@ -507,6 +521,7 @@ void runTests(Log log = NO_LOG()) {
 	  
 	  , testGISonSQL
 	  , testGISonMongo
+	  , testGISonCrossMongoSQL
 	  , testGISPrint
 	  
 	  , test1
