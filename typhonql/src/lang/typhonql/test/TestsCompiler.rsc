@@ -195,14 +195,15 @@ void testDeleteAllWithCascade(PolystoreInstance p) {
 void testDeleteKidsRemovesParentLinksSQLLocal(PolystoreInstance p) {
   p.runUpdate((Request)`delete Item i where i.product == #tv`);
   
-  rs = p.runQuery((Request)`from Product p select p.inventory`);
-  p.assertResultEquals("delete items removes from inventory", rs, <["p.inventory"], []>);
+  rs = p.runQuery((Request)`from Product p select p.inventory where p == #tv`);
+  p.assertResultEquals("delete items removes from inventory", rs, <["p.inventory"], [["null"]]>);
 }
+
 void testDeleteKidsRemovesParentLinksSQLCross(PolystoreInstance p) {
   p.runUpdate((Request)`delete Review r where r.product == #tv`);
   
-  rs = p.runQuery((Request)`from Product p select p.reviews`);
-  p.assertResultEquals("delete reviews removes from product reviews", rs, <["p.reviews"], [["rev3"]]>);
+  rs = p.runQuery((Request)`from Product p select p.reviews where p == #tv`);
+  p.assertResultEquals("delete reviews removes from product reviews", rs, <["p.reviews"], [["null"]]>);
 }
 
 void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
