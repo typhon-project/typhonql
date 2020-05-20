@@ -17,8 +17,8 @@ import lang::typhonml::Util;
  */
  
 
-str HOST = "192.168.178.78";
-//str HOST = "localhost";
+//str HOST = "192.168.178.78";
+str HOST = "localhost";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
@@ -371,8 +371,8 @@ void testGISonCrossMongoSQL(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Product p, Review r select r, p.name where r.location in p.availabilityRegion`);
   p.assertResultEquals("testGISonCrossMongoSQL - contained", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
   
-  rs = p.runQuery((Request)`from Product p, Review r select r, p.name where distance(r.location, p.availabilityRegion) \< 200`);
-  p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
+  rs = p.runQuery((Request)`from User u, Review r select r, u.name where distance(r.location, u.location) \< 200`);
+  p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "u.name"], [["rev1", "Pablo"], ["rev2", "Davy"]]>);
 }
 
 
