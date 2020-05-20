@@ -75,7 +75,7 @@ void setup(PolystoreInstance p, bool doTest) {
 	  rs = p.runQuery((Request)`from User u select u.biography`);
 	  // the fact that there's null (i.e., <false, "">) here means that
 	  // there are users without bios
-	  p.assertResultEquals("bio obtained from user", rs, <["u.biography"], [["bio1"], ["null"]]>);  
+	  p.assertResultEquals("bio obtained from user", rs, <["u.biography"], [["bio1"], [{}]]>);  
 	}
 	
 	p.runUpdate((Request) `insert Tag { @id: #fun, name: "fun" }`);
@@ -196,14 +196,14 @@ void testDeleteKidsRemovesParentLinksSQLLocal(PolystoreInstance p) {
   p.runUpdate((Request)`delete Item i where i.product == #tv`);
   
   rs = p.runQuery((Request)`from Product p select p.inventory where p == #tv`);
-  p.assertResultEquals("delete items removes from inventory", rs, <["p.inventory"], [["null"]]>);
+  p.assertResultEquals("delete items removes from inventory", rs, <["p.inventory"], [[{}]]>);
 }
 
 void testDeleteKidsRemovesParentLinksSQLCross(PolystoreInstance p) {
   p.runUpdate((Request)`delete Review r where r.product == #tv`);
   
   rs = p.runQuery((Request)`from Product p select p.reviews where p == #tv`);
-  p.assertResultEquals("delete reviews removes from product reviews", rs, <["p.reviews"], [["null"]]>);
+  p.assertResultEquals("delete reviews removes from product reviews", rs, <["p.reviews"], [[{}]]>);
 }
 
 void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
