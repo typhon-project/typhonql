@@ -32,6 +32,11 @@ void setup(PolystoreInstance p, bool doTest) {
 	if (doTest) {
 	  rs = p.runQuery((Request)`from User u select u.@id, u.name`);
 	  p.assertResultEquals("users were inserted", rs, <["u.@id", "u.name"], [["pablo", "Pablo"], ["davy", "Davy"]]>);
+	  
+	  rs = p.runQuery((Request)`from User u select u.photoURL, u.name`);
+	  // todo: test result.
+
+	  rs = p.runQuery((Request)`from User u select u.photoURL, u.avatarURL, u.name`);
 	}
 	
 	p.runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat", productionDate:  $2020-04-13$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);

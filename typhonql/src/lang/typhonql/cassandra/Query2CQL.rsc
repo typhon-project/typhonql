@@ -57,7 +57,6 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
 
   Bindings params = ();
   void addParam(str x, Param field) {
-    println("Adding param: <x> <field>");
     params[x] = field;
   }
 
@@ -150,7 +149,6 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
     case e:(Expr)`<VId x>.@id` => rewriteDynIfNeeded(e)
     case e:(Expr)`<VId x>.<Id f>` => rewriteDynIfNeeded(e)
   }
-  println("WHERES: <ws>");
   
 
   for (Expr e <- ws) {

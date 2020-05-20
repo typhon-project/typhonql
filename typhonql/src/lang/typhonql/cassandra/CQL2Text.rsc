@@ -60,14 +60,14 @@ str pp(cSelect(list[CQLSelectClause] selectClauses, str tableName, list[CQLExpr]
   str s = "SELECT";
  
   if (json) {
-    s += " JSON ";
+    s += " JSON";
   }
  
   if (distinct) {
-    s += " DISTINCT ";
+    s += " DISTINCT";
   }    
  
-  s += intercalate(", ", [ pp(sc) | CQLSelectClause sc <- selectClauses ]);
+  s += " " + intercalate(", ", [ pp(sc) | CQLSelectClause sc <- selectClauses ]);
 
   s += " FROM <ppId(tableName)>";
 
