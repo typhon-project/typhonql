@@ -516,6 +516,7 @@ void runTests(Log log = NO_LOG()) {
 	  
 	  , testGISonSQL
 	  , testGISonMongo
+	  , testGISonCrossMongoSQL
 	  , testGISPrint
 	  
 	  , test1
