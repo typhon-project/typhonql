@@ -26,8 +26,8 @@ str PASSWORD = "admin1@";
 public Log PRINT() = void(value v) { println("LOG: <v>"); };
 
 void setup(PolystoreInstance p, bool doTest) {
-	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo", location: #point(2.0 3.0) }`);
-	p.runUpdate((Request) `insert User { @id: #davy, name: "Davy", location: #point(20.0 30.0)  }`);
+	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo", location: #point(2.0 3.0), photoURL: "moustache" }`);
+	p.runUpdate((Request) `insert User { @id: #davy, name: "Davy", location: #point(20.0 30.0), photoURL: "beard"}`);
 	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from User u select u.@id, u.name`);
