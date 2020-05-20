@@ -249,5 +249,7 @@ void smokeScript() {
 
   smokeIt((Request)`from Person p select p.photo where p == #victor`);
 
+  smokeIt((Request)`from Person p select p.photo, p.bitcoin where p == #victor`);
+
     
 }

@@ -67,7 +67,8 @@ void smokeKeyValInf() {
     <"Review",\one(),"product","reviews",zero_many(),"Product",false>,
     <"User",zero_one(),"biography","user",\one(),"Biography",true>,
     <"Biography",\one(),"user","biography",zero_one(),"User",false>,
-    <"User",\one(),"Stuff__","",\one(),"User__Stuff",true>
+    <"User",\one(),"Stuff__","",\one(),"User__Stuff",true>,
+    <"User",\one(),"MoreStuff__","",\one(),"User__MoreStuff",true>
   },
   {
     <"User","name","string(256)">,
@@ -83,6 +84,7 @@ void smokeKeyValInf() {
     <"Category","name","string(32)">,
     <"Biography","content","string(256)">,
     <"User__Stuff","avatarURL","string(256)">,
+    <"User__MoreStuff","bla","string(256)">,
     <"Product","availabilityRegion","polygon">,
     <"Category","id","string(32)">,
     <"Review","content","text">,
@@ -97,6 +99,7 @@ void smokeKeyValInf() {
   },
   placement={
     <<cassandra(),"Stuff">,"User__Stuff">,
+    <<cassandra(),"Stuff">,"User__MoreStuff">,
     <<sql(),"Inventory">,"User">,
     <<sql(),"Inventory">,"Product">,
     <<sql(),"Inventory">,"Item">,
@@ -108,12 +111,25 @@ void smokeKeyValInf() {
   changeOperators=[]);
   
   Request r = (Request)`from User u select u.avatarURL, u.photoURL where u.photoURL == 34`;
+  println("Original: <r>");
   println(inferKeyValLinks(r, s));
-  println(expandNavigation(inferKeyValLinks(r, s), s));
-
+  //println(expandNavigation(inferKeyValLinks(r, s), s));
+  
+  println("");
+  
   r = (Request)`from Review r select r.user.avatarURL, r.user.photoURL where r.user.photoURL == 34`;
+  println("Original: <r>");
   println(inferKeyValLinks(r, s));
-  println(expandNavigation(inferKeyValLinks(r, s), s));
+  //println(expandNavigation(inferKeyValLinks(r, s), s));
+  
+  println("");
+  
+  r = (Request)`from User u select u.avatarURL, u.bla where u.photoURL == 34`;
+  println("Original: <r>");
+  println(inferKeyValLinks(r, s));
+  //println(expandNavigation(inferKeyValLinks(r, s), s));
+  
+  
 }
 
 
@@ -149,16 +165,18 @@ Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result 
   map[str, VId] memo = ();
   list[Binding] newBindings = [ b | Binding b <- bs ];
   
-  VId newBinding(str entity, str path) {
-    if (path notin memo) {
+  VId newBinding(str entity, str path, Expr whereRhs) {
+    str key = "<entity>/<path>";
+    if (key notin memo) {
       str x = "<uncapitalize(entity)>_kv_<varId>";
       varId += 1;
       VId var = [VId]x;
-      memo[path] = var;
+      memo[key] = var;
       EId ent = [EId]entity;
       newBindings += [(Binding)`<EId ent> <VId var>`]; 
+      newWheres += [(Expr)`<VId var>.@id == <Expr whereRhs>`];
     }
-    return memo[path];
+    return memo[key];
   }
   
   
@@ -170,9 +188,7 @@ Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result 
     case (Expr)`<VId x>.<Id f>`: {
       str src = inferTarget(env["<x>"], []);
       if ([str role, str kvEntity] := isKeyValAttr(src, "<f>", s)) {
-        VId kvX = newBinding(kvEntity, "<x>");
-        EId ent = [EId]kvEntity;
-        newWheres += [(Expr)`<VId kvX>.@id == <VId x>.@id`];
+        VId kvX = newBinding(kvEntity, "<x>", (Expr)`<VId x>.@id`);
         insert (Expr)`<VId kvX>.<Id f>`;
         
         /*
@@ -186,9 +202,7 @@ Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result 
     case (Expr)`<VId x>.<{Id "."}+ fs>.<Id f>`: {
       str src = inferTarget(env["<x>"], [ a | Id a <- fs ]);
       if ([str role, str kvEntity] := isKeyValAttr(src, "<f>", s)) {
-        VId kvX = newBinding(kvEntity, "<x>.<fs>");
-        EId ent = [EId]kvEntity;
-        newWheres += [(Expr)`<VId kvX>.@id == <VId x>.<{Id "."}+ fs>`];
+        VId kvX = newBinding(kvEntity, "<x>.<fs>", (Expr)`<VId x>.<{Id "."}+ fs>`);
         insert (Expr)`<VId kvX>.<Id f>`;
         /*
           add binding: kvEntity kvVar
