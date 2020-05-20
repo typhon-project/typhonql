@@ -11,6 +11,7 @@ import IO;
 import Set;
 import String;
 import List;
+import Node;
 
 
 /*
@@ -222,6 +223,9 @@ list[Place] orderPlaces(Request req, Schema s) {
   list[WPlace] weights = [ <p, filterWeight(req, p, s)> | Place p <- s.placement<0> ];
   
   list[WPlace] sortedWeights = sort(weights, bool(WPlace w1, WPlace w2) {
+    if (w1.weight == w2.weight) {
+      return getName(w1.place.db) > getName(w2.place.db);
+    }
     return w1.weight > w2.weight; 
   });
   
@@ -243,7 +247,7 @@ int filterWeight((Request)`<Query q>`, Place p, Schema s) {
 }
 
 int filterWeight(Expr e, Place p, map[str, str] env, Schema s)
-  = ( 0 | it + 1 | /VId x := e, <p, env["<x>"]> in s.placement ); 
+  = ( 0 | it + 1 | /VId x := e, "<x>" in env, <p, env["<x>"]> in s.placement ); 
   
 
   

@@ -1,46 +1,46 @@
 package nl.cwi.swat.typhonql.client.resulttable;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-
-import org.rascalmpl.values.ValueFactoryFactory;
-
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Polygon;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.usethesource.vallang.IBool;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.usethesource.vallang.IExternalValue;
-import io.usethesource.vallang.IInteger;
-import io.usethesource.vallang.IList;
-import io.usethesource.vallang.IListWriter;
-import io.usethesource.vallang.IString;
-import io.usethesource.vallang.ITuple;
-import io.usethesource.vallang.IValue;
-import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
-import nl.cwi.swat.typhonql.workingset.EntityRef;
-import nl.cwi.swat.typhonql.workingset.JsonSerializableResult;
 
 
 public class ResultTable implements JsonSerializableResult, IExternalValue {
 
+
 	private static final ObjectMapper mapper;
 	
 	static {
-		//mapper.configure(DeserializationFeature.
-		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+		SimpleModule customSerializers = new SimpleModule();
+		customSerializers.addSerializer(Geometry.class, new GeometrySerializer());
+		customSerializers.addSerializer(Polygon.class, new GeometrySerializer());
+		customSerializers.addSerializer(Point.class, new GeometrySerializer());
+		customSerializers.addSerializer(LocalDate.class, new LocalDateSerializer());
+		customSerializers.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer());
 
+		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+		mapper.registerModule(customSerializers);
+		mapper.canSerialize(EntityRef.class);
 	}
 				
-	private List<String> columnNames;
-	private List<List<Object>> values;
+	private final List<String> columnNames;
+	private final List<List<Object>> values;
 	
 	public ResultTable(List<String> columnNames, List<List<Object>> values) {
 		this.columnNames = columnNames;
@@ -48,7 +48,7 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	}
 	
 	public ResultTable() {
-		this(new ArrayList<>(), new ArrayList<>());
+		this(Collections.emptyList(), Collections.emptyList());
 	}
 
 	public List<String> getColumnNames() {
@@ -58,137 +58,22 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 	public List<List<Object>> getValues() {
 		return values;
 	}
-
-	@JsonIgnore
-	public static ResultTable fromIValue(IValue v) {
-		// map[str entity, list[Entity] entities];
-		if (v instanceof ITuple) {
-			ITuple tuple = (ITuple) v;
-			IList columns = (IList) tuple.get(0);
-			IList vs = (IList) tuple.get(1);
-			
-			Iterator<IValue> columnIter = columns.iterator();
-			List<String> columnNames = new ArrayList<String>();
-			while (columnIter.hasNext()) {
-				IString c = (IString) columnIter.next();
-				columnNames.add(c.getValue());
-			}
-			
-			Iterator<IValue> rowsIter = vs.iterator();
-			List<List<Object>> values = new ArrayList<>();
-			while (rowsIter.hasNext()) {
-				IList row = (IList) rowsIter.next();
-				Iterator<IValue> oneRowIter = row.iterator();
-				List<Object> objects = new ArrayList<>();
-				while (oneRowIter.hasNext()) {
-					IValue o = oneRowIter.next();
-					objects.add(toJava(o)); 
-				}
-				values.add(objects);
-			}
-			
-			return new ResultTable(columnNames, values);
-		} else
-			throw new RuntimeException("IValue does not represent a working set");
-
-	}
 	
 	@JsonIgnore
-	public static Object toJava(IValue object) {
-		if (object instanceof IInteger) {
-			return ((IInteger) object).intValue();
-		}
-		
-		else if (object instanceof IString) {
-			return ((IString) object).getValue();
-		}
-		else if (object instanceof IList) {
-			Iterator<IValue> iter = ((IList) object).iterator();
-			List<Object> lst = new ArrayList<Object>();
-			while (iter.hasNext()) {
-				IValue v = iter.next();
-				lst.add(toJava(v));
-			}
-			return lst;
-		}
-		else if (object instanceof ITuple) {
-			// TODO do the resolution for entities
-			ITuple tuple = (ITuple) object;
-			IBool isNotNull = (IBool) tuple.get(0);
-			if (isNotNull.getValue()) {
-				IString uuid = (IString) tuple.get(1);
-				return new EntityRef(uuid.getValue());
-			} else {
-				return null;
-			}
-			
-		}
-		
-		throw new RuntimeException("Unknown conversion for Rascal value of type " + object.getClass());
+	public boolean isEmpty() {
+		return values == null || values.size() == 0;
 	}
 	
-	@JsonIgnore
-	public ITuple toIValue() {
-		IValueFactory vf = ValueFactoryFactory.getValueFactory();
-		IListWriter cnw = vf.listWriter();
-		for (String cn: columnNames)
-			cnw.append(vf.string(cn));
-		IListWriter vsw = vf.listWriter();
-		
-		for (List<Object> row : values) {
-			IListWriter osw = vf.listWriter();
-			for (Object o : row) {
-				osw.append(toIValue(vf, o));
-			}
-			vsw.append(osw.done());
-		}
-				
-		return vf.tuple(cnw.done(), vsw.done());
-		
-	}
-	
-	@JsonIgnore
-	public static IValue toIValue(IValueFactory vf, Object v) {
-		if (v == null) {
-			return vf.tuple(vf.bool(false), vf.string(""));
-		}
-		
-		if (v instanceof Integer) {
-			return vf.integer((Integer) v);
-		}
-		else if (v instanceof String) {
-			return vf.string((String) v);
-		}
-		else if (v instanceof Timestamp) {
-			return vf.datetime(((Timestamp) v).getTime());
-		}
-		else if (v instanceof java.sql.Date) {
-			return vf.datetime(((java.sql.Date)v).getTime());
-		}
-		else if (v instanceof List) {
-			IListWriter lw = vf.listWriter();
-			List<Object> os = (List<Object>) v;
-			lw.appendAll(os.stream().map(o -> toIValue(vf, o)).collect(Collectors.toList()));
-			return lw.done();
-		}
-		else if (v instanceof EntityRef) {
-			return vf.tuple(vf.bool(true), vf.string(((EntityRef) v).getUuid()));
-		}
-		throw new RuntimeException("Unknown conversion for Java type " + v.getClass());
-	}
-
 	@JsonIgnore
 	public void serializeJSON(OutputStream target) throws IOException {
 		mapper.writeValue(target, this);
 	}
 	
-	@JsonIgnore
-	public void print() {
-		System.out.println(String.join(", ", columnNames));
-		for (List<Object> vs : values) {
-			System.out.println(String.join(",", 
-					vs.stream().map(o -> o.toString()).collect(Collectors.toList())));
-		}
+	
+	
+	@Override
+	public String toString() {
+		return "ResultTable [\ncolumnNames=" + columnNames + ",\n values=" + values + "\n]";
 	}
 	
 	@Override
@@ -203,10 +88,60 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
         return false;
     }
 
-	@JsonIgnore
-	public static ResultTable fromJSON(InputStream is) throws IOException {
-		ResultTable rt = mapper.readValue(is, ResultTable.class);
-		return rt;
+	public static String serializeAsString(Object object) {
+		// TODO complete all the cases
+		if (object == null)
+			return "null";
+		if (object instanceof String)
+			return "\"" + object + "\"";
+		else if (object instanceof Integer || object instanceof BigInteger)
+			return object.toString();
+		else
+			return object.toString();
+		
+	}
+	
+	@SuppressWarnings("serial")
+	private static class GeometrySerializer extends StdSerializer<Geometry> {
+		public GeometrySerializer() {
+			super(Geometry.class);
+		}
+
+		@Override
+		public void serialize(Geometry value, JsonGenerator gen, SerializerProvider provider)
+				throws IOException {
+			gen.writeString(value.toText());
+		}
+		
+	}
+
+	@SuppressWarnings("serial")
+	public static class LocalDateSerializer extends StdSerializer<LocalDate> {
+		
+		public LocalDateSerializer() {
+			super(LocalDate.class);
+		}
+
+		@Override
+		public void serialize(LocalDate value, JsonGenerator gen, SerializerProvider provider)
+				throws IOException {
+			gen.writeString(value.format(DateTimeFormatter.ISO_LOCAL_DATE));
+		}
+	}
+	
+	
+	@SuppressWarnings("serial")
+	public static class LocalDateTimeSerializer extends StdSerializer<LocalDateTime> {
+		
+		public LocalDateTimeSerializer() {
+			super(LocalDateTime.class);
+		}
+
+		@Override
+		public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider provider)
+				throws IOException {
+			gen.writeString(value.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+		}
 	}
 
 }

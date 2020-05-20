@@ -1,6 +1,7 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
-import java.sql.SQLException;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -16,9 +17,12 @@ import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
+import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
@@ -29,28 +33,28 @@ import io.usethesource.vallang.type.TypeFactory;
 import io.usethesource.vallang.type.TypeStore;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
+import nl.cwi.swat.typhonql.backend.Runner;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class TyphonSession implements Operations {
 	private static final TypeFactory TF = TypeFactory.getInstance();
 	private final IValueFactory vf;
-	
+
 	public TyphonSession(IValueFactory vf) {
 		this.vf = vf;
 	}
-	
+
 	public ITuple newSession(IMap connections, IEvaluatorContext ctx) {
 		return newSessionWrapper(connections, ctx).getTuple();
 	}
-	
+
 	public SessionWrapper newSessionWrapper(IMap connections, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
-		
-		
+
 		Iterator<Entry<IValue, IValue>> connIter = connections.entryIterator();
-		
+
 		while (connIter.hasNext()) {
 			Entry<IValue, IValue> entry = connIter.next();
 			String dbName = ((IString) entry.getKey()).getValue();
@@ -67,66 +71,68 @@ public class TyphonSession implements Operations {
 		}
 		return newSessionWrapper(mariaDbConnections, mongoConnections, ctx);
 	}
-	
+
 	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
-		for (DatabaseInfo db: connections) {
+		for (DatabaseInfo db : connections) {
 			switch (db.getDbType()) {
-				case documentdb:
-					mongoConnections.put(db.getDbName(), new ConnectionData(db));
-					break;
-				case relationaldb:
-					mariaDbConnections.put(db.getDbName(), new ConnectionData(db));
-					break;
-                default:
-                    throw new RuntimeException("Missing type: " + db.getDbType());
+			case documentdb:
+				mongoConnections.put(db.getDbName(), new ConnectionData(db));
+				break;
+			case relationaldb:
+				mariaDbConnections.put(db.getDbName(), new ConnectionData(db));
+				break;
+			default:
+				throw new RuntimeException("Missing type: " + db.getDbType());
 			}
 		}
 		return newSessionWrapper(mariaDbConnections, mongoConnections, ctx);
 	}
 
-	private SessionWrapper newSessionWrapper(Map<String, ConnectionData> mariaDbConnections, Map<String, ConnectionData> mongoConnections, IEvaluatorContext ctx) {
-		//checkIsNotInitialized();
-		// borrow the type store from the module, so we don't have to build the function type ourself
-        ModuleEnvironment aliasModule = ctx.getHeap().getModule("lang::typhonql::Session");
-        if (aliasModule == null) {
-        	throw new IllegalArgumentException("Missing my own module");
-        }
-        TypeStore ts = aliasModule.getStore();
+	private SessionWrapper newSessionWrapper(Map<String, ConnectionData> mariaDbConnections,
+			Map<String, ConnectionData> mongoConnections, IEvaluatorContext ctx) {
+		// checkIsNotInitialized();
+		// borrow the type store from the module, so we don't have to build the function
+		// type ourself
+		ModuleEnvironment aliasModule = ctx.getHeap().getModule("lang::typhonql::Session");
+		if (aliasModule == null) {
+			throw new IllegalArgumentException("Missing my own module");
+		}
+		TypeStore ts = aliasModule.getStore();
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("Session"));
 		while (aliasedTuple.isAliased()) {
 			aliasedTuple = aliasedTuple.getAliased();
 		}
 
 		// get the function types
-		FunctionType getResultType = (FunctionType)aliasedTuple.getFieldType("getResult");
-		FunctionType getJavaResultType = (FunctionType)aliasedTuple.getFieldType("getJavaResult");
-		FunctionType readAndStoreType = (FunctionType)aliasedTuple.getFieldType("readAndStore");
-		FunctionType closeType = (FunctionType)aliasedTuple.getFieldType("done");
-		FunctionType newIdType = (FunctionType)aliasedTuple.getFieldType("newId");
-		
+		FunctionType getResultType = (FunctionType) aliasedTuple.getFieldType("getResult");
+		FunctionType getJavaResultType = (FunctionType) aliasedTuple.getFieldType("getJavaResult");
+		FunctionType readAndStoreType = (FunctionType) aliasedTuple.getFieldType("readAndStore");
+		FunctionType doneType = (FunctionType) aliasedTuple.getFieldType("finish");
+		FunctionType closeType = (FunctionType) aliasedTuple.getFieldType("done");
+		FunctionType newIdType = (FunctionType) aliasedTuple.getFieldType("newId");
+
 		// construct the session tuple
-		ResultStore store  = new ResultStore();
+		ResultStore store = new ResultStore();
 		Map<String, String> uuids = new HashMap<>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
+		List<Runnable> updates = new ArrayList<>();
 		TyphonSessionState state = new TyphonSessionState();
 
 		MariaDBOperations mariaDBOperations = new MariaDBOperations(mariaDbConnections);
 		state.setMariaDBOperations(mariaDBOperations);
 		MongoOperations mongoOperations = new MongoOperations(mongoConnections);
 		state.setMongoOperations(mongoOperations);
-		
-		return new SessionWrapper(
-			vf.tuple(
-					makeGetResult(store, script, state, getResultType, ctx),
-					makeGetJavaResult(store, script, state, getJavaResultType, ctx),
-					makeReadAndStore(store, script, state, readAndStoreType, ctx),
-					makeClose(store, state, closeType, ctx),
-					makeNewId(uuids, state, newIdType, ctx),
-					mariaDBOperations.newSQLOperations(store, script, state, uuids, ctx, vf, TF),
-					mongoOperations.newMongoOperations(store, script, state, uuids, ctx, vf, TF)),
-            state);
+
+		return new SessionWrapper(vf.tuple(makeGetResult(state, getResultType, ctx),
+				makeGetJavaResult(state, getJavaResultType, ctx),
+				makeReadAndStore(store, script, state, readAndStoreType, ctx),
+				makeFinish(script, updates, state, doneType, ctx),
+				makeClose(store, state, closeType, ctx),
+				makeNewId(uuids, state, newIdType, ctx),
+				mariaDBOperations.newSQLOperations(store, script, updates, state, uuids, ctx, vf),
+				mongoOperations.newMongoOperations(store, script, updates, state, uuids, ctx, vf)), state);
 	}
 
 	private IValue makeNewId(Map<String, String> uuids, TyphonSessionState state, FunctionType newIdType,
@@ -158,33 +164,77 @@ public class TyphonSession implements Operations {
 			paths.add(toPath(tuple));
 		}
 
-		// List<EntityModel> models = EntityModelReader.fromRascalRelation(types,
-		// modelsRel);
-		// WorkingSet ws = store.computeResult(resultName, labels.toArray(new
-		// String[0]), models.toArray(new EntityModel[0]));
 		try {
-			ResultTable rt = store.computeResultTable(script, paths);
+			ResultTable rt = Runner.computeResultTable(script, paths);
 			return rt;
 		} catch (RuntimeException e) {
 			throw RuntimeExceptionFactory.javaException(e, null, null);
 		}
 	}
 
-	private ICallableValue makeGetResult(ResultStore store, List<Consumer<List<Record>>> script,
-			TyphonSessionState state, FunctionType getResultType, IEvaluatorContext ctx) {
+	private ICallableValue makeGetResult(TyphonSessionState state, FunctionType getResultType,
+			IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, getResultType, args -> {
 			// alias ResultTable = tuple[list[str] columnNames, list[list[value]] values];
-			return ResultFactory.makeResult(
-					TF.tupleType(new Type[] { TF.listType(TF.stringType()), TF.listType(TF.listType(TF.valueType())) },
-							new String[] { "columnNames", "values" }),
-					state.getResult().toIValue(), ctx);
+			try (ByteArrayOutputStream json = new ByteArrayOutputStream()) {
+				state.getResult().serializeJSON(json);
+                return ResultFactory.makeResult(
+                        TF.tupleType(new Type[] { TF.listType(TF.stringType()), TF.listType(TF.listType(TF.valueType())) },
+                                new String[] { "columnNames", "values" }),
+                        parseTable(json.toByteArray()), ctx);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		});
 	}
 
-	private ICallableValue makeGetJavaResult(ResultStore store, List<Consumer<List<Record>>> script,
-			TyphonSessionState state, FunctionType getResultType, IEvaluatorContext ctx) {
+	private IValue parseTable(byte[] json) {
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			JsonNode tbl = objectMapper.readTree(json);
+			JsonNode columns = tbl.get("columnNames");
+			if (columns == null || !columns.isArray()) {
+				throw new RuntimeException("Incorrect result table json");
+			}
+			IListWriter columnList = vf.listWriter();
+			columns.iterator().forEachRemaining(c -> columnList.append(vf.string(c.asText())));
+			
+			IListWriter valueList = vf.listWriter();
+			tbl.get("values").iterator().forEachRemaining(row -> {
+				IListWriter rowList = vf.listWriter();
+				row.iterator().forEachRemaining(c -> rowList.append(toIValue(c)));
+				valueList.append(rowList.done());
+			});
+			return vf.tuple(columnList.done(), valueList.done());
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private IValue toIValue(JsonNode c) {
+		if (c.isNumber()) {
+			if (c.canConvertToInt()) {
+				return vf.integer(c.asInt());
+			}
+			return vf.real(c.asDouble());
+		}
+		else if (c.isBoolean()) {
+			return vf.bool(c.asBoolean());
+		}
+		else if (c.isNull()) {
+			return vf.string("null");
+		}
+		else if (c.isTextual()) {
+			return vf.string(c.asText());
+		}
+		else {
+			throw new RuntimeException("Cannot convert " + c + " into an IValue");
+		}
+	}
+
+	private ICallableValue makeGetJavaResult(TyphonSessionState state, FunctionType getResultType,
+			IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, getResultType, args -> {
-			// alias ResultTable = tuple[list[str] columnNames, list[list[value]] values];
 			return ResultFactory.makeResult(TF.externalType(TF.valueType()), state.getResult(), ctx);
 		});
 	}
@@ -194,6 +244,16 @@ public class TyphonSession implements Operations {
 		return makeFunction(ctx, state, readAndStoreType, args -> {
 			ResultTable rt = computeResultTable(store, script, args);
 			state.setResult(rt);
+			script.clear();
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
+		});
+	}
+
+	private ICallableValue makeFinish(List<Consumer<List<Record>>> script, List<Runnable> updates, TyphonSessionState state,
+			FunctionType readAndStoreType, IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, readAndStoreType, args -> {
+			Runner.executeUpdates(script, updates);
+			script.clear();
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}

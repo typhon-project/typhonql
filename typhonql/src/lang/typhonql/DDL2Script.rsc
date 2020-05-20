@@ -25,7 +25,13 @@ import IO;
 import List;
 import util::Maybe;
 
-Script ddl2script((Request) `create <EId eId> at <Id dbName>`, Schema s, Log log = noLog) {
+Script ddl2script(Request req, Schema s, Log log = noLog) {
+	Script script = ddl2scriptAux(req, s, log = log);
+	script.steps = script.steps + [ finish() ];
+	return script;
+}
+
+Script ddl2scriptAux((Request) `create <EId eId> at <Id dbName>`, Schema s, Log log = noLog) {
   if (p:<db, name> <- s.placement<0>, name == "<dbName>") {
      return createEntity(p, "<eId>", s, log=log);
   }
@@ -45,7 +51,7 @@ default Script createEntity(p:<db, str dbName>, str entity, Schema s, Log log = 
 	throw "Unrecognized backend: <db>";
 }
 
-Script ddl2script((Request) `create <EId eId>.<Id attribute> : <Type ty>`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `create <EId eId>.<Id attribute> : <Type ty>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	return createAttribute(p, entity, "<attribute>", "<ty>", s, log = log);
   }
@@ -59,7 +65,7 @@ Script createAttribute(p:<sql(), str dbName>, str entity, str attribute, str ty,
 
 Script createAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
 	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "", "{$set: { \"<attribute>\" : null}}"));
+				findAndUpdateMany(dbName, entity, "{}", "{$set: { \"<attribute>\" : null}}"));
 	return script([step(dbName, call, ())]);
 }
 
@@ -67,14 +73,14 @@ default Script createAttribute(p:<db, str dbName>, str entity, str attribute, st
 	throw "Unrecognized backend: <db>";
 }
 
-Script ddl2script((Request) `create <EId eId>.<Id relation> ( <Id inverse> ) <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `create <EId eId>.<Id relation> ( <Id inverse> ) <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	return createRelation(p, entity, "<relation>", "<targetId>", toCardinality("<lower>", "<upper>"), (Arrow) `:-\>` := arrow, just("<inverse>"), s, log = log);
   }
   throw "Not found entity <eId>";
 }
 
-Script ddl2script((Request) `create <EId eId>.<Id relation> <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `create <EId eId>.<Id relation> <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	return createRelation(p, entity, "<relation>", "<targetId>", toCardinality("<lower>", "<upper>"), (Arrow) `:-\>` := arrow, nothing(), s, log = log);
   }
@@ -107,7 +113,7 @@ Script createRelation(p:<sql(), str dbName>, str entity, str relation, Cardinali
 
 Script createRelation(p:<mongodb(), str dbName>, str entity, str relation,Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
 	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "", "{$set: { \"<relation>\" : null}}"));
+				findAndUpdateMany(dbName, entity, "{}", "{$set: { \"<relation>\" : null}}"));
 	return script([step(dbName, call, ())]);
 }
 
@@ -115,7 +121,7 @@ default Script createRelation(p:<db, str dbName>,  str entity, str relation,Card
 	throw "Unrecognized backend: <db>";
 }
 
-Script ddl2script((Request) `drop <EId eId>`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `drop <EId eId>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	return dropEntity(p, entity, s, log = log);
   }
@@ -135,21 +141,21 @@ default Script dropEntity(p:<db, str dbName>, str entity, Schema s, Log log = no
 	throw "Unrecognized backend: <db>";
 }
 
-Script ddl2script((Request) `drop attribute <EId eId>.<Id attribute>`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `drop attribute <EId eId>.<Id attribute>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	return dropAttribute(p, entity, "<attribute>", s, log = log);
   }
   throw "Not found entity <eId>";
 }
 
-Script dropAttribute(p:<sql(), str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
+Script dropAttribute(p:<sql(), str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
 	SQLStat stat = alterTable(tableName(entity), [dropColumn(columnName(attribute, entity))]);
 	return script([step(dbName, sql(executeStatement(dbName, pp(stat))), ())]);
 }
 
 Script dropAttribute(p:<mongodb(), str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
 	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "", "{$unset: { \"<attribute>\" : 1}}"));
+				findAndUpdateMany(dbName, entity, "{}", "{$unset: { \"<attribute>\" : 1}}"));
 	return script([step(dbName, call, ())]);
 }
 
@@ -157,7 +163,7 @@ default Script dropAttribute(p:<db, str dbName>, str entity, str attribute, Sche
 	throw "Unrecognized backend: <db>";
 }
 
-Script ddl2script((Request) `drop relation <EId eId>.<Id relation>`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `drop relation <EId eId>.<Id relation>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
   	if (<entity, _, "<relation>", str toRole, _, str to, bool containment> <- s.rels) {
 		return dropRelation(p, entity, "<relation>", to, toRole, containment, s, log = log);
@@ -194,7 +200,7 @@ Script dropRelation(p:<mongodb(), str dbName>, str entity, str relation, str to,
 		return script([]);
 	} else {
 		Call call = mongo(
-				findAndUpdateMany(dbName, entity, "", "{$unset: { \"<fromRole>\" : 1}}"));
+				findAndUpdateMany(dbName, entity, "{}", "{$unset: { \"<fromRole>\" : 1}}"));
 		return script([step(dbName, call, ())]);
 	}
 }
@@ -203,7 +209,32 @@ default Script dropRelation(p:<db, str dbName>,  str entity, str relation, str t
 	throw "Unrecognized backend: <db>";
 }
 
-Script ddl2script((Request) `rename attribute <EId eId>.<Id name> to <Id newName>`, Schema s, Log log = noLog) {
+Script ddl2scriptAux((Request) `rename <EId eId> to <EId newName>`, Schema s, Log log = noLog) {
+  if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+     return renameEntity(p, "<eId>", "<newName>", s, log=log);
+  }
+  throw "Not found entity <eId>";
+}
+
+Script renameEntity(p:<sql(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
+	if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+		return rename(tableName(entity), tableName(newName));
+  	}
+  	throw "Not found entity <eId>";
+}
+
+Script renameEntity(p:<mongodb(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
+	if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+		return script([step(dbName, mongo(renameCollection(dbName, entity, newName)), ())]);
+  	}
+  	throw "Not found entity <eId>";
+}
+
+default Script renameEntity(p:<db, str dbName>, str entity, str newName, Schema s, Log log = noLog) {
+	throw "Unrecognized backend: <db>";
+}
+
+Script ddl2scriptAux((Request) `rename attribute <EId eId>.<Id name> to <Id newName>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
 	return renameAttribute(p, entity, "<name>", "<newName>", s, log = log);
   }
@@ -222,11 +253,38 @@ Script renameAttribute(p:<sql(), str dbName>, str entity, str attribute, str new
 
 Script renameAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
 	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "", "{ $rename : { \"<attribute>\" : \"<newName>\" }}"));
+				findAndUpdateMany(dbName, entity, "{}", "{ $rename : { \"<attribute>\" : \"<newName>\" }}"));
 	return script([step(dbName, call, ())]);
 }
 
 default Script renameAttribute(p:<db, str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
+	throw "Unrecognized backend: <db>";
+}
+
+
+Script ddl2scriptAux((Request) `rename relation <EId eId>.<Id name> to <Id newName>`, Schema s, Log log = noLog) {
+  if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+	return renameRelation(p, entity, "<name>", "<newName>", s, log = log);
+  }
+  throw "Not found entity <eId>";
+}
+
+Script renameRelation(p:<sql(), str dbName>, str entity, str relation, str newName, Schema s, Log log = noLog) {
+	list[SQLStat] stats = renameRelation(entity, relation, newName, s);
+ 	for (SQLStat stat <- stats) {
+    	log("[ddl2script-rename-relation/sql/<dbName>] generating <pp(stat)>");
+    	steps += step(dbName, sql(executeStatement(dbName, pp(stat))), ());
+    }   
+    return script(steps);
+}
+
+Script renameRelation(p:<mongodb(), str dbName>, str entity, str relation, str newName, Schema s, Log log = noLog) {
+	Call call = mongo(
+				findAndUpdateMany(dbName, entity, "", "{ $rename : { \"<relation>\" : \"<newName>\" }}"));
+	return script([step(dbName, call, ())]);
+}
+
+default Script renameRelation(p:<db, str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
 }
 

@@ -4,13 +4,8 @@ module lang::typhonql::RunUsingCompiler
 import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
 
-import lang::typhonql::WorkingSet;
-import lang::typhonql::Native;
-import lang::typhonql::Partition;
 import lang::typhonql::TDBC;
 import lang::typhonql::DDL;
-import lang::typhonql::Eval;
-import lang::typhonql::Closure;
 import lang::typhonql::Session;
 import lang::typhonql::Request2Script;
 import lang::typhonql::Schema2Script;
@@ -79,6 +74,16 @@ value runQueryAndGetJava(Request r, Schema sch, Session session, Log log = noLog
 	return session.getJavaResult();
 }
 
+value runGetEntity(str entity, str uuid, Schema sch, Session session, Log log = noLog) {
+	list[str] attributes = [att | <entity, att, _> <- sch.attrs];
+	// TODO put alias to the columns
+	Request r = [Request] "from <entity> e select
+	                      ' <intercalate(", ", ["e.<a>" | a <- attributes])> 
+	                      'where e.@id == #<uuid>";	
+	runScriptForQuery(r, sch, session, log = log);
+	return session.getJavaResult();
+}
+
 ResultTable runQuery(Request r, Schema sch, Session session, Log log = noLog) {
 	runScriptForQuery(r, sch, session, log = log);
 	return session.getResult();
@@ -142,6 +147,17 @@ value runQueryAndGetJava(str src, str xmiString, Session session, Log log = noLo
   Schema s = model2schema(m);
   Request req = [Request]src;
   return runQueryAndGetJava(req, s, session, log = log);
+}
+
+value runGetEntity(str entity, str uuid, str xmiString, map[str, Connection] connections, Log log = noLog) {
+  Session session = newSession(connections, log = log);
+  return runGetEntity(entity, uuid, xmiString, session, log = log);
+}
+
+value runGetEntity(str entity, str uuid, str xmiString, Session session, Log log = noLog) {
+  Model m = xmiString2Model(xmiString);
+  Schema s = model2schema(m);
+  return runGetEntity(entity, uuid, s, session, log = log);
 }
 
 list[CommandResult] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, Session session, Log log = noLog) {

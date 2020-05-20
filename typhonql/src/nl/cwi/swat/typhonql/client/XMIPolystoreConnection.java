@@ -3,6 +3,7 @@ package nl.cwi.swat.typhonql.client;
 import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.staticErrorMessage;
 import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.throwMessage;
 import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.throwableMessage;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
@@ -16,6 +17,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
 import org.rascalmpl.interpreter.Evaluator;
 import org.rascalmpl.interpreter.control_exceptions.Throw;
 import org.rascalmpl.interpreter.env.GlobalEnvironment;
@@ -29,9 +31,11 @@ import org.rascalmpl.uri.URIUtil;
 import org.rascalmpl.uri.classloaders.SourceLocationClassLoader;
 import org.rascalmpl.util.ConcurrentSoftReferenceObjectPool;
 import org.rascalmpl.values.ValueFactoryFactory;
+
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.ISourceLocation;
+import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.io.StandardTextWriter;
@@ -42,7 +46,6 @@ import nl.cwi.swat.typhonql.MongoDB;
 import nl.cwi.swat.typhonql.backend.rascal.SessionWrapper;
 import nl.cwi.swat.typhonql.backend.rascal.TyphonSession;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
-import nl.cwi.swat.typhonql.workingset.Entity;
 
 public class XMIPolystoreConnection {
 	private static final StandardTextWriter VALUE_PRINTER = new StandardTextWriter(true, 2);
@@ -145,6 +148,33 @@ public class XMIPolystoreConnection {
 		});
 	}
 	
+	public ResultTable executeGetEntity(String xmiModel, List<DatabaseInfo> connections, String entity, String uuid) {
+		return evaluators.useAndReturn(evaluator -> {
+			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, evaluator)) {
+				synchronized (evaluator) {
+					// str src, str xmiString, Session session
+					IValue v = evaluator.call("runGetEntity", 
+							"lang::typhonql::RunUsingCompiler",
+                    		Collections.emptyMap(),
+                    		VF.string(entity), 
+							VF.string(uuid), 
+							VF.string(xmiModel),
+							session.getTuple());
+					return (ResultTable) v;
+				}
+			} catch (StaticError e) {
+				staticErrorMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
+				throw e;
+			} catch (Throw e) {
+				throwMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
+				throw e;
+			} catch (Throwable e) {
+				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
+				throw e;
+			}
+		});
+	}
+	
 	public void executeDDLUpdate(String xmiModel, List<DatabaseInfo> connections, String update) {
 		evaluators.useAndReturn(evaluator -> {
 			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, evaluator)) {
@@ -205,9 +235,9 @@ public class XMIPolystoreConnection {
 
 	private IValue evaluatePreparedStatementQuery(String xmiModel, List<DatabaseInfo> connections, String preparedStatement, String[] columnNames, String[][] matrix) {
 		IListWriter lw = VF.listWriter();
-		for (Object[] row : matrix) {
-			List<IValue> vs = Arrays.asList(row).stream().map(
-					obj -> Entity.toIValue(VF, obj)).collect(Collectors.toList());
+		for (String[] row : matrix) {
+			List<IString> vs = Arrays.asList(row).stream().map(
+					s -> VF.string(s)).collect(Collectors.toList());
 			IListWriter lw1 = VF.listWriter();
 			lw1.appendAll(vs);
 			lw.append(lw1.done());
