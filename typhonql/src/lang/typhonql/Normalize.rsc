@@ -113,21 +113,18 @@ void smokeKeyValInf() {
   Request r = (Request)`from User u select u.avatarURL, u.photoURL where u.photoURL == 34`;
   println("Original: <r>");
   println(inferKeyValLinks(r, s));
-  //println(expandNavigation(inferKeyValLinks(r, s), s));
   
   println("");
   
   r = (Request)`from Review r select r.user.avatarURL, r.user.photoURL where r.user.photoURL == 34`;
   println("Original: <r>");
   println(inferKeyValLinks(r, s));
-  //println(expandNavigation(inferKeyValLinks(r, s), s));
   
   println("");
   
   r = (Request)`from User u select u.avatarURL, u.bla where u.photoURL == 34`;
   println("Original: <r>");
   println(inferKeyValLinks(r, s));
-  //println(expandNavigation(inferKeyValLinks(r, s), s));
   
   
 }

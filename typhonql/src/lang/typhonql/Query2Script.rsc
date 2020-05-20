@@ -97,11 +97,14 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schem
   return [];
 }
 
+
+
 list[Step] compileQuery(r:(Request)`<Query q>`, p:<cassandra(), str dbName>, Schema s, Log log = noLog) {
   log("COMPILING2CQL: <r>");
-  println("COMPILING2CQL: <r>");
+  
   <cqlStat, params> = compile2cql(r, s, p);
 
+  
   if (cqlStat.selectClauses == []) {
     return [];
   }

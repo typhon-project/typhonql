@@ -18,6 +18,7 @@ import lang::typhonql::util::Log;
 import String;
 import ValueIO;
 import DateTime;
+import List;
 import IO;
 
 
@@ -106,10 +107,13 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
     }
   }
 
-  // NB: if, not for, there can only be a single "from"  
-  if ((Binding)`<EId e> <VId x>` <- bs) {
-    q.tableName = cTableName("<e>");
+  // NB: if, not for, there can only be a single "from"
+  myBindings = [ b | b:(Binding)`<EId e> <VId x>` <- bs ];
+  if (size(myBindings) > 1) {
+    throw "Currently subsets of entity attribute can only mapped to key-stores once per entity";
   }
+  
+  q.tableName = cTableName("<myBindings[0].entity>");
 
   for ((Result)`<Expr e>` <- rs) {
     switch (e) {
