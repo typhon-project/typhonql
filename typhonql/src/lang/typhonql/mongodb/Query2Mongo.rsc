@@ -355,16 +355,23 @@ tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> \<= <Expr rhs>`, Ctx ctx)
   = makeComparison("$lte", lhs, rhs, ctx);
 
 tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> in <Expr rhs>`, Ctx ctx) {
-    if ((Expr)`<Polygon _>` := rhs && <str ent, str path, rhs> := split(lhs, rhs, ctx)) {
-        return <ent, <path, object([
+  <ent, path, other> = split(lhs, rhs, ctx);
+  return <ent, <path, object([
             <"$geoWithin", object([
-                <"$geometry", expr2obj(rhs, ctx)>
+                <"$geometry", expr2obj(other, ctx)>
             ])>
-        ])>>;
-    }
-    else {
-        throw "MongoDB only supports a literal polygon on the right side of in, <rhs> not supported";
-    }
+        ])>>; 
+  
+  //  if ((Expr)`<Polygon _>` := rhs && <str ent, str path, rhs> := split(lhs, rhs, ctx)) {
+    //    return <ent, <path, object([
+    //        <"$geoWithin", object([
+    //            <"$geometry", expr2obj(rhs, ctx)>
+    //        ])>
+    //    ])>>;
+    //}
+    //else {
+    //    throw "MongoDB only supports a literal polygon on the right side of in, <rhs> not supported";
+    //}
 }
   
 tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> & <Expr rhs>`, Ctx ctx) {
