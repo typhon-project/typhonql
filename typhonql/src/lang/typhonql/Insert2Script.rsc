@@ -18,6 +18,8 @@ import lang::typhonql::mongodb::DBCollection;
 import lang::typhonql::cassandra::CQL; 
 import lang::typhonql::cassandra::CQL2Text; 
 import lang::typhonql::cassandra::Query2CQL;
+import lang::typhonql::cassandra::Schema2CQL;
+
 
 import IO;
 import ValueIO;
@@ -140,12 +142,12 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   
   for (str keyValEntity <- keyValueDeps<0>) {
     if (<<cassandra(), str dbName>, keyValEntity> <- s.placement) {
-      list[str] colNames = [ "@id" ] 
-        + [ "<kv.key>" | KeyVal kv <- keyValueDeps[keyValEntity] ];
+      list[str] colNames = [ cTyphonId(keyValEntity) ] 
+        + [ cColName(keyValEntity, "<kv.key>") | KeyVal kv <- keyValueDeps[keyValEntity] ];
       
       list[CQLExpr] vals = [cqlMe] 
         + [ expr2cql(e) | (KeyVal)`<Id _>: <Expr e>` <- keyValueDeps[keyValEntity] ];
-      CQLStat cqlIns = cInsert(keyValEntity, colNames, vals);
+      CQLStat cqlIns = cInsert(cTableName(keyValEntity), colNames, vals);
       addSteps([step(dbName, cassandra(execute(dbName, pp(cqlIns))), myParams)]);
     }
     else {

@@ -27,6 +27,7 @@ import lang::typhonql::mongodb::DBCollection;
 import lang::typhonql::cassandra::CQL; 
 import lang::typhonql::cassandra::CQL2Text; 
 import lang::typhonql::cassandra::Query2CQL;
+import lang::typhonql::cassandra::Schema2CQL;
 
 
 import IO;
@@ -189,7 +190,7 @@ void deleteKids(
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
   DeleteContext ctx
 ) {
-  CQLStat stmt = cDelete(to, [cEq(CQLExpr::cColumn("@id"), ctx.cqlMe)]);
+  CQLStat stmt = cDelete(cTableName(to), [cEq(CQLExpr::cColumn(cTyphonId(to)), ctx.cqlMe)]);
   ctx.addSteps([step(other, cassandra(execute(other, pp(stmt))), ctx.myParams)]);  
 }
 
@@ -198,7 +199,7 @@ void deleteKids(
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
   DeleteContext ctx
 ) {
-  CQLStat stmt = cDelete(to, [cEq(CQLExpr::cColumn("@id"), ctx.cqlMe)]);
+  CQLStat stmt = cDelete(cTableName(to), [cEq(CQLExpr::cColumn(cTyphonId(to)), ctx.cqlMe)]);
   ctx.addSteps([step(other, cassandra(execute(other, pp(stmt))), ctx.myParams)]);  
 }
 

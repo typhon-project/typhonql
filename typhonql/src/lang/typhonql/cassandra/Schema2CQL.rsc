@@ -7,32 +7,32 @@ import lang::typhonql::cassandra::CQL2Text;
 
 import IO;
 
-str tableName(str entity) = entity;
-str colName(str entity, str x) = "<entity>.<x>";
-str typhonId(str entity) = "<entity>.@id";
+str cTableName(str entity) = entity;
+str cColName(str entity, str x) = "<entity>.<x>";
+str cTyphonId(str entity) = "<entity>.@id";
 
 list[CQLStat] schema2cql(Schema s, Place p, set[str] entities) {
   list[CQLStat] stmts = [];
   
-  stmts += [ cDropTable(tableName(e), ifExists=true) | str e <- entities ];
+  stmts += [ cDropTable(cTableName(e), ifExists=true) | str e <- entities ];
   
-  stmts += [ cCreateTable(tableName(e), entityCols(e, s)) | str e <- entities ]; 
+  stmts += [ cCreateTable(cTableName(e), entityCols(e, s)) | str e <- entities ]; 
   
   return stmts;
 } 
 
 list[CQLColumnDefinition] entityCols(str ent, Schema s) {
   list[CQLColumnDefinition] cols = 
-     [ cColumnDef(typhonId(ent), cUUID(), primaryKey=true) ];;
+     [ cColumnDef(cTyphonId(ent), cUUID(), primaryKey=true) ];;
   
-  cols += [ cColumnDef(colName(ent, name), type2cql(typ)) 
+  cols += [ cColumnDef(cColName(ent, name), type2cql(typ)) 
     | <ent, str name, str typ> <- s.attrs ]; 
 
-  cols += [ cColumnDef(colName(ent, fromRole), cUUID()) 
+  cols += [ cColumnDef(cColName(ent, fromRole), cUUID()) 
     | <ent, Cardinality fromCard, str fromRole, _, _, _, _> <- s.rels
     , fromCard in {\one(), zero_one()} ];
     
-  cols += [ cColumnDef(colName(ent, fromRole), cSet(cUUID())) 
+  cols += [ cColumnDef(cColName(ent, fromRole), cSet(cUUID())) 
     | <ent, Cardinality fromCard, str fromRole, _, _, _, _> <- s.rels
     , fromCard in {zero_many(), one_many()} ];
     
