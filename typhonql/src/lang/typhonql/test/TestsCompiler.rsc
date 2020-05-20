@@ -371,7 +371,7 @@ void testGISonCrossMongoSQL(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Product p, Review r select r, p.name where r.location in p.availabilityRegion`);
   p.assertResultEquals("testGISonCrossMongoSQL - contained", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
   
-  rs = p.runQuery((Request)`from Product p, Review r select r, p.name where distance(r.location in p.availabilityRegion) \< 200`);
+  rs = p.runQuery((Request)`from Product p, Review r select r, p.name where distance(r.location, p.availabilityRegion) \< 200`);
   p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
 }
 
