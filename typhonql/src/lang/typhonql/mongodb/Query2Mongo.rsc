@@ -355,29 +355,32 @@ tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> \<= <Expr rhs>`, Ctx ctx)
   = makeComparison("$lte", lhs, rhs, ctx);
 
 tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> in <Expr rhs>`, Ctx ctx) {
-    if ((Expr)`<Polygon _>` := rhs && <str ent, str path, rhs> := split(lhs, rhs, ctx)) {
-        return <ent, <path, object([
+  <ent, path, other> = split(lhs, rhs, ctx);
+  return <ent, <path, object([
             <"$geoWithin", object([
-                <"$geometry", expr2obj(rhs, ctx)>
+                <"$geometry", expr2obj(other, ctx)>
             ])>
-        ])>>;
-    }
-    else {
-        throw "MongoDB only supports a literal polygon on the right side of in, <rhs> not supported";
-    }
+        ])>>; 
+  
+  //  if ((Expr)`<Polygon _>` := rhs && <str ent, str path, rhs> := split(lhs, rhs, ctx)) {
+    //    return <ent, <path, object([
+    //        <"$geoWithin", object([
+    //            <"$geometry", expr2obj(rhs, ctx)>
+    //        ])>
+    //    ])>>;
+    //}
+    //else {
+    //    throw "MongoDB only supports a literal polygon on the right side of in, <rhs> not supported";
+    //}
 }
   
 tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> & <Expr rhs>`, Ctx ctx) {
-    if (<str ent, str path, Expr other> := split(lhs, rhs, ctx) && ((Expr)`<Polygon _>` := other || ((Expr)`<Point _>` := other))) {
-        return <ent, <path, object([
+   <ent, path, other> = split(lhs, rhs, ctx);
+   return <ent, <path, object([
             <"$geoIntersects", object([
                 <"$geometry", expr2obj(other, ctx)>
             ])>
         ])>>;
-    }
-    else {
-        throw "MongoDB only supports intersection with at least one side a literal point or polygon";
-    }
 }
 
 // TODO: &&, ||, in, like
@@ -390,7 +393,7 @@ default tuple[str, Prop] expr2pattern(Expr e, Ctx ctx) {
   
 tuple[str, Prop] makeComparison(str op, Expr lhs, Expr rhs, Ctx ctx) 
   = <ent, <path, object([<op, expr2obj(other, ctx)>])>> 
-  when !isGeoDistanceCall(lhs),!isGeoDistanceCall(lhs),
+  when !isGeoDistanceCall(lhs), !isGeoDistanceCall(rhs),
     <str ent, str path, Expr other> := split(lhs, rhs, ctx);
 
 
@@ -400,11 +403,11 @@ default bool isGeoDistanceCall(_) = false;
 tuple[tuple[str ent, str path, Expr other] ori, Expr other2] 
     distanceSplit((Expr)`distance(<Expr lhs1>, <Expr rhs1>)`, Expr rhs, Ctx ctx)
     = <split(lhs1, rhs1, ctx), rhs>;
+    
 
 tuple[tuple[str ent, str path, Expr other] ori, Expr other2] 
     distanceSplit(Expr lhs, (Expr)`distance(<Expr lhs1>, <Expr rhs1>)`, Ctx ctx)
     = <split(lhs1, rhs1, ctx), lhs>;
-    
 
 str translateOp("$gte") = "$minDistance";
 str translateOp("$gt") = "$minDistance";
@@ -419,7 +422,7 @@ tuple[str, Prop] makeComparison(str op, Expr lhs, Expr rhs, Ctx ctx)
             <translateOp(op), expr2obj(other2, ctx)>
             ])>
       ])>>
-    when isGeoDistanceCall(lhs) || isGeoDistanceCall(lhs),
+    when isGeoDistanceCall(lhs) || isGeoDistanceCall(rhs),
         <<str ent, str path, Expr other>, Expr other2> := distanceSplit(lhs, rhs, ctx);
     
 

@@ -17,8 +17,8 @@ import lang::typhonml::Util;
  */
  
 
-str HOST = "192.168.178.78";
-//str HOST = "localhost";
+//str HOST = "192.168.178.78";
+str HOST = "localhost";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
@@ -75,7 +75,7 @@ void setup(PolystoreInstance p, bool doTest) {
 	  rs = p.runQuery((Request)`from User u select u.biography`);
 	  // the fact that there's null (i.e., <false, "">) here means that
 	  // there are users without bios
-	  p.assertResultEquals("bio obtained from user", rs, <["u.biography"], [["bio1"], ["null"]]>);  
+	  p.assertResultEquals("bio obtained from user", rs, <["u.biography"], [["bio1"], [{}]]>);  
 	}
 	
 	p.runUpdate((Request) `insert Tag { @id: #fun, name: "fun" }`);
@@ -195,14 +195,15 @@ void testDeleteAllWithCascade(PolystoreInstance p) {
 void testDeleteKidsRemovesParentLinksSQLLocal(PolystoreInstance p) {
   p.runUpdate((Request)`delete Item i where i.product == #tv`);
   
-  rs = p.runQuery((Request)`from Product p select p.inventory`);
-  p.assertResultEquals("delete items removes from inventory", rs, <["p.inventory"], []>);
+  rs = p.runQuery((Request)`from Product p select p.inventory where p == #tv`);
+  p.assertResultEquals("delete items removes from inventory", rs, <["p.inventory"], [[{}]]>);
 }
+
 void testDeleteKidsRemovesParentLinksSQLCross(PolystoreInstance p) {
   p.runUpdate((Request)`delete Review r where r.product == #tv`);
   
-  rs = p.runQuery((Request)`from Product p select p.reviews`);
-  p.assertResultEquals("delete reviews removes from product reviews", rs, <["p.reviews"], [["rev3"]]>);
+  rs = p.runQuery((Request)`from Product p select p.reviews where p == #tv`);
+  p.assertResultEquals("delete reviews removes from product reviews", rs, <["p.reviews"], [[{}]]>);
 }
 
 void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
@@ -214,7 +215,21 @@ void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
 void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
   p.runUpdate((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy}`);
   p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", reviews: [#newReview], availabilityRegion: #polygon((1.0 1.0))}`);
-  rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, p.reviews == #newReview`);
+  
+  // this below query is not as intended, r remains unconstrained, so you get all review contents.
+  //rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, p.reviews == #newReview`);
+  
+  // this throws: could not find source tbl for outer join...
+  // seems to be the case when you have two wheres conditions on a junction table field...
+  //rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, p.reviews == #newReview, p.reviews == r`);
+
+  
+  // this works, but doesn't show that it's found via p.reviews:
+  //rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, r == #newReview`);
+  
+  // so we use this:
+  rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, p.reviews == r`);
+  
   p.assertResultEquals("InsertManyContainSQLtoExternal", rs, <["r.content"], [["expensive"]]>);
 }
 
@@ -356,8 +371,8 @@ void testGISonCrossMongoSQL(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Product p, Review r select r, p.name where r.location in p.availabilityRegion`);
   p.assertResultEquals("testGISonCrossMongoSQL - contained", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
   
-  rs = p.runQuery((Request)`from Product p, Review r select r, p.name where distance(r.location in p.availabilityRegion) \< 200`);
-  p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
+  rs = p.runQuery((Request)`from User u, Review r select r, u.name where distance(r.location, u.location) \< 200`);
+  p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "u.name"], [["rev1", "Pablo"], ["rev2", "Davy"]]>);
 }
 
 
@@ -501,6 +516,7 @@ void runTests(Log log = NO_LOG()) {
 	  
 	  , testGISonSQL
 	  , testGISonMongo
+	  , testGISonCrossMongoSQL
 	  , testGISPrint
 	  
 	  , test1

@@ -33,7 +33,7 @@ public class MariaDBEngine extends Engine {
 		this.connection = sqlConnection;
 	}
 
-	private PreparedStatement prepareQuery(String query, Connection connection, List<String> vars) throws SQLException {
+	private PreparedStatement prepareQuery(String query, List<String> vars) throws SQLException {
 		Matcher m = QL_PARAMS.matcher(query);
 		Map<String, String> map = new HashMap<String, String>();
 		while (m.find()) {
@@ -46,73 +46,58 @@ public class MariaDBEngine extends Engine {
         return connection.prepareStatement(jdbcQuery);
 	}
 
+    private PreparedStatement prepareAndBind(String query, Map<String, Object> values)
+            throws SQLException {
+        List<String> vars = new ArrayList<>();
+        PreparedStatement stm = prepareQuery(query, vars);
+        int i = 1;
+        for (String varName : vars) {
+            Object value = values.get(varName);
+            if (value instanceof Geometry) {
+                stm.setBytes(i, new WKBWriter().write((Geometry) value));
+            }
+            else {
+                // TODO: what to do with NULL?
+                // other classes jdbc can take care of itself
+                stm.setObject(i, value);
+            }
+            i++;
+        }
+        return stm;
+    }
+
 	public void executeSelect(String resultId, String query, List<Path> signature) {
 		executeSelect(resultId, query, new HashMap<String, Binding>(), signature);
 	}
+	
+	
 
 	public void executeSelect(String resultId, String query, Map<String, Binding> bindings, List<Path> signature) {
 		new QueryExecutor(store, script, uuids, bindings, signature) {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				try {
-                    List<String> vars = new ArrayList<>();
-                    PreparedStatement stm = prepareQuery(query, connection, vars);
-					int i = 1;
-					for (String varName : vars) {
-						Object value = values.get(varName);
-						if (value instanceof Geometry) {
-							stm.setBytes(i, new WKBWriter().write((Geometry) value));
-						}
-						else {
-							// TODO: what to do with NULL?
-							// other classes jdbc can take care of itself
-							stm.setObject(i, value);
-						}
-						i++;
-					}
-					return new MariaDBIterator(stm.executeQuery());
+					return new MariaDBIterator(prepareAndBind(query, values).executeQuery());
 				} catch (SQLException e1) {
 					throw new RuntimeException(e1);
 				}
 			}
+
 		}.executeSelect(resultId);
 	}
+
 
 	public void executeUpdate(String query, Map<String, Binding> bindings) {
 		new UpdateExecutor(store, updates, uuids, bindings) {
 			
             @Override
-            protected void performUpdate(Map<String, String> values) {
+            protected void performUpdate(Map<String, Object> values) {
                 try {
-                    List<String> vars = new ArrayList<>();
-                    PreparedStatement stm = prepareQuery(query, connection, vars);
-                    int i = 1;
-                    for (String varName : vars) {
-                        Object decoded = decode(values.get(varName));
-                        if (decoded instanceof String)
-                            stm.setString(i, (String) decoded);
-                        else if (decoded instanceof Integer)
-                            stm.setInt(i, (Integer) decoded);
-                        else if (decoded instanceof Boolean)
-                            stm.setBoolean(i, (Boolean) decoded);
-                        i++;
-                    }
-                    stm.executeUpdate();
+					prepareAndBind(query, values).executeUpdate();
                 } catch (SQLException e1) {
                     throw new RuntimeException(e1);
                 }
-                
             }
 		}.executeUpdate();
-	}
-
-	private static Object decode(String v) {
-		if (v.startsWith("\"")) {
-			return v.substring(1, v.length()-1);
-		}
-		else if (StringUtils.isNumeric(v)) {
-			return Integer.parseInt(v);
-		}
-		throw new RuntimeException("Not known how to decode: " + v);
 	}
 }

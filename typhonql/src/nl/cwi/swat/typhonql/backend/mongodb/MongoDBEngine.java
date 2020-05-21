@@ -95,15 +95,15 @@ public class MongoDBEngine extends Engine {
 			throw new RuntimeException("Query executor does not know how to serialize object of type " +obj.getClass());
 	}
 
-	protected static Document resolveQuery(String query, Map<String, String> values) {
-		return Document.parse(new StringSubstitutor(values).replace(query));
+	protected static Document resolveQuery(String query, Map<String, Object> values) {
+		return Document.parse(new StringSubstitutor(serialize(values)).replace(query));
 	}
 	
 	private void executeUpdate(String collectionName, String doc, Map<String, Binding> bindings, BiConsumer<MongoCollection<Document>, Document> operation) {
 		new UpdateExecutor(store, updates, uuids, bindings) {
 			
 			@Override
-			protected void performUpdate(Map<String, String> values) {
+			protected void performUpdate(Map<String, Object> values) {
 				MongoCollection<Document> coll = db.getCollection(collectionName);
 				Document parsedQuery = resolveQuery(doc, values);
 				operation.accept(coll, parsedQuery);
@@ -121,7 +121,7 @@ public class MongoDBEngine extends Engine {
 		new UpdateExecutor(store, updates, uuids, bindings) {
 			
 			@Override
-			protected void performUpdate(Map<String, String> values) {
+			protected void performUpdate(Map<String, Object> values) {
 				MongoCollection<Document> coll = db.getCollection(collectionName);
 				Document parsedFilter = resolveQuery(filter, values);
 				Document parsedQuery = resolveQuery(doc, values);

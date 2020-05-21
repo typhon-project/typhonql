@@ -233,6 +233,10 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
     }
   }
   
+  if (q.clauses[0].exprs == []) {
+    q.clauses = [];
+  }
+  
   // println("PARAMS: <params>");
   return <q, params>;
 }

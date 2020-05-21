@@ -147,20 +147,13 @@ In other words, if a sequence of containment relations alternatingly cross multi
 the cascade is only performed for the first relation.
 
 
-
-
-
-
-
-
-
-
-
-  
-
-
 # TyphonQL by Example
 
+## Introduction
+
+In this section we will illustrate TyphonQL using numerous examples. 
+The example queries and DML statements should be understood in the context
+of an example TyphonML, which is shown below. 
 
 ```typhonML
 entity Product {
@@ -168,29 +161,24 @@ entity Product {
 	description : string[256]
 	price : int
 	productionDate : date
-		
 	reviews :-> Review."Review.product"[0..*]
 }
 
 entity Review {
 	content: text
-	
 	product -> Product[1]
 	user -> User[1]
 }
 
-
 entity User {
 	name : string[256]
 	address: string[256]
-	
 	biography :-> Biography[0..1]
-	reviews :-> Review."Review.user"[0..*]
+	reviews -> Review."Review.user"[0..*]
 }
 
 entity Biography{
 	content : string[256]
-	
 	user -> User[1]
 }
 
@@ -209,8 +197,24 @@ documentdb Reviews {
 }
 ```
 
+Entities Product and User are deployed to an SQL database (MariaDB), called Inventory, 
+whereas the Review and Biography entities are stored on a (MongoDB) document-store called Reviews.
+
+Products own a number of Reviews ("deleting a product will delete associated reviews as well") via
+the relation `reviews`.
+The ownership link can be traversed from the `product` reference in Reviews because of the opposite
+declaration on `reviews`.
+
+Reviews are also authored by users, which is modeled by the `reviews` relation on the User entity.
+This relation is not a containment relation, because an entity can only be owned by a single
+entity at one point in time. User biographies however are owned by User entities via the `biography` relation.
+ 
+
 ## Well-formedness of TyphonML models
 
+TyphonQL assumes TyphonML models are well-formed in the following ways:
+
+- all entities are are placed on a database back-end
 - containment is uni-directional (e.g. inverses of containment cannot be containment)
 - containment is not many-to-many (i.e. tree shaped)
 - containment is uniquely rooted: every owned entity can be reached from a unique 
@@ -222,52 +226,48 @@ path starting from an entity that is not owned
 ## Realizing references 
 
 TyphonML references support bidirectional navigation over relations between entities through inverses (AKA "opposites").
-In the implementation, however, we must choose one particular direction to implement the relation. 
-Technically, we could maintain bidirectional relations in both directions, but this would create a lot of redundancy
-in the various back-ends, and incur a lot of administrative overhead to maintain referential integrity.
+In other words it is possible to navigate across a *single* relation in two ways. 
+In order to support this in the implementation of TyphonQL, such bidirectional relations are realized
+in the back-ends in both directions. TyphonQL ensures that updates to a relation are always mirrored
+in the other direction according to the opposite declaration(s).
+This means that how you navigate across a relation (from which direction) may have different consequences
+at the level of the implementation.
 
-Given a TyphonML model, TyphonQL realizes the "canonical" direction of a relation. Which direction is 
-canonical is determined as follows:
+The only exceptions to this rule are:
+- a containment relation within SQL is always modeled using a *single* foreign key from child to parent
+- a cross-reference relation within SQL is modeled using a *single* junction table (representing both directions).
 
-If a reference represents containment (ownership), the parent/owner "owns" the reference as well.
-So a containment relation R between A and B will be implemented on the side of A. If A and B are both in 
-the same SQL database, this results in a foreign key on B, pointing to A. If A is on SQL, but B is 
-elsewhere, the reference is realized using a junction table in the database of A.
-
-If both A and B are on MongoDB, the reference is realized by nesting B's directly below A.R.  If A is on MongoDB, 
-but B is elsewhere, A will contain (an array) of ids which correspond to the identities of the outside Bs.
-
-If a relation A-R-B is *not* containment, we need a reliable way to determine which of A or B is the "master" entity.
-To avoid picking some arbitrary side of such a relation, we require the TyphonML author explicitly indicate the "master" side
-of such a relation. This is done by declaring inverses/opposites only on one side of the relation; then *that* side is 
-the "derived" side, and the other one the primary/canonical side which will be realized in the back-end.
-
-Consider the following example:
-```typhonML
-entity A { b -> B }
-
-entity B { a -> A."A.b" }
-```
-
-In this case B declares that a is the opposite of A.b, so it won't be implemented. The entity A does not
-specify the opposite, so it is the side that will be realized. In the case A resides on SQL, it will be a junction table; 
-if A is on Mongo, the cross-reference will be realized using (an array of) id-ref(s). 
-
-As a result, the use of inverses [TODO] will be desugared to using the canonical side:
-```
-from A a, B b select b where b.a == a.@id
-```
-Is equivalent to:
-```
-from A a, B b select b where a.b == b.@id
-```
 
 
 ## Querying
 
-Mongo: expression: field op non-field or reverse, but not fields at both sides.
+Selecting all users:
+```
+from User u select u
+```
+This will return the identities of all users.
+
+Selecting specific attributes of users:
+```
+from User u select u.name
+```
+This will return the identities of the users paired with their name.
+
+Selecting a specific relation:
+```
+from User u select u.reviews
+```
+This will return pairs of user identity and review identity.
+If a user has no reviews, it's identity will be paired with `null`.
 
 
+Filtering on a specific attribute:
+```
+from User u select u where u.name == "Pablo"
+```
+
+A complex query across database boundaries: find all user and product name pairs
+for which a user has written a review containing the word "bad".
 ```
 from User u, Product p, Review r select u.name, p.name
  where u.reviews == r, p.reviews == r, r.text like "bad"
@@ -280,11 +280,6 @@ You may wonder why not use the `x in y` operator for
 ## Manipulating Data
 
 
-### Insert
-
-Well-formedness of Insert
-- no inverses, just canonical relations
-- no nested documents (for now)
 
 ```
 insert User { name: "John Smith", age: 30 }
