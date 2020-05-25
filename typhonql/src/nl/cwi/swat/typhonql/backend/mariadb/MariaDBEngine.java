@@ -26,7 +26,6 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 public class MariaDBEngine extends Engine {
 
 	private final Connection connection;
-	private static final Pattern QL_PARAMS = Pattern.compile("\\$\\{(\\w*?)\\}");
 
 	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids, Connection sqlConnection) {
 		super(store, script, updates, uuids);
