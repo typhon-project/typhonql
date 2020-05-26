@@ -222,7 +222,7 @@ public class TyphonSession implements Operations {
 			return vf.bool(c.asBoolean());
 		}
 		else if (c.isNull()) {
-			return vf.string("null");
+			return vf.set();
 		}
 		else if (c.isTextual()) {
 			return vf.string(c.asText());

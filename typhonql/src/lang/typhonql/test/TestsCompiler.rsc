@@ -17,8 +17,8 @@ import lang::typhonml::Util;
  */
  
 
-str HOST = "192.168.178.78";
-//str HOST = "localhost";
+//str HOST = "192.168.178.78";
+str HOST = "localhost";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
@@ -80,7 +80,7 @@ void setup(PolystoreInstance p, bool doTest) {
 	  rs = p.runQuery((Request)`from User u select u.biography`);
 	  // the fact that there's null (i.e., <false, "">) here means that
 	  // there are users without bios
-	  p.assertResultEquals("bio obtained from user", rs, <["u.biography"], [["bio1"], ["null"]]>);  
+	  p.assertResultEquals("bio obtained from user", rs, <["u.biography"], [["bio1"], [{}]]>);  
 	}
 	
 	p.runUpdate((Request) `insert Tag { @id: #fun, name: "fun" }`);
@@ -201,14 +201,14 @@ void testDeleteKidsRemovesParentLinksSQLLocal(PolystoreInstance p) {
   p.runUpdate((Request)`delete Item i where i.product == #tv`);
   
   rs = p.runQuery((Request)`from Product p select p.inventory where p == #tv`);
-  p.assertResultEquals("delete items removes from inventory", rs, <["p.inventory"], [["null"]]>);
+  p.assertResultEquals("delete items removes from inventory", rs, <["p.inventory"], [[{}]]>);
 }
 
 void testDeleteKidsRemovesParentLinksSQLCross(PolystoreInstance p) {
   p.runUpdate((Request)`delete Review r where r.product == #tv`);
   
   rs = p.runQuery((Request)`from Product p select p.reviews where p == #tv`);
-  p.assertResultEquals("delete reviews removes from product reviews", rs, <["p.reviews"], [["null"]]>);
+  p.assertResultEquals("delete reviews removes from product reviews", rs, <["p.reviews"], [[{}]]>);
 }
 
 void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
@@ -376,8 +376,8 @@ void testGISonCrossMongoSQL(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Product p, Review r select r, p.name where r.location in p.availabilityRegion`);
   p.assertResultEquals("testGISonCrossMongoSQL - contained", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
   
-  rs = p.runQuery((Request)`from Product p, Review r select r, p.name where distance(r.location, p.availabilityRegion) \< 200`);
-  p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
+  rs = p.runQuery((Request)`from User u, Review r select r, u.name where distance(r.location, u.location) \< 200`);
+  p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "u.name"], [["rev1", "Pablo"], ["rev2", "Davy"]]>);
 }
 
 

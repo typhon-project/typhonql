@@ -1,5 +1,6 @@
 package nl.cwi.swat.typhonql.backend;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,16 +23,16 @@ public abstract class UpdateExecutor {
 	}
 	
 	public void executeUpdate() {
-		executeUpdate(new HashMap<String, String>());
+		executeUpdate(new HashMap<>());
 	}
 	
-	private void executeUpdate(HashMap<String, String> values) {
+	private void executeUpdate(Map<String, Object> values) {
 		updates.add(() -> {  executeUpdateOperation(values); });
 	}
 
-	protected abstract void performUpdate(Map<String, String> values);
+	protected abstract void performUpdate(Map<String, Object> values);
 	
-	private void executeUpdateOperation(Map<String, String> values) {
+	private void executeUpdateOperation(Map<String, Object> values) {
 		if (values.size() == bindings.size()) {
 			performUpdate(values); 
 		}
@@ -50,28 +51,17 @@ public abstract class UpdateExecutor {
 				
 				while (results.hasNextResult()) {
 					results.nextResult();
-					String value = (field.getAttribute().equals("@id"))? serialize(results.getCurrentId(field.getLabel(), field.getType())) : serialize(results.getCurrentField(field.getLabel(), field.getType(), field.getAttribute()));
+					Object value = (field.getAttribute().equals("@id"))? results.getCurrentId(field.getLabel(), field.getType()) : results.getCurrentField(field.getLabel(), field.getType(), field.getAttribute());
 					values.put(var, value);
 					executeUpdateOperation(values);
 				}
 			}
 			else {
 				GeneratedIdentifier id = (GeneratedIdentifier) binding;
-				values.put(var, serialize(uuids.get(id.getName())));
+				values.put(var, uuids.get(id.getName()));
 				executeUpdateOperation(values);
 			}
 			
 		}
-	}
-
-	private String serialize(Object obj) {
-		if (obj instanceof Integer) {
-			return String.valueOf(obj);
-		}
-		else if (obj instanceof String) {
-			return "\"" + (String) obj + "\"";
-		}
-		else
-			throw new RuntimeException("Query executor does not know how to serialize object of type " +obj.getClass());
 	}
 }
