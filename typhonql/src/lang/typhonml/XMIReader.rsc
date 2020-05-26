@@ -10,7 +10,7 @@ import IO;
 import Node;
 import Type;
 import String;
-
+import util::Maybe;
 import util::ValueUI;
 
 list[str] typhonMLexamples() = [
@@ -164,10 +164,22 @@ Model xmiNode2Model(node n) {
       switch (get(xdb, "xsi-type")) {
         case "typhonml:RelationalDB": {
           tbls = [];
-          for (xtbl:"tables"(_) <- xelts) {
+          for (xtbl:"tables"(list[node] tkids) <- xelts) {
             tbl = realm.new(#Table, Table(get(xtbl, "name")));
             ep = get(xtbl, "entity");
             tbl.entity = referTo(#Entity, ensureEntity(ep));
+            
+            if (xind:"indexSpec"(_) <- tKids) {
+              ind = realm.new(#IndexSpec, IndexSpec(get(xind, "name"), [], [], referTo(#Table, tbl)));
+              list[str] attrRefs = split(" ", get(xind, "attributes"));
+              ind.attributes = [ ensureAttr(a).attr | str a <- attrRefs ];
+              if (has(xind, "references")) {
+                ind.references = [ ensureRel(r) | str r <- get(xind, "references") ]; 
+              }
+              tbl.indexSpec = just(ind);
+            }
+            
+            
             tbls += [tbl];
           }
           db = realm.new(#Database, Database(RelationalDB(get(xdb, "name"), tbls)));
