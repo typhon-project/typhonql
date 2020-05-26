@@ -169,12 +169,13 @@ Model xmiNode2Model(node n) {
             ep = get(xtbl, "entity");
             tbl.entity = referTo(#Entity, ensureEntity(ep));
             
-            if (xind:"indexSpec"(_) <- tKids) {
+            if (xind:"indexSpec"(_) <- tkids) {
               ind = realm.new(#IndexSpec, IndexSpec(get(xind, "name"), [], [], referTo(#Table, tbl)));
               list[str] attrRefs = split(" ", get(xind, "attributes"));
-              ind.attributes = [ ensureAttr(a).attr | str a <- attrRefs ];
+              ind.attributes = [ referTo(#Attribute, ensureAttr(a).attribute) | str a <- attrRefs ];
               if (has(xind, "references")) {
-                ind.references = [ ensureRel(r) | str r <- get(xind, "references") ]; 
+                list[str] refRefs = split(" ", get(xind, "references"));
+                ind.references = [ referTo(#Relation, ensureRel(r)) | str r <- refRefs ]; 
               }
               tbl.indexSpec = just(ind);
             }
