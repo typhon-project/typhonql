@@ -48,7 +48,7 @@ public class PolystoreSchema {
 
 
 	private Stream<IValue> toPlacementTuple(IValueFactory vf, Place p) {
-		return placement.get(p).stream().map(entity -> vf.tuple(vf.string(p.getDBType().name()), vf.string(p.getName()), vf.string(entity)));
+		return placement.get(p).stream().map(entity -> vf.tuple(vf.string(p.getDBType().getName()), vf.string(p.getName()), vf.string(entity)));
 	}
 
 

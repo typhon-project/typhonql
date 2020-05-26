@@ -1,11 +1,11 @@
 package nl.cwi.swat.typhonql;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Optional;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
@@ -34,12 +34,10 @@ import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IMapWriter;
 import io.usethesource.vallang.ISourceLocation;
 import io.usethesource.vallang.IString;
-import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import io.usethesource.vallang.type.TypeStore;
-import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class TyphonQL {
 
@@ -196,15 +194,15 @@ public class TyphonQL {
 		for (BsonValue v : array.getValues()) {
 			BsonDocument d = v.asDocument();
 			try {
-				String engineType = d.getString("engineType").getValue().toLowerCase() + "db";
-				DBType dbType = DBType.valueOf(engineType);
-				if (dbType == null)
-					throw new RuntimeException("Engine type " + d.getString("engineType").getValue() + " not known");
 				String dbName = d.getString("name").getValue();
+				String dbType = d.getString("dbType").getValue().toLowerCase();
+				Optional<DBMS> dbms = DBMS.forName(dbType);
+				if (!dbms.isPresent())
+					throw new RuntimeException("DB type " + d.getString("dbType").getValue() + " not known");
 				IConstructor info = buildConnectionInfo(
 					d.getString("externalHost").getValue(),
 					d.getNumber("externalPort").intValue(), 
-					dbType,
+					dbms.get(),
 					d.getString("username").getValue(),
 					d.getString("password").getValue());
 				mw.put(vf.string(dbName), info);
@@ -215,17 +213,17 @@ public class TyphonQL {
 		return mw.done();
 	}
 
-	private IConstructor buildConnectionInfo(String host, int port, DBType dbType, String user,
+	private IConstructor buildConnectionInfo(String host, int port, DBMS dbType, String user,
 			String password) {
 		Type adtType = tf.abstractDataType(ts, "Connection");
 		Type connectionType = null;
 		
-        switch (dbType) {
-        case documentdb:
+        switch (dbType.getName().toLowerCase()) {
+        case "mongodb":
         	connectionType = tf.constructor(ts, adtType, "mongoConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
         	break;
-        case relationaldb:
-        	connectionType =tf.constructor(ts, adtType, "sqlConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
+        case "mariadb":
+        	connectionType =tf.constructor(ts, adtType, "mariaConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
         	break;
         }
         return vf.constructor(connectionType, vf.string(host), vf.integer(port), vf.string(user), vf.string(password));
@@ -239,7 +237,7 @@ public class TyphonQL {
 		//System.out.println(reset);
 		//System.out.println(ws);
 		
-		IMap  m = ql.readConnectionsInfo(vf.string("localhost"), vf.integer(8080), vf.string("pablo"), vf.string("antonio"));
+		IMap  m = ql.readConnectionsInfo(vf.string("localhost"), vf.integer(8080), vf.string("admin"), vf.string("admin1@"));
 		System.out.println(m);
 		IString t = ql.executeQuery(vf.sourceLocation(new URI("http://localhost:8080")),
 				vf.string("pablo"), vf.string("antonio"), vf.string("from User u select u"));

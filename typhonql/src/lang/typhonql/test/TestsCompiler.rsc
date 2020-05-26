@@ -486,7 +486,7 @@ void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG) {
 }
 
 Schema fetchSchema() {
-	executer().fetchSchema();
+	return executer().fetchSchema();
 }
 
 Schema printSchema() {

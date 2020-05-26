@@ -4,7 +4,7 @@ public class MongoDB implements DBMS {
 
 	@Override
 	public String getName() {
-		return "MongoDb";
+		return "MongoDB";
 	}
 
 	@Override

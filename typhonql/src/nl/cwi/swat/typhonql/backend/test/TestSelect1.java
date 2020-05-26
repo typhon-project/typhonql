@@ -34,7 +34,7 @@ public class TestSelect1 {
 		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
 		MongoDatabase conn2 = BackendTestCommon.getMongoDatabase("localhost", 27018, "Reviews", "admin", "admin");
 		
-		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, conn1);
+		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, ()-> conn1);
 		MongoDBEngine e2 = new MongoDBEngine(store, script, updates, uuids, conn2);
 		
 		e1.executeSelect("Inventory", "select `junction_biography$0`.`Biography.user` as `u.User.biography`, `u`.`User.@id` as `u.User.@id` \nfrom `User` as `u` left outer join `Biography.user-User.biography` as `junction_biography$0` on (`junction_biography$0`.`User.biography`) = (`u`.`User.@id`)\nwhere true",
