@@ -114,24 +114,23 @@ list[TableConstraint] indexes(str e, rel[str, str] attrs, Schema schema)
   	switch (<fromCard, toCard, contain>) {
        case <one_many(), one_many(), true>: illegal(r);
        case <one_many(), zero_many(), true>: illegal(r);
-       case <one_many(), zero_one(), true>: illegal(r);
-       case <one_many(), \one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [], stats, doForeignKeys); // ??? how to enforce one_many?
+       case <one_many(), zero_one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [], stats, doForeignKeys); 
+       case <one_many(), \one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [], stats, doForeignKeys); 
        
        
        case <zero_many(), one_many(), true>: illegal(r);
        case <zero_many(), zero_many(), true>: illegal(r);
        case <zero_many(), zero_one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [], stats, doForeignKeys);
-       
        case <zero_many(), \one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [notNull()], stats, doForeignKeys);
 
        case <zero_one(), one_many(), true>: illegal(r);
        case <zero_one(), zero_many(), true>: illegal(r);
-       case <zero_one(), zero_one(), true>: illegal(r);
-       case <zero_one(), \one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [unique(), notNull()], stats, doForeignKeys);
+       case <zero_one(), zero_one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [unique()], stats, doForeignKeys);
+       case <zero_one(), \one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [unique()], stats, doForeignKeys);
        
        case <\one(), one_many(), true>: illegal(r);
        case <\one(), zero_many(), true>: illegal(r);
-       case <\one(), zero_one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [], stats, doForeignKeys);
+       case <\one(), zero_one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [unique(), notNull()], stats, doForeignKeys);
        case <\one(), \one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [unique(), notNull()], stats, doForeignKeys);
        
        // we realize all cross refs using a junction table.
