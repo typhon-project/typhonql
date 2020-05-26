@@ -143,11 +143,11 @@ default Placement place(Database db, Model m) {
 
 
 Schema model2schema(Model m)
-  = inferAuxEntities(chema(model2rels(m), model2attrs(m),
+  = inferAuxEntities(schema(model2rels(m), model2attrs(m),
        customs = model2customs(m), 
        placement =model2placement(m),
        pragmas = model2pragmas(m),
-       changeOperators = model2changeOperators(m));
+       changeOperators = model2changeOperators(m)));
 
 str keyValEntity(str db, str ent) = "<ent>__<db>";
 

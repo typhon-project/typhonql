@@ -208,7 +208,7 @@ Model xmiNode2Model(node n) {
             elt = realm.new(#KeyValueElement, KeyValueElement(get(xelt, "name"), []));
             elt.key = get(xelt, "key");
             valsStr = get(xelt, "values");
-            elt.values =  [ referTo(#Attribute, ensureAttr(path)) | str path <- split(" ", valsStr) ];
+            elt.values =  [ referTo(#Attribute, ensureAttr(path).attribute) | str path <- split(" ", valsStr) ];
             elts += [elt];
           }
           db = realm.new(#Database, Database(KeyValueDB(get(xdb, "name"), elts)));
