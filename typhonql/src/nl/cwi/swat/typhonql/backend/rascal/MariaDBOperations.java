@@ -58,7 +58,7 @@ public class MariaDBOperations implements Operations, AutoCloseable {
                     return getConnection(settings, "");
                 }
             } catch (SQLException e) {
-            	throw new RuntimeException("Failure to initialize connection to" + dbName, e);
+            	throw new RuntimeException("Failure to initialize connection to " + dbName, e);
             }
 		});
 		
