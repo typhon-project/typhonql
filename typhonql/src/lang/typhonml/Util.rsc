@@ -25,7 +25,8 @@ import Boolean;
 
 // abstraction over TyphonML, to be extended with back-end specific info in the generic map
 data Schema
-  = schema(Rels rels, Attrs attrs, Placement placement = {}, Attrs customs = {}, ChangeOps changeOperators = {}, map[str, value] config = ());
+  = schema(Rels rels, Attrs attrs, Placement placement = {}, Attrs customs = {}, ChangeOps changeOperators = {}, 
+    Pragmas pragmas = {});
 
 alias Rel = tuple[str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool containment];
 alias Rels = set[Rel];
@@ -38,6 +39,12 @@ data DB = mongodb() | sql() | hyperj() | recombine() | unknown() | typhon();
 alias Place = tuple[DB db, str name];
 
 alias Placement = rel[Place place, str entity];
+
+alias Pragmas = rel[str dbName, Option option];
+
+data Option
+  = indexSpec(str name, rel[str entity, str feature] features);
+  
 
 str ppSchema(Schema s) {
   str txt = "";
@@ -81,6 +88,26 @@ set[Message] schemaSanity(Schema s, loc src) {
 Placement model2placement(Model m) 
   = ( {} | it + place(db, m) | Database db <- m.databases );  
 
+Pragmas model2pragmas(Model m) 
+// ambiguous:  = ( {} | it + *pragmas(db, m) | Database db <- m.databases );
+  = { *pragmas(db, m) | Database db <- m.databases };
+
+
+
+
+Pragmas pragmas(Database(RelationalDB(str name, list[Table] tables)), Model m) {
+  prags = {};
+  for (Table tbl <- tables, just(IndexSpec ind) := tbl.indexSpec) {
+    str ent = lookup(m, #Entity, tbl.entity).name;
+    ftrs = { <ent, lookup(m, #Attribute, a).name> | Ref[Attribute] a <- ind.attributes };
+    ftrs += { <ent, lookup(m, #Relation, r).name> | Ref[Relation] r <- ind.references };
+    prags += {<name, indexSpec(ind.name, ftrs)>};
+  }
+  return prags;  
+}
+
+default Pragmas pragmas(Database _, Model _) = {};
+
 // NB: the place function is an extension point.
 
 Placement place(Database(RelationalDB(str name, list[Table] tables)), Model m) 
@@ -95,7 +122,11 @@ default Placement place(Database db, Model m) {
 
 
 Schema model2schema(Model m)
-  = schema(model2rels(m), model2attrs(m), customs = model2customs(m), placement=model2placement(m), changeOperators = model2changeOperators(m));
+  = schema(model2rels(m), model2attrs(m), 
+       customs = model2customs(m), 
+       placement =model2placement(m),
+       pragmas = model2pragmas(m), 
+       changeOperators = model2changeOperators(m));
 
 
 ChangeOps model2changeOperators(Model m) {

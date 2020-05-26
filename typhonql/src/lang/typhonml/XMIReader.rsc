@@ -66,8 +66,8 @@ void smokeTest2() {
 void smokeTest3() {
   str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product/user-review-product.xmi|);
   Model m = xmiString2Model(xmi);
-  Schema s = model2schema(m);
   iprintln(m);
+  Schema s = model2schema(m);
   iprintln(s);
 }
 
@@ -238,10 +238,12 @@ Model xmiNode2Model(node n) {
              default: throw "Unknown attribute type: <xtype>";
            }
 
-           attr = EntityAttributeKind(realm.new(#Attribute, Attribute(get(xattr, "name"), dt)));
-           attrs += [attr];
-           attrMap[attrPath] = attr;
-           attrPos += 1;
+           // ugh this is so ugly, need to update the map
+           // otherwise the names etc. are not in looked-up attributes.
+           attr = ensureAttr(attrPath);
+           attrMap[attrPath].attribute.name = get(xattr, "name");
+           attrMap[attrPath].attribute.\type = dt;
+           attrs += [attrMap[attrPath]];
          }
          else {
           // if (get(xattr, "type") == "typhonml:CustomAttribute") {
@@ -253,7 +255,8 @@ Model xmiNode2Model(node n) {
               CustomAttribute(get(xattr, "name"), referTo(#CustomDataType, ensureCustom(get(xattr, "type"))))));
            attrs += [attr];
          }
-         
+ 
+         attrPos += 1;
           
       }  
        
