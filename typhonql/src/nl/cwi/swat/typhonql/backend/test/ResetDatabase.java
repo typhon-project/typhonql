@@ -1,4 +1,4 @@
-package engineering.swat.typhonql.client.test;
+package nl.cwi.swat.typhonql.backend.test;
 
 import java.io.IOException;
 import java.net.URI;
@@ -7,29 +7,27 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
-import nl.cwi.swat.typhonql.DBType;
 import nl.cwi.swat.typhonql.MariaDB;
 import nl.cwi.swat.typhonql.MongoDB;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
-import nl.cwi.swat.typhonql.client.PolystoreConnection;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 
 public class ResetDatabase {
 
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		DatabaseInfo[] infos = new DatabaseInfo[] {
-				new DatabaseInfo("localhost", 27017, "Reviews", DBType.documentdb, new MongoDB().getName(),
+				new DatabaseInfo("localhost", 27017, "Reviews", new MongoDB().getName(),
 						"admin", "admin"),
-				new DatabaseInfo("localhost", 3306, "Inventory", DBType.relationaldb, new MariaDB().getName(),
+				new DatabaseInfo("localhost", 3306, "Inventory", new MariaDB().getName(),
 						"root", "example") };
 		
-		String fileName = "file:///Users/pablo/git/typhonql/typhonql/src/lang/typhonml/user-review-product-bio.tmlx";
+		String fileName = "file:///Users/pablo/git/typhonql/typhonql/src/lang/typhonql/test/resources/user-review-product/user-review-product.xmi";
 		
 		String xmiString = String.join("\n", Files.readAllLines(Paths.get(new URI(fileName))));
 
-		PolystoreConnection conn = new XMIPolystoreConnection(xmiString, Arrays.asList(infos));
+		XMIPolystoreConnection conn = new XMIPolystoreConnection();
 		
-		conn.resetDatabases();
+		conn.resetDatabases(xmiString, Arrays.asList(infos));
 		
 	}
 	
