@@ -6,11 +6,11 @@ public class ConnectionInfo {
 	private String polystoreId;
 	private DatabaseInfo databaseInfo;
 	
-	public ConnectionInfo(String polystoreId, String host, int port, String dbName, DBType dbType, String dbms, String user,
+	public ConnectionInfo(String polystoreId, String host, int port, String dbName, String dbms, String user,
 			String password) {
 		super();
 		this.polystoreId = polystoreId;
-		this.databaseInfo = new DatabaseInfo(host, port, dbName, dbType, dbms, user, password);
+		this.databaseInfo = new DatabaseInfo(host, port, dbName, dbms, user, password);
 	}
 	
 	public ConnectionInfo(String polystoreId, DatabaseInfo databaseInfo) {

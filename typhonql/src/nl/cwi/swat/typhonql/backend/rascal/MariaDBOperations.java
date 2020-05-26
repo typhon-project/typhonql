@@ -58,7 +58,7 @@ public class MariaDBOperations implements Operations, AutoCloseable {
                     return getConnection(settings, "");
                 }
             } catch (SQLException e) {
-            	throw new RuntimeException("Failure to initialize connection to" + dbName, e);
+            	throw new RuntimeException("Failure to initialize connection to " + dbName, e);
             }
 		});
 		
@@ -117,7 +117,7 @@ public class MariaDBOperations implements Operations, AutoCloseable {
 		FunctionType executeStatementType = (FunctionType) aliasedTuple.getFieldType("executeStatement");
 		FunctionType executeGlobalStatementType = (FunctionType) aliasedTuple.getFieldType("executeGlobalStatement");
 		
-		BiFunction<String, Boolean, MariaDBEngine> getEngine = (dbName, scoped) -> new MariaDBEngine(store, script, updates, uuids, getConnection(dbName, scoped));
+		BiFunction<String, Boolean, MariaDBEngine> getEngine = (dbName, scoped) -> new MariaDBEngine(store, script, updates, uuids, () -> getConnection(dbName, scoped));
 
 		return vf.tuple(makeExecuteQuery(getEngine, state, executeQueryType, ctx, vf),
 				makeExecuteStatement(getEngine, state, executeStatementType, ctx, vf),

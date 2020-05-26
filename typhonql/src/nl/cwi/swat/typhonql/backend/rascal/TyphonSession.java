@@ -64,7 +64,7 @@ public class TyphonSession implements Operations {
 			String user = ((IString) cons.get("user")).getValue();
 			String password = ((IString) cons.get("password")).getValue();
 			ConnectionData data = new ConnectionData(host, port, user, password);
-			if (cons.getName().equals("sqlConnection"))
+			if (cons.getName().equals("mariaConnection"))
 				mariaDbConnections.put(dbName, data);
 			else if (cons.getName().equals("mongoConnection"))
 				mongoConnections.put(dbName, data);
@@ -76,15 +76,15 @@ public class TyphonSession implements Operations {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		for (DatabaseInfo db : connections) {
-			switch (db.getDbType()) {
-			case documentdb:
+			switch (db.getDbms().toLowerCase()) {
+			case "mongodb":
 				mongoConnections.put(db.getDbName(), new ConnectionData(db));
 				break;
-			case relationaldb:
+			case "mariadb":
 				mariaDbConnections.put(db.getDbName(), new ConnectionData(db));
 				break;
 			default:
-				throw new RuntimeException("Missing type: " + db.getDbType());
+				throw new RuntimeException("Missing type: " + db.getDbms());
 			}
 		}
 		return newSessionWrapper(mariaDbConnections, mongoConnections, ctx);

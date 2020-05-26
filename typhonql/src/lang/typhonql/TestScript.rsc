@@ -19,7 +19,7 @@ str HOST = "tijs-typhon.duckdns.org";
 
 map[str, Connection] connections = (
 			"Reviews" : mongoConnection(HOST, 27018, "admin", "admin"),
- 			"Inventory" : sqlConnection(HOST, 3306, "root", "example")
+ 			"Inventory" : mariaConnection(HOST, 3306, "root", "example")
 	);
  			
 Schema s = schema(

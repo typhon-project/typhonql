@@ -30,7 +30,7 @@ public class TestDelete {
 		List<Runnable> updates = new ArrayList<>();
 		
 		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
-		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, conn1);
+		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, () -> conn1);
 		
 		e1.executeSelect("Inventory", "select `t`.`Tag.@id` as `t.Tag.@id` from `Tag` as `t` where true;", 
 				Arrays.asList(new Path("Inventory", "t", "Tag", new String[] { "@id" })));

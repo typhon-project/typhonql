@@ -72,6 +72,10 @@ relationaldb Inventory {
 	tables {
 		table {
 			UserDB : User
+			index UserNameIndex {
+				attributes ("User.name", "User.location")
+				references ("User.country")
+			}
 		}
 		table {
 			ProductDB : Product
