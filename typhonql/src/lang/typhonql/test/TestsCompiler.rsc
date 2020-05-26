@@ -17,8 +17,8 @@ import lang::typhonml::Util;
  */
  
 
-//str HOST = "192.168.178.78";
-str HOST = "localhost";
+str HOST = "192.168.178.78";
+//str HOST = "localhost";
 str PORT = "8080";
 str USER = "admin";
 str PASSWORD = "admin1@";
@@ -37,6 +37,8 @@ void setup(PolystoreInstance p, bool doTest) {
 	  // todo: test result.
 
 	  rs = p.runQuery((Request)`from User u select u.photoURL, u.avatarURL, u.name`);
+	  
+	  
 	}
 	
 	p.runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat", productionDate:  $2020-04-13$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);

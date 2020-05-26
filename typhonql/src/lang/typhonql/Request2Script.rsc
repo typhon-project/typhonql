@@ -122,7 +122,6 @@ void smokeScript() {
 
 
 
-
   smokeIt((Request)`delete Review r`);
 
 
@@ -252,5 +251,6 @@ void smokeScript() {
 
   smokeIt((Request)`from Person p select p.photo, p.bitcoin where p == #victor`);
 
+  smokeIt((Request)`update Person p where u.@id == #pablo set {photo: "MOUSTACHE"}`);
     
 }
