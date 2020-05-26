@@ -67,6 +67,7 @@
     <attributes xsi:type="typhonml:Attribute" name="avatarURL">
       <type xsi:type="typhonml:StringType" maxSize="256"/>
     </attributes>
+    <relations name="country" type="//@entities.7"/>
     <relations name="biography" type="//@entities.6" opposite="//@entities.6/@relations.0" isContainment="true"/>
     <relations name="reviews" type="//@entities.0" cardinality="zero_many" opposite="//@entities.0/@relations.1"/>
   </entities>
@@ -74,7 +75,15 @@
     <attributes xsi:type="typhonml:Attribute" name="content">
       <type xsi:type="typhonml:StringType" maxSize="256"/>
     </attributes>
-    <relations name="user" type="//@entities.5" cardinality="one" opposite="//@entities.5/@relations.0"/>
+    <relations name="user" type="//@entities.5" cardinality="one" opposite="//@entities.5/@relations.1"/>
+  </entities>
+  <entities name="Country">
+    <attributes xsi:type="typhonml:Attribute" name="name">
+      <type xsi:type="typhonml:StringType" maxSize="128"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="code">
+      <type xsi:type="typhonml:StringType" maxSize="4"/>
+    </attributes>
   </entities>
   <databases xsi:type="typhonml:RelationalDB" name="Inventory">
     <tables name="UserDB" entity="//@entities.5">
