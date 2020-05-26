@@ -87,11 +87,11 @@ public class TyphonSession implements Operations {
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
 		for (DatabaseInfo db : connections) {
-			switch (db.getDbms().toLowerCase()) {
-			case "mongodb":
+			switch (db.getDbms()) {
+			case documentdb:
 				mongoConnections.put(db.getDbName(), new ConnectionData(db));
 				break;
-			case "mariadb":
+			case relationaldb:
 				mariaDbConnections.put(db.getDbName(), new ConnectionData(db));
 				break;
 			case cassandradb:

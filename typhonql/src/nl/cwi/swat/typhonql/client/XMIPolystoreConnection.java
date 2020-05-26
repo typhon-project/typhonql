@@ -319,10 +319,15 @@ public class XMIPolystoreConnection {
 	}
 	
 	public static void main(String[] args) throws IOException, URISyntaxException {
+
+//		public DatabaseInfo(String host, int port, String dbName, String dbms, String user,
+//				String password) {
+//			
+//		}
 		DatabaseInfo[] infos = new DatabaseInfo[] {
-				new DatabaseInfo("localhost", 27017, "Reviews", DBType.documentdb, new MongoDB().getName(),
+				new DatabaseInfo("localhost", 27017, "Reviews", DBType.documentdb, 
 						"admin", "admin"),
-				new DatabaseInfo("localhost", 3306, "Inventory", DBType.relationaldb, new MariaDB().getName(),
+				new DatabaseInfo("localhost", 3306, "Inventory", DBType.relationaldb,
 						"root", "example") };
 		
 		if (args == null || args.length != 1 && args[0] == null) {

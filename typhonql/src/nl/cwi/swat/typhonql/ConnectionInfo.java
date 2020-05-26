@@ -10,7 +10,7 @@ public class ConnectionInfo {
 			String password) {
 		super();
 		this.polystoreId = polystoreId;
-		this.databaseInfo = new DatabaseInfo(host, port, dbName, dbms, user, password);
+		this.databaseInfo = new DatabaseInfo(host, port, dbName, DBType.valueOf(dbms), user, password);
 	}
 	
 	public ConnectionInfo(String polystoreId, DatabaseInfo databaseInfo) {
