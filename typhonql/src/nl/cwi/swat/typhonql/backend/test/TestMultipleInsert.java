@@ -40,7 +40,7 @@ public class TestMultipleInsert {
 		List<Runnable> updates = new ArrayList<>();
 		
 		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
-		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, conn1);
+		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, () -> conn1);
 		LinkedHashMap<String, Binding> map0 = new LinkedHashMap<String, Binding>();
 		String uuid = UUID.randomUUID().toString();
 		uuids.put("param_611", uuid);

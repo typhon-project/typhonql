@@ -35,7 +35,7 @@ public class TestSelect {
 		
 		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
 		MongoDatabase conn2 = BackendTestCommon.getMongoDatabase("localhost", 27018, "Reviews", "admin", "admin");
-		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, conn1);
+		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, () -> conn1);
 		MongoDBEngine e2 = new MongoDBEngine(store, script, updates, uuids, conn2);
 		
 		e1.executeSelect("Inventory", "select u.`User.name` as `u.User.name`,  u.`User.@id` as `u.User.@id` from User u where u.`User.name` = \"Claudio\"", 

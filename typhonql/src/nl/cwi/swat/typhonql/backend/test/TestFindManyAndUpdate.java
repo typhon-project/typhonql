@@ -33,7 +33,7 @@ public class TestFindManyAndUpdate {
 		MongoDBEngine e1 = new MongoDBEngine(store, script, updates, uuids, conn1);
 		
 		Connection conn2 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
-		MariaDBEngine e2 = new MariaDBEngine(store, script, updates, uuids, conn2);
+		MariaDBEngine e2 = new MariaDBEngine(store, script, updates, uuids, () -> conn2);
 		
 		Map<String, Binding> map = new HashMap<>();
 		
