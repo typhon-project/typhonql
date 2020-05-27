@@ -36,7 +36,6 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 
 		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
 		mapper.registerModule(customSerializers);
-		mapper.canSerialize(EntityRef.class);
 	}
 				
 	private final List<String> columnNames;
