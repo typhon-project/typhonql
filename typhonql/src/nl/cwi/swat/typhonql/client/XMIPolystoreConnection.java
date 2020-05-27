@@ -136,7 +136,7 @@ public class XMIPolystoreConnection {
 				throw e;
 			} catch (Throwable e) {
 				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
-				throw e;
+				throw new RuntimeException(e);
 			}
 		});
 	}
@@ -163,7 +163,7 @@ public class XMIPolystoreConnection {
 				throw e;
 			} catch (Throwable e) {
 				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
-				throw e;
+				throw new RuntimeException(e);
 			}
 		});
 	}
@@ -187,7 +187,7 @@ public class XMIPolystoreConnection {
 				throw e;
 			} catch (Throwable e) {
 				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
-				throw e;
+				throw new RuntimeException(e);
 			}
 		});
 		
@@ -220,7 +220,7 @@ public class XMIPolystoreConnection {
 				throw e;
 			} catch (Throwable e) {
 				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
-				throw e;
+				throw new RuntimeException(e);
 			}
 		});
 	}
@@ -258,7 +258,7 @@ public class XMIPolystoreConnection {
 				throw e;
 			} catch (Throwable e) {
 				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
-				throw e;
+				throw new RuntimeException(e);
 			}
 		});
 	}
@@ -282,7 +282,7 @@ public class XMIPolystoreConnection {
 				throw e;
 			} catch (Throwable e) {
 				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
-				throw e;
+				throw new RuntimeException(e);
 			}
 		});
 	}
