@@ -10,13 +10,11 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.Result;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
-
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
@@ -26,6 +24,7 @@ import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import nl.cwi.swat.typhonql.backend.Binding;
+import nl.cwi.swat.typhonql.backend.Closables;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.mariadb.MariaDBEngine;
@@ -133,22 +132,7 @@ public class MariaDBOperations implements Operations, AutoCloseable {
 	}
 
 	@Override
-	public void close() {
-		String firstFailureDB = null;
-		SQLException firstFailure = null;
-		for (Entry<String, Connection> conn : connections.entrySet()) {
-			try {
-				conn.getValue().close();
-			} catch (SQLException e) {
-				if (firstFailure == null) {
-					firstFailure = e;
-					firstFailureDB = conn.getKey();
-				}
-			}
-		}
-		if (firstFailure != null) {
-			throw new RuntimeException("Problems closing connection " + firstFailureDB, firstFailure);
-		}
-
+	public void close() throws SQLException {
+		Closables.autoCloseAll(connections.values(), SQLException.class);
 	}
 }

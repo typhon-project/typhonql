@@ -17,7 +17,6 @@ import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
-import com.datastax.oss.driver.api.core.CqlSession;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.usethesource.vallang.IConstructor;
@@ -290,7 +289,14 @@ public class TyphonSession implements Operations {
 	}
 
 	public void close(TyphonSessionState state) {
-		state.close();
+		try {
+			state.close();
+		} catch (Exception e) {
+			if (e instanceof RuntimeException) {
+				throw (RuntimeException)e;
+			}
+			throw new RuntimeException("Failure to close state", e);
+		}
 
 	}
 

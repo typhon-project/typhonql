@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import org.locationtech.jts.geom.Geometry;
@@ -20,9 +21,9 @@ import nl.cwi.swat.typhonql.backend.UpdateExecutor;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class CassandraEngine extends Engine {
-	private CqlSession connection;
+	private Supplier<CqlSession> connection;
 
-	public CassandraEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids, CqlSession connection) {
+	public CassandraEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids, Supplier<CqlSession> connection) {
 		super(store, script, updates, uuids);
 		this.connection = connection;
 	}
@@ -31,7 +32,7 @@ public class CassandraEngine extends Engine {
 		new QueryExecutor(store, script, uuids, bindings, signature) {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
-				return new CassandraIterator(connection.execute(compileQuery(query, values)));
+				return new CassandraIterator(connection.get().execute(compileQuery(query, values)));
 			}
 
 		}.executeSelect(resultId);
@@ -43,7 +44,7 @@ public class CassandraEngine extends Engine {
 		new UpdateExecutor(store, updates, uuids, bindings) {
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
-				connection.execute(compileQuery(query, values));
+				connection.get().execute(compileQuery(query, values));
 			}
 		}.executeUpdate();
 	}

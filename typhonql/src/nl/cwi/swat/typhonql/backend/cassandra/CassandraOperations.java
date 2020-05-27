@@ -22,7 +22,7 @@ import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
-import io.usethesource.vallang.type.TypeFactory;
+import nl.cwi.swat.typhonql.backend.Closables;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.rascal.ConnectionData;
@@ -62,7 +62,7 @@ public class CassandraOperations  implements Operations, AutoCloseable {
 				(ft, bd) -> makeFunction(ctx, state, func(aliasedTuple, ft), bd);
 
 		BiFunction<String, Boolean, CassandraEngine> getEngine = 
-				(dbName, global) -> new CassandraEngine(store, script, updates, uuids, getConnection(dbName, global));
+				(dbName, global) -> new CassandraEngine(store, script, updates, uuids, () -> getConnection(dbName, global));
 
 		return vf.tuple(
 				makeFunc.apply("executeQuery", executeBody(getEngine)),
@@ -119,19 +119,7 @@ public class CassandraOperations  implements Operations, AutoCloseable {
 
 	@Override
 	public void close() throws Exception {
-		Exception firstException = null;
-		for (CqlSession ses : connections.values()) {
-			try {
-				ses.close();
-			} catch (Exception e) {
-				if (firstException == null) {
-					firstException = e;
-				}
-			}
-		}
-		if (firstException != null) {
-			throw firstException;
-		}
+		Closables.autoCloseAll(connections.values(), Exception.class);
 	}
 
 }
