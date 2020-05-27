@@ -61,13 +61,12 @@ public class CassandraOperations  implements Operations, AutoCloseable {
 		BiFunction<String, Function<IValue[], Result<IValue>>, ICallableValue> makeFunc = 
 				(ft, bd) -> makeFunction(ctx, state, func(aliasedTuple, ft), bd);
 
-		BiFunction<String, Boolean, CassandraEngine> getEngine = 
-				(dbName, global) -> new CassandraEngine(store, script, updates, uuids, () -> getConnection(dbName, global));
+		CassandraEngine engine = new CassandraEngine(store, script, updates, uuids);
 
 		return vf.tuple(
-				makeFunc.apply("executeQuery", executeBody(getEngine)),
-				makeFunc.apply("executeStatement", executeStatementBody(getEngine)),
-				makeFunc.apply("executeGlobalStatement", executeGlobalStatementBody(getEngine))
+				makeFunc.apply("executeQuery", executeBody(engine)),
+				makeFunc.apply("executeStatement", executeStatementBody(engine)),
+				makeFunc.apply("executeGlobalStatement", executeGlobalStatementBody(engine))
         );
 	}
 
@@ -84,7 +83,7 @@ public class CassandraOperations  implements Operations, AutoCloseable {
 	
 
 
-	private Function<IValue[], Result<IValue>> executeBody(BiFunction<String, Boolean, CassandraEngine> getEngine) {
+	private Function<IValue[], Result<IValue>> executeBody(CassandraEngine engine) {
 		return args -> {
 			String resultId = ((IString) args[0]).getValue();
 			String dbName = ((IString) args[1]).getValue();
@@ -92,27 +91,28 @@ public class CassandraOperations  implements Operations, AutoCloseable {
 			IMap bindings = (IMap) args[3];
 			IList signatureList = (IList) args[4];
 
-			getEngine.apply(dbName, true).executeSelect(resultId, query, 
+			engine.executeSelect(resultId, query, 
 					rascalToJavaBindings(bindings), 
-					rascalToJavaSignature(signatureList));
+					rascalToJavaSignature(signatureList), 
+					() -> getConnection(dbName, false));
 			return ResultFactory.nothing();
 		};
 	}
 	
-	private Function<IValue[], Result<IValue>> executeStatementBody(BiFunction<String, Boolean, CassandraEngine> getEngine) {
-		return args -> executeUpdate(getEngine, args, false);
+	private Function<IValue[], Result<IValue>> executeStatementBody(CassandraEngine engine) {
+		return args -> executeUpdate(engine, args, false);
 	}
 
-	private Function<IValue[], Result<IValue>> executeGlobalStatementBody(BiFunction<String, Boolean, CassandraEngine> getEngine) {
-		return args -> executeUpdate(getEngine, args, true);
+	private Function<IValue[], Result<IValue>> executeGlobalStatementBody(CassandraEngine engine) {
+		return args -> executeUpdate(engine, args, true);
 	}
 
-	private Result<IValue> executeUpdate(BiFunction<String, Boolean, CassandraEngine> getEngine, IValue[] args, boolean global) {
+	private Result<IValue> executeUpdate(CassandraEngine engine, IValue[] args, boolean global) {
         String dbName = ((IString) args[0]).getValue();
         String query = ((IString) args[1]).getValue();
         IMap bindings = (IMap) args[2];
 
-        getEngine.apply(dbName, !global).executeUpdate(query, rascalToJavaBindings(bindings));
+        engine.executeUpdate(query, rascalToJavaBindings(bindings), () -> getConnection(dbName, global));
         return ResultFactory.nothing();
 	}
 

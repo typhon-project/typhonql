@@ -21,26 +21,23 @@ import nl.cwi.swat.typhonql.backend.UpdateExecutor;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class CassandraEngine extends Engine {
-	private Supplier<CqlSession> connection;
 
-	public CassandraEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids, Supplier<CqlSession> connection) {
+	public CassandraEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids) {
 		super(store, script, updates, uuids);
-		this.connection = connection;
 	}
 
-	public void executeSelect(String resultId, String query, Map<String, Binding> bindings, List<Path> signature) {
+	public void executeSelect(String resultId, String query, Map<String, Binding> bindings, List<Path> signature, Supplier<CqlSession> connection) {
 		new QueryExecutor(store, script, uuids, bindings, signature) {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				return new CassandraIterator(connection.get().execute(compileQuery(query, values)));
 			}
-
 		}.executeSelect(resultId);
 	}
 	
 
 	
-	public void executeUpdate(String query, Map<String, Binding> bindings) {
+	public void executeUpdate(String query, Map<String, Binding> bindings, Supplier<CqlSession> connection) {
 		new UpdateExecutor(store, updates, uuids, bindings) {
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
