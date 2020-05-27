@@ -3,9 +3,7 @@ package nl.cwi.swat.typhonql.client;
 import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.staticErrorMessage;
 import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.throwMessage;
 import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.throwableMessage;
-
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -17,7 +15,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import org.rascalmpl.interpreter.Evaluator;
 import org.rascalmpl.interpreter.control_exceptions.Throw;
 import org.rascalmpl.interpreter.env.GlobalEnvironment;
@@ -31,7 +28,6 @@ import org.rascalmpl.uri.URIUtil;
 import org.rascalmpl.uri.classloaders.SourceLocationClassLoader;
 import org.rascalmpl.util.ConcurrentSoftReferenceObjectPool;
 import org.rascalmpl.values.ValueFactoryFactory;
-
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.ISourceLocation;
@@ -40,9 +36,6 @@ import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.io.StandardTextWriter;
 import io.usethesource.vallang.type.TypeFactory;
-import nl.cwi.swat.typhonql.DBType;
-import nl.cwi.swat.typhonql.MariaDB;
-import nl.cwi.swat.typhonql.MongoDB;
 import nl.cwi.swat.typhonql.backend.rascal.SessionWrapper;
 import nl.cwi.swat.typhonql.backend.rascal.TyphonSession;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
@@ -325,9 +318,9 @@ public class XMIPolystoreConnection {
 //			
 //		}
 		DatabaseInfo[] infos = new DatabaseInfo[] {
-				new DatabaseInfo("localhost", 27017, "Reviews", DBType.documentdb, 
+				new DatabaseInfo("localhost", 27017, "Reviews","mongodb", 
 						"admin", "admin"),
-				new DatabaseInfo("localhost", 3306, "Inventory", DBType.relationaldb,
+				new DatabaseInfo("localhost", 3306, "Inventory", "mariadb",
 						"root", "example") };
 		
 		if (args == null || args.length != 1 && args[0] == null) {

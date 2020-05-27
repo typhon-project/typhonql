@@ -7,11 +7,11 @@ public class DatabaseInfo {
 	private final String host; 
 	private final int port; 
 	private final String dbName; 
-	private final DBType dbms; 
+	private final String dbms; 
 	private final String user; 
 	private final String password;
 	
-	public DatabaseInfo(String host, int port, String dbName, DBType dbms, String user,
+	public DatabaseInfo(String host, int port, String dbName, String dbms, String user,
 			String password) {
 		this.host = host;
 		this.port = port;
@@ -34,7 +34,7 @@ public class DatabaseInfo {
 		return dbName;
 	}
 	
-	public DBType getDbms() {
+	public String getDbms() {
 		return dbms;
 	}
 	

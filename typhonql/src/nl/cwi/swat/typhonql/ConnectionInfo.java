@@ -3,18 +3,15 @@ package nl.cwi.swat.typhonql;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 
 public class ConnectionInfo {
-	private String polystoreId;
-	private DatabaseInfo databaseInfo;
+	private final String polystoreId;
+	private final DatabaseInfo databaseInfo;
 	
 	public ConnectionInfo(String polystoreId, String host, int port, String dbName, String dbms, String user,
 			String password) {
-		super();
-		this.polystoreId = polystoreId;
-		this.databaseInfo = new DatabaseInfo(host, port, dbName, DBType.valueOf(dbms), user, password);
+		this(polystoreId, new DatabaseInfo(host, port, dbName, dbms, user, password));
 	}
 	
 	public ConnectionInfo(String polystoreId, DatabaseInfo databaseInfo) {
-		super();
 		this.polystoreId = polystoreId;
 		this.databaseInfo = databaseInfo;
 	}
