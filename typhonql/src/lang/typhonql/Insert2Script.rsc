@@ -136,14 +136,14 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   // using the 'me' id as key for looking up
   
   lrel[str, KeyVal] keyValueDeps = [];
-  for (KeyVal kv <- kvs, [str _, str kve] := isKeyValAttr(entity, "<kv.key>", s)) {
+  for (KeyVal kv <- kvs, [str _, str kve] := isKeyValAttr(entity, kv has key ? "<kv.key>" : "@id", s)) {
     keyValueDeps += [<kve, kv>];
   } 
   
   for (str keyValEntity <- keyValueDeps<0>) {
     if (<<cassandra(), str dbName>, keyValEntity> <- s.placement) {
       list[str] colNames = [ cTyphonId(keyValEntity) ] 
-        + [ cColName(keyValEntity, "<kv.key>") | KeyVal kv <- keyValueDeps[keyValEntity] ];
+        + [ cColName(keyValEntity, kv has key ? "<kv.key>" : "@id") | KeyVal kv <- keyValueDeps[keyValEntity] ];
       
       list[CQLExpr] vals = [cqlMe] 
         + [ expr2cql(e) | (KeyVal)`<Id _>: <Expr e>` <- keyValueDeps[keyValEntity] ];
