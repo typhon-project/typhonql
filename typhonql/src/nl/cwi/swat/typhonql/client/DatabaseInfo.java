@@ -1,7 +1,5 @@
 package nl.cwi.swat.typhonql.client;
 
-import nl.cwi.swat.typhonql.DBType;
-
 public class DatabaseInfo {
 	
 	private final String host; 
