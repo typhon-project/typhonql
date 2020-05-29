@@ -34,7 +34,7 @@ alias Attrs = rel[str from, str name, str \type];
 alias ChangeOps = list[ChangeOp];
 alias ChangeOp = tuple[str name, list[str] properties];
 
-data DB = cassandra() | mongodb() | sql() | hyperj() | recombine() | unknown() | typhon();
+data DB = cassandra() | mongodb() | neo4j() | sql() | hyperj() | recombine() | unknown() | typhon();
 
 alias Place = tuple[DB db, str name];
 
