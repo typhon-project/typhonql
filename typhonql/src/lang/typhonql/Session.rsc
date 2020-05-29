@@ -67,6 +67,7 @@ data Connection
  = mariaConnection(str host, int port, str user, str password)
  | mongoConnection(str host, int port, str user, str password)
  | cassandraConnection(str host, int port, str user, str password)
+ | neoConnection(str host, int port, str user, str password)
  ;
 
 @reflect
