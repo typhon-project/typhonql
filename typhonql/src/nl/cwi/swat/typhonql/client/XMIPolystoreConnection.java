@@ -318,9 +318,9 @@ public class XMIPolystoreConnection {
 //			
 //		}
 		DatabaseInfo[] infos = new DatabaseInfo[] {
-				new DatabaseInfo("localhost", 27017, "Reviews","mongodb", 
+				new DatabaseInfo("localhost", 27017, "Reviews","mongodb",  "",
 						"admin", "admin"),
-				new DatabaseInfo("localhost", 3306, "Inventory", "mariadb",
+				new DatabaseInfo("localhost", 3306, "Inventory", "mariadb", "",
 						"root", "example") };
 		
 		if (args == null || args.length != 1 && args[0] == null) {

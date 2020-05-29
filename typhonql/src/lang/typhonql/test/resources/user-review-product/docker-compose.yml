@@ -65,4 +65,6 @@ services:
   typhonql-server:
     image: swatengineering/typhonql-server:dev
     restart: always
+    environment:
+      _JAVA_OPTIONS : -Dlog4j2.level=INFO
 
