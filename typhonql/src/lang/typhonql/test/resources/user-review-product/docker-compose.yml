@@ -12,7 +12,7 @@ services:
   Inventory:
     image: mariadb:latest
     environment:
-      MYSQL_ROOT_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: example
     ports:
       - target: 3306
         published: 3307

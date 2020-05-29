@@ -16,18 +16,21 @@
           <deploys reference="//@elements.4"/>
           <ports>
             <key_values name="target" value="7474"/>
+            <key_values name="published" value="7474"/>
           </ports>
         </containers>
         <containers name="Inventory" type="//@elements.0">
           <deploys reference="//@elements.5"/>
           <ports>
             <key_values name="target" value="3306"/>
+            <key_values name="published" value="3307"/>
           </ports>
         </containers>
         <containers name="Reviews" type="//@elements.0">
           <deploys reference="//@elements.6"/>
           <ports>
             <key_values name="target" value="27017"/>
+            <key_values name="published" value="27017"/>
           </ports>
         </containers>
         <containers name="Stuff" type="//@elements.0">
@@ -63,9 +66,6 @@
         </containers>
         <containers name="typhonql-server">
           <deploys reference="//@elements.15"/>
-          <ports>
-            <key_values name="target" value="7000"/>
-          </ports>
           <properties xsi:type="typhonDL:Key_Values" name="restart" value="always"/>
         </containers>
       </applications>
@@ -78,7 +78,7 @@
   </elements>
   <elements xsi:type="typhonDL:DB" name="Inventory" type="//@elements.9">
     <parameters xsi:type="typhonDL:Key_KeyValueList" name="environment">
-      <properties xsi:type="typhonDL:Key_Values" name="MYSQL_ROOT_PASSWORD" value="password"/>
+      <properties xsi:type="typhonDL:Key_Values" name="MYSQL_ROOT_PASSWORD" value="example"/>
     </parameters>
   </elements>
   <elements xsi:type="typhonDL:DB" name="Reviews" type="//@elements.10">

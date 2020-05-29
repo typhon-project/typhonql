@@ -93,8 +93,10 @@ public class TyphonSession implements Operations {
 			case "mariadb":
 				mariaDbConnections.put(db.getDbName(), new ConnectionData(db));
 				break;
-			case "cassandradb":
+			case "cassandra":
 				cassandraConnections.put(db.getDbName(), new ConnectionData(db));
+				break;
+			case "neo4j":
 				break;
 			default:
 				throw new RuntimeException("Missing type: " + db.getDbms());
