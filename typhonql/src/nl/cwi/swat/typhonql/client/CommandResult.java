@@ -2,6 +2,7 @@ package nl.cwi.swat.typhonql.client;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -18,26 +19,19 @@ import io.usethesource.vallang.IValue;
 import nl.cwi.swat.typhonql.client.resulttable.JsonSerializableResult;
 
 public class CommandResult implements JsonSerializableResult {
-	private static final ObjectMapper mapper;
+	private static final ObjectMapper mapper = new ObjectMapper()
+			.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
 	
-	static {
-		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
-
-	}
-	
-	private int affectedEntities;
-	private Map<String, String> createdUuids;
+	private final int affectedEntities;
+	private final Map<String, String> createdUuids;
 	
 	public CommandResult(int affectedEntities, Map<String, String> createdUuids) {
-		super();
 		this.affectedEntities = affectedEntities;
 		this.createdUuids = createdUuids;
 	}
 	
 	public CommandResult(int affectedEntities) {
-		super();
-		this.affectedEntities = affectedEntities;
-		this.createdUuids = new HashMap<String, String>();
+		this(affectedEntities, Collections.emptyMap());
 	}
 
 	public int getAffectedEntities() {

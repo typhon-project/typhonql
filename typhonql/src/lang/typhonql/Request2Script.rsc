@@ -42,6 +42,8 @@ TODO:
 */
 
 
+bool hitsBackend((Request)`<Query q>`, Place p, Schema s) 
+  = ( false | it || (<p, "<b.entity>"> in s.placement) | Binding b <- q.bindings );
 
 
 Script request2script(Request r, Schema s, Log log = noLog) {
@@ -52,9 +54,10 @@ Script request2script(Request r, Schema s, Log log = noLog) {
 
     case (Request)`<Query q>`: {
       list[Place] order = orderPlaces(r, s);
-      r = expandNavigation(addWhereIfAbsent(r), s);
+      r = expandNavigation(inferKeyValLinks(addWhereIfAbsent(r), s), s);
       log("NORMALIZED: <r>");
-      Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) | Place p <- order]);
+      Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) 
+         | Place p <- order, hitsBackend(r, p, s)]);
       scr.steps += [read(results2paths(r.qry.selected, queryEnv(r.qry), s))];
       return scr;
     }
@@ -89,18 +92,22 @@ void smokeScript() {
   s = schema({
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Person", zero_many(), "cash", "owner", \one(), "Cash", true>,
+    <"Person", \one(), "SomeStuff__", "", \one(), "SomeStuff", true>,
     <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
     <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
     <"Comment", zero_many(), "replies", "owner", \zero_many(), "Comment", true>
   }, {
     <"Person", "name", "text">,
     <"Person", "age", "int">,
+    <"SomeStuff", "photo", "text">,
+    <"SomeStuff", "bitcoin", "text">,
     <"Cash", "amount", "int">,
     <"Review", "text", "text">,
     <"Comment", "contents", "text">,
     <"Reply", "reply", "text">
   },
   placement = {
+    <<cassandra(), "Stuff">, "SomeStuff">,
     <<sql(), "Inventory">, "Person">,
     <<sql(), "Inventory">, "Cash">,
     <<mongodb(), "Reviews">, "Review">,
@@ -112,7 +119,6 @@ void smokeScript() {
     println("REQUEST: `<q>`");
     iprintln(request2script(q, s));
   }
-
 
 
 
@@ -195,16 +201,6 @@ void smokeScript() {
 
 
 
-  smokeIt((Request)`delete Comment c where c.contents == "Bad"`);
-
-  smokeIt((Request)`delete Person p`);
-
-  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
-
-  smokeIt((Request)`delete Review r`);
-
-  smokeIt((Request)`delete Review r where r.text == "Bad"`);
-
   smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
 
   smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
@@ -220,4 +216,41 @@ void smokeScript() {
 
   smokeIt((Request)`from Person p select p.reviews where p == #victor`);
 
+  smokeIt((Request)`insert Person {name: "Pablo", age: 23, photo: "hello"}`);
+  
+  smokeIt((Request)`insert Person {name: "Pablo", age: 23, photo: "hello", bitcoin: "bla"}`);
+ 
+ 
+  smokeIt((Request)`delete Review r`);
+
+  smokeIt((Request)`delete Review r where r.text == "Bad"`);
+
+  smokeIt((Request)`delete Comment c where c.contents == "Bad"`);
+
+  smokeIt((Request)`delete Person p`);
+
+  smokeIt((Request)`delete Person p where p.name == "Pablo"`);
+ 
+  
+  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
+
+  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
+
+  smokeIt((Request)`from Person u, Review r select r where r.user == u, u.name == "Pablo"`);
+
+  smokeIt((Request)`from Person p, Review r select r.text, p.name where p.name == "Pablo", p.reviews == r`);
+
+  smokeIt((Request)`from Person p, Cash c select p.name where p.name == "Pablo", p.cash == c, c.amount \> 0`);
+
+
+  smokeIt((Request)`from Person u, Review r select u.name, r.user where u.reviews == r, r.text == ""`);
+
+  smokeIt((Request)`from Person p select p.reviews where p == #victor`);
+
+  smokeIt((Request)`from Person p select p.photo where p == #victor`);
+
+  smokeIt((Request)`from Person p select p.photo, p.bitcoin where p == #victor`);
+
+  smokeIt((Request)`update Person p where u.@id == #pablo set {photo: "MOUSTACHE"}`);
+    
 }

@@ -46,6 +46,8 @@ entity User {
 	address: string[256]
 	billing: address
 	location: point
+	photoURL: string[256]
+	avatarURL: string[256]
 
 	country -> Country [0..1]
 	
@@ -85,11 +87,11 @@ relationaldb Inventory {
 	}
 }
 
-//keyvaluedb Stuff {
-//	elements {
-//		Country { Country -> Country } 
-//	}
-//}
+keyvaluedb Stuff {
+	elements {
+		User { userKey -> ("User.photoURL", "User.avatarURL") } 
+	}
+}
 
 documentdb Reviews {
 	collections {

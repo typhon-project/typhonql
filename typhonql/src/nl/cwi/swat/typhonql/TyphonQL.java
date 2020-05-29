@@ -195,14 +195,10 @@ public class TyphonQL {
 			BsonDocument d = v.asDocument();
 			try {
 				String dbName = d.getString("name").getValue();
-				String dbType = d.getString("dbType").getValue().toLowerCase();
-				Optional<DBMS> dbms = DBMS.forName(dbType);
-				if (!dbms.isPresent())
-					throw new RuntimeException("DB type " + d.getString("dbType").getValue() + " not known");
 				IConstructor info = buildConnectionInfo(
 					d.getString("externalHost").getValue(),
 					d.getNumber("externalPort").intValue(), 
-					dbms.get(),
+					d.getString("dbType").getValue().toLowerCase(),
 					d.getString("username").getValue(),
 					d.getString("password").getValue());
 				mw.put(vf.string(dbName), info);
@@ -213,17 +209,20 @@ public class TyphonQL {
 		return mw.done();
 	}
 
-	private IConstructor buildConnectionInfo(String host, int port, DBMS dbType, String user,
+	private IConstructor buildConnectionInfo(String host, int port, String dbType, String user,
 			String password) {
 		Type adtType = tf.abstractDataType(ts, "Connection");
 		Type connectionType = null;
 		
-        switch (dbType.getName().toLowerCase()) {
+        switch (dbType) {
         case "mongodb":
         	connectionType = tf.constructor(ts, adtType, "mongoConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
         	break;
         case "mariadb":
         	connectionType =tf.constructor(ts, adtType, "mariaConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
+        	break;
+        case "cassandradb":
+        	connectionType =tf.constructor(ts, adtType, "cassandraConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
         	break;
         }
         return vf.constructor(connectionType, vf.string(host), vf.integer(port), vf.string(user), vf.string(password));

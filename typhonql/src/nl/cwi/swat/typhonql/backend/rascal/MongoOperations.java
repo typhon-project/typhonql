@@ -1,5 +1,6 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import nl.cwi.swat.typhonql.backend.Binding;
+import nl.cwi.swat.typhonql.backend.Closables;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.mongodb.MongoDBEngine;
@@ -264,19 +266,8 @@ public class MongoOperations implements Operations, AutoCloseable {
 	}
 
 
+	@Override
 	public void close() {
-		Exception failed = null;
-		for (MongoClient c : clients.values()) {
-			try {
-				c.close();
-			} catch (Exception e) {
-				if (failed == null) {
-					failed = e;
-				}
-			}
-		}
-		if (failed != null) {
-			throw new RuntimeException("Failure closing mongo clients", failed);
-		}
+		Closables.closeAll(clients.values(), RuntimeException.class);
 	}
 }

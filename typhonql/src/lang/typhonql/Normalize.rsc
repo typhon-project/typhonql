@@ -53,6 +53,172 @@ Request elicitBindings(req:(Request)`from <{Binding ","}+ bs> select <{Result ",
 
 }
 
+
+void smokeKeyValInf() {
+  s = schema(
+  {
+    <"Review",\one(),"user","reviews",zero_many(),"User",false>,
+    <"Product",zero_many(),"tags","tags^",zero_one(),"Tag",false>,
+    <"Product",zero_many(),"reviews","product",\one(),"Review",true>,
+    <"Product",\one(),"category","category^",zero_one(),"Category",false>,
+    <"Item",\one(),"product","inventory",zero_many(),"Product",false>,
+    <"Product",zero_many(),"inventory","product",\one(),"Item",true>,
+    <"User",zero_many(),"reviews","user",\one(),"Review",false>,
+    <"Review",\one(),"product","reviews",zero_many(),"Product",false>,
+    <"User",zero_one(),"biography","user",\one(),"Biography",true>,
+    <"Biography",\one(),"user","biography",zero_one(),"User",false>,
+    <"User",\one(),"Stuff__","",\one(),"User__Stuff",true>,
+    <"User",\one(),"MoreStuff__","",\one(),"User__MoreStuff",true>
+  },
+  {
+    <"User","name","string(256)">,
+    <"Review","location","point">,
+    <"Product","productionDate","date">,
+    <"User","address","string(256)">,
+    <"Product","description","string(256)">,
+    <"Product","name","string(256)">,
+    <"Product","price","int">,
+    <"Tag","name","string(64)">,
+    <"User","billing","address">,
+    <"User__Stuff","photoURL","string(256)">,
+    <"Category","name","string(32)">,
+    <"Biography","content","string(256)">,
+    <"User__Stuff","avatarURL","string(256)">,
+    <"User__MoreStuff","bla","string(256)">,
+    <"Product","availabilityRegion","polygon">,
+    <"Category","id","string(32)">,
+    <"Review","content","text">,
+    <"Item","shelf","int">,
+    <"User","location","point">
+  },
+  customs={
+    <"address","location","point">,
+    <"address","zipcode","string(42)">,
+    <"address","street","string(256)">,
+    <"address","city","string(256)">
+  },
+  placement={
+    <<cassandra(),"Stuff">,"User__Stuff">,
+    <<cassandra(),"Stuff">,"User__MoreStuff">,
+    <<sql(),"Inventory">,"User">,
+    <<sql(),"Inventory">,"Product">,
+    <<sql(),"Inventory">,"Item">,
+    <<sql(),"Inventory">,"Tag">,
+    <<mongodb(),"Reviews">,"Biography">,
+    <<mongodb(),"Reviews">,"Review">,
+    <<mongodb(),"Reviews">,"Category">
+  },
+  changeOperators=[]);
+  
+  Request r = (Request)`from User u select u.avatarURL, u.photoURL where u.photoURL == 34`;
+  println("Original: <r>");
+  println(inferKeyValLinks(r, s));
+  
+  println("");
+  
+  r = (Request)`from Review r select r.user.avatarURL, r.user.photoURL where r.user.photoURL == 34`;
+  println("Original: <r>");
+  println(inferKeyValLinks(r, s));
+  
+  println("");
+  
+  r = (Request)`from User u select u.avatarURL, u.bla where u.photoURL == 34`;
+  println("Original: <r>");
+  println(inferKeyValLinks(r, s));
+  
+  
+}
+
+
+list[str] isKeyValAttr(str ent, str f, Schema s) {
+    // return the inferred entity role if f is a key val attribute
+    // otherwise return empty.
+    return [ role, kve | <ent, \one(), str role, _, \one(), str kve, true> <- s.rels
+              , <kve, f, _> <- s.attrs
+              , <<cassandra(), _>, kve> <- s.placement ];
+    
+} 
+
+Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
+  // rewrite x.f -> x.A__B.f if f is an attribute that is mapped from keyVal
+  Env env = queryEnv(bs);
+  
+  
+  
+  str inferTarget(str src, list[Id] ids) {
+    if (ids == []) {
+      return src;
+    }
+    str via = "<ids[0]>";
+    if (<src, Cardinality _, via,  str _, Cardinality _, str trg, _> <- s.rels) {
+      return inferTarget(trg, ids[1..]);
+    }
+    else {
+      throw "Invalid role `<via>` for entity <src>";
+    }
+  }
+  
+  int varId = 0;
+  map[str, VId] memo = ();
+  list[Binding] newBindings = [ b | Binding b <- bs ];
+  
+  VId newBinding(str entity, str path, Expr whereRhs) {
+    str key = "<entity>/<path>";
+    if (key notin memo) {
+      str x = "<uncapitalize(entity)>_kv_<varId>";
+      varId += 1;
+      VId var = [VId]x;
+      memo[key] = var;
+      EId ent = [EId]entity;
+      newBindings += [(Binding)`<EId ent> <VId var>`]; 
+      newWheres += [(Expr)`<VId var>.@id == <Expr whereRhs>`];
+    }
+    return memo[key];
+  }
+  
+  
+  // NB: empty, because they are rewritten, so added later
+  list[Result] newResults = [];
+  list[Expr] newWheres = [];
+  
+  req = visit (req) {
+    case (Expr)`<VId x>.<Id f>`: {
+      str src = inferTarget(env["<x>"], []);
+      if ([str role, str kvEntity] := isKeyValAttr(src, "<f>", s)) {
+        VId kvX = newBinding(kvEntity, "<x>", (Expr)`<VId x>.@id`);
+        insert (Expr)`<VId kvX>.<Id f>`;
+        
+        /*
+          add binding: kvEntity kvVar
+          add where:  kvVar.@id == x.@id
+          replace with: kvVar.f
+        */
+      }
+    }
+    // whoa bug: mathcing {Id "."}+ against {Id ","}+ pattern succeeds
+    case (Expr)`<VId x>.<{Id "."}+ fs>.<Id f>`: {
+      str src = inferTarget(env["<x>"], [ a | Id a <- fs ]);
+      if ([str role, str kvEntity] := isKeyValAttr(src, "<f>", s)) {
+        VId kvX = newBinding(kvEntity, "<x>.<fs>", (Expr)`<VId x>.<{Id "."}+ fs>`);
+        insert (Expr)`<VId kvX>.<Id f>`;
+        /*
+          add binding: kvEntity kvVar
+          add where:  kvVar.@id == x.<fs>.@id
+          replace with: kvVar.f
+        */
+      }
+    }
+  }
+  
+  if ((Request)`from <{Binding ","}+ _> select <{Result ","}+ rs> where <{Expr ","}+ ws>` := req) {
+    newResults = [ r | Result r <- rs ] + newResults;
+    newWheres = [ w | Expr w <- ws ] + newWheres;
+  }
+  
+  Query newQuery = buildQuery(newBindings, newResults, newWheres);
+  return (Request)`<Query newQuery>`;
+}
+
 Request expandNavigation(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
   Env env = queryEnv(bs);
   

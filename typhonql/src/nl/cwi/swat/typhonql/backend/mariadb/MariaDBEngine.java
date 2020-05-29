@@ -41,8 +41,8 @@ public class MariaDBEngine extends Engine {
 		while (m.find()) {
 			vars.add(m.group(1));
 			map.put(m.group(1), "?");
-		}	
-		
+		}
+
 		StringSubstitutor sub = new StringSubstitutor(map);
 		String jdbcQuery = sub.replace(query);
         return connection.get().prepareStatement(jdbcQuery);
@@ -71,8 +71,8 @@ public class MariaDBEngine extends Engine {
 	public void executeSelect(String resultId, String query, List<Path> signature) {
 		executeSelect(resultId, query, new HashMap<String, Binding>(), signature);
 	}
-	
-	
+
+
 
 	public void executeSelect(String resultId, String query, Map<String, Binding> bindings, List<Path> signature) {
 		new QueryExecutor(store, script, uuids, bindings, signature) {
@@ -91,7 +91,7 @@ public class MariaDBEngine extends Engine {
 
 	public void executeUpdate(String query, Map<String, Binding> bindings) {
 		new UpdateExecutor(store, updates, uuids, bindings) {
-			
+
             @Override
             protected void performUpdate(Map<String, Object> values) {
                 try {

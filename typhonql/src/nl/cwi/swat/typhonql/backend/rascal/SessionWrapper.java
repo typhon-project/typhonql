@@ -21,7 +21,7 @@ public class SessionWrapper implements AutoCloseable {
 	}
 
 	@Override
-	public void close() {
+	public void close() throws Exception {
 		state.close();
 	}
 
