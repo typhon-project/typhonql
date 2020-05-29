@@ -141,6 +141,7 @@ list[TableConstraint] indexes(str e, rel[str, str] attrs, Schema schema)
   }
   
   void addJunctionTableOutside(str from, str fromRole, str to, str toRole, Stats stats, bool doForeignKeys) {
+  println("junction: <from> , <fromRole>, <to> <toRole>");
     str left = junctionFkName(from, fromRole);
     str right = junctionFkName(to, toRole);
     str tbl = junctionTableName(from, fromRole, to, toRole);
@@ -219,7 +220,7 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
        case <zero_one(), one_many(), true>: illegal(r);
        case <zero_one(), zero_many(), true>: illegal(r);
        case <zero_one(), zero_one(), true>: illegal(r);
-       case <zero_one(), \one(), true>: addOnlyCascadingForeignKey(from, fromRole, to, toRole, [unique(), notNull()], doForeignKeys);
+       case <zero_one(), \one(), true>: return addOnlyCascadingForeignKey(from, fromRole, to, toRole, [unique(), notNull()], doForeignKeys);
        
        case <\one(), one_many(), true>: illegal(r);
        case <\one(), zero_many(), true>: illegal(r);
@@ -231,6 +232,7 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
        
      }
      illegal(r);
+     return [];
   }
   
   
