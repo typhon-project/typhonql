@@ -213,7 +213,7 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
        
        case <zero_many(), one_many(), true>: illegal(r);
        case <zero_many(), zero_many(), true>: illegal(r);
-       case <zero_many(), zero_one(), true>: addOnlyCascadingForeignKey(from, fromRole, to, toRole, [], doForeignKeys);
+       case <zero_many(), zero_one(), true>: return addOnlyCascadingForeignKey(from, fromRole, to, toRole, [], doForeignKeys);
        
        case <zero_many(), \one(), true>: return addOnlyCascadingForeignKey(from, fromRole, to, toRole, [notNull()], doForeignKeys);
 
