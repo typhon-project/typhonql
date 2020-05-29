@@ -79,7 +79,7 @@ bool isImplicitRole(str role) = endsWith(role, "^");
 set[Message] schemaSanity(Schema s, loc src) {
   set[Message] msgs = {};
 
-  msgs += { error("Not all entities assigned to backend in TyphonML model", src) | !(entities(s) <= s.placement<entity>) };
+  msgs += { error("Not all entities assigned to backend in TyphonML model: <entities(s) - (s.placement<entity>)>", src) | !(entities(s) <= s.placement<entity>) };
   // todo: maybe more
 
   return msgs;

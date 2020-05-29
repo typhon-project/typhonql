@@ -86,6 +86,7 @@ Schema getSchema(loc polystoreUri, str user, str password) {
     
     set[Message] msgs = schemaSanity(newSch, polystoreUri);
     if (msgs != {}) {
+      println(msgs);
       throw "Not all entities assigned to backend in the model in polystore. Please upload a consistent model before continuing.";
     }
     return newSch;
@@ -110,6 +111,17 @@ Session getSession(Tree tree) {
   map[str, Connection] connections =  getConnections(tree);
   return newSession(connections);
 }
+
+bool inside(loc full, loc selection) 
+    = full.offset <= selection.offset && (full.offset + full.length) >= selection.offset;
+
+TreeSearchResult[Request] findRequest(start[Script] fullTree, loc selection) {
+    for (r <- fullTree.top.scratch.requests, inside(r@\loc, selection)) {
+        return treeFound(r); 
+    }
+    return treeNotFound();
+}
+default TreeSearchResult[Request] findRequest(_,_) = treeNotFound();
 
 data TableResultJSON = contents(list[str] columnNames, list[list[value]] values);
 
@@ -157,7 +169,7 @@ void setupIDE(bool isDevMode = false) {
   
   actions = [
       action("Execute",  void (Tree tree, loc selection) {
-      	if (treeFound(Request req) := treeAt(#Request, selection, tree)) {
+      	if (treeFound(Tree req) := findRequest(tree, selection)) {
         	if (isDevMode) {
 	          try {
 	          	if ((Request) `<Query q>` := req) {
@@ -200,6 +212,9 @@ void setupIDE(bool isDevMode = false) {
           		
           	}
        }   
+       else {
+        alert("Error: no query selected: <selection>");
+       }
       }),
       action("Reload schema from polystore",  void (Tree tree, loc selection) {
       	try {

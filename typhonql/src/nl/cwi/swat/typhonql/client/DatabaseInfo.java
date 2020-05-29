@@ -19,6 +19,12 @@ public class DatabaseInfo {
 		this.password = password;
 	}
 
+	public DatabaseInfo(String host, int port, String dbName, String dbms, String dbType, String user,
+			String password) {
+		this(host, port, dbName, dbms, user, password);
+		// we ignore dbType, even though it is send to us from API
+	}
+
 	
 	public String getHost() {
 		return host;
