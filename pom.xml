@@ -81,7 +81,7 @@
         <repository>
             <id>usethesource-rascalmpl-unstable</id>
             <layout>p2</layout>
-            <url>https://update.rascal-mpl.org/stable/</url>
+            <url>https://update.rascal-mpl.org/archive/0.18.0/</url>
         </repository>
 
         <repository>
