@@ -215,6 +215,10 @@ Model xmiNode2Model(node n) {
           dbMap[dbPath] = db;
           dbs += [db];
         }
+        
+        case "typhonml:GraphDB": {
+            println("Database model contains unsupported GraphDB");
+        }
 
         default:
           throw "Non implemented database type: <get(xdb, "xsi-type")>";

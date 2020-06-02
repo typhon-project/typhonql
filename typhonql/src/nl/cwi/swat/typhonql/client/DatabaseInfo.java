@@ -9,8 +9,9 @@ public class DatabaseInfo {
 	private final String user; 
 	private final String password;
 	
-	public DatabaseInfo(String host, int port, String dbName, String dbms, String user,
+	public DatabaseInfo(String host, int port, String dbName, String dbms, String dbType, String user,
 			String password) {
+		// we ignore dbType, even though it is send to us from API
 		this.host = host;
 		this.port = port;
 		this.dbName = dbName;

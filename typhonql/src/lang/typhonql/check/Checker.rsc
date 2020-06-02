@@ -610,12 +610,15 @@ default AType calcMLType(str tp) {
 
 
 CheckerMLSchema convertModel(Schema mlSchema) 
-    = ( 
-        entityType(tpn) : 
-        (( fn : <calcMLType(ftp), \one()> | <fn, ftp> <- mlSchema.attrs[tpn])
+    = ( entityType(tpn) : 
+        (
+          (fn : <(ftp in mlSchema.customs<from>) ? userDefinedType(ftp) : calcMLType(ftp), \one()> | <fn, ftp> <- mlSchema.attrs[tpn])
         + (fr : <entityType(to), fc> | <fc, fr, _, _, to, _> <- mlSchema.rels[tpn])
         + (tr : <entityType(from), tc> | <from, _, _, tr, tc, tpn, _> <- mlSchema.rels)) // inverse roles
     | tpn <- entities(mlSchema)
+    ) + (userDefinedType(tpn) : 
+        (fn : <(ftp in mlSchema.customs<from>) ? userDefinedType(ftp) : calcMLType(ftp), \one()> | <fn, ftp> <- mlSchema.customs[tpn]) 
+    | tpn <- mlSchema.customs<from>
     );
 
 

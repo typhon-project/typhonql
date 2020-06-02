@@ -204,7 +204,10 @@ public class TyphonQL {
 				mw.put(vf.string(dbName), info);
 			} catch (BsonInvalidOperationException e) {
 				// TODO not do anything if row of connection information is unparsable
+			} catch (UnsupportedOperationException e) {
+				// skipping unsupported technology for now
 			}
+
 		}
 		return mw.done();
 	}
@@ -221,9 +224,11 @@ public class TyphonQL {
         case "mariadb":
         	connectionType =tf.constructor(ts, adtType, "mariaConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
         	break;
-        case "cassandradb":
+        case "cassandra":
         	connectionType =tf.constructor(ts, adtType, "cassandraConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
         	break;
+        case "neo4j":
+        	throw new UnsupportedOperationException("neo4j nog supported yet");
         }
         return vf.constructor(connectionType, vf.string(host), vf.integer(port), vf.string(user), vf.string(password));
 	}

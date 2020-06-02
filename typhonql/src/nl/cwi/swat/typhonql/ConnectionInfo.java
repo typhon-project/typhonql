@@ -8,7 +8,7 @@ public class ConnectionInfo {
 	
 	public ConnectionInfo(String polystoreId, String host, int port, String dbName, String dbms, String user,
 			String password) {
-		this(polystoreId, new DatabaseInfo(host, port, dbName, dbms, user, password));
+		this(polystoreId, new DatabaseInfo(host, port, dbName, dbms, "", user, password));
 	}
 	
 	public ConnectionInfo(String polystoreId, DatabaseInfo databaseInfo) {
