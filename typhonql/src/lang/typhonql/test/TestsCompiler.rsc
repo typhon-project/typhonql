@@ -503,7 +503,7 @@ void runTests(Log log = NO_LOG()) {
 	   testInsertSingleValuedSQLCross
 	  , testInsertManyValuedSQLLocal
 	  , testDeleteAllSQLBasic
-	  //, testDeleteAllWithCascade
+	  , testDeleteAllWithCascade
 	  , testDeleteKidsRemovesParentLinksSQLLocal
 	  , testDeleteKidsRemovesParentLinksSQLCross
 
