@@ -16,6 +16,12 @@ import lang::typhonql::relational::SQL2Text;
 
 import lang::typhonql::mongodb::DBCollection;
 
+import lang::typhonql::cassandra::CQL; 
+import lang::typhonql::cassandra::CQL2Text; 
+import lang::typhonql::cassandra::Query2CQL;
+import lang::typhonql::cassandra::Schema2CQL;
+
+import lang::typhonql::Normalize;
 
 import IO;
 import List;
@@ -65,12 +71,14 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   str myId = newParam();
   SQLExpr sqlMe = lit(Value::placeholder(name=myId));
   DBObject mongoMe = DBObject::placeholder(name=myId);
-  Bindings myParams = ( myId: toBeUpdated );
+  CQLExpr cqlMe = cBindMarker(name=myId);
   
+  Bindings myParams = ( myId: toBeUpdated );
   
   if ((Where)`where <VId _>.@id == <UUID mySelf>` := (Where)`where <{Expr ","}+ ws>`) {
     sqlMe = lit(evalExpr((Expr)`<UUID mySelf>`));
     mongoMe = \value(uuid2str(mySelf));
+    cqlMe = cTerm(cUUID(uuid2str(mySelf)));
     myParams = ();
   }
   else {
@@ -117,7 +125,23 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
     s
   >;
   
-  compileAttrSets(p, [ kv | KeyVal kv <- kvs, isAttr(kv, ent, s) ], ctx);
+  compileAttrSets(p, [ kv | KeyVal kv <- kvs, isAttr(kv, ent, s), !isKeyValAttr(kv, ent, s) ], ctx);
+  
+  lrel[str, KeyVal] keyValueDeps = 
+    [ <kve, kv> | KeyVal kv <- kvs, [str _, str kve] := isKeyValAttr(ent, kv has key ? "<kv.key>" : "@id", s) ];
+  
+  for (str keyValEntity <- keyValueDeps<0>) {
+    if (<<cassandra(), str dbName>, keyValEntity> <- s.placement) {
+      list[CQLAssignment] sets = [ cSimple(cColumn(cColName(keyValEntity, "<k>")), expr2cql(e)) | (KeyVal)`<Id k>: <Expr e>` <- keyValueDeps[keyValEntity] ];
+      CQLStat cqlUpdate = cUpdate(cTableName(keyValEntity)
+         , sets, [cEq(CQLExpr::cColumn(cTyphonId(keyValEntity)), cqlMe)]);
+      addSteps([step(dbName, cassandra(execute(dbName, pp(cqlUpdate))), myParams)]);
+    }
+    else {
+      throw "Cannot find <keyValEntity> on cassandra; bug";
+    }
+  }
+   
 
   // TODO: make less ugly how the rel is looked up here in if-statements (also with insert)
   for ((KeyVal)`<Id x>: <UUID ref>` <- kvs) {
@@ -166,7 +190,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
  
 void compileAttrSets(<sql(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
   ctx.updateSQLUpdate(SQLStat(SQLStat upd) {
-    upd.sets += [ Set::\set(columnName("<kv.key>", ctx.entity), SQLExpr::lit(evalExpr(kv.\value))) | KeyVal kv <- kvs ];
+    upd.sets += [ Set::\set(columnName(kv has key ? "<kv.key>" : "@id", ctx.entity), SQLExpr::lit(evalExpr(kv.\value))) | KeyVal kv <- kvs ];
     return upd;
   });
 

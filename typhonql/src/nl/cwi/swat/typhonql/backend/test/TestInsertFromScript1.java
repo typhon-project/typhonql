@@ -43,7 +43,7 @@ public class TestInsertFromScript1 {
 		
 		Connection conn = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
 		
-		MariaDBEngine e1 = new MariaDBEngine(store, script, updates,uuids, conn);
+		MariaDBEngine e1 = new MariaDBEngine(store, script, updates,uuids, () -> conn);
 		
 		uuids.put("param_0", UUID.randomUUID().toString());
 		HashMap<String, Binding> map1 = new LinkedHashMap<String, Binding>();

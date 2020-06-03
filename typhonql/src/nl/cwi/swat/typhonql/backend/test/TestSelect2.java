@@ -35,7 +35,7 @@ public class TestSelect2 {
 		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
 		MongoDatabase conn2 = BackendTestCommon.getMongoDatabase("localhost", 27018, "Reviews", "admin", "admin");
 		
-		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, conn1);
+		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, () -> conn1);
 		MongoDBEngine e2 = new MongoDBEngine(store, script, updates, uuids, conn2);
 		
 		e2.executeFindWithProjection("Reviews","Review","{\"contents\": \"***\"}","{\"_id\": 1, \"user\": 1}",

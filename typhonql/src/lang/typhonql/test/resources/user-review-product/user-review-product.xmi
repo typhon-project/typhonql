@@ -61,7 +61,12 @@
     <attributes xsi:type="typhonml:Attribute" name="location">
       <type xsi:type="typhonml:PointType"/>
     </attributes>
-    <relations name="country" type="//@entities.7"/>
+    <attributes xsi:type="typhonml:Attribute" name="photoURL">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="avatarURL">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </attributes>
     <relations name="biography" type="//@entities.6" opposite="//@entities.6/@relations.0" isContainment="true"/>
     <relations name="reviews" type="//@entities.0" cardinality="zero_many" opposite="//@entities.0/@relations.1"/>
   </entities>
@@ -69,21 +74,18 @@
     <attributes xsi:type="typhonml:Attribute" name="content">
       <type xsi:type="typhonml:StringType" maxSize="256"/>
     </attributes>
-    <relations name="user" type="//@entities.5" cardinality="one" opposite="//@entities.5/@relations.1"/>
-  </entities>
-  <entities name="Country">
-    <attributes xsi:type="typhonml:Attribute" name="name">
-      <type xsi:type="typhonml:StringType" maxSize="128"/>
-    </attributes>
-    <attributes xsi:type="typhonml:Attribute" name="code">
-      <type xsi:type="typhonml:StringType" maxSize="4"/>
-    </attributes>
+    <relations name="user" type="//@entities.5" cardinality="one" opposite="//@entities.5/@relations.0"/>
   </entities>
   <databases xsi:type="typhonml:RelationalDB" name="Inventory">
-    <tables name="UserDB" entity="//@entities.5"/>
+    <tables name="UserDB" entity="//@entities.5">
+      <indexSpec name="UserNameIndex" attributes="//@entities.5/@attributes.0 //@entities.5/@attributes.3"/>
+    </tables>
     <tables name="ProductDB" entity="//@entities.1"/>
     <tables name="TagDB" entity="//@entities.4"/>
     <tables name="ItemDB" entity="//@entities.3"/>
+  </databases>
+  <databases xsi:type="typhonml:KeyValueDB" name="Stuff">
+    <elements name="User" key="userKey" values="//@entities.5/@attributes.4 //@entities.5/@attributes.5"/>
   </databases>
   <databases xsi:type="typhonml:DocumentDB" name="Reviews">
     <collections name="Review" entity="//@entities.0"/>

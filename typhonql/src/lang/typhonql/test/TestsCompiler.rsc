@@ -26,12 +26,19 @@ str PASSWORD = "admin1@";
 public Log PRINT() = void(value v) { println("LOG: <v>"); };
 
 void setup(PolystoreInstance p, bool doTest) {
-	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo", location: #point(2.0 3.0) }`);
-	p.runUpdate((Request) `insert User { @id: #davy, name: "Davy", location: #point(20.0 30.0)  }`);
+	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo", location: #point(2.0 3.0), photoURL: "moustache" }`);
+	p.runUpdate((Request) `insert User { @id: #davy, name: "Davy", location: #point(20.0 30.0), photoURL: "beard"}`);
 	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from User u select u.@id, u.name`);
 	  p.assertResultEquals("users were inserted", rs, <["u.@id", "u.name"], [["pablo", "Pablo"], ["davy", "Davy"]]>);
+	  
+	  rs = p.runQuery((Request)`from User u select u.photoURL, u.name`);
+	  // todo: test result.
+
+	  rs = p.runQuery((Request)`from User u select u.photoURL, u.avatarURL, u.name`);
+	  
+	  
 	}
 	
 	p.runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat", productionDate:  $2020-04-13$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);
@@ -75,7 +82,7 @@ void setup(PolystoreInstance p, bool doTest) {
 	  rs = p.runQuery((Request)`from User u select u.biography`);
 	  // the fact that there's null (i.e., <false, "">) here means that
 	  // there are users without bios
-	  p.assertResultEquals("bio obtained from user", rs, <["u.biography"], [["bio1"], ["null"]]>);  
+	  p.assertResultEquals("bio obtained from user", rs, <["u.biography"], [["bio1"], [{}]]>);  
 	}
 	
 	p.runUpdate((Request) `insert Tag { @id: #fun, name: "fun" }`);
@@ -148,10 +155,14 @@ void testInsertSingleValuedSQLCross(PolystoreInstance p) {
 
 void testInsertManyValuedSQLLocal(PolystoreInstance p) {
   // TODO: this shows the cyclic reference problem we still need to solve.
+  // NB: we have to insert the product first.
+
+  // inventory: [#laptop1, #laptop2], 
+  p.runUpdate((Request)`insert Product { @id: #laptop, name: "MacBook", availabilityRegion: #polygon((1.0 1.0))}`);
+
   p.runUpdate((Request)`insert Item { @id: #laptop1, shelf: 1, product: #laptop}`);	
   p.runUpdate((Request)`insert Item { @id: #laptop2, shelf: 1, product: #laptop}`);	
 	
-  p.runUpdate((Request)`insert Product { @id: #laptop, name: "MacBook", inventory: [#laptop1, #laptop2], availabilityRegion: #polygon((1.0 1.0))}`);
   
   rs = p.runQuery((Request)`from Product p select p.inventory where p.@id == #laptop`);
   
@@ -196,14 +207,14 @@ void testDeleteKidsRemovesParentLinksSQLLocal(PolystoreInstance p) {
   p.runUpdate((Request)`delete Item i where i.product == #tv`);
   
   rs = p.runQuery((Request)`from Product p select p.inventory where p == #tv`);
-  p.assertResultEquals("delete items removes from inventory", rs, <["p.inventory"], [["null"]]>);
+  p.assertResultEquals("delete items removes from inventory", rs, <["p.inventory"], [[{}]]>);
 }
 
 void testDeleteKidsRemovesParentLinksSQLCross(PolystoreInstance p) {
   p.runUpdate((Request)`delete Review r where r.product == #tv`);
   
   rs = p.runQuery((Request)`from Product p select p.reviews where p == #tv`);
-  p.assertResultEquals("delete reviews removes from product reviews", rs, <["p.reviews"], [["null"]]>);
+  p.assertResultEquals("delete reviews removes from product reviews", rs, <["p.reviews"], [[{}]]>);
 }
 
 void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
@@ -479,7 +490,7 @@ void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG) {
 }
 
 Schema fetchSchema() {
-	executer().fetchSchema();
+	return executer().fetchSchema();
 }
 
 Schema printSchema() {
@@ -492,7 +503,7 @@ void runTests(Log log = NO_LOG()) {
 	   testInsertSingleValuedSQLCross
 	  , testInsertManyValuedSQLLocal
 	  , testDeleteAllSQLBasic
-	  //, testDeleteAllWithCascade
+	  , testDeleteAllWithCascade
 	  , testDeleteKidsRemovesParentLinksSQLLocal
 	  , testDeleteKidsRemovesParentLinksSQLCross
 

@@ -9,6 +9,11 @@ import lang::typhonql::Order;
 import lang::typhonql::Normalize;
 
 
+import lang::typhonql::cassandra::Query2CQL;
+import lang::typhonql::cassandra::CQL;
+import lang::typhonql::cassandra::CQL2Text;
+
+
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::Util;
 import lang::typhonql::relational::SQL2Text;
@@ -90,4 +95,21 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schem
          )];
   }
   return [];
+}
+
+
+
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<cassandra(), str dbName>, Schema s, Log log = noLog) {
+  log("COMPILING2CQL: <r>");
+  
+  <cqlStat, params> = compile2cql(r, s, p);
+
+  
+  if (cqlStat.selectClauses == []) {
+    return [];
+  }
+  return [step(dbName, cassandra(queryExecute(dbName, pp(cqlStat))), params
+     , signature=
+         filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s)
+           +  where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];
 }

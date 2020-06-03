@@ -34,6 +34,7 @@ import io.usethesource.vallang.type.TypeStore;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.Runner;
+import nl.cwi.swat.typhonql.backend.cassandra.CassandraOperations;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
@@ -52,6 +53,7 @@ public class TyphonSession implements Operations {
 	public SessionWrapper newSessionWrapper(IMap connections, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
+		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
 
 		Iterator<Entry<IValue, IValue>> connIter = connections.entryIterator();
 
@@ -64,34 +66,47 @@ public class TyphonSession implements Operations {
 			String user = ((IString) cons.get("user")).getValue();
 			String password = ((IString) cons.get("password")).getValue();
 			ConnectionData data = new ConnectionData(host, port, user, password);
-			if (cons.getName().equals("sqlConnection"))
-				mariaDbConnections.put(dbName, data);
-			else if (cons.getName().equals("mongoConnection"))
-				mongoConnections.put(dbName, data);
+			switch (cons.getName()) {
+				case "mariaConnection":
+					mariaDbConnections.put(dbName, data);
+					break;
+				case "mongoConnection":
+                    mongoConnections.put(dbName, data);
+                    break;
+				case "cassandraConnection":
+                    cassandraConnections.put(dbName, data);
+                    break;
+			}
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, ctx);
 	}
 
 	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
+		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
 		for (DatabaseInfo db : connections) {
-			switch (db.getDbType()) {
-			case documentdb:
+			switch (db.getDbms().toLowerCase()) {
+			case "mongodb":
 				mongoConnections.put(db.getDbName(), new ConnectionData(db));
 				break;
-			case relationaldb:
+			case "mariadb":
 				mariaDbConnections.put(db.getDbName(), new ConnectionData(db));
 				break;
+			case "cassandra":
+				cassandraConnections.put(db.getDbName(), new ConnectionData(db));
+				break;
+			case "neo4j":
+				break;
 			default:
-				throw new RuntimeException("Missing type: " + db.getDbType());
+				throw new RuntimeException("Missing type: " + db.getDbms());
 			}
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, ctx);
 	}
 
 	private SessionWrapper newSessionWrapper(Map<String, ConnectionData> mariaDbConnections,
-			Map<String, ConnectionData> mongoConnections, IEvaluatorContext ctx) {
+			Map<String, ConnectionData> mongoConnections, Map<String, ConnectionData> cassandraConnections, IEvaluatorContext ctx) {
 		// checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function
 		// type ourself
@@ -121,9 +136,11 @@ public class TyphonSession implements Operations {
 		TyphonSessionState state = new TyphonSessionState();
 
 		MariaDBOperations mariaDBOperations = new MariaDBOperations(mariaDbConnections);
-		state.setMariaDBOperations(mariaDBOperations);
 		MongoOperations mongoOperations = new MongoOperations(mongoConnections);
-		state.setMongoOperations(mongoOperations);
+		CassandraOperations cassandra = new CassandraOperations(cassandraConnections);
+		state.addOpperations(mariaDBOperations);
+		state.addOpperations(mongoOperations);
+		state.addOpperations(cassandra);
 
 		return new SessionWrapper(vf.tuple(makeGetResult(state, getResultType, ctx),
 				makeGetJavaResult(state, getJavaResultType, ctx),
@@ -132,7 +149,9 @@ public class TyphonSession implements Operations {
 				makeClose(store, state, closeType, ctx),
 				makeNewId(uuids, state, newIdType, ctx),
 				mariaDBOperations.newSQLOperations(store, script, updates, state, uuids, ctx, vf),
-				mongoOperations.newMongoOperations(store, script, updates, state, uuids, ctx, vf)), state);
+				mongoOperations.newMongoOperations(store, script, updates, state, uuids, ctx, vf),
+				cassandra.buildOperations(store, script, updates, state, uuids, ctx, vf)
+				), state);
 	}
 
 	private IValue makeNewId(Map<String, String> uuids, TyphonSessionState state, FunctionType newIdType,
@@ -198,7 +217,7 @@ public class TyphonSession implements Operations {
 			}
 			IListWriter columnList = vf.listWriter();
 			columns.iterator().forEachRemaining(c -> columnList.append(vf.string(c.asText())));
-			
+
 			IListWriter valueList = vf.listWriter();
 			tbl.get("values").iterator().forEachRemaining(row -> {
 				IListWriter rowList = vf.listWriter();
@@ -222,7 +241,7 @@ public class TyphonSession implements Operations {
 			return vf.bool(c.asBoolean());
 		}
 		else if (c.isNull()) {
-			return vf.string("null");
+			return vf.set();
 		}
 		else if (c.isTextual()) {
 			return vf.string(c.asText());
@@ -272,7 +291,14 @@ public class TyphonSession implements Operations {
 	}
 
 	public void close(TyphonSessionState state) {
-		state.close();
+		try {
+			state.close();
+		} catch (Exception e) {
+			if (e instanceof RuntimeException) {
+				throw (RuntimeException)e;
+			}
+			throw new RuntimeException("Failure to close state", e);
+		}
 
 	}
 

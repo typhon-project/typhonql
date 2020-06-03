@@ -1,34 +1,23 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
-import io.usethesource.vallang.type.TypeFactory;
+import java.util.ArrayList;
+import java.util.List;
+import nl.cwi.swat.typhonql.backend.Closables;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class TyphonSessionState implements AutoCloseable {
-	private static TypeFactory TF = TypeFactory.getInstance();
 	
 	private boolean finalized = false;
 	private ResultTable result = null;
 
-	private MariaDBOperations mariaDbOperations;
-
-	private MongoOperations mongoOperations;
+	private final List<AutoCloseable> operations = new ArrayList<>();
 
 
 	@Override
-	public void close() {
-		try {
-            this.finalized = true;
-            this.result = null;
-            if (mariaDbOperations != null) {
-            	mariaDbOperations.close();
-            }
-		}
-		finally {
-			// make sure mongoOperations are also closed, even if mariadb operations fail to close
-            if (mongoOperations != null) {
-            	mongoOperations.close();
-            }
-		}
+	public void close() throws Exception {
+        this.finalized = true;
+        this.result = null;
+        Closables.autoCloseAll(operations, Exception.class);
 	}
 
 	public ResultTable getResult() {
@@ -42,15 +31,8 @@ public class TyphonSessionState implements AutoCloseable {
 	public boolean isFinalized() {
 		return finalized;
 	}
-
-	public void setMariaDBOperations(MariaDBOperations mariaDBOperations) {
-		this.mariaDbOperations = mariaDBOperations;
-		
-	}
-
-	public void setMongoOperations(MongoOperations mongoOperations) {
-		this.mongoOperations = mongoOperations;
-		
-	}
 	
+	public void addOpperations(AutoCloseable op) {
+		operations.add(op);
+	}
 }

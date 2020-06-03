@@ -6,7 +6,7 @@ module lang::typhonql::\test::SessionTest
  void main() {
  	map[str, Connection] connections = (
 			"Reviews" : mongoConnection("localhost", 27018, "admin", "admin"),
- 			"Inventory" : sqlConnection("localhost", 3306, "root", "example")
+ 			"Inventory" : mariaConnection("localhost", 3306, "root", "example")
  	);
  			
  	Session session = newSession(connections);

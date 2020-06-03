@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <typhonDL:DeploymentModel xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:typhonDL="http://www.typhon.org/dsls/xtext/TyphonDL">
   <guiMetaInformation xsi:type="typhonDL:Import" relativePath="user-review-product.xmi"/>
-  <guiMetaInformation xsi:type="typhonDL:Import" relativePath="Reviews.tdl"/>
+  <guiMetaInformation xsi:type="typhonDL:Import" relativePath="MoreStuff.tdl"/>
   <guiMetaInformation xsi:type="typhonDL:Import" relativePath="Inventory.tdl"/>
+  <guiMetaInformation xsi:type="typhonDL:Import" relativePath="Reviews.tdl"/>
+  <guiMetaInformation xsi:type="typhonDL:Import" relativePath="Stuff.tdl"/>
   <guiMetaInformation xsi:type="typhonDL:Import" relativePath="dbTypes.tdl"/>
   <elements xsi:type="typhonDL:ContainerType" name="Docker"/>
   <elements xsi:type="typhonDL:ClusterType" name="DockerCompose"/>
@@ -10,76 +12,99 @@
   <elements xsi:type="typhonDL:Platform" name="platformName" type="//@elements.2">
     <clusters name="clusterName" type="//@elements.1">
       <applications name="Polystore">
-        <containers name="Reviews" type="//@elements.0">
+        <containers name="MoreStuff" type="//@elements.0">
           <deploys reference="//@elements.4"/>
           <ports>
-            <key_values name="target" value="27017"/>
-            <key_values name="published" value="27018"/>
+            <key_values name="target" value="7474"/>
+            <key_values name="published" value="7474"/>
           </ports>
-          <properties xsi:type="typhonDL:Key_Values" name="hostname" value="Reviews"/>
         </containers>
         <containers name="Inventory" type="//@elements.0">
           <deploys reference="//@elements.5"/>
           <ports>
             <key_values name="target" value="3306"/>
-            <key_values name="published" value="3306"/>
+            <key_values name="published" value="3307"/>
           </ports>
-          <properties xsi:type="typhonDL:Key_Values" name="hostname" value="Inventory"/>
+        </containers>
+        <containers name="Reviews" type="//@elements.0">
+          <deploys reference="//@elements.6"/>
+          <ports>
+            <key_values name="target" value="27017"/>
+            <key_values name="published" value="27017"/>
+          </ports>
+        </containers>
+        <containers name="Stuff" type="//@elements.0">
+          <deploys reference="//@elements.7"/>
+          <ports>
+            <key_values name="target" value="7001"/>
+          </ports>
         </containers>
         <containers name="polystore-mongo" type="//@elements.0">
-          <deploys reference="//@elements.8"/>
+          <deploys reference="//@elements.12"/>
           <ports>
-            <key_values name="published" value="27017"/>
             <key_values name="target" value="27017"/>
           </ports>
-          <properties xsi:type="typhonDL:Key_Values" name="hostname" value="polystore-mongo"/>
+          <properties xsi:type="typhonDL:Key_ValueArray" name="volumes">
+            <values>./models/:/docker-entrypoint-initdb.d</values>
+          </properties>
         </containers>
         <containers name="typhon-polystore-service" type="//@elements.0">
-          <deploys reference="//@elements.9"/>
-          <depends_on reference="//@elements.3/@clusters.0/@applications.0/@containers.2"/>
+          <deploys reference="//@elements.13"/>
           <ports>
-            <key_values name="published" value="8080"/>
             <key_values name="target" value="8080"/>
+            <key_values name="published" value="8080"/>
           </ports>
-          <properties xsi:type="typhonDL:Key_Values" name="hostname" value="polystore-api"/>
+          <properties xsi:type="typhonDL:Key_Values" name="restart" value="always"/>
         </containers>
         <containers name="polystore-ui" type="//@elements.0">
-          <deploys reference="//@elements.10"/>
-          <depends_on reference="//@elements.3/@clusters.0/@applications.0/@containers.3"/>
+          <deploys reference="//@elements.14"/>
+          <depends_on reference="//@elements.3/@clusters.0/@applications.0/@containers.5"/>
           <ports>
-            <key_values name="published" value="4200"/>
             <key_values name="target" value="4200"/>
+            <key_values name="published" value="4200"/>
           </ports>
-          <properties xsi:type="typhonDL:Key_Values" name="hostname" value="polystore-ui"/>
         </containers>
         <containers name="typhonql-server">
-          <deploys reference="//@elements.11"/>
-          <properties xsi:type="typhonDL:Key_Values" name="hostname" value="typhonql-server"/>
+          <deploys reference="//@elements.15"/>
+          <properties xsi:type="typhonDL:Key_Values" name="restart" value="always"/>
         </containers>
       </applications>
     </clusters>
   </elements>
-  <elements xsi:type="typhonDL:DB" name="Reviews" type="//@elements.6">
+  <elements xsi:type="typhonDL:DB" name="MoreStuff" type="//@elements.8">
     <parameters xsi:type="typhonDL:Key_KeyValueList" name="environment">
-      <properties xsi:type="typhonDL:Key_Values" name="MONGO_INITDB_ROOT_USERNAME" value="admin"/>
-      <properties xsi:type="typhonDL:Key_Values" name="MONGO_INITDB_ROOT_PASSWORD" value="admin"/>
+      <properties xsi:type="typhonDL:Key_Values" name="NEO4J_AUTH" value="neo4j/password"/>
     </parameters>
   </elements>
-  <elements xsi:type="typhonDL:DB" name="Inventory" type="//@elements.7">
+  <elements xsi:type="typhonDL:DB" name="Inventory" type="//@elements.9">
     <parameters xsi:type="typhonDL:Key_KeyValueList" name="environment">
       <properties xsi:type="typhonDL:Key_Values" name="MYSQL_ROOT_PASSWORD" value="example"/>
     </parameters>
   </elements>
-  <elements xsi:type="typhonDL:DBType" name="Mongo">
-    <image value="mongo:latest"/>
+  <elements xsi:type="typhonDL:DB" name="Reviews" type="//@elements.10">
+    <parameters xsi:type="typhonDL:Key_KeyValueList" name="environment">
+      <properties xsi:type="typhonDL:Key_Values" name="MONGO_INITDB_ROOT_USERNAME" value="username"/>
+      <properties xsi:type="typhonDL:Key_Values" name="MONGO_INITDB_ROOT_PASSWORD" value="password"/>
+    </parameters>
+  </elements>
+  <elements xsi:type="typhonDL:DB" name="Stuff" type="//@elements.11"/>
+  <elements xsi:type="typhonDL:DBType" name="Neo4j">
+    <image value="neo4j:latest"/>
   </elements>
   <elements xsi:type="typhonDL:DBType" name="MariaDB">
     <image value="mariadb:latest"/>
   </elements>
-  <elements xsi:type="typhonDL:DB" name="polystore_db" type="//@elements.6">
+  <elements xsi:type="typhonDL:DBType" name="Mongo">
+    <image value="mongo:latest"/>
+  </elements>
+  <elements xsi:type="typhonDL:DBType" name="Cassandra">
+    <image value="cassandra:latest"/>
+  </elements>
+  <elements xsi:type="typhonDL:DB" name="polystore_db" type="//@elements.10">
     <parameters xsi:type="typhonDL:Key_KeyValueList" name="environment">
       <properties xsi:type="typhonDL:Key_Values" name="MONGO_INITDB_ROOT_USERNAME" value="admin"/>
       <properties xsi:type="typhonDL:Key_Values" name="MONGO_INITDB_ROOT_PASSWORD" value="admin"/>
+      <properties xsi:type="typhonDL:Key_Values" name="MONGO_INITDB_DATABASE" value="admin"/>
     </parameters>
   </elements>
   <elements xsi:type="typhonDL:Software" name="polystore_api">
@@ -92,7 +117,7 @@
       <properties xsi:type="typhonDL:Key_Values" name="API_HOST" value="localhost"/>
     </parameters>
   </elements>
-  <elements xsi:type="typhonDL:Software" name="QLServer">
+  <elements xsi:type="typhonDL:Software" name="polystore_ql">
     <image value="swatengineering/typhonql-server"/>
   </elements>
 </typhonDL:DeploymentModel>

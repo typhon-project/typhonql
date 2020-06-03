@@ -8,12 +8,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang3.StringUtils;
+
 import org.apache.commons.text.StringSubstitutor;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKBWriter;
+
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Engine;
 import nl.cwi.swat.typhonql.backend.QueryExecutor;
@@ -25,10 +27,10 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class MariaDBEngine extends Engine {
 
-	private final Connection connection;
+	private final Supplier<Connection> connection;
 	private static final Pattern QL_PARAMS = Pattern.compile("\\$\\{(\\w*?)\\}");
 
-	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids, Connection sqlConnection) {
+	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids, Supplier<Connection> sqlConnection) {
 		super(store, script, updates, uuids);
 		this.connection = sqlConnection;
 	}
@@ -39,11 +41,11 @@ public class MariaDBEngine extends Engine {
 		while (m.find()) {
 			vars.add(m.group(1));
 			map.put(m.group(1), "?");
-		}	
-		
+		}
+
 		StringSubstitutor sub = new StringSubstitutor(map);
 		String jdbcQuery = sub.replace(query);
-        return connection.prepareStatement(jdbcQuery);
+        return connection.get().prepareStatement(jdbcQuery);
 	}
 
     private PreparedStatement prepareAndBind(String query, Map<String, Object> values)
@@ -69,8 +71,8 @@ public class MariaDBEngine extends Engine {
 	public void executeSelect(String resultId, String query, List<Path> signature) {
 		executeSelect(resultId, query, new HashMap<String, Binding>(), signature);
 	}
-	
-	
+
+
 
 	public void executeSelect(String resultId, String query, Map<String, Binding> bindings, List<Path> signature) {
 		new QueryExecutor(store, script, uuids, bindings, signature) {
@@ -89,7 +91,7 @@ public class MariaDBEngine extends Engine {
 
 	public void executeUpdate(String query, Map<String, Binding> bindings) {
 		new UpdateExecutor(store, updates, uuids, bindings) {
-			
+
             @Override
             protected void performUpdate(Map<String, Object> values) {
                 try {

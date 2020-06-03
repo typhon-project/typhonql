@@ -44,7 +44,7 @@ void printSQLSchema(Schema schema, str dbName) {
   println(pp(schema2sql(schema, p, es, doForeignKeys = false)));
 }
 
- SQLStat attrs2create(str e, rel[str, str] attrs, Schema schema) {
+SQLStat attrs2create(str e, rel[str, str] attrs, Schema schema) {
  
   	return create(tableName(e), [typhonIdColumn(e)]
       + [column(columnName(attr, e), typhonType2SQL(typ), typhonType2Constrains(typ)) | <str attr, str typ> <- attrs, 
@@ -62,8 +62,8 @@ list[TableConstraint] indexes(str e, rel[str, str] attrs, Schema schema)
     + [] // TODO: add user defined indexes after we've added them to the Schema import
     ; 
  
-  // ugh...
-  int createOfEntity(str entity, Stats theStats) {
+// ugh...
+int createOfEntity(str entity, Stats theStats) {
     list[SQLStat] stats = theStats.get();
     for (int i <- [0..size(stats)]) {
       if (stats[i] is create, stats[i].table == tableName(entity)) {
@@ -74,15 +74,15 @@ list[TableConstraint] indexes(str e, rel[str, str] attrs, Schema schema)
     theStats.add(create(tableName(entity), [], []));
     return size(theStats.get()) - 1;
     //assert false: "Could not find create statement for entity <entity>";
-  }
+}
   
-  void illegal(Rel r) {
+void illegal(Rel r) {
     throw "Illegal relation: <r>";
-  }
+}
   
-  // NB: we add foreign key constraints with alter table to avoid cyclic reference issues.
+// NB: we add foreign key constraints with alter table to avoid cyclic reference issues.
   
-  void addCascadingForeignKey(str from, str fromRole, str to, str toRole, list[ColumnConstraint] cs, Stats stats, bool doForeignKeys) {
+void addCascadingForeignKey(str from, str fromRole, str to, str toRole, list[ColumnConstraint] cs, Stats stats, bool doForeignKeys) {
     kid = createOfEntity(to, stats);
     fk = fkName(from, to, toRole == "" ? fromRole : toRole);
     list[SQLStat] statsSoFar = stats.get();
@@ -91,10 +91,10 @@ list[TableConstraint] indexes(str e, rel[str, str] attrs, Schema schema)
     stats.addAt(kid, stat);
     if (doForeignKeys)
     	stats.add(alterTable(tableName(to), [addConstraint(foreignKey(fk, tableName(from), typhonId(from), cascade()))])); 
-  }
+}
   
-  // should we make both fk's the combined primary key, if so, when?
-  void addJunctionTable(str from, str fromRole, str to, str toRole, Stats stats, bool doForeignKeys) {
+// should we make both fk's the combined primary key, if so, when?
+void addJunctionTable(str from, str fromRole, str to, str toRole, Stats stats, bool doForeignKeys) {
     str left = junctionFkName(from, fromRole);
     str right = junctionFkName(to, toRole);
     str tbl = junctionTableName(from, fromRole, to, toRole);
@@ -107,31 +107,30 @@ list[TableConstraint] indexes(str e, rel[str, str] attrs, Schema schema)
         | doForeignKeys ]);
     stats.add(dropTable([tbl], true, []));
     stats.add(stat);
-  }
+}
   
-  list[SQLStat] processRelation(str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain, bool doForeignKeys = true, Stats stats = initializeStats()) {
+list[SQLStat] processRelation(str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain, bool doForeignKeys = true, Stats stats = initializeStats()) {
     Rel r = <from, fromCard, fromRole, toRole, toCard, to, contain>;
   	switch (<fromCard, toCard, contain>) {
        case <one_many(), one_many(), true>: illegal(r);
        case <one_many(), zero_many(), true>: illegal(r);
-       case <one_many(), zero_one(), true>: illegal(r);
-       case <one_many(), \one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [], stats, doForeignKeys); // ??? how to enforce one_many?
+       case <one_many(), zero_one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [], stats, doForeignKeys); 
+       case <one_many(), \one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [], stats, doForeignKeys); 
        
        
        case <zero_many(), one_many(), true>: illegal(r);
        case <zero_many(), zero_many(), true>: illegal(r);
        case <zero_many(), zero_one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [], stats, doForeignKeys);
-       
        case <zero_many(), \one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [notNull()], stats, doForeignKeys);
 
        case <zero_one(), one_many(), true>: illegal(r);
        case <zero_one(), zero_many(), true>: illegal(r);
-       case <zero_one(), zero_one(), true>: illegal(r);
-       case <zero_one(), \one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [unique(), notNull()], stats, doForeignKeys);
+       case <zero_one(), zero_one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [unique()], stats, doForeignKeys);
+       case <zero_one(), \one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [unique()], stats, doForeignKeys);
        
        case <\one(), one_many(), true>: illegal(r);
        case <\one(), zero_many(), true>: illegal(r);
-       case <\one(), zero_one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [], stats, doForeignKeys);
+       case <\one(), zero_one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [unique(), notNull()], stats, doForeignKeys);
        case <\one(), \one(), true>: addCascadingForeignKey(from, fromRole, to, toRole, [unique(), notNull()], stats, doForeignKeys);
        
        // we realize all cross refs using a junction table.
@@ -139,9 +138,9 @@ list[TableConstraint] indexes(str e, rel[str, str] attrs, Schema schema)
        
      }
      return stats.get();
-  }
+}
   
-  void addJunctionTableOutside(str from, str fromRole, str to, str toRole, Stats stats, bool doForeignKeys) {
+void addJunctionTableOutside(str from, str fromRole, str to, str toRole, Stats stats, bool doForeignKeys) {
     str left = junctionFkName(from, fromRole);
     str right = junctionFkName(to, toRole);
     str tbl = junctionTableName(from, fromRole, to, toRole);
@@ -153,7 +152,7 @@ list[TableConstraint] indexes(str e, rel[str, str] attrs, Schema schema)
     ]);
     stats.add(dropTable([tbl], true, []));
     stats.add(stat);
-  }
+}
 
 list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bool doForeignKeys = true, Stats stats = initializeStats()) {
   //schema.rels = symmetricReduction(schema.rels);
@@ -213,14 +212,14 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
        
        case <zero_many(), one_many(), true>: illegal(r);
        case <zero_many(), zero_many(), true>: illegal(r);
-       case <zero_many(), zero_one(), true>: addOnlyCascadingForeignKey(from, fromRole, to, toRole, [], doForeignKeys);
+       case <zero_many(), zero_one(), true>: return addOnlyCascadingForeignKey(from, fromRole, to, toRole, [], doForeignKeys);
        
        case <zero_many(), \one(), true>: return addOnlyCascadingForeignKey(from, fromRole, to, toRole, [notNull()], doForeignKeys);
 
        case <zero_one(), one_many(), true>: illegal(r);
        case <zero_one(), zero_many(), true>: illegal(r);
        case <zero_one(), zero_one(), true>: illegal(r);
-       case <zero_one(), \one(), true>: addOnlyCascadingForeignKey(from, fromRole, to, toRole, [unique(), notNull()], doForeignKeys);
+       case <zero_one(), \one(), true>: return addOnlyCascadingForeignKey(from, fromRole, to, toRole, [unique(), notNull()], doForeignKeys);
        
        case <\one(), one_many(), true>: illegal(r);
        case <\one(), zero_many(), true>: illegal(r);
@@ -232,6 +231,7 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
        
      }
      illegal(r);
+     return [];
   }
   
   
