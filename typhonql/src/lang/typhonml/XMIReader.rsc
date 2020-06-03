@@ -58,8 +58,8 @@ void smokeTest(str root = "/Users/tvdstorm/CWI/typhonml") {
 void smokeTest2() {
   str xmi = readFile(|project://typhonql/src/test/RemoveAttributes.xmi|);
   Model m = xmiString2Model(xmi);
-  Schema s = model2schema(m);
   iprintln(m);
+  Schema s = model2schema(m);
   iprintln(s);
 }
 
@@ -308,7 +308,7 @@ Model xmiNode2Model(node n) {
          if ("isContainment" in getKeywordParameters(xrel)) {
            myrel.isContainment = get(xrel, "isContainment") == "true";
          }
-
+         relMap[relPath] = myrel;
 
          rels += [myrel];
          relPos += 1;
