@@ -155,10 +155,14 @@ void testInsertSingleValuedSQLCross(PolystoreInstance p) {
 
 void testInsertManyValuedSQLLocal(PolystoreInstance p) {
   // TODO: this shows the cyclic reference problem we still need to solve.
+  // NB: we have to insert the product first.
+
+  // inventory: [#laptop1, #laptop2], 
+  p.runUpdate((Request)`insert Product { @id: #laptop, name: "MacBook", availabilityRegion: #polygon((1.0 1.0))}`);
+
   p.runUpdate((Request)`insert Item { @id: #laptop1, shelf: 1, product: #laptop}`);	
   p.runUpdate((Request)`insert Item { @id: #laptop2, shelf: 1, product: #laptop}`);	
 	
-  p.runUpdate((Request)`insert Product { @id: #laptop, name: "MacBook", inventory: [#laptop1, #laptop2], availabilityRegion: #polygon((1.0 1.0))}`);
   
   rs = p.runQuery((Request)`from Product p select p.inventory where p.@id == #laptop`);
   
