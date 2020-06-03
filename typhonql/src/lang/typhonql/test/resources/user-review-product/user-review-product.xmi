@@ -74,11 +74,11 @@
     <attributes xsi:type="typhonml:Attribute" name="content">
       <type xsi:type="typhonml:StringType" maxSize="256"/>
     </attributes>
-    <relations name="user" type="//@entities.5" cardinality="one" opposite="//@entities.5/@relations.1"/>
+    <relations name="user" type="//@entities.5" cardinality="one" opposite="//@entities.5/@relations.0"/>
   </entities>
   <databases xsi:type="typhonml:RelationalDB" name="Inventory">
     <tables name="UserDB" entity="//@entities.5">
-      <indexSpec name="UserNameIndex" attributes="//@entities.5/@attributes.0 //@entities.5/@attributes.3" references="//@entities.5/@relations.0"/>
+      <indexSpec name="UserNameIndex" attributes="//@entities.5/@attributes.0 //@entities.5/@attributes.3"/>
     </tables>
     <tables name="ProductDB" entity="//@entities.1"/>
     <tables name="TagDB" entity="//@entities.4"/>

@@ -55,7 +55,7 @@ entity User {
 
 entity Biography {
 	content : string[256]
-	
+
 	user -> User."User.biography"[1]
 
 }
@@ -67,7 +67,6 @@ relationaldb Inventory {
 			UserDB : User
 			index UserNameIndex {
 				attributes ("User.name", "User.location")
-				references ("User.country")
 			}
 		}
 		table {
