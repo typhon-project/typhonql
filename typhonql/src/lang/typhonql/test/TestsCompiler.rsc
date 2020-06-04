@@ -165,9 +165,9 @@ void testCustomDataTypes(PolystoreInstance p) {
   p.assertResultEquals("nested custom data type field updated and retrieved", rs, <["u.billing$zipcode$letters"], [["ZZ"]]>);
   
   // No delete now, because of $pull bug in mongo child cascade.
-  //p.runUpdate((Request)`delete User u where u.billing.zipcode.letters == "ZZ"`);
-  //rs = p.runQuery((Request)`from User u select u.@id where u.@id == #jurgen`);
-  //p.assertResultEquals("delete by nested custom data type", rs, <["u.@id"], [[]]>);
+  p.runUpdate((Request)`delete User u where u.billing.zipcode.letters == "ZZ"`);
+  rs = p.runQuery((Request)`from User u select u.@id where u.@id == #jurgen`);
+  p.assertResultEquals("delete by nested custom data type", rs, <["u.@id"], []>);
 
 }
 
