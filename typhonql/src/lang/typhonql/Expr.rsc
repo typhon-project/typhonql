@@ -77,6 +77,11 @@ syntax Segment
 // Variable Ids
 lexical VId = Id variableName \ "true" \ "false" \ "null";
 
+// extend Id for customdata type inlined representation
+lexical Id
+  = Id "$" {Id "$"}+
+  ;
+
 lexical Bool = "true" | "false";
 
 syntax Obj = literal: Label? labelOpt EId entity "{" {KeyVal ","}* keyVals "}";
