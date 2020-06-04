@@ -313,6 +313,9 @@ void smokeCustoms() {
   
   req = (Request)`insert User  {billing: addres( street: "cd", zipcode: zip(nums: "1234"))}`;
   println(eliminateCustomDataTypes(req, s));
+
+  req = (Request)`delete Review r`;
+  println(eliminateCustomDataTypes(req, s));
   
 }
 
@@ -335,7 +338,7 @@ Request eliminateCustomDataTypes(Request req, Schema s) {
        fld$k: v for all k: v <- keyvals
   */
    
-  env = ();
+  map[str, str] env = ();
   
   switch (req) {
     case (Request)`<Query q>`: env = queryEnv(q);

@@ -49,6 +49,7 @@ bool hitsBackend((Request)`<Query q>`, Place p, Schema s)
 Script request2script(Request r, Schema s, Log log = noLog) {
   log("REQ: <r>");
 
+  r = eliminateCustomDataTypes(r, s);
 
   switch (r) {
 

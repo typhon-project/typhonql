@@ -25,9 +25,20 @@ str PASSWORD = "admin1@";
 
 public Log PRINT() = void(value v) { println("LOG: <v>"); };
 
+KeyVal aBillingKeyVal =
+  (KeyVal)`billing: addres( street: "Commelin", city: "Ams"
+          '   , zipcode: zip(nums: "1093", letters: "VX")
+          '   , location: #point(2.0 3.0))`;
+
 void setup(PolystoreInstance p, bool doTest) {
-	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo", location: #point(2.0 3.0), photoURL: "moustache" }`);
-	p.runUpdate((Request) `insert User { @id: #davy, name: "Davy", location: #point(20.0 30.0), photoURL: "beard"}`);
+	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo", location: #point(2.0 3.0), photoURL: "moustache",
+	                      '  billing: addres( street: "Seventh", city: "Ams"
+	                      '   , zipcode: zip(nums: "1234", letters: "ab")
+	                      '   , location: #point(2.0 3.0))}`);
+	p.runUpdate((Request) `insert User { @id: #davy, name: "Davy", location: #point(20.0 30.0), photoURL: "beard",
+	                      '  billing: addres( street: "Bla", city: "Almere"
+	                      '   , zipcode: zip(nums: "4566", letters: "cd")
+	                      '   , location: #point(20.0 30.0))}`);
 	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from User u select u.@id, u.name`);
@@ -464,14 +475,16 @@ void test11(PolystoreInstance p) {
 	p.assertResultEquals("filter on external relation in sql", rs, <["u.name"],[["Pablo"]]>);
 }
 
+
+
 void test12(PolystoreInstance p) {
-	p.runUpdate((Request) `insert User { @id: #tijs, name: "Tijs", location: #point(1.0 1.0) }`);
+	p.runUpdate((Request) `insert User { @id: #tijs, name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0) }`);
 	rs = p.runQuery((Request) `from User u select u where u.@id == #tijs`);
 	p.assertResultEquals("basic insert in sql", rs, <["u.@id"],[["tijs"]]>);
 }
 
 void test13(PolystoreInstance p) {
-	<_, names> = p.runUpdate((Request) `insert User { name: "Tijs", location: #point(1.0 1.0) }`);
+	<_, names> = p.runUpdate((Request) `insert User { name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0) }`);
 	p.assertEquals("one insert is one object inserted", size(names), 1);
 	uuid = names["uuid"];
 	rs = p.runQuery([Request] "from User u select u where u.@id == #<uuid>");
