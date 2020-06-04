@@ -146,6 +146,31 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
   setup(p, true);
 }
 
+void testCustomDataTypes(PolystoreInstance p) {
+  p.runUpdate((Request) `insert User { @id: #jurgen, name: "Jurgen", location: #point(2.0 3.0), photoURL: "moustache",
+                        '  billing: addres( street: "Seventh", city: "Ams"
+	                    '   , zipcode: zip(nums: "1234", letters: "ab")
+	                    '   , location: #point(2.0 3.0))}`);
+	                    
+
+  p.runUpdate((Request)`update User u where u.@id == #jurgen set {billing: address(street: "Schout")}`);
+  
+  rs = p.runQuery((Request)`from User u select u.billing.street where u.@id == #jurgen`);
+  p.assertResultEquals("custom data type field updated and retrieved", rs, <["u.billing$street"], [["Schout"]]>);
+
+
+  p.runUpdate((Request)`update User u where u.@id == #jurgen set {billing: address(zipcode: zip(letters: "ZZ"))}`);
+  
+  rs = p.runQuery((Request)`from User u select u.billing.zipcode.letters where u.@id == #jurgen`);
+  p.assertResultEquals("nested custom data type field updated and retrieved", rs, <["u.billing$zipcode$letters"], [["ZZ"]]>);
+  
+  // No delete now, because of $pull bug in mongo child cascade.
+  //p.runUpdate((Request)`delete User u where u.billing.zipcode.letters == "ZZ"`);
+  //rs = p.runQuery((Request)`from User u select u.@id where u.@id == #jurgen`);
+  //p.assertResultEquals("delete by nested custom data type", rs, <["u.@id"], [[]]>);
+
+}
+
 void testInsertSingleValuedSQLCross(PolystoreInstance p) {
   p.runUpdate((Request)`insert Category {@id: #appliances, id: "appliances", name: "Home Appliances"}`);
   
@@ -512,8 +537,9 @@ Schema printSchema() {
 
 
 void runTests(Log log = NO_LOG()) {
-	tests = [
-	   testInsertSingleValuedSQLCross
+	tests = 
+	  [ testCustomDataTypes
+	  , testInsertSingleValuedSQLCross
 	  , testInsertManyValuedSQLLocal
 	  , testDeleteAllSQLBasic
 	  , testDeleteAllWithCascade
