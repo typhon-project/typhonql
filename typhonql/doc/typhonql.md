@@ -283,7 +283,7 @@ You may wonder why not use the `x in y` operator for
 ## Manipulating Data
 
 
-TODO: mention that contained things should pre-exist parents.
+TODO: mention that parents should pre-exist kids ("children cannot exist without parents").
 With insert: custom data type value must be fully specified,
 but in updates, you can partially update sub-fields.
 
