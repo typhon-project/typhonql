@@ -50,9 +50,6 @@ void smokeNormalize() {
   println(expandNavigation(q, s));
 }
 
-Request elicitBindings(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
-
-}
 
 
 void smokeKeyValInf() {
@@ -139,6 +136,7 @@ list[str] isKeyValAttr(str ent, str f, Schema s) {
               , <<cassandra(), _>, kve> <- s.placement ];
     
 } 
+
 
 Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
   // rewrite x.f -> x.A__B.f if f is an attribute that is mapped from keyVal
@@ -417,6 +415,59 @@ Request eliminateCustomDataTypes(Request req, Schema s) {
    
   }
   
+}
+
+void smokeLoneVarExpansion() {
+  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product/user-review-product.xmi|);
+  Model m = xmiString2Model(xmi);
+  Schema s = model2schema(m);
+  
+  req = (Request)`from User u select u`;
+  println(expandLoneVars(req, s));
+}
+
+Request expandLoneVars(Request req, Schema s) {
+  req = addWhereIfAbsent(req);
+  
+  if ((Request)`from <{Binding ","}+ bs> select <{Result ","}+ srcRs> where <{Expr ","}+ ws>` := req) {
+    env = queryEnv(bs);
+    
+    list[Result] rs = [ r | Result r <- srcRs ];
+    
+    newRs = outer: for (Result r <- rs) {
+      if ((Result)`<VId x>` := r) {
+        ent = env["<x>"];
+        for (<ent, str name, _> <- s.attrs) {
+	      Id f = [Id]name;
+	      append outer: (Result)`<VId x>.<Id f>`;
+	    }
+        for (<ent, _, role, _, _, _, _> <- s.rels) {
+	      Id f = [Id]role;
+	      append outer: (Result)`<VId x>.<Id f>`;
+	    }
+      }
+      else {
+        append r;
+      }
+    }
+  
+    // ugh, this is too hard ....
+    Result head = newRs[0]; 
+    req = (Request)`from <{Binding ","}+ bs> select <Result head> where <{Expr ","}+ ws>`;
+    newRs = newRs[1..];
+    while (newRs != [], (Request)`from <{Binding ","}+ bs> select <{Result ","}+ cur> where <{Expr ","}+ ws>` := req) {
+      head = newRs[0];
+      req = (Request)`from <{Binding ","}+ bs> select <{Result ","}+ cur>, <Result head> where <{Expr ","}+ ws>`;
+      newRs = newRs[1..];
+    }
+    
+  }
+  
+    
+    
+
+  return req;
+ 
 }
 
 
