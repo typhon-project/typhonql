@@ -146,6 +146,17 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
   setup(p, true);
 }
 
+void testLoneVars(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from Item i select i`);
+  p.assertEquals("all features from item retrieved", rs, <["i.shelf", "i.product"]
+    , [[2,"radio"],[2,"radio"],[1,"tv"],[1,"tv"],[3,"tv"],[3,"tv"]]>);
+    
+  rs = p.runQuery((Request)`from Biography b select b`);
+  p.assertEquals("all features from biography retrieved", rs, <["b.content", "b.user"]
+    , [["Chilean","pablo"]]>);
+    
+}
+
 void testCustomDataTypes(PolystoreInstance p) {
   p.runUpdate((Request) `insert User { @id: #jurgen, name: "Jurgen", location: #point(2.0 3.0), photoURL: "moustache",
                         '  billing: addres( street: "Seventh", city: "Ams"
@@ -213,7 +224,7 @@ void testInsertManyValuedSQLLocal(PolystoreInstance p) {
 
 void testDeleteAllSQLBasic(PolystoreInstance p) {
   p.runUpdate((Request)`delete Tag t`);
-  rs = p.runQuery((Request)`from Tag t select t`);
+  rs = p.runQuery((Request)`from Tag t select t.@id`);
   p.assertResultEquals("deleteAllSQLBasic", rs, <["t.@id"], []>);
 }
 
@@ -415,10 +426,10 @@ void testGISonMongo(PolystoreInstance p) {
 
 void testGISonCrossMongoSQL(PolystoreInstance p) {
   // TODO: Tijs add support for cross delayed clauses
-  rs = p.runQuery((Request)`from Product p, Review r select r, p.name where r.location in p.availabilityRegion`);
+  rs = p.runQuery((Request)`from Product p, Review r select r.@id, p.name where r.location in p.availabilityRegion`);
   p.assertResultEquals("testGISonCrossMongoSQL - contained", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
   
-  rs = p.runQuery((Request)`from User u, Review r select r, u.name where distance(r.location, u.location) \< 200`);
+  rs = p.runQuery((Request)`from User u, Review r select r.@id, u.name where distance(r.location, u.location) \< 200`);
   p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "u.name"], [["rev1", "Pablo"], ["rev2", "Davy"]]>);
 }
 
@@ -440,7 +451,7 @@ void test1(PolystoreInstance p) {
 }
 
 void test2(PolystoreInstance p) {
-	rs = p.runQuery((Request) `from Product p select p`);
+	rs = p.runQuery((Request) `from Product p select p.@id`);
 	p.assertResultEquals("product ids are selected", rs, <["p.@id"],[["radio"],["tv"]]>);
 }
 
@@ -450,7 +461,7 @@ void test3(PolystoreInstance p) {
 }
 
 void test4(PolystoreInstance p) {
-	rs = p.runQuery((Request) `from Review r select r`);
+	rs = p.runQuery((Request) `from Review r select r.@id`);
 	p.assertResultEquals("review ids are selected", rs,  <["r.@id"],[["rev1"],["rev2"],["rev3"]]>);
 }
 
@@ -504,7 +515,7 @@ void test11(PolystoreInstance p) {
 
 void test12(PolystoreInstance p) {
 	p.runUpdate((Request) `insert User { @id: #tijs, name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0) }`);
-	rs = p.runQuery((Request) `from User u select u where u.@id == #tijs`);
+	rs = p.runQuery((Request) `from User u select u.@id where u.@id == #tijs`);
 	p.assertResultEquals("basic insert in sql", rs, <["u.@id"],[["tijs"]]>);
 }
 
@@ -512,7 +523,7 @@ void test13(PolystoreInstance p) {
 	<_, names> = p.runUpdate((Request) `insert User { name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0) }`);
 	p.assertEquals("one insert is one object inserted", size(names), 1);
 	uuid = names["uuid"];
-	rs = p.runQuery([Request] "from User u select u where u.@id == #<uuid>");
+	rs = p.runQuery([Request] "from User u select u.@id where u.@id == #<uuid>");
 	p.assertResultEquals("generated id is in the result", rs, <["u.@id"],[["<uuid>"]]>);
 }
 
@@ -539,6 +550,7 @@ Schema printSchema() {
 void runTests(Log log = NO_LOG()) {
 	tests = 
 	  [ testCustomDataTypes
+	  , testLoneVars
 	  , testInsertSingleValuedSQLCross
 	  , testInsertManyValuedSQLLocal
 	  , testDeleteAllSQLBasic
