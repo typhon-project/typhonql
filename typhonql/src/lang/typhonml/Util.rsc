@@ -158,7 +158,7 @@ Schema inlineCustomDataTypes(Schema s) {
   // we check for it here, but really TyphonML should do it.
   
   rel[str, str] reach = s.customs<from,\type>;
-  assert !any(<str x, x> <- reach+): "custom data types are cyclic";
+  assert !any(<str x, x> <- reach+): "custom data types cannot be cyclic";
  
   solve (s) {
     for (org:<str ent, str name, str typ> <- s.attrs, typ in s.customs.from) {

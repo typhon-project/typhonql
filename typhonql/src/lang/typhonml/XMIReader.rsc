@@ -328,13 +328,17 @@ Model xmiNode2Model(node n) {
     for (xdt:"customDataTypes"(list[node] xelts) <- kids) {
        dtPath = "//@customDataTypes.<dtPos>";
        //println("Data type path: <dtPath>");
-       //println(xdt);
+       //iprintln(xdt);
 
        list[SuperDataType] elements = [];
 
-       for (xattr:"elements"([node xtype]) <- xelts) {
+       for (xattr:"elements"(list[node] xtypeOpt) <- xelts) {
+         
+         //println("XSI TYPE: <get(xattr, "xsi-type")>");
          switch (get(xattr, "xsi-type")) {
            case "typhonml:SimpleDataType": {
+             xtype = xtypeOpt[0];
+             
              dt = makePrimitive("IntType", []); // dummy
              switch (get(xtype, "xsi-type")) {
                case "typhonml:FreetextType" : {
@@ -356,7 +360,8 @@ Model xmiNode2Model(node n) {
              elements += [el];
            }
            case "typhonml:ComplexDataType": {
-             el = ComplexDataType(get(xattr, "name"), ensureCustom(dtPath));
+             el = SuperDataType(realm.new(#ComplexDataType, 
+                 ComplexDataType(get(xattr, "name"), referTo(#CustomDataType, ensureCustom(get(xattr, "type"))))));
              elements += [el];
            }
          }
