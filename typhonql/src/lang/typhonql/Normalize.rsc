@@ -298,22 +298,52 @@ void smokeCustoms() {
 
   req = (Request)`from Review r select r.user.billing.zipcode.letters`;
   println(eliminateCustomDataTypes(req, s));
+
+  req = (Request)`delete Review r where r.user.billing.zipcode.letters == "ab"`;
+  println(eliminateCustomDataTypes(req, s));
+
+  req = (Request)`update Review r where r.user.billing.zipcode.letters == "ab" set {}`;
+  println(eliminateCustomDataTypes(req, s));
+
+  req = (Request)`update User u where u.billing.street == "ab" set {billing: addres( street: "cd" )}`;
+  println(eliminateCustomDataTypes(req, s));
+
+  req = (Request)`update User u where u.billing.street == "ab" set {billing: addres( street: "cd", zipcode: zip(nums: "1234"))}`;
+  println(eliminateCustomDataTypes(req, s));
+  
+  req = (Request)`insert User  {billing: addres( street: "cd", zipcode: zip(nums: "1234"))}`;
+  println(eliminateCustomDataTypes(req, s));
+  
 }
 
 
-Request eliminateCustomDataTypes(req:(Request)`<Query q>`, Schema s) {
+
+
+
+Request eliminateCustomDataTypes(Request req, Schema s) {
   /*
     in results/where clauses 
       x.ctFld.fld  => x.ctFld$fld
       
-    in keyvals
+  */
+  
+
+ /*
+      in keyvals
        fld: ct ( keyvals )
        =>
        fld$k: v for all k: v <- keyvals
   */
+   
+  env = ();
   
-  env = queryEnv(q); 
-  
+  switch (req) {
+    case (Request)`<Query q>`: env = queryEnv(q);
+    case (Request)`<Statement s>`:
+      if (s has binding) {
+        env = ("<s.binding.var>": "<s.binding.entity>");
+      }
+  }
   
   
   str reach(str ent, list[str] path) {
@@ -327,6 +357,37 @@ Request eliminateCustomDataTypes(req:(Request)`<Query q>`, Schema s) {
     }
     
     return "";
+  }
+  
+  {KeyVal ","}* makeKeyVals(list[KeyVal] kvs) {
+    Obj obj = (Obj)`X {}`;
+    for (KeyVal kv <- kvs) {
+      if ((Obj)`X {<{KeyVal ","}* kvs2>}` := obj) {
+        obj = (Obj)`X { <{KeyVal ","}* kvs2>, <KeyVal kv> }`;
+      }
+      else {
+        throw "cannot happen";
+      }
+    }
+    return obj.keyVals;
+  }
+  
+  req = visit (req) {
+    case {KeyVal ","}* kvs: {
+      list[KeyVal] newKvs = [];
+      for (KeyVal kv <- kvs) {
+        if ((KeyVal)`<Id x>: <EId cdt> (<{KeyVal ","}* kids>)` := kv) {
+          for ((KeyVal)`<Id kk>: <Expr e>` <- kids) {
+            Id fld = [Id]"<x>$<kk>";
+            newKvs += [(KeyVal)`<Id fld>: <Expr e>`];
+          }
+        }
+        else {
+          newKvs += [kv];
+        }
+      }
+      insert makeKeyVals(newKvs);
+    }
   }
   
   return visit (req) {
