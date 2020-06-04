@@ -3,6 +3,7 @@ module lang::typhonql::Normalize
 
 import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
+import lang::typhonml::XMIReader;
 import lang::typhonql::TDBC;
 
 
@@ -281,6 +282,77 @@ Request expandNavigation(req:(Request)`from <{Binding ","}+ bs> select <{Result 
   
   Query newQuery = buildQuery(newBindings, newResults, newWheres);
   return (Request)`<Query newQuery>`;
+}
+
+
+void smokeCustoms() {
+  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product/user-review-product.xmi|);
+  Model m = xmiString2Model(xmi);
+  Schema s = model2schema(m);
+  
+  req = (Request)`from User u select u.billing.street`;
+  println(eliminateCustomDataTypes(req, s));
+
+  req = (Request)`from User u select u.billing.zipcode.letters`;
+  println(eliminateCustomDataTypes(req, s));
+
+  req = (Request)`from Review r select r.user.billing.zipcode.letters`;
+  println(eliminateCustomDataTypes(req, s));
+}
+
+
+Request eliminateCustomDataTypes(req:(Request)`<Query q>`, Schema s) {
+  /*
+    in results/where clauses 
+      x.ctFld.fld  => x.ctFld$fld
+      
+    in keyvals
+       fld: ct ( keyvals )
+       =>
+       fld$k: v for all k: v <- keyvals
+  */
+  
+  env = queryEnv(q); 
+  
+  
+  
+  str reach(str ent, list[str] path) {
+    if (path == []) {
+      return ent;
+    }
+    
+    str role = path[0];
+    if (<ent, _, role, _, _, str target, _> <- s.rels) {
+      return reach(target, path[1..]);  
+    }
+    
+    return "";
+  }
+  
+  return visit (req) {
+    case (Expr)`<VId x>.<{Id "."}+ ids>.<Id f>`: {
+      // this code assumes that
+      // x.f (single field), never refers to custom data type attr
+    
+      list[str] trail = [ "<i>" | Id i <- ids ] + ["<f>"];
+      
+      // we're looking for a suffxi of ids + f
+      // that has a dollared attribute in an entity
+      // that is reachable from x with the prefix.
+      
+      if ([*str prefix, *str suffix] := trail, str ent := reach(env["<x>"], prefix),
+           <ent, str name, _> <- s.attrs, name == intercalate("$", suffix)) {
+         if (prefix == []) {
+           insert [Expr]"<x>.<name>";
+         }
+         else {
+           insert [Expr]"<x>.<intercalate(".", prefix)>.<name>";
+         }    
+      }
+    }
+   
+  }
+  
 }
 
 
