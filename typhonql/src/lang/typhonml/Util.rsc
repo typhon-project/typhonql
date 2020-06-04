@@ -143,16 +143,32 @@ default Placement place(Database db, Model m) {
 
 
 Schema model2schema(Model m)
-  = inferAuxEntities(schema(model2rels(m), model2attrs(m),
+  = inlineCustomDataTypes(inferAuxEntities(schema(model2rels(m), model2attrs(m),
        customs = model2customs(m), 
        placement =model2placement(m),
        pragmas = model2pragmas(m),
-       changeOperators = model2changeOperators(m)));
+       changeOperators = model2changeOperators(m))));
 
 str keyValEntity(str db, str ent) = "<ent>__<db>";
 
 str keyValRole(str db, str ent) = "<db>__";
 
+Schema inlineCustomDataTypes(Schema s) {
+  // NB: a custom data type should not be recursive/cyclic 
+  // we check for it here, but really TyphonML should do it.
+  
+  rel[str, str] reach = s.customs<from,\type>;
+  assert !any(<str x, x> <- reach+): "custom data types are cyclic";
+ 
+  solve (s) {
+    for (org:<str ent, str name, str typ> <- s.attrs, typ in s.customs.from) {
+      s.attrs -= {org};
+      s.attrs += {<ent, "<name>$<fld>", typ2> | <typ, str fld, str typ2> <- s.customs }; 
+    }
+  }  
+  
+  return s; 
+}
 
 Schema inferAuxEntities(Schema s) {
   /*
