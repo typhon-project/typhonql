@@ -222,6 +222,17 @@ void testInsertManyValuedSQLLocal(PolystoreInstance p) {
   
 }
 
+//p.runUpdate((Request)`insert Category {@id: #appliances, id: "appliances", name: "Home Appliances"}`);
+
+void testDeleteSomeMongoBasic(PolystoreInstance p) {
+  p.runUpdate((Request)`insert Category {@id: #appliances, id: "appliances", name: "Home Appliances"}`);
+  p.runUpdate((Request)`insert Category {@id: #other, id: "misc", name: "Misc"}`);
+  p.runUpdate((Request)`delete Category c where c.@id == #other`);
+  rs = p.runQuery((Request)`from Category c select c.@id`);
+  p.assertResultEquals("delete with where from mongo deletes", rs, <["c.@id"], [["appliances"]]>);
+}
+  
+
 void testDeleteAllSQLBasic(PolystoreInstance p) {
   p.runUpdate((Request)`delete Tag t`);
   rs = p.runQuery((Request)`from Tag t select t.@id`);
