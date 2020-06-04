@@ -74,6 +74,41 @@ To be implemented:
 - member operator: `exp1 in exp2`
 - textual match operator: `exp1 like exp2`
 
+### Geographical expressions
+
+
+```notTyphonQL
+pt1 = point(1.3,2.5)
+pt2 = point(3.5,4.6)
+pg1 = polygon([
+  [point(0,0), pt1], 
+  [pt1, point(1,1)], 
+  [point(1,1), pt2], 
+  [pt2, point(0,0)]
+])
+pg2 = polygon([
+  [point(3,0), pt1], 
+  [pt1, point(2,2)], 
+  [point(2,2), pt2], 
+  [pt2, point(3,2)]
+])
+```
+
+distance in meters:
+  
+- two points: `distance(pt1, pt2)` (better idea for a infix operator are welcome, but it looked a bit strange to me)
+- one point and closest edge of polygon: `distance(pt1, pg2)`
+
+containment:
+- point inside a polygon: `pt1 in pg2`
+- polygon fully inside another polygon: `pg1 in pg2`
+
+overlap:
+- polygon partially overlaps another polygon: `pg1 & pg2`
+
+
+*note*: on mongodb backends distance is limited to the where query and only in presence of a comparision operator. 
+
 ### Queries
 
 Queries follow the tradition of SQL queries, except that the select and from parts are swapped. 
@@ -247,6 +282,10 @@ You may wonder why not use the `x in y` operator for
 
 ## Manipulating Data
 
+
+TODO: mention that contained things should pre-exist parents.
+With insert: custom data type value must be fully specified,
+but in updates, you can partially update sub-fields.
 
 
 ```
