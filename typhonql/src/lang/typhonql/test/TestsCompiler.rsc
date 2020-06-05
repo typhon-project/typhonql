@@ -150,9 +150,32 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
   setup(p, true);
 }
 
+
+void testKeyValueFeatures(PolystoreInstance p) {
+
+  p.runUpdate((Request)`update User u where u.@id == #pablo set {photoURL: "something", name: "Pablo the 2nd"}`);
+  p.runUpdate((Request)`update User u where u.@id == #davy set {photoURL: "other", name: "Landman"}`);
+
+  rs = p.runQuery((Request)`from User u select u.photoURL, u.name`);
+  p.assertResultEquals("keyvals were updated", rs, <["user__Stuff_kv_0.photoURL", "u.name"], 
+    [["something", "Pablo the 2nd"], ["other", "Landman"]]>);
+
+  /*
+  the below throws:
+  com.datastax.oss.driver.api.core.servererrors.InvalidQueryException: Invalid amount of bind variables
+  
+  but the correct cassandra delete is generated.
+  */
+  //p.runUpdate((Request)`delete User u where u.@id == #pablo`);
+  //
+  //rs = p.runQuery((Request)`from User u select u.photoURL where u.@id == #pablo`);
+  //p.assertResultEquals("keyvals are deleted if parent is deleted", rs, <["user__Stuff_kv_0.photoURL"], []>);
+
+}
+
 /*
 
-The below test fails, bt the results seem equal...
+The below test fails, but the results seem equal...
 pected: <["i.shelf","i.product"],[
   [2,"a398fb77-df76-3615-bdf5-7cd65fd0a7c5"], [2,"a398fb77-df76-3615-bdf5-7cd65fd0a7c5"],
    [1,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"],[1,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"],
@@ -579,7 +602,8 @@ Schema printSchema() {
 
 void runTests(Log log = NO_LOG()) {
 	tests = 
-	  [ testCustomDataTypes
+	  [ testKeyValueFeatures
+	  , testCustomDataTypes
 	  , testLoneVars
 	  , testInsertSingleValuedSQLCross
 	  , testInsertManyValuedSQLLocal
