@@ -70,7 +70,7 @@ str runScript(Script scr, Session session, Schema schema) {
   for (Step s <- scr.steps) {
     switch (s) {
       case step(str r, cassandra(cExecuteQuery(str db, str q)), Bindings ps):
-        session.cassandra.executeQuery(r, db, db, q, ps, s.signature);
+        session.cassandra.executeQuery(r, db, q, ps, s.signature);
 
       case step(str r, cassandra(cExecuteStatement(str db, str q)), Bindings ps):
         session.cassandra.executeStatement(db, q, ps);

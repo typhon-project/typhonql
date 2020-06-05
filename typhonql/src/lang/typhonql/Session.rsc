@@ -42,7 +42,7 @@ alias SQLOperations = tuple[
 ];
 
 alias CassandraOperations = tuple[
-	void (str resultId, str dbName, str keySpace, str query, Bindings bindings, list[Path] paths) executeQuery,
+	void (str resultId, str dbName, str query, Bindings bindings, list[Path] paths) executeQuery,
 	void (str dbName, str query, Bindings bindings) executeStatement,
 	void (str dbName, str query, Bindings bindings) executeGlobalStatement
 ];
