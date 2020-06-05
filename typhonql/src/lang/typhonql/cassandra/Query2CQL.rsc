@@ -50,6 +50,8 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
     q.selectClauses += [e];
   }
   
+  //addResult(cSelector(expr2cql(cTyphonId(), as="<y>.<ent>.@id"
+  
   int _vars = -1;
   int vars() {
     return _vars += 1;
@@ -79,11 +81,12 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
     log("##### record results");
     visit (e) {
       case x:(Expr)`<VId y>`: {
+         // this is probably dead because of lone var elimination
          log("##### record results: var <y>");
     
-         if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
+         if (str ent := env["<y>"], <p, ent> <- s.placement) {
            addResult(cSelector(expr2cql(x), as="<y>.<ent>.@id"));
-           for (<ent, str a, str _> <- ctx.schema.attrs) {
+           for (<ent, str a, str _> <- s.attrs) {
              Id f = [Id]a;
              addResult(cSelector(expr2sql((Expr)`<VId y>.<Id f>`), as="<y>.<ent>.<f>"));
            }
@@ -92,7 +95,7 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
       case x:(Expr)`<VId y>.@id`: {
          log("##### record results: var <y>.@id");
     
-         if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
+         if (str ent := env["<y>"], <p, ent> <- s.placement) {
            addResult(cSelector(expr2cql(x), as="<y>.<ent>.@id"));
          }
       }
@@ -101,6 +104,11 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
     
          if (str ent := env["<y>"], <p, ent> <- s.placement) {
            addResult(cSelector(expr2cql(x), as="<y>.<ent>.<f>"));
+         }
+         
+         // always add the @id
+         if (str ent := env["<y>"], <p, ent> <- s.placement) {
+           addResult(cSelector(expr2cql(x), as="<y>.<ent>.@id"));
          }
       }
     }
