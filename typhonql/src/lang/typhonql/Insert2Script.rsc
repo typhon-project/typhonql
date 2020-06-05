@@ -76,7 +76,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
 
   SQLStat theInsert = \insert(tableName("<e>"), [], []);
   DBObject theObject = object([ ]);
-  NeoStat theCreate = \matchUpdate(Maybe::nothing(), create(pattern(nodePattern("n", nodeName("<e>"), []), [])));
+  NeoStat theCreate = \matchUpdate(Maybe::just(match([], [], [NeoExpr::lit(boolean(true))])), create(pattern(nodePattern("n", [], []), [])));
 
   Script theScript = script([]);
   
@@ -191,17 +191,28 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
       compileRefBindingMany(p, placeOf(to, s), entity, fromRole, r, refs, ctx);
     }
   }
-
+  theScript.steps += compileNeoNode(kvs, ctx);
   theScript.steps += [finish()];
 
   return theScript;
 }
 
+list[Step] compileNeoNode({KeyVal ","}* kvs, InsertContext ctx) {
+	steps = [];
+	for (<<neo4j(), db>, e> <- ctx.schema.placement) {
+		if (<e, _, _, _, _, entity, _> <- ctx.schema.rels, entity == ctx.entity) {
+			str createStmt = pp(\matchUpdate(Maybe::nothing(), 
+				create(pattern(nodePattern("n", [nodeName("<ctx.entity>")], [property(typhonId(ctx.entity), ctx.neoMe)]), []))));
+			steps += [step(db, neo(executeNeoQuery(db, createStmt)), ctx.myParams)];
+		} 
+	}
+	return steps;
+}
 
 void compileAttrs(<DB::sql(), str dbName>, list[KeyVal] kvs, InsertContext ctx) {
   ctx.updateSQLInsert(SQLStat(SQLStat ins) {
-     ins.colNames = [ *columnName(kv, ctx.entity) | KeyVal kv  <- kvs ] + [ Util::typhonId(ctx.entity) ];
-     ins.values =  [ *evalKeyVal(kv) | KeyVal kv <- kvs ] + [ ctx.sqlMe ];
+     ins.colNames = [ *columnName(kv, ctx.entity) | KeyVal kv  <- kvs ] + [ lang::typhonql::relational::Util::typhonId(ctx.entity) ];
+     ins.values =  [ *lang::typhonql::Insert2Script::evalKeyVal(kv) | KeyVal kv <- kvs ] + [ ctx.sqlMe ];
      return ins;
   });
 } 
@@ -216,7 +227,7 @@ void compileAttrs(<mongodb(), str dbName>, list[KeyVal] kvs, InsertContext ctx) 
 
 void compileAttrs(<neo4j(), str dbName>, list[KeyVal] kvs, InsertContext ctx) {
   ctx.updateNeoInsert(NeoStat(NeoStat create) {
-     create.update.pattern.nodePattern.properties
+     create.updateClause.pattern.nodePattern.properties
      	 = [ property(propertyName(kv, ctx.entity)[0], lang::typhonql::neo4j::NeoUtil::evalKeyVal(kv)[0]) | KeyVal kv  <- kvs ] 
      	 	+ [ property(typhonId(ctx.entity), ctx.neoMe)];
      return create;
@@ -378,6 +389,47 @@ void compileRefBinding(
   ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
 }
 
+void compileRefBinding(
+  <neo4j(), str _>, <neo4j(), _>, str from, str fromRole, 
+  Rel r,
+  UUID ref, InsertContext ctx
+) {
+  throw "Relations between two Neo4J edges are not possible";
+}
+
+default void compileRefBinding(
+  <neo4j(), str dbName>, <_, str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, bool _>,
+  UUID ref, InsertContext ctx
+) {
+   ctx.updateNeoInsert(NeoStat(NeoStat create) {
+   	 if (isEmpty(create.updateMatch.val.patterns)) { 
+     	create.updateMatch.val.patterns += [ 
+     		pattern(
+     			nodePattern(toRole, [to], []), 
+     			[])];
+     	create.updateMatch.val.clauses += 
+     		[ where([equ(property(toRole, "<to>.@id"), lit(text("<ref>")))])];
+ 		create.updateClause.pattern =  
+     		pattern(
+     			nodePattern(toRole, [], []), 
+     			[relationshipPattern(doubleArrow(), "r", ctx.entity, [], nodePattern("", [], []))]);    			
+     }
+     else {
+     	create.updateMatch.val.patterns += [pattern(
+     			nodePattern(toRole, [to], []), 
+     			[])];
+     	create.updateMatch.val.clauses[0].exprs += 
+     		[equ(property(toRole, "<to>.@id"), lit(text("<ref>")))];
+     	create.updateClause.pattern.rels[0].nodePattern.var = toRole;
+        	
+     }
+     /*create.update.pattern.nodePattern.properties
+     	 = [ property(propertyName(kv, ctx.entity)[0], lang::typhonql::neo4j::NeoUtil::evalKeyVal(kv)[0]) | KeyVal kv  <- kvs ] 
+     	 	+ [ property(typhonId(ctx.entity), ctx.neoMe)];*/
+     return create;
+  });
+}
 
 void compileRefBindingMany(
  <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole,
@@ -492,134 +544,6 @@ void compileRefBindingMany(
     [ctx.sqlMe], ctx.myParams) | UUID ref <- refs ]);
 }
 
-// Start of NEO
-
-void compileRefBindingMany(
- <neo4j(), str dbName>, <neo4j(), dbName>, str from, str fromRole,
- Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
- {UUID ","}* refs, InsertContext ctx
-) {
-  ctx.updateNeoInsert(NeoStat(NeoStat create) {
-    create.props += [ <fromRole, array([ \value(uuid2str(ref)) | UUID ref <- refs ]) > ];
-    return obj;
-  });
-  ctx.addSteps([ *insertObjectPointer(dbName, to, toRole, toCard, \value(uuid2str(ref)) , ctx.mongoMe, ctx.myParams)
-                | UUID ref <- refs ]);
-}
-
-void compileRefBindingMany(
- <neo4j(), str dbName>, <neo4j(), str other:!dbName>, str from, str fromRole,
- Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
- {UUID ","}* refs, InsertContext ctx
-) {
-  ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, array([ \value(uuid2str(ref)) | UUID ref <- refs ]) > ];
-    return obj;
-  });
-  ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)) , ctx.mongoMe, ctx.myParams)
-                | UUID ref <- refs ]);
-}
-
-void compileRefBindingMany(
- <DB::neo4j(), str dbName>, <mongodb(), str other>, str from, str fromRole,
- Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
- {UUID ","}* refs, InsertContext ctx
-) {
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams));
-  ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), ctx.mongoMe, ctx.myParams) 
-                | UUID ref <- refs ]);
-} 
-
-void compileRefBindingMany(
- <DB::neo4j(), str dbName>, <sql(), str other>, str from, str fromRole,
- Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
- {UUID ","}* refs, InsertContext ctx
-) {
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams));
-  ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), ctx.mongoMe, ctx.myParams) 
-                | UUID ref <- refs ]);
-} 
-
-void compileRefBindingMany(
- <DB::neo4j(), str dbName>, _, str from, str fromRole,
- Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
- {UUID ","}* refs, InsertContext ctx
-) {
-  throw "Cannot have multiple parents <refs> for inserted object <ctx.sqlMe>";
-}
-
-
-void compileRefBindingMany(
- <DB::neo4j(), str dbName>, <DB::neo4j(), dbName>, str from, str fromRole,
- Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
- {UUID ","}* refs, InsertContext ctx
-) {
-  // save the cross ref
-  ctx.addSteps([ *insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, 
-    [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams) ]);
-}
-
-void compileRefBindingMany(
- <DB::neo4j(), str dbName>, <DB::neo4j(), str other:!dbName>, str from, str fromRole,
- Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
- {UUID ","}* refs, InsertContext ctx
-) {
-  ctx.addSteps([ *insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, 
-    [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams) ]);
-    
-  ctx.addSteps([*insertIntoJunction(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), [ctx.sqlMe], ctx.myParams)
-                  | UUID ref <- refs ]);
-}
-
-void compileRefBindingMany(
- <DB::neo4j(), str dbName>, <mongodb(), str other>, str from, str fromRole,
- Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
- {UUID ","}* refs, InsertContext ctx
-) {
-  ctx.addSteps([ *insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, 
-    [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams) ]);
-  ctx.addSteps([*insertObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), ctx.mongoMe, ctx.myParams)
-                 | UUID ref <- refs]);
-}
-
-void compileRefBindingMany(
- <DB::neo4j(), str dbName>, <sql(), str other>, str from, str fromRole,
- Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
- {UUID ","}* refs, InsertContext ctx
-) {
-  ctx.addSteps([ *insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, 
-    [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams) ]);
-  ctx.addSteps([*insertObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), ctx.mongoMe, ctx.myParams)
-                 | UUID ref <- refs]);
-}
-
-void compileRefBindingMany(
- <mongodb(), str dbName>, <DB::neo4j(), str other>, str from, str fromRole,
- Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
- {UUID ","}* refs, InsertContext ctx
-) {
-  ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, array([ \value(uuid2str(ref)) | UUID ref <- refs ]) > ];
-    return obj;
-  });
-  ctx.addSteps([ *insertIntoJunction(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), 
-    [ctx.sqlMe], ctx.myParams) | UUID ref <- refs ]);
-}
-
-void compileRefBindingMany(
- <sql(), str dbName>, <DB::neo4j(), str other>, str from, str fromRole,
- Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
- {UUID ","}* refs, InsertContext ctx
-) {
-  ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, array([ \value(uuid2str(ref)) | UUID ref <- refs ]) > ];
-    return obj;
-  });
-  ctx.addSteps([ *insertIntoJunction(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), 
-    [ctx.sqlMe], ctx.myParams) | UUID ref <- refs ]);
-}
-
-
 DBObject obj2dbObj((Expr)`<EId e> {<{KeyVal ","}* kvs>}`)
   = object([ keyVal2prop(kv) | KeyVal kv <- kvs ]);
    
@@ -672,7 +596,7 @@ list[str] columnName((KeyVal)`@id: <Expr _>`, str entity) = [typhonId(entity)];
 list[SQLExpr] evalKeyVal((KeyVal) `<Id x>: <EId customType> (<{KeyVal ","}* keyVals>)`) 
   = [lit(evalExpr(e)) | (KeyVal)`<Id x>: <Expr e>` <- keyVals];
 
-list[SQLExpr] evalKeyVal((KeyVal)`<Id _>: <Expr e>`) = [lit(evalExpr(e))]
+list[SQLExpr] evalKeyVal((KeyVal)`<Id _>: <Expr e>`) = [lang::typhonql::relational::SQL::lit(evalExpr(e))]
 	when (Expr) `<Custom c>` !:= e;
 
 list[SQLExpr] evalKeyVal((KeyVal)`@id: <Expr e>`) = [lit(evalExpr(e))];
@@ -722,18 +646,30 @@ bool isAttr((KeyVal)`@id: <Expr _>`, str _, Schema _) = false;
   
   
 void smoke2createWithAllOnSameNeoDB() {
-  s = schema({
-    <"Company", \zero_many(), "locations", "companies", \zero_many(), "City", false>
+s = schema({
+    <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
+    <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
+    <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
+    <"Comment", zero_many(), "replies", "owner", \zero_many(), "Comment", true>,
+    <"Concordance", \one(), "from", "from^", \one(), "Product", false>,
+    <"Concordance", \one(), "to", "to^", \one(), "Product", false>
   }, {
-    <"City", "name", "String">,
-    <"City", "population", "int">,
-    <"Company", "name", "String">,
-    <"Company", "employees", "int">
+    <"Person", "name", "String">,
+    <"Person", "age", "int">,
+    <"Product", "name", "String">,
+    <"Product", "description", "String">,
+    <"Concordance", "weight", "int">,
+    <"Review", "text", "String">,
+    <"Comment", "contents", "String">,
+    <"Reply", "reply", "String">
   },
   placement = {
-    <<neo4j(), "Companies">, "Company">,
-    <<neo4j(), "Companies">, "City">
-  } 
+    <<sql(), "Inventory">, "Person">,
+    <<sql(), "Inventory">, "Product">,
+    <<mongodb(), "Reviews">, "Review">,
+    <<mongodb(), "Reviews">, "Comment">,
+    <<neo4j(), "Stats">, "Concordance">
+  }
   );
   
   return smoke2neo(s);
@@ -765,13 +701,20 @@ void smoke2sqlWithAllOnDifferentSQLDB() {
 */
 void smoke2neo(Schema s) {
 
-  Request r = (Request)`insert City { @id: #atlanta, name: "Atlanta", population: 1000000}`;  
+  Request r = (Request)`insert Product { @id: #tv, name: "TV", description: "Dumb box"}`;  
   println(insert2script(r,s));
-  if (step(_, neo(executeNeoQuery(_, q)), _) := insert2script(r, s).steps[0]) {
+  if (step(_, neo(executeNeoQuery(_, q)), _) := insert2script(r, s).steps[1]) {
   	println(q);
   }
   
-  r = (Request)`insert Company { @id: #ibm, name: "IBM", employees: 10000 }`;  
+  r = (Request)`insert Product { @id: #radio, name: "Radio", description: "TV without images"}`;  
+  println(insert2script(r,s));
+  if (step(_, neo(executeNeoQuery(_, q)), _) := insert2script(r, s).steps[1]) {
+  	println(q);
+  }
+  
+  
+  r = (Request)`insert Concordance { @id: #conc1, from: #tv, to: #radio, weight: 15 }`;  
   println(insert2script(r,s));
   if (step(_, neo(executeNeoQuery(_, q)), _) := insert2script(r, s).steps[0]) {
   	println(q);
