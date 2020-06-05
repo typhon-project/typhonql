@@ -319,7 +319,7 @@ ChangeOps model2changeOperators(Model m) {
   			entity = lookup(m, #Entity, chop.ownerEntity);
   			typ = lookup(m, #Entity, chop.\type);
 
-  			result += <"addAttribute", [entity.name, chop.name, typ.name]>;
+  			result += <"addRelation", [entity.name, chop.name, typ.name]>;
   		}
   		case ChangeOperator(SplitEntityHorizontal chop): {
   			entity = lookup(m, #Entity, chop.sourceEntity);
