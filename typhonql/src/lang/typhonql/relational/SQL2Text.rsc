@@ -205,6 +205,7 @@ str pp(char(int size)) = "char(<size>)";
 str pp(varchar(int size)) = "varchar(<size>)";
 str pp(text()) = "text";
 str pp(integer()) = "integer";
+str pp(bigint()) = "bigint";
 str pp(float()) = "float";
 str pp(double()) = "double";
 str pp(blob()) = "blob";
