@@ -31,8 +31,9 @@ Script schema2script(Schema s, Log log = noLog) {
 list[Step] place2script(p:<cassandra(), str db>, Schema s, Log log = noLog) {
   return [
     step(db, cassandra(executeGlobalStatement(db, "DROP KEYSPACE IF EXISTS <db>;")), ()),
-    step(db, cassandra(executeGlobalStatement(db, "CREATE KEYSPACE <db>;")), ()),
-    step(db, cassandra(executeGlobalStatement(db, "USE KEYSPACE <db>;")), ())
+    // not sure what to do here with  replication etc.
+    step(db, cassandra(executeGlobalStatement(db, "CREATE KEYSPACE <db> WITH replication = {\'class\': \'SimpleStrategy\', \'replication_factor\' : 1};")), ()),
+    step(db, cassandra(executeGlobalStatement(db, "USE <db>;")), ())
   ] + [ step(db, cassandra(execute(db, pp(stmt))), ()) 
           | CQLStat stmt <-  schema2cql(s, p, s.placement[p]) ];
 }
