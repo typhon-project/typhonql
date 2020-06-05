@@ -15,7 +15,7 @@ And for group-by, it's only known at the very end  what the key(s) are to group-
 So here is an out-of-the-box-thinking proposal. 
 We split a TyphonQL query in two parts, the selection/filtering part, and the other stuff.
 The first part corresponds to what we currently support and is partitioned over back-ends in our iteration architecture.
-The, however, instead of producing the final result table in the innermost loop, we send the result
+Then, however, instead of producing the final result table in the innermost loop, we send the result
 to an (embedded) in-memory SQL database, and use *that* engine to perform aggregation, limiting, and/or sorting.
 
 This approach has numerous advantages over "rolling our own":
