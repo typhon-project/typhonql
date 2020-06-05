@@ -26,8 +26,8 @@ platform platformName : localhost {
 			container reviews : Docker {
 				deploys Reviews
 				ports {
-					target = 27018 ;
-					published = 27018 ;
+					target = 27017 ;
+					published = 27017 ;
 				}
 			}
 		}
