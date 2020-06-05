@@ -4,7 +4,7 @@ import util::Maybe;
 
 data NeoStat
   = matchQuery(Match match)
-  | matchUpdate(Maybe[Match] updateMatch, UpdateClause update)
+  | matchUpdate(Maybe[Match] updateMatch, UpdateClause updateClause)
   ;
 
 data Match
@@ -20,10 +20,10 @@ data Pattern
 	; 
 	
 data NodePattern
-	= nodePattern(str var, str label, list[Property] properties);	
+	= nodePattern(str var, list[str] labels, list[Property] properties);
 	
 data RelationshipPattern
-	= relationshipPattern(Direction dir, As \node, list[Property] properties);
+	= relationshipPattern(Direction dir, str var, str label, list[Property] properties, NodePattern nodePattern);
 	
 data Direction
 	= doubleArrow(); 
@@ -56,11 +56,6 @@ data NeoExpr
   | notIn(NeoExpr arg, list[Value] vals)
   | \in(NeoExpr arg, list[Value] vals)
   | fun(str name, list[NeoExpr] args)
-  ;
-
-
-data As
-  = as(str \node, str name)
   ;
 
 data Clause

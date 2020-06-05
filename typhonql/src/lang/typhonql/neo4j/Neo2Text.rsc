@@ -18,31 +18,36 @@ str pp(map[Place,list[NeoStat]] placed)
 
 // NeoStat
 
-str pp(matchUpdate(Maybe[Match] updateMatch, UpdateClause uc))
-  = "<just(m) := updateMatch ? pp(m) : "">
-    '<pp(uc)>";  
-    
-    
-str pp(matchQuery(Match m))
-  = pp(m);  
-    
-str pp(create(Pattern pattern))
-  = "create (<pp(pattern)>)";
-  
-str pp(pattern(nodePattern, rels))
-	= "<pp(nodePattern)>";
-	
-str pp(nodePattern(str var, str label, list[Property] props))
-	= "<var> : <label><!isEmpty(props)?" { <intercalate(", ", [pp(p) | p <- props])> }":"">";
-	
-str pp(property(str name, NeoExpr expr))
-	="<q(name)> : <pp(expr)>";
+str pp(matchUpdate(just(match(list[Pattern] ps, list[Clause] cs, list[NeoExpr] es)), UpdateClause uc))
+  = "match <intercalate(", ", [ pp(p) | Pattern p <- ps ])>
+    '<intercalate("\n", [ pp(c) | Clause c <- cs ])>
+    '<pp(uc)>
+    'return <intercalate(", ", [ pp(e) | NeoExpr e <- es ])>"
+    ;  
 
-str pp(match(list[Pattern] patterns, list[Clause] cs, list[NeoExpr] es))
-  = "match (<intercalate(", ", [ pp(p) | Pattern p <- patterns ])>)
+str pp(matchUpdate(nothing(), UpdateClause uc))
+  = pp(uc);  
+    
+str pp(matchQuery(match(list[Patterns] ps, list[Clause] cs, list[NeoExpr] es)))
+  = "match <intercalate(", ", [ pp(p) | Pattern p <- ps ])>
     '<intercalate("\n", [ pp(c) | Clause c <- cs ])>
     'return <intercalate(", ", [ pp(e) | NeoExpr e <- es ])>"
     ;  
+    
+str pp(create(Pattern pattern))
+  = "create <pp(pattern)>";
+  
+str pp(pattern(nodePattern, rels))
+	= "<pp(nodePattern)><intercalate(" ", [pp(r) | r <- rels])>";
+	
+str pp(relationshipPattern(Direction dir, str var, str label, list[Property] props, NodePattern nodePattern))
+	= "-[<var>:<label>]-\><pp(nodePattern)>";
+	
+str pp(nodePattern(str var, list[str] labels, list[Property] props))
+	= "(<var> <isEmpty(labels)?"":":" + intercalate(":", labels)><!isEmpty(props)?" { <intercalate(", ", [pp(p) | p <- props])> }":"">)";
+	
+str pp(property(str name, NeoExpr expr))
+	="<q(name)> : <pp(expr)>";
 
 str pp(match(list[NeoExpr] es, list[As] as, list[Clause] cs))
   = "match (<intercalate(", ", [ pp(a) | As a <- as ])>)
@@ -61,51 +66,6 @@ str pp(rename(str t, str newName))
 str pp(create(str t, list[str] ps, list[NeoExpr] vs))
   = "create (n:<q(t)> { <intercalate(", ", [ "<q(ps[i])> : <pp(vs[i])>" | i <- [0..size(ps)]])> })";
   
-
-str pp(update(str t, list[Set] ss, list[Clause] cs))
-  = "update <q(t)> set <intercalate(", ", [ pp(s) | Set s <- ss ])>
-    '<intercalate("\n", [ pp(c) | Clause c <- cs ])>;";
-  
-str pp(delete(str t, list[Clause] cs))
-  = "delete from <q(t)> 
-    '<intercalate("\n", [ pp(c) | Clause c <- cs ])>;";
-
-str pp(deleteJoining(list[str] tables, list[Clause] cs)) 
-  = "delete <intercalate(", ", [ q(t) | str t <- tables ])> 
-    'from <intercalate(" inner join ", [ q(t) | str t <- tables ])>
-    '<intercalate("\n", [ pp(c) | Clause c <- cs ])>";
-
-str pp(alterTable(str t, list[Alter] as))
-  = "alter table <q(t)>
-    '<intercalate(",\n", [ pp(a) | Alter a <- as ])>;";
-
-
-str pp(dropTable(list[str] tables, bool ifExists, list[DropOption] options))
-  = "drop table <ifExists ? "if exists " : ""><intercalate(", ", [ q(t) | str t <- tables])> <intercalate(", ", [ pp(opt) | DropOption opt <- options ])>;";
-
-// Alter
-
-str pp(addConstraint(TableConstraint c))
-  = "add constraint 
-    '<pp(c)>";
-    
-str pp(dropConstraint(str name))
-  = "drop constraint <q(name)>";
-    
-str pp(addColumn(column(str name, ColumnType \type, list[ColumnConstraint] constraints)))
-  = "add <q(name)> <pp(\type)>";
-
-str pp(dropColumn(str name))
-  = "drop column <q(name)>";
-  
-
-str pp(renameColumn(column(str name, ColumnType \type, list[ColumnConstraint] _), str newName))
-  = "change column <q(name)> <q(newName)> <pp(\type)>";  
-
-// As
-
-str pp(as(str t, str x)) = "<x>:<t>";
-
 // Set
 
 str pp(\set(str c, NeoExpr e)) = "<q(c)> = <pp(e)>";
@@ -159,13 +119,6 @@ str pp(limit(NeoExpr e)) = "limit <pp(e)>";
 str pp(asc()) = "asc";
 
 str pp(desc()) = "desc";
-
-
-// Column
-    
-str pp(column(str c, ColumnType t, list[ColumnConstraint] cos))
-  = "<q(c)> <intercalate(" ", [pp(t)] + [ pp(co) | ColumnConstraint co <- cos ])>";
-  
 
 // Value
 
