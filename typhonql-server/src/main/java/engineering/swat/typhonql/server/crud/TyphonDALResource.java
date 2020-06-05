@@ -13,9 +13,6 @@ import engineering.swat.typhonql.server.QLRestServer;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 
 public abstract class TyphonDALResource {
-	
-	public static String REST_ARGUMENTS = "restArguments";
-
 	@Context
 	private ServletContext context;
 	
@@ -27,7 +24,7 @@ public abstract class TyphonDALResource {
 	}
 
 	protected QLRestServer.RestArguments getRestArguments() throws IOException {
-		String s = headers.getRequestHeader(REST_ARGUMENTS).get(0);
+		String s = headers.getRequestHeader("QL-RestArguments").get(0);
 		return QLRestServer.RestArguments.parse(new StringReader(s));			
 	}
 }
