@@ -72,14 +72,18 @@ public class CassandraEngine extends Engine {
 			return new WKTWriter().write((Geometry) value);
 		}
 		if (value instanceof String) {
-			try {
-				// ok this is somewhat lazy.
-				return UUID.fromString((String)value);
+			String str = (String)value;
+			if (str.length() == 36 && str.charAt(7) == '-') {
+				// chance that is an uuid, so let's try
+				try {
+					return UUID.fromString(str);
+				}
+				catch (IllegalArgumentException e) {
+					// it was not a UUID
+					return str;
+				}
 			}
-			catch (IllegalArgumentException e) {
-				// it was not a UUID
-				return value;
-			}
+			return str;
 		}
 		// other java values are just fine as they are
 		return value;
