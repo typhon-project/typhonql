@@ -48,6 +48,7 @@ public class CassandraIterator implements ResultIterator {
 
 	public CassandraIterator(ResultSet results) {
 		this.results = results;
+		this.it = results.iterator();
 		this.columnMap = prepare(results.getColumnDefinitions());
 	}
 
