@@ -29,8 +29,7 @@ Script schema2script(Schema s, Log log = noLog) {
 }
 
 list[Step] place2script(p:<cassandra(), str db>, Schema s, Log log = noLog) {
-  return [];
-  return [ step(db, cassandra(execute(pp(stmt))), ()) 
+  return [ step(db, cassandra(execute(db, pp(stmt))), ()) 
      | CQLStat stmt <-  schema2cql(s, p, s.placement[p]) ];
 }
 

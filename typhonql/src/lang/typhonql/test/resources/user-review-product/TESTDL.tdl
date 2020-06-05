@@ -1,0 +1,35 @@
+import user-review-product.xmi
+import Inventory.tdl
+import Stuff.tdl
+import Reviews.tdl
+import dbTypes.tdl
+containertype Docker
+clustertype DockerCompose
+platformtype localhost
+platform platformName : localhost {
+	cluster clusterName : DockerCompose {
+		application Polystore {
+			container inventory : Docker {
+				deploys Inventory
+				ports {
+					target = 3306 ;
+					published = 3306 ;
+				}
+			}
+			container stuff : Docker {
+				deploys Stuff
+				ports {
+					target = 9042 ;
+					published = 9042;
+				}
+			}
+			container reviews : Docker {
+				deploys Reviews
+				ports {
+					target = 27018 ;
+					published = 27018 ;
+				}
+			}
+		}
+	}
+}
