@@ -5,6 +5,7 @@ import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
 import lang::typhonml::XMIReader;
 import lang::typhonql::TDBC;
+import lang::typhonql::util::UUID;
 
 
 
@@ -415,6 +416,22 @@ Request eliminateCustomDataTypes(Request req, Schema s) {
    
   }
   
+}
+
+
+str pUUID(UUID uuid) = pUUID("<uuid>"[1..]);
+str pUUID(str uuid) = hashUUID(uuid);
+
+
+bool isProperUUID(UUID uuid) 
+  = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/ := "<uuid>"[1..];
+
+Request injectProperUUIDs(Request req) {
+  return visit (req) {
+    case UUID uuid => [UUID]"#<pUUID(uuid)>"
+      when
+        !isProperUUID(uuid)
+  }
 }
 
 void smokeLoneVarExpansion() {
