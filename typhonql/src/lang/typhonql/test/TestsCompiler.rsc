@@ -4,6 +4,7 @@ import lang::typhonql::util::Log;
 import lang::typhonql::util::Testing;
 
 import lang::typhonql::TDBC;
+import lang::typhonql::Normalize; // for pUUID
 
 import IO;
 import Set;
@@ -16,6 +17,8 @@ import lang::typhonml::Util;
  * resources/user-reviews-product folder
  */
  
+
+private str U(str u) = pUUID(u);
 
 //str HOST = "192.168.178.78";
 str HOST = "localhost";
@@ -42,13 +45,14 @@ void setup(PolystoreInstance p, bool doTest) {
 	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from User u select u.@id, u.name`);
-	  p.assertResultEquals("users were inserted", rs, <["u.@id", "u.name"], [["pablo", "Pablo"], ["davy", "Davy"]]>);
+	  p.assertResultEquals("users were inserted", rs, <["u.@id", "u.name"], [[U("pablo"), "Pablo"], [U("davy"), "Davy"]]>);
 	  
 	  rs = p.runQuery((Request)`from User u select u.photoURL, u.name`);
-	  // todo: test result.
+	  p.assertResultEquals("keyvals retrieved", rs, <["user__Stuff_kv_0.photoURL", "u.name"], [["moustache", "Pablo"], ["beard", "Davy"]]>);
 
 	  rs = p.runQuery((Request)`from User u select u.photoURL, u.avatarURL, u.name`);
-	  
+	  p.assertResultEquals("multiple keyvals retrieved", rs, <["user__Stuff_kv_0.photoURL", "user__Stuff_kv_0.avatarURL", "u.name"],
+	    [["moustache", {}, "Pablo"], ["beard", {}, "Davy"]]>);
 	  
 	}
 	
@@ -59,7 +63,7 @@ void setup(PolystoreInstance p, bool doTest) {
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Product p select p.@id, p.name, p.description, p.productionDate`); // TODO: include polygon in this test
 	  p.assertResultEquals("products were inserted", rs, <["p.@id", "p.name", "p.description", "p.productionDate"], 
-	     [["tv", "TV", "Flat", "2020-04-13"], ["radio", "Radio", "Loud", "2020-04-13"]]>);
+	     [[U("tv"), "TV", "Flat", "2020-04-13"], [U("radio"), "Radio", "Loud", "2020-04-13"]]>);
 	}
 	
 	p.runUpdate((Request) `insert Review { @id: #rev1, content: "Good TV", user: #pablo, product: #tv, location: #point(2.0 3.0) }`);
@@ -69,16 +73,16 @@ void setup(PolystoreInstance p, bool doTest) {
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Review r select r.@id, r.content, r.user, r.product`);
 	  p.assertResultEquals("reviews were inserted", rs, <["r.@id", "r.content", "r.user", "r.product"], 
-	     [["rev1", "Good TV", "pablo", "tv"], 
-	      ["rev2", "", "davy", "tv"],
-	      ["rev3", "***", "davy", "radio"]
+	     [[U("rev1"), "Good TV", U("pablo"), U("tv")], 
+	      [U("rev2"), "", U("davy"), U("tv")],
+	      [U("rev3"), "***", U("davy"), U("radio")]
 	      ]>);
 	      
 	  rs = p.runQuery((Request)`from Product p select p.reviews`);
-	  p.assertResultEquals("reviews obtained from product", rs, <["p.reviews"], [["rev1"], ["rev2"], ["rev3"]]>);
+	  p.assertResultEquals("reviews obtained from product", rs, <["p.reviews"], [[U("rev1")], [U("rev2")], [U("rev3")]]>);
 
 	  rs = p.runQuery((Request)`from User u select u.reviews`);
-	  p.assertResultEquals("reviews obtained from user", rs, <["u.reviews"], [["rev1"], ["rev2"], ["rev3"]]>);
+	  p.assertResultEquals("reviews obtained from user", rs, <["u.reviews"], [[U("rev1")], [U("rev2")], [U("rev3")]]>);
 	}
 	
 	
@@ -88,12 +92,12 @@ void setup(PolystoreInstance p, bool doTest) {
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Biography b select b.@id, b.content, b.user`);
 	  p.assertResultEquals("bios were inserted", rs, <["b.@id", "b.content", "b.user"], 
-	    [["bio1", "Chilean", "pablo"]]>);
+	    [[U("bio1"), "Chilean", U("pablo")]]>);
 	    
 	  rs = p.runQuery((Request)`from User u select u.biography`);
 	  // the fact that there's null (i.e., <false, "">) here means that
 	  // there are users without bios
-	  p.assertResultEquals("bio obtained from user", rs, <["u.biography"], [["bio1"], [{}]]>);  
+	  p.assertResultEquals("bio obtained from user", rs, <["u.biography"], [[U("bio1")], [{}]]>);  
 	}
 	
 	p.runUpdate((Request) `insert Tag { @id: #fun, name: "fun" }`);
@@ -104,10 +108,10 @@ void setup(PolystoreInstance p, bool doTest) {
     if (doTest) {
       rs = p.runQuery((Request)`from Tag t select t.@id, t.name`);
       p.assertResultEquals("tags were inserted", rs, <["t.@id", "t.name"], [
-        ["fun", "fun"],
-        ["kitchen", "kitchen"],
-        ["music", "music"],
-        ["social", "social"]
+        [U("fun"), "fun"],
+        [U("kitchen"), "kitchen"],
+        [U("music"), "music"],
+        [U("social"), "social"]
       ]>);
     }
 
@@ -123,19 +127,19 @@ void setup(PolystoreInstance p, bool doTest) {
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Item i select i.@id, i.shelf, i.product`);
 	  p.assertResultEquals("items were inserted", rs, <["i.@id", "i.shelf", "i.product"], [
-	    ["tv1", 1, "tv"],
-	    ["tv2", 1, "tv"],
-	    ["tv3", 3, "tv"],
-	    ["tv4", 3, "tv"],
-	    ["radio1", 2, "radio"],
-	    ["radio2", 2, "radio"]
+	    [U("tv1"), 1, U("tv")],
+	    [U("tv2"), 1, U("tv")],
+	    [U("tv3"), 3, U("tv")],
+	    [U("tv4"), 3, U("tv")],
+	    [U("radio1"), 2, U("radio")],
+	    [U("radio2"), 2, U("radio")]
 	  ]>);
 	  
 	  rs = p.runQuery((Request)`from Product p select p.inventory where p.@id == #tv`);
-	  p.assertResultEquals("tv inventory obtained", rs, <["p.inventory"], [["tv1"], ["tv2"], ["tv3"], ["tv4"]]>);
+	  p.assertResultEquals("tv inventory obtained", rs, <["p.inventory"], [[U("tv1")], [U("tv2")], [U("tv3")], [U("tv4")]]>);
 	  
 	  rs = p.runQuery((Request)`from Product p select p.inventory where p.@id == #radio`);
-	  p.assertResultEquals("radio inventory obtained", rs, <["p.inventory"], [["radio1"], ["radio2"]]>);
+	  p.assertResultEquals("radio inventory obtained", rs, <["p.inventory"], [[U("radio1")], [U("radio2")]]>);
 	}	
 		
 }
