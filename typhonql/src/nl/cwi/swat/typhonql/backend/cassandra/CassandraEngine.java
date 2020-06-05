@@ -3,6 +3,7 @@ package nl.cwi.swat.typhonql.backend.cassandra;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -69,6 +70,16 @@ public class CassandraEngine extends Engine {
 	private Object encode(Object value) {
 		if (value instanceof Geometry) {
 			return new WKTWriter().write((Geometry) value);
+		}
+		if (value instanceof String) {
+			try {
+				// ok this is somewhat lazy.
+				return UUID.fromString((String)value);
+			}
+			catch (IllegalArgumentException e) {
+				// it was not a UUID
+				return value;
+			}
 		}
 		// other java values are just fine as they are
 		return value;
