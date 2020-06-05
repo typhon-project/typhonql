@@ -39,7 +39,7 @@ tuple[CQLStat, Bindings] select2csql((Query)`from <{Binding ","}+ bs> select <{R
 tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`
   , Schema s, Place p, Log log = noLog) {
 
-  CQLStat q = cSelect([], "", []);
+  CQLStat q = cSelect([], "", [], allowFiltering=true);
   
   void addWhere(CQLExpr e) {
     // println("ADDING where clause: <pp(e)>");
@@ -162,7 +162,7 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
     }
   }
   
-  // println("PARAMS: <params>");
+  q.wheres = [ e | CQLExpr e <- q.wheres, e != cTerm(cBoolean(true)) ];
   return <q, params>;
 }
  
