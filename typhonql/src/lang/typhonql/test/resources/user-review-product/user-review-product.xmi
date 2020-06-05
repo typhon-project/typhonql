@@ -99,11 +99,17 @@
     <elements xsi:type="typhonml:SimpleDataType" name="city">
       <type xsi:type="typhonml:StringType" maxSize="256"/>
     </elements>
-    <elements xsi:type="typhonml:SimpleDataType" name="zipcode">
-      <type xsi:type="typhonml:StringType" maxSize="42"/>
-    </elements>
+    <elements xsi:type="typhonml:ComplexDataType" name="zipcode" type="//@customDataTypes.1"/>
     <elements xsi:type="typhonml:SimpleDataType" name="location">
       <type xsi:type="typhonml:PointType"/>
+    </elements>
+  </customDataTypes>
+  <customDataTypes name="zip">
+    <elements xsi:type="typhonml:SimpleDataType" name="nums">
+      <type xsi:type="typhonml:StringType" maxSize="4"/>
+    </elements>
+    <elements xsi:type="typhonml:SimpleDataType" name="letters">
+      <type xsi:type="typhonml:StringType" maxSize="2"/>
     </elements>
   </customDataTypes>
 </typhonml:Model>

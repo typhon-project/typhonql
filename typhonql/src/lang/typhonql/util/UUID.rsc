@@ -9,3 +9,7 @@ This module define a single function to create such UUIDs.
 
 @javaClass{lang.typhonql.util.MakeUUID}
 java str makeUUID();
+
+@javaClass{lang.typhonql.util.MakeUUID}
+java str hashUUID(str key);
+

@@ -2,8 +2,13 @@
 customdatatype address {
 	street: string[256],
 	city: string[256],
-	zipcode: string[42],
+	zipcode: zip,
 	location: point
+}
+
+customdatatype zip {
+	nums: string[4],
+	letters: string[2]
 }
 
 entity Review {

@@ -28,9 +28,10 @@ data Call
   ;
   
 data CassandraCall
- = execute(str dbName, str cql)
- | queryExecute(str dbName, str cql)
- ;  
+  = cExecuteQuery(str dbName, str cql)
+  | cExecuteStatement(str dbName, str cql)
+  | cExecuteGlobalStatement(str dbName, str cql)
+  ;  
   
 data SQLCall
   = executeQuery(str dbName, str query)
@@ -73,11 +74,15 @@ str runScript(Script scr, Session session, Schema schema) {
   str result = "";
   for (Step s <- scr.steps) {
     switch (s) {
-      case step(str r, cassandra(execute(str db, str q)), Bindings ps):
-        println("cassandra: <q>"); // todo
+      case step(str r, cassandra(cExecuteQuery(str db, str q)), Bindings ps):
+        session.cassandra.executeQuery(r, db, q, ps, s.signature);
+
+      case step(str r, cassandra(cExecuteStatement(str db, str q)), Bindings ps):
+        session.cassandra.executeStatement(db, q, ps);
+
+      case step(str r, cassandra(cExecuteGlobalStatement(str db, str q)), Bindings ps):
+        session.cassandra.executeGlobalStatement(db, q, ps);
     
-      case step(str r, cassandra(queryExecute(str db, str q)), Bindings ps):
-        println("cassandra: <q>"); // todo
     
       case step(str r, sql(executeQuery(str db, str q)), Bindings ps):
         session.sql.executeQuery(r, db, q, ps, s.signature);

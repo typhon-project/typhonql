@@ -39,7 +39,7 @@ tuple[CQLStat, Bindings] select2csql((Query)`from <{Binding ","}+ bs> select <{R
 tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`
   , Schema s, Place p, Log log = noLog) {
 
-  CQLStat q = cSelect([], "", []);
+  CQLStat q = cSelect([], "", [], allowFiltering=true);
   
   void addWhere(CQLExpr e) {
     // println("ADDING where clause: <pp(e)>");
@@ -49,6 +49,8 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
   void addResult(CQLSelectClause e) {
     q.selectClauses += [e];
   }
+  
+  //addResult(cSelector(expr2cql(cTyphonId(), as="<y>.<ent>.@id"
   
   int _vars = -1;
   int vars() {
@@ -79,11 +81,12 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
     log("##### record results");
     visit (e) {
       case x:(Expr)`<VId y>`: {
+         // this is probably dead because of lone var elimination
          log("##### record results: var <y>");
     
-         if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
+         if (str ent := env["<y>"], <p, ent> <- s.placement) {
            addResult(cSelector(expr2cql(x), as="<y>.<ent>.@id"));
-           for (<ent, str a, str _> <- ctx.schema.attrs) {
+           for (<ent, str a, str _> <- s.attrs) {
              Id f = [Id]a;
              addResult(cSelector(expr2sql((Expr)`<VId y>.<Id f>`), as="<y>.<ent>.<f>"));
            }
@@ -92,7 +95,7 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
       case x:(Expr)`<VId y>.@id`: {
          log("##### record results: var <y>.@id");
     
-         if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
+         if (str ent := env["<y>"], <p, ent> <- s.placement) {
            addResult(cSelector(expr2cql(x), as="<y>.<ent>.@id"));
          }
       }
@@ -101,6 +104,11 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
     
          if (str ent := env["<y>"], <p, ent> <- s.placement) {
            addResult(cSelector(expr2cql(x), as="<y>.<ent>.<f>"));
+         }
+         
+         // always add the @id
+         if (str ent := env["<y>"], <p, ent> <- s.placement) {
+           addResult(cSelector(expr2cql(x), as="<y>.<ent>.@id"));
          }
       }
     }
@@ -162,7 +170,7 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
     }
   }
   
-  // println("PARAMS: <params>");
+  q.wheres = [ e | CQLExpr e <- q.wheres, e != cTerm(cBoolean(true)) ];
   return <q, params>;
 }
  
