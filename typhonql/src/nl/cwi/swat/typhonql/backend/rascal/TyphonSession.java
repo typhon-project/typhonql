@@ -49,7 +49,7 @@ public class TyphonSession implements Operations {
 	public ITuple newSession(IMap connections, IEvaluatorContext ctx) {
 		return newSessionWrapper(connections, ctx).getTuple();
 	}
-
+	
 	public SessionWrapper newSessionWrapper(IMap connections, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();

@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Optional;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScope;
@@ -26,7 +24,6 @@ import org.bson.BsonInvalidOperationException;
 import org.bson.BsonValue;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 import org.rascalmpl.values.ValueFactoryFactory;
-
 import io.usethesource.vallang.IBool;
 import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IInteger;
@@ -199,8 +196,8 @@ public class TyphonQL {
 					d.getString("externalHost").getValue(),
 					d.getNumber("externalPort").intValue(), 
 					d.getString("dbType").getValue().toLowerCase(),
-					d.getString("username").getValue(),
-					d.getString("password").getValue());
+					d.isNull("username") ? null : d.getString("username").getValue(),
+					d.isNull("username") ? null : d.getString("password").getValue());
 				mw.put(vf.string(dbName), info);
 			} catch (BsonInvalidOperationException e) {
 				// TODO not do anything if row of connection information is unparsable

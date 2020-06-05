@@ -45,10 +45,13 @@ public class CassandraOperations  implements Operations, AutoCloseable {
 			}
 			CqlSessionBuilder builder = CqlSession.builder();
 			builder.addContactPoint(new InetSocketAddress(con.getHost(), con.getPort()));
-			builder.withAuthCredentials(con.getUser(), con.getPassword());
+			if (con.getUser() != null && !con.getUser().isEmpty()) {
+				builder.withAuthCredentials(con.getUser(), con.getPassword());
+			}
 			if (!global) {
 				builder.withKeyspace(CqlIdentifier.fromCql(db));
 			}
+			builder.withLocalDatacenter("datacenter1");
 			return builder.build();
 		});
 	}
