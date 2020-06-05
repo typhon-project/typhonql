@@ -29,8 +29,12 @@ Script schema2script(Schema s, Log log = noLog) {
 }
 
 list[Step] place2script(p:<cassandra(), str db>, Schema s, Log log = noLog) {
-  return [ step(db, cassandra(execute(db, pp(stmt))), ()) 
-     | CQLStat stmt <-  schema2cql(s, p, s.placement[p]) ];
+  return [
+    step(db, cassandra(executeGlobalStatement(db, "DROP KEYSPACE IF EXISTS <db>;")), ()),
+    step(db, cassandra(executeGlobalStatement(db, "CREATE KEYSPACE <db>;")), ()),
+    step(db, cassandra(executeGlobalStatement(db, "USE KEYSPACE <db>;")), ())
+  ] + [ step(db, cassandra(execute(db, pp(stmt))), ()) 
+          | CQLStat stmt <-  schema2cql(s, p, s.placement[p]) ];
 }
 
 list[Step] place2script(p: <sql(), str db>, Schema s, Log log = noLog) {

@@ -135,7 +135,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
       list[CQLAssignment] sets = [ cSimple(cColumn(cColName(keyValEntity, "<k>")), expr2cql(e)) | (KeyVal)`<Id k>: <Expr e>` <- keyValueDeps[keyValEntity] ];
       CQLStat cqlUpdate = cUpdate(cTableName(keyValEntity)
          , sets, [cEq(CQLExpr::cColumn(cTyphonId(keyValEntity)), cqlMe)]);
-      addSteps([step(dbName, cassandra(execute(dbName, pp(cqlUpdate))), myParams)]);
+      addSteps([step(dbName, cassandra(executeStatement(dbName, pp(cqlUpdate))), myParams)]);
     }
     else {
       throw "Cannot find <keyValEntity> on cassandra; bug";

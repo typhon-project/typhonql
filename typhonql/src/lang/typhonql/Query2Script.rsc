@@ -108,7 +108,7 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<cassandra(), str dbName>, Sch
   if (cqlStat.selectClauses == []) {
     return [];
   }
-  return [step(dbName, cassandra(queryExecute(dbName, pp(cqlStat))), params
+  return [step(dbName, cassandra(executeQuery(dbName, pp(cqlStat))), params
      , signature=
          filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s)
            +  where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];
