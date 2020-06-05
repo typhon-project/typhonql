@@ -11,14 +11,17 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
+
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.env.ModuleEnvironment;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
@@ -54,6 +57,7 @@ public class TyphonSession implements Operations {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
+		Map<String, ConnectionData> neoConnections = new HashMap<>();
 
 		Iterator<Entry<IValue, IValue>> connIter = connections.entryIterator();
 
@@ -76,15 +80,19 @@ public class TyphonSession implements Operations {
 				case "cassandraConnection":
                     cassandraConnections.put(dbName, data);
                     break;
+				case "neoConnection":
+                    neoConnections.put(dbName, data);
+                    break; 
 			}
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, ctx);
 	}
 
 	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
+		Map<String, ConnectionData> neoConnections = new HashMap<>();
 		for (DatabaseInfo db : connections) {
 			switch (db.getDbms().toLowerCase()) {
 			case "mongodb":
@@ -97,16 +105,18 @@ public class TyphonSession implements Operations {
 				cassandraConnections.put(db.getDbName(), new ConnectionData(db));
 				break;
 			case "neo4j":
+				neoConnections.put(db.getDbName(), new ConnectionData(db));
 				break;
 			default:
 				throw new RuntimeException("Missing type: " + db.getDbms());
 			}
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, ctx);
 	}
 
 	private SessionWrapper newSessionWrapper(Map<String, ConnectionData> mariaDbConnections,
-			Map<String, ConnectionData> mongoConnections, Map<String, ConnectionData> cassandraConnections, IEvaluatorContext ctx) {
+			Map<String, ConnectionData> mongoConnections, Map<String, ConnectionData> cassandraConnections, 
+			Map<String, ConnectionData> neoConnections, IEvaluatorContext ctx) {
 		// checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function
 		// type ourself
@@ -138,6 +148,7 @@ public class TyphonSession implements Operations {
 		MariaDBOperations mariaDBOperations = new MariaDBOperations(mariaDbConnections);
 		MongoOperations mongoOperations = new MongoOperations(mongoConnections);
 		CassandraOperations cassandra = new CassandraOperations(cassandraConnections);
+		Neo4JOperations neo = new Neo4JOperations(neoConnections);
 		state.addOpperations(mariaDBOperations);
 		state.addOpperations(mongoOperations);
 		state.addOpperations(cassandra);
@@ -150,7 +161,8 @@ public class TyphonSession implements Operations {
 				makeNewId(uuids, state, newIdType, ctx),
 				mariaDBOperations.newSQLOperations(store, script, updates, state, uuids, ctx, vf),
 				mongoOperations.newMongoOperations(store, script, updates, state, uuids, ctx, vf),
-				cassandra.buildOperations(store, script, updates, state, uuids, ctx, vf)
+				cassandra.buildOperations(store, script, updates, state, uuids, ctx, vf),
+				neo.newNeo4JOperations(store, script, updates, state, uuids, ctx, vf)
 				), state);
 	}
 
