@@ -49,7 +49,7 @@ public class CassandraOperations  implements Operations, AutoCloseable {
 				builder.withAuthCredentials(con.getUser(), con.getPassword());
 			}
 			if (!global) {
-				builder.withKeyspace(CqlIdentifier.fromCql(db));
+				builder.withKeyspace(CqlIdentifier.fromCql("\"" + db + "\""));
 			}
 			builder.withLocalDatacenter("datacenter1");
 			return builder.build();
