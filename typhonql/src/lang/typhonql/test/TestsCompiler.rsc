@@ -153,11 +153,11 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
 void testLoneVars(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i`);
   p.assertEquals("all features from item retrieved", rs, <["i.shelf", "i.product"]
-    , [[2,"radio"],[2,"radio"],[1,"tv"],[1,"tv"],[3,"tv"],[3,"tv"]]>);
+    , [[2,U("radio")],[2, U("radio")],[1, U("tv")],[1, U("tv")],[3, U("tv")],[3, U("tv")]]>);
     
   rs = p.runQuery((Request)`from Biography b select b`);
   p.assertEquals("all features from biography retrieved", rs, <["b.content", "b.user"]
-    , [["Chilean","pablo"]]>);
+    , [["Chilean", U("pablo")]]>);
     
 }
 
@@ -218,11 +218,11 @@ void testInsertManyValuedSQLLocal(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Product p select p.inventory where p.@id == #laptop`);
   
   p.assertResultEquals("many-valued inventory obtained from product", rs, <["p.inventory"],
-      [["laptop1"], ["laptop2"]]>);
+      [[U("laptop1")], [U("laptop2")]]>);
   
   rs = p.runQuery((Request)`from Item i select i.@id where i.product == #laptop`);
   p.assertResultEquals("many-valued inventory obtained via inverse", rs, <["i.@id"],
-      [["laptop1"], ["laptop2"]]>);
+      [[U("laptop1")], [U("laptop2")]]>);
   
 }
 
@@ -261,7 +261,8 @@ void testDeleteAllWithCascade(PolystoreInstance p) {
   p.assertResultEquals("deleting products deletes reviews", rs, <["r.@id"], []>);
 
   rs = p.runQuery((Request)`from Tag t select t.@id`);
-  p.assertResultEquals("deleting products does not delete tags", rs, <["t.@id"], [["fun"], ["kitchen"], ["music"], ["social"]]>);
+  p.assertResultEquals("deleting products does not delete tags", rs, <["t.@id"], 
+    [[U("fun")], [U("kitchen")], [U("music")], [U("social")]]>);
 }
 
 
@@ -417,35 +418,35 @@ void testGISonSQL(PolystoreInstance p) {
 
 void testGISonMongo(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Review r select r.@id where distance(#point(2.0 3.0), r.location) \< 200.0`);
-  p.assertResultEquals("testGISonMongo - distance query", rs, <["r.@id"], [["rev1"]]>);
+  p.assertResultEquals("testGISonMongo - distance query", rs, <["r.@id"], [[U("rev1")]]>);
 
   rs = p.runQuery((Request)`from Review r select r.@id where distance(#point(2.0 3.0), r.location) \<= 200.0`);
-  p.assertResultEquals("testGISonMongo - distance query2", rs, <["r.@id"], [["rev1"]]>);
+  p.assertResultEquals("testGISonMongo - distance query2", rs, <["r.@id"], [[U("rev1")]]>);
 
   rs = p.runQuery((Request)`from Review r select r.@id where distance(r.location, #point(2.0 3.0)) \>= 200.0`);
-  p.assertResultEquals("testGISonMongo - mindistance query", rs, <["r.@id"], [["rev2"],["rev3"]]>);
+  p.assertResultEquals("testGISonMongo - mindistance query", rs, <["r.@id"], [[U("rev2")],[U("rev3")]]>);
 
   rs = p.runQuery((Request)`from Review r select r.@id where distance(r.location, #point(2.0 3.0)) \> 200.0`);
-  p.assertResultEquals("testGISonMongo - mindistance query", rs, <["r.@id"], [["rev2"],["rev3"]]>);
+  p.assertResultEquals("testGISonMongo - mindistance query", rs, <["r.@id"], [[U("rev2")],[U("rev3")]]>);
   
   rs = p.runQuery((Request)`from Review r select r.@id where r.location in #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0))`);
-  p.assertResultEquals("testGISonMongo - contained in polygon", rs, <["r.@id"], [["rev1"],["rev3"]]>);
+  p.assertResultEquals("testGISonMongo - contained in polygon", rs, <["r.@id"], [[U("rev1")],[U("rev3")]]>);
 
   rs = p.runQuery((Request)`from Review r select r.@id where r.location & #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0))`);
-  p.assertResultEquals("testGISonMongo - intersect with polygon", rs, <["r.@id"], [["rev1"],["rev3"]]>);
+  p.assertResultEquals("testGISonMongo - intersect with polygon", rs, <["r.@id"], [[U("rev1")],[U("rev3")]]>);
 
   rs = p.runQuery((Request)`from Review r select r.@id where r.location & #point(2.0 3.0)`);
-  p.assertResultEquals("testGISonMongo - intersect with point", rs, <["r.@id"], [["rev1"]]>);
+  p.assertResultEquals("testGISonMongo - intersect with point", rs, <["r.@id"], [[U("rev1")]]>);
 }
 
 
 void testGISonCrossMongoSQL(PolystoreInstance p) {
   // TODO: Tijs add support for cross delayed clauses
   rs = p.runQuery((Request)`from Product p, Review r select r.@id, p.name where r.location in p.availabilityRegion`);
-  p.assertResultEquals("testGISonCrossMongoSQL - contained", rs, <["r.@id", "p.name"], [["rev1", "TV"], ["rev3", "TV"], ["rev2", "Radio"]]>);
+  p.assertResultEquals("testGISonCrossMongoSQL - contained", rs, <["r.@id", "p.name"], [[U("rev1"), "TV"], [U("rev3"), "TV"], [U("rev2"), "Radio"]]>);
   
   rs = p.runQuery((Request)`from User u, Review r select r.@id, u.name where distance(r.location, u.location) \< 200`);
-  p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "u.name"], [["rev1", "Pablo"], ["rev2", "Davy"]]>);
+  p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "u.name"], [[U("rev1"), "Pablo"], [U("rev2"), "Davy"]]>);
 }
 
 
@@ -467,7 +468,7 @@ void test1(PolystoreInstance p) {
 
 void test2(PolystoreInstance p) {
 	rs = p.runQuery((Request) `from Product p select p.@id`);
-	p.assertResultEquals("product ids are selected", rs, <["p.@id"],[["radio"],["tv"]]>);
+	p.assertResultEquals("product ids are selected", rs, <["p.@id"],[[U("radio")],[U("tv")]]>);
 }
 
 void test3(PolystoreInstance p) {
@@ -477,7 +478,7 @@ void test3(PolystoreInstance p) {
 
 void test4(PolystoreInstance p) {
 	rs = p.runQuery((Request) `from Review r select r.@id`);
-	p.assertResultEquals("review ids are selected", rs,  <["r.@id"],[["rev1"],["rev2"],["rev3"]]>);
+	p.assertResultEquals("review ids are selected", rs,  <["r.@id"],[[U("rev1")],[U("rev2")],[U("rev3")]]>);
 }
 
 void test5(PolystoreInstance p) {
@@ -492,7 +493,7 @@ void test6(PolystoreInstance p) {
 
 void test7(PolystoreInstance p) {
 	rs = p.runQuery((Request) `from User u, Review r select u.name, r.user where u.reviews == r, r.content == "***"`);
-	p.assertResultEquals("fields from different entities", rs, <["u.name","r.user"],[["Davy","davy"]]>);
+	p.assertResultEquals("fields from different entities", rs, <["u.name","r.user"],[["Davy",U("davy")]]>);
 }
 
 void test8(PolystoreInstance p) {
@@ -531,7 +532,7 @@ void test11(PolystoreInstance p) {
 void test12(PolystoreInstance p) {
 	p.runUpdate((Request) `insert User { @id: #tijs, name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0) }`);
 	rs = p.runQuery((Request) `from User u select u.@id where u.@id == #tijs`);
-	p.assertResultEquals("basic insert in sql", rs, <["u.@id"],[["tijs"]]>);
+	p.assertResultEquals("basic insert in sql", rs, <["u.@id"],[[U("tijs")]]>);
 }
 
 void test13(PolystoreInstance p) {
