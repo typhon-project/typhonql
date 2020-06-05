@@ -6,10 +6,11 @@ In other words: filter(X + Y) == filter(X) + filter(Y).
 That is the reason we can push where-clause evaluation to native back-ends.
 
 Unfortunately, this is not the case for the aggregation, sorting, pagination etc. features. 
-For instance, we cannot sort an immediate result, combine it with another intermediate result, and maintain sortedness; 
+For instance, we cannot sort an intermediate result, combine it with another intermediate result, and maintain sortedness; 
 one would have to sort again. 
 The same holds for limit, and for group by.
-In the latter case, it's only known at the very end  what the key(s) are to group-by on.
+You can only know what to limit to after you have applied the final filtering.
+And for group-by, it's only known at the very end  what the key(s) are to group-by on.
 
 So here is an out-of-the-box-thinking proposal. 
 We split a TyphonQL query in two parts, the selection/filtering part, and the other stuff.
