@@ -261,7 +261,7 @@ str pp(cContainsKey(CQLExpr lhs, CQLExpr rhs)) = "(<pp(lhs)> CONTAINS KEY <pp(rh
 str pp(cBindMarker(name = str name))
 //  = name == "" ? "?" : ":<name>";
 // this is the typhon encoding
-  = name == "" ? "?" : "$<name>";
+  = name == "" ? "?" : "${<name>}";
   
 str pp(cTypeHint(CQLType t, CQLExpr e)) = "(<pp(t)>)<pp(e)>";
 
