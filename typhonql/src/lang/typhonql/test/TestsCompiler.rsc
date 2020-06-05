@@ -150,6 +150,20 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
   setup(p, true);
 }
 
+/*
+
+The below test fails, bt the results seem equal...
+pected: <["i.shelf","i.product"],[
+  [2,"a398fb77-df76-3615-bdf5-7cd65fd0a7c5"], [2,"a398fb77-df76-3615-bdf5-7cd65fd0a7c5"],
+   [1,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"],[1,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"],
+  [3,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"],[3,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"]]>, 
+actual: <["i.shelf","i.product"],[
+  [2,"a398fb77-df76-3615-bdf5-7cd65fd0a7c5"], [2,"a398fb77-df76-3615-bdf5-7cd65fd0a7c5"],
+  [1,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"], [1,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"]]>
+  [3,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"], [3,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"],
+
+*/
+
 void testLoneVars(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i`);
   p.assertEquals("all features from item retrieved", rs, <["i.shelf", "i.product"]
