@@ -50,6 +50,35 @@ Basic primitive types.
 
 TODO: make table about different kind of relations in relation to cross database operations
 
+The cardinalities here represent the way they are specified in TyphonML; 
+so "one-zero/many" between entities A and B means "A is related to one B, and B is related to zero or many As" 
+(so it does *not* mean "One A is related to many Bs").
+
+### Containment
+
+
+| Cardinality | Support |
+| -----------|---------|
+| one-one   | mongo/mongo, mongo/sql, sql/mongo |
+| one-zero/one |  mongo/mongo, mongo/sql, sql/mongo |
+| one-zero/many | -- |
+| one-one/many | -- |
+| one/zero-one | mongo/mongo, mongo/sql, sql/mongo |
+| one/zero-zero/one | mongo/mongo, mongo/sql, sql/mongo |
+| one/zero-zero/many | -- |
+| one/zero-one/many | -- |
+| zero/many-one | mongo/mongo, mongo/sql, sql/mongo |
+| zero/many-zero/one | mongo/mongo, mongo/sql, sql/mongo |
+| zero/many-zero/many | -- |
+| zero/many-one/many | -- |
+| one/many-one | mongo/mongo, mongo/sql, sql/mongo |
+| one/many-zero/one | mongo/mongo, mongo/sql, sql/mongo |
+| one/many-zero/many | -- |
+| one/many-one/many | -- |
+
+
+
+
 ## Expressions
 
 | Feature | Syntax | Backend | Remarks |
