@@ -1,5 +1,6 @@
 package nl.cwi.swat.typhonql.backend.cassandra;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -55,7 +56,7 @@ public class CassandraEngine extends Engine {
 			m.appendReplacement(replacedQuery, ":" + m.group(1));
 		}
 		m.appendTail(replacedQuery);
-    	return SimpleStatement.newInstance(replacedQuery.toString(), encode(values));
+    	return SimpleStatement.newInstance(replacedQuery.toString(), encode(values)).setTimeout(Duration.ofSeconds(30));
     }
 	
 	private Map<String, Object> encode(Map<String, Object> values) {
