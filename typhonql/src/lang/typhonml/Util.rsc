@@ -221,6 +221,7 @@ ChangeOps model2changeOperators(Model m) {
   for(ChangeOperator op <- m.changeOperators){
   	switch(op){
   		case ChangeOperator(AddEntity a):{
+  			println("CHOPS");
   			result += <"addEntity", [a.name]>;
   		}
   		case ChangeOperator(RenameEntity chop):{
@@ -240,9 +241,8 @@ ChangeOps model2changeOperators(Model m) {
   			if (Entity e <- m.entities, EntityAttributeKind a <- e.attributes, a.uid == attr.uid) {
 			  entity = e;
 			}
-
-  			typ = lookup(m, #DataType, attr.\type);
-  			result += <"changeAttributeType", [entity.name, attr.name, typ.name]>;
+  	
+  			result += <"changeAttributeType", [entity.name, attr.name, "NULL"]>;
   		}
   		case ChangeOperator(DisableRelationContainment chop):{
   			result += <"disableRelationContainment", [lookup(m, #Relation, chop.relation).name]>;

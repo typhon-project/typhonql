@@ -327,9 +327,6 @@ Model xmiNode2Model(node n) {
     int dtPos = 0;
     for (xdt:"customDataTypes"(list[node] xelts) <- kids) {
        dtPath = "//@customDataTypes.<dtPos>";
-       //println("Data type path: <dtPath>");
-       //iprintln(xdt);
-
        list[SuperDataType] elements = [];
 
        for (xattr:"elements"(list[node] xtypeOpt) <- xelts) {
@@ -383,11 +380,10 @@ Model xmiNode2Model(node n) {
             attrPos = 0;
             for (xattr:"attributes"(_) <- xcho) {
            	 	attrPath = "<dtPath>/@attributes.<attrPos>";
-           	 	println(attrPath)
            	 	attr = ensureAttr(attrPath);
              	attr.name = get(xattr, "name");
              	aPath = get(xattr, "type");
-             	attr.\type = referTo(#DataType, ensurePrimitive(aPath));
+             	attr.\type = referTo(#DataType, makePrimitive(aPath));
              	// attr.ownerEntity = referTo(#Entity, ensureEntity(dtPath).entity);
              	attrs += [attr];
              	attrPos += 1;
@@ -395,8 +391,11 @@ Model xmiNode2Model(node n) {
 
            	for (xattr:"attributes"(_) <- xcho) {
              	attr = realm.new(#Attribute, Attribute(get(xattr, "name")));
-             	aPath = get(xattr, "type");
-             	attr.\type = referTo(#DataType, ensurePrimitive(aPath));
+             	
+             	// Dummy type : TODO replace by the real one
+             	DataType dt = DataType(realm.new(#IntType, IntType())); 
+             	attr.\type = dt;
+             	
              	attrs += [attr];
            	}
 
@@ -461,7 +460,10 @@ Model xmiNode2Model(node n) {
 
       	case "typhonml:AddAttribute":{
       		t = get(xcho, "type");
-      		ty = referTo(#DataType, ensurePrimitive(t));
+      		
+      		// TODO replace by actual type
+      		DataType dt = DataType(realm.new(#IntType, IntType())); 
+      		ty = referTo(#DataType, dt);
 
       		e = get(xcho, "ownerEntity");
       		entity = referTo(#Entity, ensureEntity(e).entity);
@@ -494,13 +496,13 @@ Model xmiNode2Model(node n) {
 
       	case "typhonml:ChangeAttributeType": {
       		attr_path = get(xcho, "attributeToChange");
-      		type_path = get(xcho, "newType");
-
-      		ty = referTo(#DataType, ensurePrimitive(type_path));
       		attr = referTo(#Attribute, ensureAttr(attr_path));
-
-      		re = realm.new(#ChangeAttributeType, ChangeAttributeType(attr, ty));
+      		
+			// Should be improve in order to use the correct ChangeAttributeType for the situation
+      		re = realm.new(#ChangeAttributeType, ChangePrimitiveDataTypeAttribute(attr));
+      		re = ChangeAttributeType(re);
       		chos += [ChangeOperator(re)];
+ 
       	}
 
       	case "typhonml:DisableRelationContainment": {
