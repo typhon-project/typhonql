@@ -1,5 +1,6 @@
 package lang.typhonql.util;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import io.usethesource.vallang.IString;
@@ -19,7 +20,7 @@ public class MakeUUID {
 	}
 	
 	public IString hashUUID(IString key) {
-		UUID uuid = UUID.nameUUIDFromBytes(key.getValue().getBytes());
+		UUID uuid = UUID.nameUUIDFromBytes(key.getValue().getBytes(StandardCharsets.UTF_8));
 		return vf.string(uuid.toString());
 	}	
 
