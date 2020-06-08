@@ -59,8 +59,10 @@ list[TableConstraint] indexes(str e, rel[str, str] attrs, Schema schema)
         index("<e>_<attr>_spatial", spatial(), [columnName(attr, e)])
         | <str attr, str typ> <- attrs, typ notin schema.customs<from>, typhonType2SQL(typ) in {polygon(), point()}
     ]
-    + [] // TODO: add user defined indexes after we've added them to the Schema import
-    ; 
+    + [
+        index("<e>_<iname>", regular(), [columnName(attr, ent) | <ent, attr> <- columns])
+        | <<sql(), str dbName>, e> <- schema.placement, indexSpec(str iname, columns) <- schema.pragmas[dbName], {e} == columns<0>
+    ];
  
 // ugh...
 int createOfEntity(str entity, Stats theStats) {

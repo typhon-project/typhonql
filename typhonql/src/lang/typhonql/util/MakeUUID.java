@@ -17,10 +17,16 @@ public class MakeUUID {
 	public IString makeUUID() {
 		return vf.string(randomUUID());
 	}
+	
+	public IString hashUUID(IString key) {
+		UUID uuid = UUID.nameUUIDFromBytes(key.getValue().getBytes());
+		return vf.string(uuid.toString());
+	}	
 
 	public static String randomUUID() {
 		return UUID.randomUUID().toString();
 	}
 	
+
 	
 }

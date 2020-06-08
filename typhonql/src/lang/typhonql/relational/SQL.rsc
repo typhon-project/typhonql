@@ -96,6 +96,7 @@ data IndexKind
     = uniqueIndex()
     | fullText()
     | spatial()
+    | regular()
     ;
   
 data OnDelete

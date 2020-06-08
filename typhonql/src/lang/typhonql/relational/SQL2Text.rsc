@@ -185,6 +185,16 @@ str pp(foreignKey(str c, str p, str k, OnDelete od))
 str pp(index(_, spatial(), list[str] columns))
     = intercalate(", ", ["spatial index(<q(c)>)" | c <- columns]);
 
+str pp(index(str indexName, IndexKind kind, list[str] columns))
+    = "<pp(kind)> index <q(indexName)>(<intercalate(", ", [q(c) | c <- columns])>)"
+    when kind != spatial();
+    
+// IndexKind
+
+str pp(uniqueIndex()) = "unique";  
+str pp(fullText()) = "fulltext";  
+str pp(regular()) = "";
+
 // OnDelete
 
 str pp(OnDelete::cascade()) = " on delete cascade";
@@ -205,6 +215,7 @@ str pp(char(int size)) = "char(<size>)";
 str pp(varchar(int size)) = "varchar(<size>)";
 str pp(text()) = "text";
 str pp(integer()) = "integer";
+str pp(bigint()) = "bigint";
 str pp(float()) = "float";
 str pp(double()) = "double";
 str pp(blob()) = "blob";
