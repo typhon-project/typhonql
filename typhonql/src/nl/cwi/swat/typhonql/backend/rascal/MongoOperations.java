@@ -1,7 +1,7 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
-import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -16,8 +16,11 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
+import io.usethesource.vallang.IRelation;
+import io.usethesource.vallang.ISet;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
+import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
@@ -180,10 +183,14 @@ public class MongoOperations implements Operations, AutoCloseable {
 		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
-			String selector = ((IString) args[2]).getValue();
-			String index = ((IString) args[3]).getValue();
+			IRelation<IList> selectors = ((IList) args[2]).asRelation();
+			Map<String, String> index = new LinkedHashMap<>();
+			for (IValue entry : selectors) {
+				ITuple tp = (ITuple) entry;
+				index.put(((IString) tp.get(0)).getValue(), ((IString) tp.get(1)).getValue());
+			}
 
-			engine.apply(dbName).executeCreateIndex(collection, selector, index);
+			engine.apply(dbName).executeCreateIndex(collection, index);
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}

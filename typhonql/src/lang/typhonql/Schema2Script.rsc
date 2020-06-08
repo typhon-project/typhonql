@@ -62,8 +62,9 @@ list[Step] place2script(p:<mongodb(), str db>, Schema s, Log log = noLog) {
 
 
     // add geo indexes
-    steps += [step(db, mongo(createIndex(db, entity, attr, "2dsphere")), ()) 
+    steps += [step(db, mongo(createIndex(db, entity, [<attr, "2dsphere">])), ()) 
         | <str attr, str typ> <- s.attrs[entity], typ == "point" || typ == "polygon"];
+        
     // TODO: add other kinds of indexes from model
   }
   return steps;

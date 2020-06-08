@@ -3,6 +3,7 @@ package nl.cwi.swat.typhonql.backend.mongodb;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -99,7 +100,7 @@ public class MongoDBEngine extends Engine {
 		return Document.parse(new StringSubstitutor(serialize(values)).replace(query));
 	}
 	
-	private void executeUpdate(String collectionName, String doc, Map<String, Binding> bindings, BiConsumer<MongoCollection<Document>, Document> operation) {
+	private void scheduleUpdate(String collectionName, String doc, Map<String, Binding> bindings, BiConsumer<MongoCollection<Document>, Document> operation) {
 		new UpdateExecutor(store, updates, uuids, bindings) {
 			
 			@Override
@@ -129,9 +130,18 @@ public class MongoDBEngine extends Engine {
 			}
 		}.executeUpdate();
 	}
+	
+	private void scheduleGlobalUpdate(Consumer<MongoDatabase> operation) {
+		new UpdateExecutor(store, updates, uuids, Collections.emptyMap()) {
+			@Override
+			protected void performUpdate(Map<String, Object> values) {
+				operation.accept(db);
+			}
+		}.executeUpdate();
+	}
 
 	public void executeInsertOne(String dbName, String collectionName, String doc, Map<String, Binding> bindings) {
-		executeUpdate(collectionName, doc, bindings, MongoCollection<Document>::insertOne);
+		scheduleUpdate(collectionName, doc, bindings, MongoCollection<Document>::insertOne);
 	}
 	
 	public void executeFindAndUpdateOne(String dbName, String collectionName, String query, String update, Map<String, Binding> bindings) {
@@ -143,31 +153,31 @@ public class MongoDBEngine extends Engine {
 	}
 	
 	public void executeDeleteOne(String dbName, String collectionName, String query, Map<String, Binding> bindings) {
-		executeUpdate(collectionName, query, bindings, MongoCollection<Document>::deleteOne);
+		scheduleUpdate(collectionName, query, bindings, MongoCollection<Document>::deleteOne);
 	}
 	
 	public void executeDeleteMany(String dbName, String collectionName, String query, Map<String, Binding> bindings) {
-		executeUpdate(collectionName, query, bindings, MongoCollection<Document>::deleteMany);
+		scheduleUpdate(collectionName, query, bindings, MongoCollection<Document>::deleteMany);
 	}
 	
 	public void executeCreateCollection(String dbName, String collectionName) {
-		db.createCollection(collectionName);
+		scheduleGlobalUpdate(d -> d.createCollection(collectionName));
 	}
 	
 	public void executeDropCollection(String dbName, String collectionName) {
-		db.getCollection(collectionName).drop();
+		scheduleGlobalUpdate(d -> d.getCollection(collectionName).drop());
 	}
 
 	public void executeDropDatabase(String dbName) {
-		db.drop();
+		scheduleGlobalUpdate(MongoDatabase::drop);
 	}
 
 	public void executeRenameCollection(String dbName, String collection, String newName) {
-		db.getCollection(collection).renameCollection(new MongoNamespace(newName));
+		scheduleGlobalUpdate(d -> d.getCollection(collection).renameCollection(new MongoNamespace(newName)));
 	}
 
-	public void executeCreateIndex(String collectionName, String selector, String index) {
-		db.getCollection(collectionName).createIndex(new BasicDBObject(selector, index));
+	public void executeCreateIndex(String collectionName, Map<String, String> selectors) {
+		scheduleGlobalUpdate(d -> d.getCollection(collectionName).createIndex(new BasicDBObject(selectors)));
 	}
 
 
