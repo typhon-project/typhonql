@@ -73,7 +73,7 @@ public class CassandraEngine extends Engine {
 		}
 		if (value instanceof String) {
 			String str = (String)value;
-			if (str.length() == 36 && str.charAt(7) == '-') {
+			if (str.length() == 36 && str.charAt(8) == '-') {
 				// chance that is an uuid, so let's try
 				try {
 					return UUID.fromString(str);
