@@ -43,8 +43,9 @@ alias Placement = rel[Place place, str entity];
 alias Pragmas = rel[str dbName, Option option];
 
 data Option
-  = indexSpec(str name, rel[str entity, str feature] features);
-
+  = indexSpec(str name, rel[str entity, str feature] features)
+  | graphSpec(rel[str entity, str from, str to] edges)
+  ;
 
 str ppSchema(Schema s) {
   str txt = "";
