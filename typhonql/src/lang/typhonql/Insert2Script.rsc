@@ -76,7 +76,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
 
   SQLStat theInsert = \insert(tableName("<e>"), [], []);
   DBObject theObject = object([ ]);
-  NeoStat theCreate = \matchUpdate(Maybe::just(match([], [], [NeoExpr::lit(boolean(true))])), create(pattern(nodePattern("n", [], []), [])));
+  NeoStat theCreate = \matchUpdate(Maybe::just(match([], [], [NeoExpr::lit(boolean(true))])), create(pattern(nodePattern("n", [], []), [relationshipPattern(doubleArrow(), "", "", [], nodePattern("", [], []))])));
 
   Script theScript = script([]);
   
@@ -227,7 +227,7 @@ void compileAttrs(<mongodb(), str dbName>, list[KeyVal] kvs, InsertContext ctx) 
 
 void compileAttrs(<neo4j(), str dbName>, list[KeyVal] kvs, InsertContext ctx) {
   ctx.updateNeoInsert(NeoStat(NeoStat create) {
-     create.updateClause.pattern.nodePattern.properties
+     create.updateClause.pattern.rels[0].properties
      	 = [ property(propertyName(kv, ctx.entity)[0], lang::typhonql::neo4j::NeoUtil::evalKeyVal(kv)[0]) | KeyVal kv  <- kvs ] 
      	 	+ [ property(typhonId(ctx.entity), ctx.neoMe)];
      return create;
@@ -406,22 +406,21 @@ default void compileRefBinding(
    	 if (isEmpty(create.updateMatch.val.patterns)) { 
      	create.updateMatch.val.patterns += [ 
      		pattern(
-     			nodePattern(toRole, [to], []), 
+     			nodePattern(fromRole, [to], []), 
      			[])];
      	create.updateMatch.val.clauses += 
-     		[ where([equ(property(toRole, "<to>.@id"), lit(text("<ref>")))])];
- 		create.updateClause.pattern =  
-     		pattern(
-     			nodePattern(toRole, [], []), 
-     			[relationshipPattern(doubleArrow(), "r", ctx.entity, [], nodePattern("", [], []))]);    			
+     		[ where([equ(property(fromRole, "<to>.@id"), lit(text("<ref>")))])];
+ 		create.updateClause.pattern.nodePattern =  nodePattern(fromRole, [], []);
+ 		create.updateClause.pattern.rels[0].var = "r";
+ 		create.updateClause.pattern.rels[0].label = ctx.entity;    			
      }
      else {
      	create.updateMatch.val.patterns += [pattern(
-     			nodePattern(toRole, [to], []), 
+     			nodePattern(fromRole, [to], []), 
      			[])];
      	create.updateMatch.val.clauses[0].exprs += 
-     		[equ(property(toRole, "<to>.@id"), lit(text("<ref>")))];
-     	create.updateClause.pattern.rels[0].nodePattern.var = toRole;
+     		[equ(property(fromRole, "<to>.@id"), lit(text("<ref>")))];
+     	create.updateClause.pattern.rels[0].nodePattern.var = fromRole;
         	
      }
      /*create.update.pattern.nodePattern.properties
