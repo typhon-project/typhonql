@@ -90,7 +90,9 @@
   <databases xsi:type="typhonml:DocumentDB" name="Reviews">
     <collections name="Review" entity="//@entities.0"/>
     <collections name="Biography" entity="//@entities.6"/>
-    <collections name="Category" entity="//@entities.2"/>
+    <collections name="Category" entity="//@entities.2">
+      <indexSpec name="CategoryIndex" attributes="//@entities.2/@attributes.0 //@entities.2/@attributes.1"/>
+    </collections>
   </databases>
   <customDataTypes name="address">
     <elements xsi:type="typhonml:SimpleDataType" name="street">
