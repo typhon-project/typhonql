@@ -1,26 +1,25 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
+
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
+
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
-import io.usethesource.vallang.IRelation;
-import io.usethesource.vallang.ISet;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
-import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
@@ -183,14 +182,16 @@ public class MongoOperations implements Operations, AutoCloseable {
 		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
-			IRelation<IList> selectors = ((IList) args[2]).asRelation();
-			Map<String, String> index = new LinkedHashMap<>();
-			for (IValue entry : selectors) {
-				ITuple tp = (ITuple) entry;
-				index.put(((IString) tp.get(0)).getValue(), ((IString) tp.get(1)).getValue());
-			}
+			String keys = ((IString)args[2]).getValue();
+			
+//			IRelation<IList> selectors = ((IList) args[2]).asRelation();
+//			Map<String, String> index = new LinkedHashMap<>();
+//			for (IValue entry : selectors) {
+//				ITuple tp = (ITuple) entry;
+//				index.put(((IString) tp.get(0)).getValue(), ((IString) tp.get(1)).getValue());
+//			}
 
-			engine.apply(dbName).executeCreateIndex(collection, index);
+			engine.apply(dbName).executeCreateIndex(collection, keys);
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}

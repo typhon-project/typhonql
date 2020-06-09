@@ -176,8 +176,8 @@ public class MongoDBEngine extends Engine {
 		scheduleGlobalUpdate(d -> d.getCollection(collection).renameCollection(new MongoNamespace(newName)));
 	}
 
-	public void executeCreateIndex(String collectionName, Map<String, String> selectors) {
-		scheduleGlobalUpdate(d -> d.getCollection(collectionName).createIndex(new BasicDBObject(selectors)));
+	public void executeCreateIndex(String collectionName, String keys) {
+		scheduleGlobalUpdate(d -> d.getCollection(collectionName).createIndex(Document.parse(keys)));
 	}
 
 
