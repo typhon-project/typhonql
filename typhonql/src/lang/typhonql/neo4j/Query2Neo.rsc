@@ -57,6 +57,8 @@ alias Ctx
   = tuple[
       void(NeoExpr) addWhere,
       void(str, str) addFrom,
+      void(str, str) addSource,
+      void(str, str) addTarget,
       //void(str, As, NeoExpr) addLeftOuterJoin,
       void(NeoExpr) addResult,
       void(str, Param) addParam,
@@ -90,7 +92,7 @@ Steps to compile to SQL
 tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`
   , Schema s, Place p, Log log = noLog) {
 
-  NeoStat q = matchQuery(match([], [where([])], []));
+  NeoStat q = matchQuery(match([pattern(nodePattern("", [], []), [relationshipPattern(doubleArrow(), "",  "", [], nodePattern("", [], []))])], [where([])], []));
   
   void addWhere(NeoExpr e) {
     // println("ADDING where clause: <pp(e)>");
@@ -99,7 +101,22 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
   
   void addFrom(str var, str label) {
     // println("ADDING table: <pp(as)>");
-    q.match.patterns += [pattern(nodePattern(var, label, []), [])];
+    q.match.patterns += [pattern(nodePattern(var, [label], []), [])];
+  }
+  
+  void addRelation(str var, str label) {
+   q.match.patterns[0].rels[0].var = var;
+   q.match.patterns[0].rels[0].label = label;
+  }
+  
+  void addSource(str var, str label) {
+    q.match.patterns[0].nodePattern.var = var;
+    q.match.patterns[0].nodePattern.labels = [label];
+  }
+  
+  void addTarget(str var, str label) {
+    q.match.patterns[0].rels[0].nodePattern.var = var;
+    q.match.patterns[0].rels[0].nodePattern.labels = [label];
   }
   
   void addResult(NeoExpr e) {
@@ -136,6 +153,8 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
   Ctx ctx = <
      addWhere,
      addFrom,
+     addSource,
+     addTarget,
      addResult,
      addParam,
      s,
@@ -187,7 +206,7 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
   // results require tables for joining.
   for ((Binding)`<EId e> <VId x>` <- bs) {
     // skipping #dynamic / #ignored
-    addFrom("<x>", "<e>");
+    addRelation("<x>", "<e>");
   }
 
   for ((Result)`<Expr e>` <- rs) {
@@ -221,13 +240,6 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
   // println("PARAMS: <params>");
   return <q, params>;
 }
-
-
-
-str varForTarget(Id f, int i) = "<f>$<i>";
-
-str varForJunction(Id f, int i) = "junction_<f>$<i>";
-
 
 NeoExpr expr2neo(e:(Expr)`<VId x>`, Ctx ctx, Log log = noLog)
   = expr2neo((Expr)`<VId x>.@id`, ctx);
@@ -275,15 +287,27 @@ NeoExpr expr2neo(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
   }
   else if (<entity, _, role, str toRole, _, str to, _> <- ctx.schema.rels) {
   	log("######### xref, or external containment: <entity> -<role>/<toRole>-\> <to> (`<e>`)  ");
-  	tbl1 = "<x>";
-    tbl2 = varForJunction(f, ctx.vars());
+  	node1 = "<x>";
+    node2 = "<f>";
+	
+	int n = ctx.vars();
+	str var = "v<n>";
+	if (isFrom(entity, toRole, ctx.place, ctx.schema)) {
+		ctx.addSource(var, to);
+	} else if (isTo(entity, toRole, ctx.place, ctx.schema)) {
+		ctx.addTarget(var, to);
+	} else {
+		ctx.addFrom(var, to);
+	}
+	//ctx.addWhere(equ(property(node1, nodeName(entity,node2)), property(var, nodeName(to, "@id"))));
+	//ctx.addWhere(equ(property(node1, node2), property("X", node2)));
 
-    ctx.addLeftOuterJoin(tbl1,  	
-  	  as(junctionTableName(entity, role, to, toRole), tbl2),
-  	  equ(column(tbl2, junctionFkName(entity, role)), column(tbl1, typhonId(entity))));
+    //ctx.addLeftOuterJoin(tbl1,  	
+  	//  as(junctionTableName(entity, role, to, toRole), tbl2),
+  	//  equ(column(tbl2, junctionFkName(entity, role)), column(tbl1, typhonId(entity))));
   	
   	// return the column of the target
-  	return column(tbl2, junctionFkName(to, toRole));
+  	return property(var, nodeName(to, "@id"));
   }
   else if (<entity, role, str atype> <- ctx.schema.attrs) { 
     log("# an attribute <entity>.<role>");
@@ -299,6 +323,14 @@ NeoExpr expr2neo(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
 }  
 
 str nodeName(str role, str entity) = "<role>.<entity>";
+
+bool isFrom(str entity, str relName, Place p:<neo4j(), dbName>, Schema s) {
+	return  <dbName, graphSpec({ _*, <entity, relName, _> , _*})> <- s.pragmas; 
+}
+
+bool isTo(str entity, str relName, Place p:<neo4j(), dbName>, Schema s) {
+	return  <dbName, graphSpec({ _*, <entity, _, relName> , _*})> <- s.pragmas;
+}
 
 NeoExpr expr2neo((Expr)`?`, Ctx ctx, Log log = noLog) = placeholder();
 
@@ -418,17 +450,21 @@ where `r`.`Review.user` = `p`.`Person.@id`
 
 void smoke2neoSelectWithAllOnSameNeoDB() {
   s = schema({
-    <"Company", \zero_many(), "locations", "companies", \zero_many(), "City", false>
+    <"Concordance", \one(), "from", "from^", \one(), "Product", false>,
+    <"Concordance", \one(), "to", "to^", \one(), "Product", false>,
+    <"Product", \one(), "from^", "from", \one(), "Concordance", true>,
+    <"Product", \one(), "to^", "to", \one(), "Concordance", true>
   }, {
-    <"City", "name", "String">,
-    <"City", "population", "int">,
-    <"Company", "name", "String">,
-    <"Company", "employees", "int">
+    <"Concordance", "weight", "int">,
+    <"Product", "name", "string[256]">
   },
   placement = {
-    <<neo4j(), "Companies">, "Company">,
-    <<neo4j(), "Companies">, "City">
-  } 
+    <<sql(), "Inventory">, "Product">,
+    <<neo4j(), "Concordance">, "Concordance">
+  },
+  pragmas = {
+  	<"Concordance", graphSpec({<"Concordance", "from^", "to^">})>
+  }
   );
   
   return smoke2neo(s);
@@ -462,11 +498,11 @@ void smoke2neo(Schema s) {
   
   println("\n\n#####");
   println("## ordered weights");
-  Request q = (Request)`from City c select c.name where c.name == "Atlanta"`;  
+  Request q = (Request)`from Product p1, Product p2, Concordance c select c.weight where p1.name == "TV", p2.name == "Radio", c.from == p1, c.to == p2, c.weight \>10`;  
   println("Ordering <q>");
   order = orderPlaces(q, s);
   println("ORDER = <order>");
-  for (Place p <- order, p.db == neo4j()) {
+  for (Place p:<neo4j(), _> <- order) {
     println("\n\t#### Translation of <restrict(q, p, order, s)>");
    	<stat, params> = compile2neo(restrict(q, p, order, s), s, p); 
     println(stat);
