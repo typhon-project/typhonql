@@ -352,7 +352,7 @@ str builtinDataType2str(DataType dt) {
   switch (dt) {
     case DataType(IntType()): typeName = "int";
     case DataType(BigintType()): typeName = "bigint";
-    case DataType(StringType(maxSize = int n)): typeName = "string(<n>)";
+    case DataType(StringType(int n)): typeName = "string(<n>)";
     case DataType(BlobType()): typeName = "blob";
     case DataType(BoolType()): typeName = "bool";
     case DataType(TextType()): typeName = "text";

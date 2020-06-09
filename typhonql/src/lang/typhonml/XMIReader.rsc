@@ -116,7 +116,7 @@ Model xmiNode2Model(node n) {
     switch (<name, params>) {
       case <"IntType", []> : return DataType(realm.new(#IntType, IntType()));
       case <"BigintType", []> : return DataType(realm.new(#BigintType, BigintType()));
-      case <"StringType", [int n]> : return DataType(realm.new(#StringType, StringType(maxSize=n)));
+      case <"StringType", [int n]> : return DataType(realm.new(#StringType, StringType(n)));
       case <"BlobType", []> : return DataType(realm.new(#BlobType, BlobType()));
       case <"BoolType", []> : return DataType(realm.new(#BoolType, BoolType()));
       case <"TextType", []> : return DataType(realm.new(#TextType, TextType()));
@@ -169,7 +169,7 @@ Model xmiNode2Model(node n) {
             tbl.entity = referTo(#Entity, ensureEntity(ep));
 
             if (xind:"indexSpec"(_) <- tkids) {
-              ind = realm.new(#IndexSpec, IndexSpec(get(xind, "name"), [], [], referTo(#Table, tbl)));
+              ind = realm.new(#IndexSpec, IndexSpec(get(xind, "name"), [], []));
               list[str] attrRefs = split(" ", get(xind, "attributes"));
               ind.attributes = [ referTo(#Attribute, ensureAttr(a).attribute) | str a <- attrRefs ];
               if (has(xind, "references")) {
