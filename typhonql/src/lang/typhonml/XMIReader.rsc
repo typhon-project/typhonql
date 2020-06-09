@@ -190,10 +190,23 @@ Model xmiNode2Model(node n) {
 
         case "typhonml:DocumentDB": {
           colls = [];
-          for (xcoll:"collections"(_) <- xelts) {
+          for (xcoll:"collections"(list[node] ckids) <- xelts) {
             coll = realm.new(#Collection, Collection(get(xcoll, "name")));
             ep = get(xcoll, "entity");
             coll.entity = referTo(#Entity, ensureEntity(ep));
+            
+            if (xind:"indexSpec"(_) <- ckids) {
+              ind = realm.new(#IndexSpec, IndexSpec(get(xind, "name"), [], []));
+              list[str] attrRefs = split(" ", get(xind, "attributes"));
+              ind.attributes = [ referTo(#Attribute, ensureAttr(a).attribute) | str a <- attrRefs ];
+              if (has(xind, "references")) {
+                list[str] refRefs = split(" ", get(xind, "references"));
+                ind.references = [ referTo(#Relation, ensureRel(r)) | str r <- refRefs ];
+              }
+              coll.indexSpec = just(ind);
+            }
+            
+            
             colls += [coll];
           }
 
