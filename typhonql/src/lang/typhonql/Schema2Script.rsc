@@ -65,7 +65,11 @@ list[Step] place2script(p:<mongodb(), str db>, Schema s, Log log = noLog) {
     steps += [step(db, mongo(createIndex(db, entity, [<attr, "2dsphere">])), ()) 
         | <str attr, str typ> <- s.attrs[entity], typ == "point" || typ == "polygon"];
         
-    // TODO: add other kinds of indexes from model
+    // add specified indexes    
+    // TODO: don't know what the second col in the rel means...
+    //steps += [step(db, mongo(createIndex(db, entity, [<attrOrRef, "text"> | <entity, str attrOrRef> <- ftrs ])), ())
+    //   | <db, indexSpec(str name, ftrs)> <- s.pragmas ];
+          
   }
   return steps;
 }
