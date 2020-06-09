@@ -94,6 +94,16 @@ Pragmas model2pragmas(Model m)
 
 
 
+Pragmas pragmas(Database(DocumentDB(str name, list[Collection] colls)), Model m) {
+  prags = {};
+  for (Collection coll <- colls, just(IndexSpec ind) := coll.indexSpec) {
+    str ent = lookup(m, #Entity, coll.entity).name;
+    ftrs = { <ent, lookup(m, #Attribute, a).name> | Ref[Attribute] a <- ind.attributes };
+    ftrs += { <ent, lookup(m, #Relation, r).name> | Ref[Relation] r <- ind.references };
+    prags += {<name, indexSpec(ind.name, ftrs)>};
+  }
+  return prags;
+}
 
 Pragmas pragmas(Database(RelationalDB(str name, list[Table] tables)), Model m) {
   prags = {};
