@@ -150,9 +150,9 @@ void addJunctionTableOutside(str from, str fromRole, str to, str toRole, Stats s
     SQLStat stat = create(tbl, [
       column(left, typhonIdType(), [notNull()]),
       column(right, typhonIdType(), [notNull()])      
-    ], [
-      foreignKey(left, tableName(from), typhonId(from), cascade()) | doForeignKeys
-    ]);
+    ], [ foreignKey(left, tableName(from), typhonId(from), cascade()) | doForeignKeys ]
+     + [ index("<from>_<right>", regular(), [right]) ]
+    );
     stats.add(dropTable([tbl], true, []));
     stats.add(stat);
 }
