@@ -28,7 +28,7 @@ str pp(matchUpdate(just(match(list[Pattern] ps, list[Clause] cs, list[NeoExpr] e
 str pp(matchUpdate(nothing(), UpdateClause uc))
   = pp(uc);  
     
-str pp(matchQuery(match(list[Patterns] ps, list[Clause] cs, list[NeoExpr] es)))
+str pp(matchQuery(match(list[Pattern] ps, list[Clause] cs, list[NeoExpr] es)))
   = "match <intercalate(", ", [ pp(p) | Pattern p <- ps ])>
     '<intercalate("\n", [ pp(c) | Clause c <- cs ])>
     'return <intercalate(", ", [ pp(e) | NeoExpr e <- es ])>"
@@ -41,7 +41,7 @@ str pp(pattern(nodePattern, rels))
 	= "<pp(nodePattern)><intercalate(" ", [pp(r) | r <- rels])>";
 	
 str pp(relationshipPattern(Direction dir, str var, str label, list[Property] props, NodePattern nodePattern))
-	= "-[<var>:<label>]-\><pp(nodePattern)>";
+	= "-[<var>:<label><!isEmpty(props)?" { <intercalate(", ", [pp(p) | p <- props])> }":"">]-\><pp(nodePattern)>";
 	
 str pp(nodePattern(str var, list[str] labels, list[Property] props))
 	= "(<var> <isEmpty(labels)?"":":" + intercalate(":", labels)><!isEmpty(props)?" { <intercalate(", ", [pp(p) | p <- props])> }":"">)";
