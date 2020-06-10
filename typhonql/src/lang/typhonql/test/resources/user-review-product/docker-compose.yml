@@ -6,8 +6,8 @@ services:
     environment:
       NEO4J_AUTH: neo4j/password
     ports:
-      - target: 7474
-        published: 7474
+      - target: 7687
+        published: 7687
         
   Inventory:
     image: mariadb:latest
