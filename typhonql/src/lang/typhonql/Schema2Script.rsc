@@ -55,6 +55,7 @@ list[Step] place2script(p: <sql(), str db>, Schema s, Log log = noLog) {
 
 list[Step] place2script(p:<mongodb(), str db>, Schema s, Log log = noLog) {
   list[Step] steps = [step(db, mongo(dropDatabase(db)), ())];
+
   for (str entity <- s.placement[p]) {
     log("[RUN-schema/mongodb/<db>] creating collection <entity>");
     steps += [step(db, mongo(dropCollection(db, entity)), ())];
@@ -62,9 +63,14 @@ list[Step] place2script(p:<mongodb(), str db>, Schema s, Log log = noLog) {
 
 
     // add geo indexes
-    steps += [step(db, mongo(createIndex(db, entity, attr, "2dsphere")), ()) 
+    steps += [step(db, mongo(createIndex(db, entity, "{\"<attr>\": \"2dsphere\"}")), ()) 
         | <str attr, str typ> <- s.attrs[entity], typ == "point" || typ == "polygon"];
-    // TODO: add other kinds of indexes from model
+        
+    // add specified indexes    
+    steps += [step(db, mongo(createIndex(db, entity, "{\"<attrOrRef>\": 1}")), ())
+       | <db, indexSpec(str name, rel[str, str] ftrs)> <- s.pragmas, <entity, str attrOrRef> <- ftrs ];
+          
   }
+
   return steps;
 }

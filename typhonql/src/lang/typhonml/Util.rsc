@@ -95,6 +95,16 @@ Pragmas model2pragmas(Model m)
 
 
 
+Pragmas pragmas(Database(DocumentDB(str name, list[Collection] colls)), Model m) {
+  prags = {};
+  for (Collection coll <- colls, just(IndexSpec ind) := coll.indexSpec) {
+    str ent = lookup(m, #Entity, coll.entity).name;
+    ftrs = { <ent, lookup(m, #Attribute, a).name> | Ref[Attribute] a <- ind.attributes };
+    ftrs += { <ent, lookup(m, #Relation, r).name> | Ref[Relation] r <- ind.references };
+    prags += {<name, indexSpec(ind.name, ftrs)>};
+  }
+  return prags;
+}
 
 Pragmas pragmas(Database(RelationalDB(str name, list[Table] tables)), Model m) {
   prags = {};
@@ -222,6 +232,7 @@ ChangeOps model2changeOperators(Model m) {
   for(ChangeOperator op <- m.changeOperators){
   	switch(op){
   		case ChangeOperator(AddEntity a):{
+  			println("CHOPS");
   			result += <"addEntity", [a.name]>;
   		}
   		case ChangeOperator(RenameEntity chop):{
@@ -241,9 +252,8 @@ ChangeOps model2changeOperators(Model m) {
   			if (Entity e <- m.entities, EntityAttributeKind a <- e.attributes, a.uid == attr.uid) {
 			  entity = e;
 			}
-
-  			typ = lookup(m, #DataType, attr.\type);
-  			result += <"changeAttributeType", [entity.name, attr.name, typ.name]>;
+  	
+  			result += <"changeAttributeType", [entity.name, attr.name, "NULL"]>;
   		}
   		case ChangeOperator(DisableRelationContainment chop):{
   			result += <"disableRelationContainment", [lookup(m, #Relation, chop.relation).name]>;
@@ -353,7 +363,7 @@ str builtinDataType2str(DataType dt) {
   switch (dt) {
     case DataType(IntType()): typeName = "int";
     case DataType(BigintType()): typeName = "bigint";
-    case DataType(StringType(maxSize = int n)): typeName = "string(<n>)";
+    case DataType(StringType(int n)): typeName = "string(<n>)";
     case DataType(BlobType()): typeName = "blob";
     case DataType(BoolType()): typeName = "bool";
     case DataType(TextType()): typeName = "text";

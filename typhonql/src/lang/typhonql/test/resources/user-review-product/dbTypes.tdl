@@ -1,9 +1,0 @@
-dbtype MariaDB {
-	default image = mariadb:latest;
-}
-dbtype Cassandra {
-	default image = cassandra:latest;
-}
-dbtype Mongo {
-	default image = mongo:latest;
-}

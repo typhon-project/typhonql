@@ -1,56 +1,14 @@
 version: '3.7'
 
 services:
-  MoreStuff:
-    image: neo4j:latest
-    environment:
-      NEO4J_AUTH: neo4j/password
-    ports:
-      - target: 7687
-        published: 7687
-        
-  Inventory:
-    image: mariadb:latest
-    environment:
-      MYSQL_ROOT_PASSWORD: example
-    ports:
-      - target: 3306
-        published: 3307
-
-  Reviews:
-    image: mongo:latest
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: username
-      MONGO_INITDB_ROOT_PASSWORD: password
-    ports:
-      - target: 27017
-        published: 27017
-
-  Stuff:
-    image: cassandra:latest
-    ports:
-      - target: 7001
-        published: 7001
-
-  polystore-mongo:
-    image: mongo:latest
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin
-      MONGO_INITDB_DATABASE: admin
-    volumes:
-      - ./models/:/docker-entrypoint-initdb.d
-
   typhon-polystore-service:
     image: clms/typhon-polystore-api:latest
     depends_on: 
       - polystore-mongo
-      - typhonql-server
     ports:
       - target: 8080
         published: 8080
     restart: always
-
   polystore-ui:
     image: clms/typhon-polystore-ui:latest
     environment:
@@ -61,10 +19,38 @@ services:
     ports:
       - target: 4200
         published: 4200
-
   typhonql-server:
-    image: swatengineering/typhonql-server:dev
+    image: swatengineering/typhonql-server
+    ports:
+      - target: 7000
     restart: always
+  inventory:
+    image: mariadb:latest
     environment:
-      _JAVA_OPTIONS : -Dlog4j2.level=INFO
-
+      MYSQL_ROOT_PASSWORD: example
+    ports:
+      - target: 3306
+        published: 3306
+  stuff:
+    image: cassandra:latest
+    ports:
+      - target: 9042
+        published: 9042
+  reviews:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: username
+      MONGO_INITDB_ROOT_PASSWORD: password
+    ports:
+      - target: 27017
+        published: 27017
+  polystore-mongo:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_INITDB_DATABASE: admin
+    ports:
+      - target: 27017
+    volumes:
+      - ./models/:/docker-entrypoint-initdb.d

@@ -116,7 +116,7 @@ Model xmiNode2Model(node n) {
     switch (<name, params>) {
       case <"IntType", []> : return DataType(realm.new(#IntType, IntType()));
       case <"BigintType", []> : return DataType(realm.new(#BigintType, BigintType()));
-      case <"StringType", [int n]> : return DataType(realm.new(#StringType, StringType(maxSize=n)));
+      case <"StringType", [int n]> : return DataType(realm.new(#StringType, StringType(n)));
       case <"BlobType", []> : return DataType(realm.new(#BlobType, BlobType()));
       case <"BoolType", []> : return DataType(realm.new(#BoolType, BoolType()));
       case <"TextType", []> : return DataType(realm.new(#TextType, TextType()));
@@ -169,7 +169,7 @@ Model xmiNode2Model(node n) {
             tbl.entity = referTo(#Entity, ensureEntity(ep));
 
             if (xind:"indexSpec"(_) <- tkids) {
-              ind = realm.new(#IndexSpec, IndexSpec(get(xind, "name"), [], [], referTo(#Table, tbl)));
+              ind = realm.new(#IndexSpec, IndexSpec(get(xind, "name"), [], []));
               list[str] attrRefs = split(" ", get(xind, "attributes"));
               ind.attributes = [ referTo(#Attribute, ensureAttr(a).attribute) | str a <- attrRefs ];
               if (has(xind, "references")) {
@@ -190,10 +190,23 @@ Model xmiNode2Model(node n) {
 
         case "typhonml:DocumentDB": {
           colls = [];
-          for (xcoll:"collections"(_) <- xelts) {
+          for (xcoll:"collections"(list[node] ckids) <- xelts) {
             coll = realm.new(#Collection, Collection(get(xcoll, "name")));
             ep = get(xcoll, "entity");
             coll.entity = referTo(#Entity, ensureEntity(ep));
+            
+            if (xind:"indexSpec"(_) <- ckids) {
+              ind = realm.new(#IndexSpec, IndexSpec(get(xind, "name"), [], []));
+              list[str] attrRefs = split(" ", get(xind, "attributes"));
+              ind.attributes = [ referTo(#Attribute, ensureAttr(a).attribute) | str a <- attrRefs ];
+              if (has(xind, "references")) {
+                list[str] refRefs = split(" ", get(xind, "references"));
+                ind.references = [ referTo(#Relation, ensureRel(r)) | str r <- refRefs ];
+              }
+              coll.indexSpec = just(ind);
+            }
+            
+            
             colls += [coll];
           }
 
@@ -327,9 +340,6 @@ Model xmiNode2Model(node n) {
     int dtPos = 0;
     for (xdt:"customDataTypes"(list[node] xelts) <- kids) {
        dtPath = "//@customDataTypes.<dtPos>";
-       //println("Data type path: <dtPath>");
-       //iprintln(xdt);
-
        list[SuperDataType] elements = [];
 
        for (xattr:"elements"(list[node] xtypeOpt) <- xelts) {
@@ -383,11 +393,10 @@ Model xmiNode2Model(node n) {
             attrPos = 0;
             for (xattr:"attributes"(_) <- xcho) {
            	 	attrPath = "<dtPath>/@attributes.<attrPos>";
-           	 	println(attrPath)
            	 	attr = ensureAttr(attrPath);
              	attr.name = get(xattr, "name");
              	aPath = get(xattr, "type");
-             	attr.\type = referTo(#DataType, ensurePrimitive(aPath));
+             	attr.\type = referTo(#DataType, makePrimitive(aPath));
              	// attr.ownerEntity = referTo(#Entity, ensureEntity(dtPath).entity);
              	attrs += [attr];
              	attrPos += 1;
@@ -395,8 +404,11 @@ Model xmiNode2Model(node n) {
 
            	for (xattr:"attributes"(_) <- xcho) {
              	attr = realm.new(#Attribute, Attribute(get(xattr, "name")));
-             	aPath = get(xattr, "type");
-             	attr.\type = referTo(#DataType, ensurePrimitive(aPath));
+             	
+             	// Dummy type : TODO replace by the real one
+             	DataType dt = DataType(realm.new(#IntType, IntType())); 
+             	attr.\type = dt;
+             	
              	attrs += [attr];
            	}
 
@@ -461,7 +473,10 @@ Model xmiNode2Model(node n) {
 
       	case "typhonml:AddAttribute":{
       		t = get(xcho, "type");
-      		ty = referTo(#DataType, ensurePrimitive(t));
+      		
+      		// TODO replace by actual type
+      		DataType dt = DataType(realm.new(#IntType, IntType())); 
+      		ty = referTo(#DataType, dt);
 
       		e = get(xcho, "ownerEntity");
       		entity = referTo(#Entity, ensureEntity(e).entity);
@@ -494,13 +509,13 @@ Model xmiNode2Model(node n) {
 
       	case "typhonml:ChangeAttributeType": {
       		attr_path = get(xcho, "attributeToChange");
-      		type_path = get(xcho, "newType");
-
-      		ty = referTo(#DataType, ensurePrimitive(type_path));
       		attr = referTo(#Attribute, ensureAttr(attr_path));
-
-      		re = realm.new(#ChangeAttributeType, ChangeAttributeType(attr, ty));
+      		
+			// Should be improve in order to use the correct ChangeAttributeType for the situation
+      		re = realm.new(#ChangeAttributeType, ChangePrimitiveDataTypeAttribute(attr));
+      		re = ChangeAttributeType(re);
       		chos += [ChangeOperator(re)];
+ 
       	}
 
       	case "typhonml:DisableRelationContainment": {

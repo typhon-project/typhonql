@@ -98,7 +98,10 @@ documentdb Reviews {
 	collections {
 		Review : Review
 		Biography : Biography
-		Category: Category
+		Category: Category 
+		index CategoryIndex {
+		  attributes ("Category.id", "Category.name")
+		}
 	}
 }
 
