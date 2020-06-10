@@ -292,9 +292,9 @@ NeoExpr expr2neo(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
 	
 	int n = ctx.vars();
 	str var = "v<n>";
-	if (isFrom(entity, toRole, ctx.place, ctx.schema)) {
+	if (isFrom(entity, role, ctx.place, ctx.schema)) {
 		ctx.addSource(var, to);
-	} else if (isTo(entity, toRole, ctx.place, ctx.schema)) {
+	} else if (isTo(entity, role, ctx.place, ctx.schema)) {
 		ctx.addTarget(var, to);
 	} else {
 		ctx.addFrom(var, to);
@@ -445,60 +445,74 @@ where `r`.`Review.user` = `p`.`Person.@id`
 
 */
 
-
-
-
-void smoke2neoSelectWithAllOnSameNeoDB() {
-  s = schema({
+Schema testSchema() = schema({
     <"Concordance", \one(), "from", "from^", \one(), "Product", false>,
     <"Concordance", \one(), "to", "to^", \one(), "Product", false>,
     <"Product", \one(), "from^", "from", \one(), "Concordance", true>,
-    <"Product", \one(), "to^", "to", \one(), "Concordance", true>
+    <"Product", \one(), "to^", "to", \one(), "Concordance", true>,
+    <"Wish", \one(), "user", "user^", \one(), "User", false>,
+    <"Wish", \one(), "product", "product^", \one(), "Product", false>,
+    <"User", \one(), "user^", "user", \one(), "Wish", true>,
+    <"Product", \one(), "product^", "product", \one(), "Concordance", true>
   }, {
     <"Concordance", "weight", "int">,
-    <"Product", "name", "string[256]">
+    <"Product", "name", "string[256]">,
+    <"User", "name", "string[256]">,
+    <"Wish", "amount", "int">
   },
   placement = {
     <<sql(), "Inventory">, "Product">,
-    <<neo4j(), "Concordance">, "Concordance">
+    <<sql(), "Inventory">, "User">,
+    <<neo4j(), "Concordance">, "Concordance">,
+    <<neo4j(), "Concordance">, "Wish">
   },
   pragmas = {
-  	<"Concordance", graphSpec({<"Concordance", "from^", "to^">})>
+  	<"Concordance", graphSpec({<"Concordance", "from", "to">, <"Wish", "user", "product">})>
   }
   );
   
-  return smoke2neo(s);
-}
-/*
-void smoke2sqlWithAllOnDifferentSQLDB() {
-  s = schema({
-    <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
-    <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
-    <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
-    <"Comment", zero_many(), "replies", "owner", \zero_many(), "Comment", true>
-  }, {
-    <"Person", "name", "String">,
-    <"Person", "age", "int">,
-    <"Review", "text", "String">,
-    <"Comment", "contents", "String">,
-    <"Reply", "reply", "String">
-  },
-  placement = {
-    <<sql(), "Inventory">, "Person">,
-    <<sql(), "Reviews">, "Review">,
-    <<sql(), "Reviews">, "Comment">
-  } 
-  );
-  
-  return smoke2sql(s);
-}
 
-*/
-void smoke2neo(Schema s) {
-  
+void smoke2neoSelectWithAllOnSameNeoDB() {
+  s = testSchema();	  
   println("\n\n#####");
   println("## ordered weights");
   Request q = (Request)`from Product p1, Product p2, Concordance c select c.weight where p1.name == "TV", p2.name == "Radio", c.from == p1, c.to == p2, c.weight \>10`;  
+  println("Ordering <q>");
+  order = orderPlaces(q, s);
+  println("ORDER = <order>");
+  for (Place p:<neo4j(), _> <- order) {
+    println("\n\t#### Translation of <restrict(q, p, order, s)>");
+   	<stat, params> = compile2neo(restrict(q, p, order, s), s, p); 
+    println(stat);
+    
+    println(pp(stat));
+  }
+  
+}
+
+void smoke2neoSelectWithAllOnSameNeoDB2() {
+  s = testSchema();	  
+  println("\n\n#####");
+  println("## ordered weights");
+  Request q = (Request)`from User u1, Product p1, Wish w select w.amount where u1.name == "Pablo", p1.name == "TV", w.product == p1, w.user == u1, w.amount \>10`;  
+  println("Ordering <q>");
+  order = orderPlaces(q, s);
+  println("ORDER = <order>");
+  for (Place p:<neo4j(), _> <- order) {
+    println("\n\t#### Translation of <restrict(q, p, order, s)>");
+   	<stat, params> = compile2neo(restrict(q, p, order, s), s, p); 
+    println(stat);
+    
+    println(pp(stat));
+  }
+  
+}
+
+void smoke2neoSelectWithAllOnSameNeoDB3() {
+  s = testSchema();	  
+  println("\n\n#####");
+  println("## ordered weights");
+  Request q = (Request)`from User u1, Product p1, Wish w select w.amount where u1.name == "Pablo", p1.name == "TV", p1.wish == w, u1.wish == w, w.amount \>10`;  
   println("Ordering <q>");
   order = orderPlaces(q, s);
   println("ORDER = <order>");
