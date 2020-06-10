@@ -17,7 +17,8 @@ alias Session = tuple[
 	str (str) newId,
 	SQLOperations sql,
    	MongoOperations mongo,
-   	CassandraOperations cassandra
+   	CassandraOperations cassandra,
+   	Neo4JOperations neo
 ];
 
 alias ResultTable
