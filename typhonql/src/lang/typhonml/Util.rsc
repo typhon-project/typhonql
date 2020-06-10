@@ -117,6 +117,17 @@ Pragmas pragmas(Database(RelationalDB(str name, list[Table] tables)), Model m) {
   return prags;
 }
 
+Pragmas pragmas(Database(GraphDB(str name, list[GraphNode] _, list[GraphEdge] edges)), Model m) {
+  es = {};
+  for (GraphEdge edge <- edges) {
+    str ent = lookup(m, #Entity, edge.entity).name;
+    str from = lookup(m, #Relation, edge.from).name;
+    str to = lookup(m, #Relation, edge.to).name;
+    es += {<ent, from, to>};
+  }
+  return {<name, graphSpec(es)>};
+}
+
 default Pragmas pragmas(Database _, Model _) = {};
 
 // NB: the place function is an extension point.
@@ -146,6 +157,9 @@ Placement place(Database(KeyValueDB(str name, list[KeyValueElement] elts)), Mode
  return { <<cassandra(), name>, p> | str p <- props };
 }
   //= {<<cassandra(), name>, lookup(m, #Attribute, c.entity).name> | KeyValueElement e <- elts };
+
+Placement place(Database(GraphDB(str name, list[GraphNode] nodes, list[GraphEdge] edges)), Model m)
+  = {<<neo4j(), name>, lookup(m, #Entity, e.entity).name> | GraphEdge e <- edges };
 
 
 default Placement place(Database db, Model m) {
