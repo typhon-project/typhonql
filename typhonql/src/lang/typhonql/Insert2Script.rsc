@@ -409,7 +409,7 @@ default void compileRefBinding(
      			nodePattern(fromRole, [to], []), 
      			[])];
      	create.updateMatch.val.clauses += 
-     		[ where([equ(property(fromRole, "<to>.@id"), lit(text("<ref>")))])];
+     		[ where([equ(property(fromRole, "<to>.@id"), lit(text("<ref>"[1..])))])];
  		create.updateClause.pattern.nodePattern =  nodePattern(fromRole, [], []);
  		create.updateClause.pattern.rels[0].var = "r";
  		create.updateClause.pattern.rels[0].label = ctx.entity;    			
@@ -419,7 +419,7 @@ default void compileRefBinding(
      			nodePattern(fromRole, [to], []), 
      			[])];
      	create.updateMatch.val.clauses[0].exprs += 
-     		[equ(property(fromRole, "<to>.@id"), lit(text("<ref>")))];
+     		[equ(property(fromRole, "<to>.@id"), lit(text("<ref>"[1..])))];
      	create.updateClause.pattern.rels[0].nodePattern.var = fromRole;
         	
      }
@@ -643,36 +643,34 @@ bool isAttr((KeyVal)`<Id x> -: <Expr _>`, str e, Schema s) = false;
 
 bool isAttr((KeyVal)`@id: <Expr _>`, str _, Schema _) = false;
   
-  
-void smoke2createWithAllOnSameNeoDB() {
-s = schema({
-    <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
-    <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
-    <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
-    <"Comment", zero_many(), "replies", "owner", \zero_many(), "Comment", true>,
+
+
+Schema testSchema() = schema({
     <"Concordance", \one(), "from", "from^", \one(), "Product", false>,
-    <"Concordance", \one(), "to", "to^", \one(), "Product", false>
+    <"Concordance", \one(), "to", "to^", \one(), "Product", false>,
+    <"Product", \one(), "from^", "from", \one(), "Concordance", true>,
+    <"Product", \one(), "to^", "to", \one(), "Concordance", true>,
+    <"Wish", \one(), "user", "userOpposite", \one(), "User", false>,
+    <"Wish", \one(), "product", "productOpposite", \one(), "Product", false>,
+    <"User", \one(), "wish", "user", \one(), "Wish", true>,
+    <"Product", \one(), "wish", "product", \one(), "Concordance", true>
   }, {
-    <"Person", "name", "String">,
-    <"Person", "age", "int">,
-    <"Product", "name", "String">,
-    <"Product", "description", "String">,
     <"Concordance", "weight", "int">,
-    <"Review", "text", "String">,
-    <"Comment", "contents", "String">,
-    <"Reply", "reply", "String">
+    <"Product", "name", "string[256]">,
+    <"User", "name", "string[256]">,
+    <"Wish", "amount", "int">
   },
   placement = {
-    <<sql(), "Inventory">, "Person">,
     <<sql(), "Inventory">, "Product">,
-    <<mongodb(), "Reviews">, "Review">,
-    <<mongodb(), "Reviews">, "Comment">,
-    <<neo4j(), "Stats">, "Concordance">
+    <<sql(), "Inventory">, "User">,
+    <<neo4j(), "Concordance">, "Concordance">,
+    <<neo4j(), "Concordance">, "Wish">
+  },
+  pragmas = {
+  	<"Concordance", graphSpec({<"Concordance", "from", "to">, <"Wish", "user", "product">})>
   }
   );
-  
-  return smoke2neo(s);
-}
+
 /*
 void smoke2sqlWithAllOnDifferentSQLDB() {
   s = schema({
@@ -698,8 +696,9 @@ void smoke2sqlWithAllOnDifferentSQLDB() {
 }
 
 */
-void smoke2neo(Schema s) {
-
+void smoke2createWithAllOnSameNeoDB() {
+  Schema s = testSchema();
+	
   Request r = (Request)`insert Product { @id: #tv, name: "TV", description: "Dumb box"}`;  
   println(insert2script(r,s));
   if (step(_, neo(executeNeoQuery(_, q)), _) := insert2script(r, s).steps[1]) {
@@ -712,8 +711,20 @@ void smoke2neo(Schema s) {
   	println(q);
   }
   
+  r = (Request)`insert User { @id: #pablo, name: "Pablo"}`;  
+  println(insert2script(r,s));
+  if (step(_, neo(executeNeoQuery(_, q)), _) := insert2script(r, s).steps[1]) {
+  	println(q);
+  }
+  
   
   r = (Request)`insert Concordance { @id: #conc1, from: #tv, to: #radio, weight: 15 }`;  
+  println(insert2script(r,s));
+  if (step(_, neo(executeNeoQuery(_, q)), _) := insert2script(r, s).steps[0]) {
+  	println(q);
+  }
+  
+  r = (Request)`insert Wish { @id: #wish1, user: #pablo, product: #tv, amount: 15 }`;  
   println(insert2script(r,s));
   if (step(_, neo(executeNeoQuery(_, q)), _) := insert2script(r, s).steps[0]) {
   	println(q);
