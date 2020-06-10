@@ -230,7 +230,19 @@ Model xmiNode2Model(node n) {
         }
         
         case "typhonml:GraphDB": {
-            println("Database model contains unsupported GraphDB");
+          list[GraphEdge] elts = [];
+          for (xelt:"edges"(_) <- xelts) {
+            ep = get(xelt, "entity");
+            elt = realm.new(#GraphEdge, GraphEdge([], referTo(#Entity, ensureEntity(ep))));
+           	efrom = get(xelt, "from");
+           	elt.from = referTo(#Relation, ensureRel(efrom));
+            eto = get(xelt, "to");
+            elt.to = referTo(#Relation, ensureRel(eto));
+            elts += [elt];
+          }
+          db = realm.new(#Database, Database(GraphDB(get(xdb, "name"), [], elts)));
+          dbMap[dbPath] = db;
+          dbs += [db];
         }
 
         default:
