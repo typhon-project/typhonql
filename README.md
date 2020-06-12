@@ -48,7 +48,47 @@ Basic primitive types.
 
 ## Relations
 
-TODO: make table about different kind of relations in relation to cross database operations
+TyphonML supports relationships between entities. This section briefly summarizes TyphonQL's support for them.
+Note that, currently, this only involves MongoDB and SQL, since key-value stores are only used to store (primitive) properties. However, if an owning entity is removed, the corresponding entry in the key-value store is removed as well.
+
+TODO: describe how GraphDBs fit the picture.
+
+The cardinalities here represent the way they are specified in TyphonML; 
+so "one-zero/many" between entities A and B means "A is related to one B, and B is related to zero or many As" 
+(so it does *not* mean "One A is related to zero or more Bs").
+
+*NB* for both containment and cross references, mandatory relations (e.g. one-one, one-one/many etc.) are not enforced.
+
+### Containment
+
+Containment induces cascade delete, even across database boundaries, but only a single hop. Recursive containment (e.g., comments that are a reply to a comment), thus, works within a single back-end only.
+
+The unsupported relations in the following table follow from consistency constraints on TyphonML models: containment is unidirectional, and tree-shaped (i.e. "childeren can only have a single parent").
+
+| Cardinality | Support |
+| -----------|---------|
+| one-one   | mongo/mongo, mongo/sql, sql/mongo |
+| one-zero/one |  mongo/mongo, mongo/sql, sql/mongo |
+| one-zero/many | -- |
+| one-one/many | -- |
+| one/zero-one | mongo/mongo, mongo/sql, sql/mongo |
+| one/zero-zero/one | mongo/mongo, mongo/sql, sql/mongo |
+| one/zero-zero/many | -- |
+| one/zero-one/many | -- |
+| zero/many-one | mongo/mongo, mongo/sql, sql/mongo |
+| zero/many-zero/one | mongo/mongo, mongo/sql, sql/mongo |
+| zero/many-zero/many | -- |
+| zero/many-one/many | -- |
+| one/many-one | mongo/mongo, mongo/sql, sql/mongo |
+| one/many-zero/one | mongo/mongo, mongo/sql, sql/mongo |
+| one/many-zero/many | -- |
+| one/many-one/many | -- |
+
+### Cross references
+For cross references all combinations, with the above caveat about mandatory relations, are supported.
+
+
+
 
 ## Expressions
 
