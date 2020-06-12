@@ -1,8 +1,10 @@
 package nl.cwi.swat.typhonql.backend.cassandra;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -54,7 +56,7 @@ public class CassandraEngine extends Engine {
 			m.appendReplacement(replacedQuery, ":" + m.group(1));
 		}
 		m.appendTail(replacedQuery);
-    	return SimpleStatement.newInstance(replacedQuery.toString(), encode(values));
+    	return SimpleStatement.newInstance(replacedQuery.toString(), encode(values)).setTimeout(Duration.ofSeconds(30));
     }
 	
 	private Map<String, Object> encode(Map<String, Object> values) {
@@ -69,6 +71,20 @@ public class CassandraEngine extends Engine {
 	private Object encode(Object value) {
 		if (value instanceof Geometry) {
 			return new WKTWriter().write((Geometry) value);
+		}
+		if (value instanceof String) {
+			String str = (String)value;
+			if (str.length() == 36 && str.charAt(8) == '-') {
+				// chance that is an uuid, so let's try
+				try {
+					return UUID.fromString(str);
+				}
+				catch (IllegalArgumentException e) {
+					// it was not a UUID
+					return str;
+				}
+			}
+			return str;
 		}
 		// other java values are just fine as they are
 		return value;

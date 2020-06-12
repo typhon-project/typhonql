@@ -116,6 +116,7 @@ list[Step] cascadeViaInverse(str dbName, str coll, str role, DBObject parent, Bi
 
 
 list[Step] removeAllObjectPointers(str dbName, str coll, str role, Cardinality card, DBObject target, Bindings params) {
+  if (card in {zero_many(), one_many()}) {
     return [
       step(dbName, mongo( 
          findAndUpdateMany(dbName, coll,
@@ -124,6 +125,13 @@ list[Step] removeAllObjectPointers(str dbName, str coll, str role, Cardinality c
                object([<role, 
                  object([<"$in", array([ target ])>])>])>])))), params)
           ];
+  }
+  return [
+      step(dbName, mongo( 
+         findAndUpdateMany(dbName, coll,
+          pp(object([<role, target>])), 
+          pp(object([<"$set", object([<role, DBObject::null()>])>])))), params)
+      ];
 }
 
 list[Step] removeObjectPointers(str dbName, str coll, str role, Cardinality card, DBObject subject, list[DBObject] targets, Bindings params) {

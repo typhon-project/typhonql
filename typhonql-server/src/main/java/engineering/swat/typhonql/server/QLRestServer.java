@@ -7,16 +7,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
@@ -25,14 +26,12 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-
 import engineering.swat.typhonql.server.crud.EntityDeltaFields;
 import engineering.swat.typhonql.server.crud.EntityDeltaFieldsDeserializer;
 import engineering.swat.typhonql.server.crud.EntityFields;
@@ -70,7 +69,9 @@ public class QLRestServer {
 
 		Server server = new Server();
 
-		ServerConnector http = new ServerConnector(server);
+		HttpConfiguration config = new HttpConfiguration();
+		config.setRequestHeaderSize(10*1024*1024);
+		ServerConnector http = new ServerConnector(server, new HttpConnectionFactory(config));
 		http.setHost("0.0.0.0");
 		http.setPort(Integer.parseInt(args[0]));
 		http.setIdleTimeout(30000);

@@ -3,7 +3,9 @@ module lang::typhonql::Normalize
 
 import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
+import lang::typhonml::XMIReader;
 import lang::typhonql::TDBC;
+import lang::typhonql::util::UUID;
 
 
 
@@ -49,9 +51,6 @@ void smokeNormalize() {
   println(expandNavigation(q, s));
 }
 
-Request elicitBindings(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
-
-}
 
 
 void smokeKeyValInf() {
@@ -138,6 +137,7 @@ list[str] isKeyValAttr(str ent, str f, Schema s) {
               , <<cassandra(), _>, kve> <- s.placement ];
     
 } 
+
 
 Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
   // rewrite x.f -> x.A__B.f if f is an attribute that is mapped from keyVal
@@ -281,6 +281,210 @@ Request expandNavigation(req:(Request)`from <{Binding ","}+ bs> select <{Result 
   
   Query newQuery = buildQuery(newBindings, newResults, newWheres);
   return (Request)`<Query newQuery>`;
+}
+
+
+void smokeCustoms() {
+  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product/user-review-product.xmi|);
+  Model m = xmiString2Model(xmi);
+  Schema s = model2schema(m);
+  
+  req = (Request)`from User u select u.billing.street`;
+  println(eliminateCustomDataTypes(req, s));
+
+  req = (Request)`from User u select u.billing.zipcode.letters`;
+  println(eliminateCustomDataTypes(req, s));
+
+  req = (Request)`from Review r select r.user.billing.zipcode.letters`;
+  println(eliminateCustomDataTypes(req, s));
+
+  req = (Request)`delete Review r where r.user.billing.zipcode.letters == "ab"`;
+  println(eliminateCustomDataTypes(req, s));
+
+  req = (Request)`update Review r where r.user.billing.zipcode.letters == "ab" set {}`;
+  println(eliminateCustomDataTypes(req, s));
+
+  req = (Request)`update User u where u.billing.street == "ab" set {billing: addres( street: "cd" )}`;
+  println(eliminateCustomDataTypes(req, s));
+
+  req = (Request)`update User u where u.billing.street == "ab" set {billing: addres( street: "cd", zipcode: zip(nums: "1234"))}`;
+  println(eliminateCustomDataTypes(req, s));
+  
+  req = (Request)`insert User  {billing: addres( street: "cd", zipcode: zip(nums: "1234"))}`;
+  println(eliminateCustomDataTypes(req, s));
+
+  req = (Request)`delete Review r`;
+  println(eliminateCustomDataTypes(req, s));
+  
+}
+
+
+
+
+
+Request eliminateCustomDataTypes(Request req, Schema s) {
+  /*
+    in results/where clauses 
+      x.ctFld.fld  => x.ctFld$fld
+      
+  */
+  
+
+ /*
+      in keyvals
+       fld: ct ( keyvals )
+       =>
+       fld$k: v for all k: v <- keyvals
+  */
+   
+  map[str, str] env = ();
+  
+  switch (req) {
+    case (Request)`<Query q>`: env = queryEnv(q);
+    case (Request)`<Statement s>`:
+      if (s has binding) {
+        env = ("<s.binding.var>": "<s.binding.entity>");
+      }
+  }
+  
+  
+  str reach(str ent, list[str] path) {
+    if (path == []) {
+      return ent;
+    }
+    
+    str role = path[0];
+    if (<ent, _, role, _, _, str target, _> <- s.rels) {
+      return reach(target, path[1..]);  
+    }
+    
+    return "";
+  }
+  
+  {KeyVal ","}* makeKeyVals(list[KeyVal] kvs) {
+    Obj obj = (Obj)`X {}`;
+    for (KeyVal kv <- kvs) {
+      if ((Obj)`X {<{KeyVal ","}* kvs2>}` := obj) {
+        obj = (Obj)`X { <{KeyVal ","}* kvs2>, <KeyVal kv> }`;
+      }
+      else {
+        throw "cannot happen";
+      }
+    }
+    return obj.keyVals;
+  }
+  
+  req = visit (req) {
+    case {KeyVal ","}* kvs: {
+      list[KeyVal] newKvs = [];
+      for (KeyVal kv <- kvs) {
+        if ((KeyVal)`<Id x>: <EId cdt> (<{KeyVal ","}* kids>)` := kv) {
+          for ((KeyVal)`<Id kk>: <Expr e>` <- kids) {
+            Id fld = [Id]"<x>$<kk>";
+            newKvs += [(KeyVal)`<Id fld>: <Expr e>`];
+          }
+        }
+        else {
+          newKvs += [kv];
+        }
+      }
+      insert makeKeyVals(newKvs);
+    }
+  }
+  
+  return visit (req) {
+    case (Expr)`<VId x>.<{Id "."}+ ids>.<Id f>`: {
+      // this code assumes that
+      // x.f (single field), never refers to custom data type attr
+    
+      list[str] trail = [ "<i>" | Id i <- ids ] + ["<f>"];
+      
+      // we're looking for a suffxi of ids + f
+      // that has a dollared attribute in an entity
+      // that is reachable from x with the prefix.
+      
+      if ([*str prefix, *str suffix] := trail, str ent := reach(env["<x>"], prefix),
+           <ent, str name, _> <- s.attrs, name == intercalate("$", suffix)) {
+         if (prefix == []) {
+           insert [Expr]"<x>.<name>";
+         }
+         else {
+           insert [Expr]"<x>.<intercalate(".", prefix)>.<name>";
+         }    
+      }
+    }
+   
+  }
+  
+}
+
+
+str pUUID(UUID uuid) = pUUID("<uuid>"[1..]);
+str pUUID(str uuid) = hashUUID(uuid);
+
+
+bool isProperUUID(UUID uuid) 
+  = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/ := "<uuid>"[1..];
+
+Request injectProperUUIDs(Request req) {
+  return visit (req) {
+    case UUID uuid => [UUID]"#<pUUID(uuid)>"
+      when
+        !isProperUUID(uuid)
+  }
+}
+
+void smokeLoneVarExpansion() {
+  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product/user-review-product.xmi|);
+  Model m = xmiString2Model(xmi);
+  Schema s = model2schema(m);
+  
+  req = (Request)`from User u select u`;
+  println(expandLoneVars(req, s));
+}
+
+Request expandLoneVars(Request req, Schema s) {
+  req = addWhereIfAbsent(req);
+  
+  if ((Request)`from <{Binding ","}+ bs> select <{Result ","}+ srcRs> where <{Expr ","}+ ws>` := req) {
+    env = queryEnv(bs);
+    
+    list[Result] rs = [ r | Result r <- srcRs ];
+    
+    newRs = outer: for (Result r <- rs) {
+      if ((Result)`<VId x>` := r) {
+        ent = env["<x>"];
+        for (<ent, str name, _> <- s.attrs) {
+	      Id f = [Id]name;
+	      append outer: (Result)`<VId x>.<Id f>`;
+	    }
+        for (<ent, _, role, _, _, _, _> <- s.rels) {
+	      Id f = [Id]role;
+	      append outer: (Result)`<VId x>.<Id f>`;
+	    }
+      }
+      else {
+        append r;
+      }
+    }
+  
+    // ugh, this is too hard ....
+    Result head = newRs[0]; 
+    req = (Request)`from <{Binding ","}+ bs> select <Result head> where <{Expr ","}+ ws>`;
+    newRs = newRs[1..];
+    while (newRs != [], (Request)`from <{Binding ","}+ bs> select <{Result ","}+ cur> where <{Expr ","}+ ws>` := req) {
+      head = newRs[0];
+      req = (Request)`from <{Binding ","}+ bs> select <{Result ","}+ cur>, <Result head> where <{Expr ","}+ ws>`;
+      newRs = newRs[1..];
+    }
+    
+  }
+  
+    
+    
+
+  return req;
+ 
 }
 
 

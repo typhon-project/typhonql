@@ -148,7 +148,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
       list[CQLExpr] vals = [cqlMe] 
         + [ expr2cql(e) | (KeyVal)`<Id _>: <Expr e>` <- keyValueDeps[keyValEntity] ];
       CQLStat cqlIns = cInsert(cTableName(keyValEntity), colNames, vals);
-      addSteps([step(dbName, cassandra(execute(dbName, pp(cqlIns))), myParams)]);
+      addSteps([step(dbName, cassandra(cExecuteStatement(dbName, pp(cqlIns))), myParams)]);
     }
     else {
       throw "Cannot find <keyValEntity> on cassandra; bug";

@@ -14,6 +14,7 @@ str cTyphonId(str entity) = "@id";
 list[CQLStat] schema2cql(Schema s, Place p, set[str] entities) {
   list[CQLStat] stmts = [];
   
+  // TODO: maybe use "\"<p.name>\".<cTableName(e)>" here.
   stmts += [ cDropTable(cTableName(e), ifExists=true) | str e <- entities ];
   
   stmts += [ cCreateTable(cTableName(e), entityCols(e, s)) | str e <- entities ]; 

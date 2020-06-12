@@ -27,9 +27,10 @@ data Call
   ;
   
 data CassandraCall
- = execute(str dbName, str cql)
- | queryExecute(str dbName, str cql)
- ;  
+  = cExecuteQuery(str dbName, str cql)
+  | cExecuteStatement(str dbName, str cql)
+  | cExecuteGlobalStatement(str dbName, str cql)
+  ;  
   
 data SQLCall
   = executeQuery(str dbName, str query)
@@ -46,7 +47,7 @@ data MongoCall
   | deleteOne(str dbName, str coll, str query)
   | deleteMany(str dbName, str coll, str query)
   | createCollection(str dbName, str coll)
-  | createIndex(str dbName, str coll, str selector, str index)
+  | createIndex(str dbName, str coll, str keys)
   | renameCollection(str dbName, str coll, str newName)
   | dropCollection(str dbName, str coll)
   | dropDatabase(str dbName)
@@ -68,11 +69,15 @@ str runScript(Script scr, Session session, Schema schema) {
   str result = "";
   for (Step s <- scr.steps) {
     switch (s) {
-      case step(str r, cassandra(execute(str db, str q)), Bindings ps):
-        println("cassandra: <q>"); // todo
+      case step(str r, cassandra(cExecuteQuery(str db, str q)), Bindings ps):
+        session.cassandra.executeQuery(r, db, q, ps, s.signature);
+
+      case step(str r, cassandra(cExecuteStatement(str db, str q)), Bindings ps):
+        session.cassandra.executeStatement(db, q, ps);
+
+      case step(str r, cassandra(cExecuteGlobalStatement(str db, str q)), Bindings ps):
+        session.cassandra.executeGlobalStatement(db, q, ps);
     
-      case step(str r, cassandra(queryExecute(str db, str q)), Bindings ps):
-        println("cassandra: <q>"); // todo
     
       case step(str r, sql(executeQuery(str db, str q)), Bindings ps):
         session.sql.executeQuery(r, db, q, ps, s.signature);
@@ -104,8 +109,11 @@ str runScript(Script scr, Session session, Schema schema) {
       case step(str r, mongo(createCollection(str db, str coll)), Bindings ps):
         session.mongo.createCollection(db, coll); 
 
-      case step(str r, mongo(createIndex(str db, str coll, str selector, str index)), Bindings ps):
-        session.mongo.createIndex(db, coll, selector, index); 
+      case step(str r, mongo(createIndex(str db, str coll, str keys)), Bindings ps):
+        session.mongo.createIndex(db, coll, keys); 
+
+      //case step(str r, mongo(createIndex(str db, str coll, lrel[str selector, str index] selectors)), Bindings ps):
+      //  session.mongo.createIndex(db, coll, selectors); 
         
       case step(str r, mongo(dropCollection(str db, str coll)), Bindings ps):
         session.mongo.dropCollection(db, coll); 

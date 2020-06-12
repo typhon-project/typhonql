@@ -29,15 +29,20 @@ Script schema2script(Schema s, Log log = noLog) {
 }
 
 list[Step] place2script(p:<cassandra(), str db>, Schema s, Log log = noLog) {
-  return [];
-  return [ step(db, cassandra(execute(pp(stmt))), ()) 
-     | CQLStat stmt <-  schema2cql(s, p, s.placement[p]) ];
+  return [
+    step(db, cassandra(cExecuteGlobalStatement(db, "DROP KEYSPACE IF EXISTS \"<db>\";")), ()),
+    
+    // not sure what to do here with  replication etc.
+    step(db, cassandra(cExecuteGlobalStatement(db, "CREATE KEYSPACE \"<db>\" WITH replication = {\'class\': \'SimpleStrategy\', \'replication_factor\' : 1};")), ()),
+    step(db, cassandra(cExecuteGlobalStatement(db, "USE \"<db>\";")), ())
+  ] + [ step(db, cassandra(cExecuteGlobalStatement(db, pp(stmt))), ()) 
+          | CQLStat stmt <-  schema2cql(s, p, s.placement[p]) ];
 }
 
 list[Step] place2script(p: <sql(), str db>, Schema s, Log log = noLog) {
   list[Step] steps = [];
-  steps += [step(db, sql(executeGlobalStatement(db, "DROP DATABASE IF EXISTS <db>")), ())];
-  steps += [step(db, sql(executeGlobalStatement(db, "CREATE DATABASE <db> 
+  steps += [step(db, sql(executeGlobalStatement(db, "DROP DATABASE IF EXISTS `<db>`")), ())];
+  steps += [step(db, sql(executeGlobalStatement(db, "CREATE DATABASE `<db>` 
 					'   DEFAULT CHARACTER SET utf8mb4 
 					'   DEFAULT COLLATE utf8mb4_unicode_ci")), ())];
   list[SQLStat] stats = schema2sql(s, p, s.placement[p], doForeignKeys = true);
@@ -50,6 +55,7 @@ list[Step] place2script(p: <sql(), str db>, Schema s, Log log = noLog) {
 
 list[Step] place2script(p:<mongodb(), str db>, Schema s, Log log = noLog) {
   list[Step] steps = [step(db, mongo(dropDatabase(db)), ())];
+
   for (str entity <- s.placement[p]) {
     log("[RUN-schema/mongodb/<db>] creating collection <entity>");
     steps += [step(db, mongo(dropCollection(db, entity)), ())];
@@ -57,9 +63,14 @@ list[Step] place2script(p:<mongodb(), str db>, Schema s, Log log = noLog) {
 
 
     // add geo indexes
-    steps += [step(db, mongo(createIndex(db, entity, attr, "2dsphere")), ()) 
+    steps += [step(db, mongo(createIndex(db, entity, "{\"<attr>\": \"2dsphere\"}")), ()) 
         | <str attr, str typ> <- s.attrs[entity], typ == "point" || typ == "polygon"];
-    // TODO: add other kinds of indexes from model
+        
+    // add specified indexes    
+    steps += [step(db, mongo(createIndex(db, entity, "{\"<attrOrRef>\": 1}")), ())
+       | <db, indexSpec(str name, rel[str, str] ftrs)> <- s.pragmas, <entity, str attrOrRef> <- ftrs ];
+          
   }
+
   return steps;
 }

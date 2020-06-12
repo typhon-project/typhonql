@@ -94,6 +94,16 @@ Pragmas model2pragmas(Model m)
 
 
 
+Pragmas pragmas(Database(DocumentDB(str name, list[Collection] colls)), Model m) {
+  prags = {};
+  for (Collection coll <- colls, just(IndexSpec ind) := coll.indexSpec) {
+    str ent = lookup(m, #Entity, coll.entity).name;
+    ftrs = { <ent, lookup(m, #Attribute, a).name> | Ref[Attribute] a <- ind.attributes };
+    ftrs += { <ent, lookup(m, #Relation, r).name> | Ref[Relation] r <- ind.references };
+    prags += {<name, indexSpec(ind.name, ftrs)>};
+  }
+  return prags;
+}
 
 Pragmas pragmas(Database(RelationalDB(str name, list[Table] tables)), Model m) {
   prags = {};
@@ -143,16 +153,32 @@ default Placement place(Database db, Model m) {
 
 
 Schema model2schema(Model m)
-  = inferAuxEntities(schema(model2rels(m), model2attrs(m),
+  = inlineCustomDataTypes(inferAuxEntities(schema(model2rels(m), model2attrs(m),
        customs = model2customs(m), 
        placement =model2placement(m),
        pragmas = model2pragmas(m),
-       changeOperators = model2changeOperators(m)));
+       changeOperators = model2changeOperators(m))));
 
 str keyValEntity(str db, str ent) = "<ent>__<db>";
 
 str keyValRole(str db, str ent) = "<db>__";
 
+Schema inlineCustomDataTypes(Schema s) {
+  // NB: a custom data type should not be recursive/cyclic 
+  // we check for it here, but really TyphonML should do it.
+  
+  rel[str, str] reach = s.customs<from,\type>;
+  assert !any(<str x, x> <- reach+): "custom data types cannot be cyclic";
+ 
+  solve (s) {
+    for (org:<str ent, str name, str typ> <- s.attrs, typ in s.customs.from) {
+      s.attrs -= {org};
+      s.attrs += {<ent, "<name>$<fld>", typ2> | <typ, str fld, str typ2> <- s.customs }; 
+    }
+  }  
+  
+  return s; 
+}
 
 Schema inferAuxEntities(Schema s) {
   /*
@@ -205,6 +231,7 @@ ChangeOps model2changeOperators(Model m) {
   for(ChangeOperator op <- m.changeOperators){
   	switch(op){
   		case ChangeOperator(AddEntity a):{
+  			println("CHOPS");
   			result += <"addEntity", [a.name]>;
   		}
   		case ChangeOperator(RenameEntity chop):{
@@ -218,15 +245,14 @@ ChangeOps model2changeOperators(Model m) {
   			result += <"changeRelationContainement", [lookup(m, #Relation, chop.relation).name, toString(chop.newContainment)]>;
   		}
   		case ChangeOperator(ChangeAttributeType chop):{
-  			attr = lookup(m, #EntityAttribute, chop.attributeToChange);
+  			attr = lookup(m, #EntityAttributeKind, chop.attributeToChange);
 
   			entity = null();
-  			if (Entity e <- m.entities, EntityAttribute a <- e.attributes, a.uid == attr.uid) {
+  			if (Entity e <- m.entities, EntityAttributeKind a <- e.attributes, a.uid == attr.uid) {
 			  entity = e;
 			}
-
-  			typ = lookup(m, #DataType, attr.\type);
-  			result += <"changeAttributeType", [entity.name, attr.name, typ.name]>;
+  	
+  			result += <"changeAttributeType", [entity.name, attr.name, "NULL"]>;
   		}
   		case ChangeOperator(DisableRelationContainment chop):{
   			result += <"disableRelationContainment", [lookup(m, #Relation, chop.relation).name]>;
@@ -253,9 +279,9 @@ ChangeOps model2changeOperators(Model m) {
   			result += <"migrateEntity", [e1.name, db.name]>;
   		}
 		case ChangeOperator(RemoveAttribute chop):{
-			attr = lookup(m, #EntityAttribute, chop.attributeToRemove);
+			attr = lookup(m, #EntityAttributeKind, chop.attributeToRemove);
   			entity = null();
-  			if (Entity e <- m.entities, EntityAttribute a <- e.attributes, a.uid == attr.uid) {
+  			if (Entity e <- m.entities, EntityAttributeKind a <- e.attributes, a.uid == attr.uid) {
 			  entity = e;
 			}
 
@@ -272,9 +298,9 @@ ChangeOps model2changeOperators(Model m) {
   			result += <"removeRelation", [entity.name, rela.name]>;
   		}
   		case ChangeOperator(RenameAttribute chop):{
-  			attr = lookup(m, #EntityAttribute, chop.attributeToRename);
+  			attr = lookup(m, #EntityAttributeKind, chop.attributeToRename);
   			entity = null();
-  			if (Entity e <- m.entities, EntityAttribute a <- e.attributes, a.uid == attr.uid) {
+  			if (Entity e <- m.entities, EntityAttributeKind a <- e.attributes, a.uid == attr.uid) {
 			  entity = e;
 			}
 
@@ -303,7 +329,7 @@ ChangeOps model2changeOperators(Model m) {
   			entity = lookup(m, #Entity, chop.ownerEntity);
   			typ = lookup(m, #Entity, chop.\type);
 
-  			result += <"addAttribute", [entity.name, chop.name, typ.name]>;
+  			result += <"addRelation", [entity.name, chop.name, typ.name]>;
   		}
   		case ChangeOperator(SplitEntityHorizontal chop): {
   			entity = lookup(m, #Entity, chop.sourceEntity);
@@ -317,7 +343,7 @@ ChangeOps model2changeOperators(Model m) {
 
   			l_attr = [];
   			for(lang::ecore::Refs::Ref[Attribute] attr <- chop.attributeList){
-  				l_attr += [(lookup(m, #EntityAttribute, attr).name)];
+  				l_attr += [(lookup(m, #EntityAttributeKind, attr).name)];
   			};
 
   			l = [chop.entity2name, entity.name] + l_attr;
@@ -336,7 +362,7 @@ str builtinDataType2str(DataType dt) {
   switch (dt) {
     case DataType(IntType()): typeName = "int";
     case DataType(BigintType()): typeName = "bigint";
-    case DataType(StringType(maxSize = int n)): typeName = "string(<n>)";
+    case DataType(StringType(int n)): typeName = "string(<n>)";
     case DataType(BlobType()): typeName = "blob";
     case DataType(BoolType()): typeName = "bool";
     case DataType(TextType()): typeName = "text";

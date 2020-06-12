@@ -49,8 +49,8 @@ SQLStat attrs2create(str e, rel[str, str] attrs, Schema schema) {
   	return create(tableName(e), [typhonIdColumn(e)]
       + [column(columnName(attr, e), typhonType2SQL(typ), typhonType2Constrains(typ)) | <str attr, str typ> <- attrs, 
       		typ notin schema.customs<from>]
-      + [column(columnName(attr, e, typ, element), typhonType2SQL(elementType), []) | <str attr, str typ> <- attrs,
-      	 <typ, str element, str elementType> <- schema.customs]
+      //+ [column(columnName(attr, e, typ, element), typhonType2SQL(elementType), []) | <str attr, str typ> <- attrs,
+      //	 <typ, str element, str elementType> <- schema.customs]
       , [primaryKey(typhonId(e))] + indexes(e, attrs, schema));
 }
 
@@ -59,8 +59,10 @@ list[TableConstraint] indexes(str e, rel[str, str] attrs, Schema schema)
         index("<e>_<attr>_spatial", spatial(), [columnName(attr, e)])
         | <str attr, str typ> <- attrs, typ notin schema.customs<from>, typhonType2SQL(typ) in {polygon(), point()}
     ]
-    + [] // TODO: add user defined indexes after we've added them to the Schema import
-    ; 
+    + [
+        index("<e>_<iname>", regular(), [columnName(attr, ent) | <ent, attr> <- columns])
+        | <<sql(), str dbName>, e> <- schema.placement, indexSpec(str iname, columns) <- schema.pragmas[dbName], {e} == columns<0>
+    ];
  
 // ugh...
 int createOfEntity(str entity, Stats theStats) {
@@ -89,8 +91,9 @@ void addCascadingForeignKey(str from, str fromRole, str to, str toRole, list[Col
     SQLStat stat = statsSoFar[kid];
     stat.cols += [ column(fk, typhonIdType(), cs) ];
     stats.addAt(kid, stat);
-    if (doForeignKeys)
-    	stats.add(alterTable(tableName(to), [addConstraint(foreignKey(fk, tableName(from), typhonId(from), cascade()))])); 
+    if (doForeignKeys) {
+    	stats.add(alterTable(tableName(to), [addConstraint(foreignKey(fk, tableName(from), typhonId(from), cascade()))]));
+    } 
 }
   
 // should we make both fk's the combined primary key, if so, when?
@@ -147,9 +150,9 @@ void addJunctionTableOutside(str from, str fromRole, str to, str toRole, Stats s
     SQLStat stat = create(tbl, [
       column(left, typhonIdType(), [notNull()]),
       column(right, typhonIdType(), [notNull()])      
-    ], [
-      foreignKey(left, tableName(from), typhonId(from), cascade()) | doForeignKeys
-    ]);
+    ], [ foreignKey(left, tableName(from), typhonId(from), cascade()) | doForeignKeys ]
+     + [ index("<from>_<right>", regular(), [right]) ]
+    );
     stats.add(dropTable([tbl], true, []));
     stats.add(stat);
 }
@@ -184,7 +187,7 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
 
 	// DDL operations
 	
-  list[SQLStat] renameRelation(str from, str relation, str newName, Schema s) {
+list[SQLStat] renameRelation(str from, str relation, str newName, Schema s) {
     if (r: <from, fromCard, relation, toRole, toCard, to, contain> <- s.rels)  {
   		switch (<fromCard, toCard, contain>) {
        		case <one_many(), \one(), true>: return renameOnlyCascadingForeignKey(newName, from, fromRole, to, toRole, []); // ??? how to enforce one_many?
@@ -199,9 +202,9 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
        }
     }
   	throw "Relation <relation> does not exist";
-  }
+}
 
-  list[SQLStat] createRelation(str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain, bool doForeignKeys = true) {
+list[SQLStat] createRelation(str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain, bool doForeignKeys = true) {
     Rel r = <from, fromCard, fromRole, toRole, toCard, to, contain>;
   	switch (<fromCard, toCard, contain>) {
        case <one_many(), one_many(), true>: illegal(r);
@@ -232,30 +235,30 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
      }
      illegal(r);
      return [];
-  }
+}
   
   
   
-  list[SQLStat] addOnlyCascadingForeignKey(str from, str fromRole, str to, str toRole, list[ColumnConstraint] cs, bool doForeignKeys) {
+list[SQLStat] addOnlyCascadingForeignKey(str from, str fromRole, str to, str toRole, list[ColumnConstraint] cs, bool doForeignKeys) {
   	list[SQLStat] stats = [];
     fk = fkName(from, to, toRole == "" ? fromRole : toRole);
     stats += alterTable(tableName(to), [addColumn(column(fk, typhonIdType(), cs))]);
 	if (doForeignKeys)
     	stats += alterTable(tableName(to), [addConstraint(foreignKey(fk, tableName(from), typhonId(from), cascade()))]);
     return stats; 
-  }
+}
   
-  list[SQLStat] renameOnlyCascadingForeignKey(str newName, str from, str fromRole, str to, str toRole, list[ColumnConstraint] cs) {
+list[SQLStat] renameOnlyCascadingForeignKey(str newName, str from, str fromRole, str to, str toRole, list[ColumnConstraint] cs) {
   	list[SQLStat] stats = [];
     fk = fkName(from, to, toRole == "" ? fromRole : toRole);
     //stats += alterTable(tableName(to), [addColumn(column(fk, typhonIdType(), cs))]);
     //renameColumn(column(columnName(attribute, entity), typhonType2SQL(ty), []), columnName(newName, entity))
     stats += alterTable(tableName(to), [renameColumn(column(fk, typhonType2SQL(typhonIdType()), []), fkName(from, to, toRole == "" ? newName : toRole))]);
 	return stats; 
-  }
+}
 
-  // should we make both fk's the combined primary key, if so, when?
-  list[SQLStat] addOnlyJunctionTable(str from, str fromRole, str to, str toRole, bool doForeignKeys) {
+// should we make both fk's the combined primary key, if so, when?
+list[SQLStat] addOnlyJunctionTable(str from, str fromRole, str to, str toRole, bool doForeignKeys) {
     list[SQLStat] stats = [];
     str left = junctionFkName(from, fromRole);
     str right = junctionFkName(to, toRole);
@@ -270,9 +273,9 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
     stats += dropTable([tbl], true, []);
     stats += stat;
     return stats;
-  }
+}
   
-  list[SQLStat] renameOnlyJunctionTable(str newName, str from, str fromRole, str to, str toRole) {
+list[SQLStat] renameOnlyJunctionTable(str newName, str from, str fromRole, str to, str toRole) {
     list[SQLStat] stats = [];
     str left = junctionFkName(from, fromRole);
     str newLeft = junctionFkName(from, newName);
@@ -284,5 +287,5 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
     stats += stat1;
     stats += stat2;
     return stats;
-  }
+}
 

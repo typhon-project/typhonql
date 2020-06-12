@@ -2,8 +2,13 @@
 customdatatype address {
 	street: string[256],
 	city: string[256],
-	zipcode: string[42],
+	zipcode: zip,
 	location: point
+}
+
+customdatatype zip {
+	nums: string[4],
+	letters: string[2]
 }
 
 entity Review {
@@ -87,7 +92,10 @@ documentdb Reviews {
 	collections {
 		Review : Review
 		Biography : Biography
-		Category: Category
+		Category: Category 
+		index CategoryIndex {
+		  attributes ("Category.id", "Category.name")
+		}
 	}
 }
 

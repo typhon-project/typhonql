@@ -1,26 +1,25 @@
 module lang::typhonml::TyphonML
 
 // Generated code; do not edit.
-// Date: $2020-05-11T18:56:41.874+00:00$
+// Date: $2020-06-09T09:12:27.646+00:00$
 
 import lang::ecore::Refs;
 import util::Maybe;
 import DateTime;
 
 data NamedElement
-  = NamedElement(GraphEdgeLabel \graphEdgeLabel
+  = NamedElement(Collection \collection
+      , str \name = \collection.\name
+      , str \importedNamespace = \collection.\importedNamespace
+      , lang::ecore::Refs::Ref[Entity] \entity = \collection.\entity
+      , IndexSpec \indexSpec = \collection.\indexSpec
+      , lang::ecore::Refs::Id uid = \collection.uid
+      , bool _inject = true)
+  | NamedElement(GraphEdgeLabel \graphEdgeLabel
       , str \name = \graphEdgeLabel.\name
       , str \importedNamespace = \graphEdgeLabel.\importedNamespace
       , lang::ecore::Refs::Ref[DataType] \type = \graphEdgeLabel.\type
       , lang::ecore::Refs::Id uid = \graphEdgeLabel.uid
-      , bool _inject = true)
-  | NamedElement(IndexSpec \indexSpec
-      , str \name = \indexSpec.\name
-      , str \importedNamespace = \indexSpec.\importedNamespace
-      , list[lang::ecore::Refs::Ref[Attribute]] \attributes = \indexSpec.\attributes
-      , list[lang::ecore::Refs::Ref[Relation]] \references = \indexSpec.\references
-      , lang::ecore::Refs::Ref[Table] \table = \indexSpec.\table
-      , lang::ecore::Refs::Id uid = \indexSpec.uid
       , bool _inject = true)
   | NamedElement(EntityAttributeKind \entityAttributeKind
       , str \name = \entityAttributeKind.\name
@@ -34,11 +33,12 @@ data NamedElement
       , CustomDataTypeImplementationPackage \implementation = \customDataType.\implementation
       , lang::ecore::Refs::Id uid = \customDataType.uid
       , bool _inject = true)
-  | NamedElement(Collection \collection
-      , str \name = \collection.\name
-      , str \importedNamespace = \collection.\importedNamespace
-      , lang::ecore::Refs::Ref[Entity] \entity = \collection.\entity
-      , lang::ecore::Refs::Id uid = \collection.uid
+  | NamedElement(IndexSpec \indexSpec
+      , str \name = \indexSpec.\name
+      , str \importedNamespace = \indexSpec.\importedNamespace
+      , list[lang::ecore::Refs::Ref[Attribute]] \attributes = \indexSpec.\attributes
+      , list[lang::ecore::Refs::Ref[Relation]] \references = \indexSpec.\references
+      , lang::ecore::Refs::Id uid = \indexSpec.uid
       , bool _inject = true)
   | NamedElement(GraphNode \graphNode
       , str \name = \graphNode.\name
@@ -46,14 +46,6 @@ data NamedElement
       , list[GraphAttribute] \attributes = \graphNode.\attributes
       , lang::ecore::Refs::Ref[Entity] \entity = \graphNode.\entity
       , lang::ecore::Refs::Id uid = \graphNode.uid
-      , bool _inject = true)
-  | NamedElement(GraphEdge \graphEdge
-      , str \name = \graphEdge.\name
-      , str \importedNamespace = \graphEdge.\importedNamespace
-      , lang::ecore::Refs::Ref[GraphNode] \from = \graphEdge.\from
-      , lang::ecore::Refs::Ref[GraphNode] \to = \graphEdge.\to
-      , list[GraphEdgeLabel] \labels = \graphEdge.\labels
-      , lang::ecore::Refs::Id uid = \graphEdge.uid
       , bool _inject = true)
   | NamedElement(GraphAttribute \graphAttribute
       , str \name = \graphAttribute.\name
@@ -148,6 +140,10 @@ data ChangeOperator
       , str \newName = \renameAttribute.\newName
       , lang::ecore::Refs::Id uid = \renameAttribute.uid
       , bool _inject = true)
+  | ChangeOperator(RemoveGraphAttribute \removeGraphAttribute
+      , lang::ecore::Refs::Ref[GraphNode] \node = \removeGraphAttribute.\node
+      , lang::ecore::Refs::Id uid = \removeGraphAttribute.uid
+      , bool _inject = true)
   | ChangeOperator(SplitEntity \splitEntity
       , lang::ecore::Refs::Ref[Entity] \entityToBeSplit = \splitEntity.\entityToBeSplit
       , Entity \firstNewEntity = \splitEntity.\firstNewEntity
@@ -215,12 +211,6 @@ data ChangeOperator
       , lang::ecore::Refs::Ref[Entity] \entityToRemove = \removeEntity.\entityToRemove
       , lang::ecore::Refs::Id uid = \removeEntity.uid
       , bool _inject = true)
-  | ChangeOperator(AddGraphAttribute \addGraphAttribute
-      , str \name = \addGraphAttribute.\name
-      , str \importedNamespace = \addGraphAttribute.\importedNamespace
-      , lang::ecore::Refs::Ref[Attribute] \value = \addGraphAttribute.\value
-      , lang::ecore::Refs::Id uid = \addGraphAttribute.uid
-      , bool _inject = true)
   | ChangeOperator(RenameEntity \renameEntity
       , lang::ecore::Refs::Ref[Entity] \entityToRename = \renameEntity.\entityToRename
       , str \newEntityName = \renameEntity.\newEntityName
@@ -272,18 +262,6 @@ data ChangeOperator
       , list[lang::ecore::Refs::Ref[Relation]] \relationList = \splitEntityVertical.\relationList
       , lang::ecore::Refs::Id uid = \splitEntityVertical.uid
       , bool _inject = true)
-  | ChangeOperator(RemoveGraphAttribute \removeGraphAttribute
-      , lang::ecore::Refs::Ref[GraphNode] \node = \removeGraphAttribute.\node
-      , lang::ecore::Refs::Id uid = \removeGraphAttribute.uid
-      , bool _inject = true)
-  | ChangeOperator(AddGraphEdge \addGraphEdge
-      , str \name = \addGraphEdge.\name
-      , str \importedNamespace = \addGraphEdge.\importedNamespace
-      , lang::ecore::Refs::Ref[GraphNode] \from = \addGraphEdge.\from
-      , lang::ecore::Refs::Ref[GraphNode] \to = \addGraphEdge.\to
-      , list[GraphEdgeLabel] \labels = \addGraphEdge.\labels
-      , lang::ecore::Refs::Id uid = \addGraphEdge.uid
-      , bool _inject = true)
   | ChangeOperator(RemoveGraphEdge \removeGraphEdge
       , lang::ecore::Refs::Ref[GraphEdge] \graphEdgeToRemove = \removeGraphEdge.\graphEdgeToRemove
       , lang::ecore::Refs::Id uid = \removeGraphEdge.uid
@@ -312,6 +290,19 @@ data ChangeOperator
   | ChangeOperator(RemoveRelation \removeRelation
       , lang::ecore::Refs::Ref[Relation] \relationToRemove = \removeRelation.\relationToRemove
       , lang::ecore::Refs::Id uid = \removeRelation.uid
+      , bool _inject = true)
+  | ChangeOperator(AddGraphAttribute \addGraphAttribute
+      , str \name = \addGraphAttribute.\name
+      , str \importedNamespace = \addGraphAttribute.\importedNamespace
+      , lang::ecore::Refs::Ref[Attribute] \value = \addGraphAttribute.\value
+      , lang::ecore::Refs::Id uid = \addGraphAttribute.uid
+      , bool _inject = true)
+  | ChangeOperator(AddGraphEdge \addGraphEdge
+      , lang::ecore::Refs::Ref[Relation] \from = \addGraphEdge.\from
+      , lang::ecore::Refs::Ref[Relation] \to = \addGraphEdge.\to
+      , list[GraphEdgeLabel] \labels = \addGraphEdge.\labels
+      , lang::ecore::Refs::Ref[Entity] \entity = \addGraphEdge.\entity
+      , lang::ecore::Refs::Id uid = \addGraphEdge.uid
       , bool _inject = true)
   ;
 
@@ -375,7 +366,7 @@ data ChangeAttributeType
 
 data ChangePrimitiveDataTypeAttribute
   = ChangePrimitiveDataTypeAttribute(lang::ecore::Refs::Ref[Attribute] \attributeToChange
-      , int \maxSize = 0
+      , int \maxSize
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -531,15 +522,6 @@ data IdSpec
       , lang::ecore::Refs::Id uid = noId())
   ;
 
-data IndexSpec
-  = IndexSpec(str \name
-      , list[lang::ecore::Refs::Ref[Attribute]] \attributes
-      , list[lang::ecore::Refs::Ref[Relation]] \references
-      , lang::ecore::Refs::Ref[Table] \table
-      , str \importedNamespace = ""
-      , lang::ecore::Refs::Id uid = noId())
-  ;
-
 data RelationalDB
   = RelationalDB(str \name
       , list[Table] \tables
@@ -598,28 +580,25 @@ data GraphDB
   ;
 
 data GraphEdge
-  = GraphEdge(str \name
-      , list[GraphEdgeLabel] \labels
-      , str \importedNamespace = ""
-      , lang::ecore::Refs::Ref[GraphNode] \from = null()
-      , lang::ecore::Refs::Ref[GraphNode] \to = null()
+  = GraphEdge(list[GraphEdgeLabel] \labels
+      , lang::ecore::Refs::Ref[Entity] \entity
+      , lang::ecore::Refs::Ref[Relation] \from = null()
+      , lang::ecore::Refs::Ref[Relation] \to = null()
       , lang::ecore::Refs::Id uid = noId())
   | GraphEdge(AddGraphEdge \addGraphEdge
-      , str \name = \addGraphEdge.\name
-      , str \importedNamespace = \addGraphEdge.\importedNamespace
-      , lang::ecore::Refs::Ref[GraphNode] \from = \addGraphEdge.\from
-      , lang::ecore::Refs::Ref[GraphNode] \to = \addGraphEdge.\to
+      , lang::ecore::Refs::Ref[Relation] \from = \addGraphEdge.\from
+      , lang::ecore::Refs::Ref[Relation] \to = \addGraphEdge.\to
       , list[GraphEdgeLabel] \labels = \addGraphEdge.\labels
+      , lang::ecore::Refs::Ref[Entity] \entity = \addGraphEdge.\entity
       , lang::ecore::Refs::Id uid = \addGraphEdge.uid
       , bool _inject = true)
   ;
 
 data AddGraphEdge
-  = AddGraphEdge(str \name
-      , list[GraphEdgeLabel] \labels
-      , str \importedNamespace = ""
-      , lang::ecore::Refs::Ref[GraphNode] \from = null()
-      , lang::ecore::Refs::Ref[GraphNode] \to = null()
+  = AddGraphEdge(list[GraphEdgeLabel] \labels
+      , lang::ecore::Refs::Ref[Entity] \entity
+      , lang::ecore::Refs::Ref[Relation] \from = null()
+      , lang::ecore::Refs::Ref[Relation] \to = null()
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -669,6 +648,15 @@ data Collection
   = Collection(str \name
       , str \importedNamespace = ""
       , lang::ecore::Refs::Ref[Entity] \entity = null()
+      , util::Maybe::Maybe[IndexSpec] \indexSpec = nothing()
+      , lang::ecore::Refs::Id uid = noId())
+  ;
+
+data IndexSpec
+  = IndexSpec(str \name
+      , list[lang::ecore::Refs::Ref[Attribute]] \attributes
+      , list[lang::ecore::Refs::Ref[Relation]] \references
+      , str \importedNamespace = ""
       , lang::ecore::Refs::Id uid = noId())
   ;
 
@@ -905,7 +893,7 @@ data DateType
   ;
 
 data StringType
-  = StringType(int \maxSize = 0
+  = StringType(int \maxSize
       , lang::ecore::Refs::Id uid = noId())
   ;
 

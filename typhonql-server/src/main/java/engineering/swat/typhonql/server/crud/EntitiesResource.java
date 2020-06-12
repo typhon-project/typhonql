@@ -32,7 +32,7 @@ public class EntitiesResource extends TyphonDALResource {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<Map<String, Object>> getEntites(@PathParam("entityName") String entityName) throws IOException {
-		logger.trace("Getting all entities of type: " + entityName);
+		logger.trace("Getting all entities of type: {}", entityName);
 		QLRestServer.RestArguments args = getRestArguments();
 		ResultTable result = getEngine().executeQuery(args.xmi, args.databaseInfo,
 				"from " + entityName + " e select e");

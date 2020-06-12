@@ -49,12 +49,13 @@ bool hitsBackend((Request)`<Query q>`, Place p, Schema s)
 Script request2script(Request r, Schema s, Log log = noLog) {
   log("REQ: <r>");
 
+  r = eliminateCustomDataTypes(injectProperUUIDs(r), s);
 
   switch (r) {
 
-    case (Request)`<Query q>`: {
+    case (Request)`<Query _>`: {
       list[Place] order = orderPlaces(r, s);
-      r = expandNavigation(inferKeyValLinks(addWhereIfAbsent(r), s), s);
+      r = expandNavigation(inferKeyValLinks(expandLoneVars(addWhereIfAbsent(r), s), s), s);
       log("NORMALIZED: <r>");
       Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) 
          | Place p <- order, hitsBackend(r, p, s)]);

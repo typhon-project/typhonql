@@ -90,7 +90,9 @@
   <databases xsi:type="typhonml:DocumentDB" name="Reviews">
     <collections name="Review" entity="//@entities.0"/>
     <collections name="Biography" entity="//@entities.6"/>
-    <collections name="Category" entity="//@entities.2"/>
+    <collections name="Category" entity="//@entities.2">
+      <indexSpec name="CategoryIndex" attributes="//@entities.2/@attributes.0 //@entities.2/@attributes.1"/>
+    </collections>
   </databases>
   <customDataTypes name="address">
     <elements xsi:type="typhonml:SimpleDataType" name="street">
@@ -99,11 +101,17 @@
     <elements xsi:type="typhonml:SimpleDataType" name="city">
       <type xsi:type="typhonml:StringType" maxSize="256"/>
     </elements>
-    <elements xsi:type="typhonml:SimpleDataType" name="zipcode">
-      <type xsi:type="typhonml:StringType" maxSize="42"/>
-    </elements>
+    <elements xsi:type="typhonml:ComplexDataType" name="zipcode" type="//@customDataTypes.1"/>
     <elements xsi:type="typhonml:SimpleDataType" name="location">
       <type xsi:type="typhonml:PointType"/>
+    </elements>
+  </customDataTypes>
+  <customDataTypes name="zip">
+    <elements xsi:type="typhonml:SimpleDataType" name="nums">
+      <type xsi:type="typhonml:StringType" maxSize="4"/>
+    </elements>
+    <elements xsi:type="typhonml:SimpleDataType" name="letters">
+      <type xsi:type="typhonml:StringType" maxSize="2"/>
     </elements>
   </customDataTypes>
 </typhonml:Model>

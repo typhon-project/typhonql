@@ -42,7 +42,7 @@ alias SQLOperations = tuple[
 ];
 
 alias CassandraOperations = tuple[
-	void (str resultId, str dbName, str keySpace, str query, Bindings bindings, list[Path] paths) executeQuery,
+	void (str resultId, str dbName, str query, Bindings bindings, list[Path] paths) executeQuery,
 	void (str dbName, str query, Bindings bindings) executeStatement,
 	void (str dbName, str query, Bindings bindings) executeGlobalStatement
 ];
@@ -56,7 +56,7 @@ alias MongoOperations = tuple[
 	void (str dbName, str coll, str query, Bindings bindings) deleteOne,
 	void (str dbName, str coll, str query, Bindings bindings) deleteMany,
 	void (str dbName, str coll) createCollection,
-    void (str dbName, str coll, str selector, str index) createIndex,
+    void (str dbName, str coll, str keys) createIndex,
 	void (str dbName, str coll, str newName) renameCollection,
 	void (str dbName, str coll) dropCollection,
 	void (str dbName, str coll) dropDatabase

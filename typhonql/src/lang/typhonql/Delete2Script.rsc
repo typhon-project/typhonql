@@ -191,7 +191,7 @@ void deleteKids(
   DeleteContext ctx
 ) {
   CQLStat stmt = cDelete(cTableName(to), [cEq(CQLExpr::cColumn(cTyphonId(to)), ctx.cqlMe)]);
-  ctx.addSteps([step(other, cassandra(execute(other, pp(stmt))), ctx.myParams)]);  
+  ctx.addSteps([step(other, cassandra(cExecuteStatement(other, pp(stmt))), ctx.myParams)]);  
 }
 
 void deleteKids(
@@ -200,7 +200,7 @@ void deleteKids(
   DeleteContext ctx
 ) {
   CQLStat stmt = cDelete(cTableName(to), [cEq(CQLExpr::cColumn(cTyphonId(to)), ctx.cqlMe)]);
-  ctx.addSteps([step(other, cassandra(execute(other, pp(stmt))), ctx.myParams)]);  
+  ctx.addSteps([step(other, cassandra(cExecuteStatement(other, pp(stmt))), ctx.myParams)]);  
 }
 
 /*
