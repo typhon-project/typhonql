@@ -1,7 +1,7 @@
 package nl.cwi.swat.typhonql.backend.cassandra;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -16,13 +16,16 @@ import org.rascalmpl.interpreter.types.FunctionType;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
-import nl.cwi.swat.typhonql.backend.Closables;
+import nl.cwi.swat.typhonql.backend.KeyedConnection;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.rascal.ConnectionData;
@@ -30,19 +33,25 @@ import nl.cwi.swat.typhonql.backend.rascal.Operations;
 import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 
 public class CassandraOperations  implements Operations, AutoCloseable {
+	private static final Cache<KeyedConnection, CqlSession> CONNECTION_POOL = Caffeine
+			.newBuilder()
+			.expireAfterAccess(Duration.ofHours(2))
+			.removalListener((KeyedConnection key, CqlSession connection, RemovalCause cause) -> connection.close())
+			.build()
+			;
+
 	private final Map<String, ConnectionData> connectionInfo;
-	private final Map<String, CqlSession> connections = new HashMap<>();
 
 	public CassandraOperations(Map<String, ConnectionData> connections) {
 		this.connectionInfo = connections;
 	}
 	
 	private CqlSession getConnection(String db, boolean global) {
-		return connections.computeIfAbsent(global ? "#" + db : db, n -> {
-			ConnectionData con = connectionInfo.get(db);
-			if (con == null) {
-				throw new RuntimeException("Missing connection infor for: " + db);
-			}
+		ConnectionData con = connectionInfo.get(db);
+        if (con == null) {
+            throw new RuntimeException("Missing connection infor for: " + db);
+        }
+		return CONNECTION_POOL.get(new KeyedConnection(global ? "#" + db : db, con),  kc -> {
 			CqlSessionBuilder builder = CqlSession.builder();
 			builder.addContactPoint(new InetSocketAddress(con.getHost(), con.getPort()));
 			if (con.getUser() != null && !con.getUser().isEmpty()) {
@@ -121,8 +130,7 @@ public class CassandraOperations  implements Operations, AutoCloseable {
 
 
 	@Override
-	public void close() throws Exception {
-		Closables.autoCloseAll(connections.values(), Exception.class);
+	public void close() {
 	}
 
 }

@@ -1,5 +1,6 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
+import java.util.Objects;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 
 public class ConnectionData {
@@ -34,6 +35,26 @@ public class ConnectionData {
 	public String getPassword() {
 		return password;
 	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(host, password, port, user);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj instanceof ConnectionData) {
+			ConnectionData other = (ConnectionData) obj;
+			return Objects.equals(host, other.host) && Objects.equals(password, other.password)
+					&& port == other.port && Objects.equals(user, other.user);
+		}
+		return false;
+	}
+	
+	
 	
 
 }
