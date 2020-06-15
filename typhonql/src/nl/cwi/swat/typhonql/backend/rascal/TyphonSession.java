@@ -152,6 +152,7 @@ public class TyphonSession implements Operations {
 		state.addOpperations(mariaDBOperations);
 		state.addOpperations(mongoOperations);
 		state.addOpperations(cassandra);
+		state.addOpperations(neo);
 
 		return new SessionWrapper(vf.tuple(makeGetResult(state, getResultType, ctx),
 				makeGetJavaResult(state, getJavaResultType, ctx),
