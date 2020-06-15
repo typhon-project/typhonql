@@ -4,7 +4,12 @@ import lang::typhonql::util::Log;
 
 import IO;
 
-extend lang::typhonql::util::Testing;
+import lang::typhonml::TyphonML;
+
+import lang::typhonql::util::Testing;
+import lang::typhonml::Util;
+import lang::typhonql::DDL;
+import lang::typhonql::TDBC;
 
 /*
  * These tests are meant to be run on a Typhon Polystore deployed according to the
@@ -124,6 +129,29 @@ void test8(PolystoreInstance p) {
 	 	void() { rt = p.runQuery((Request) `from Review r select r.content`); });
 }
 
+// create relation (relational)
+void test9(PolystoreInstance p) {
+	 Schema s = p.fetchSchema();
+	 
+	 // We need to fake the schema update
+	 s.rels += { <"User", zero_many(), "products", "products^", \one(), "Product", false>};
+	 p.runDDL((Request) `create User.products -\> Product[0..*]`);
+	 //p.runUpdateForSchema((Request) `insert Product {@id: #guitar, name: "Guitar", description: "Wood", availability: 50 }`, s);
+	 //rs = p.runQueryForSchema((Request) `from Product p select p.@id, p.availability`, s);
+	 //p.assertEquals("test5", rs,  <["p.@id", "p.availability"],[[ "guitar", 50 ]]>);
+}
+
+// drop relation (relational)
+void test10(PolystoreInstance p) {
+	 Schema s = p.fetchSchema();
+	 
+	 // We need to fake the schema update
+	 s.rels += { <"User", zero_many(), "products", "products^", \one(), "Product", false>};
+	 p.runDDLForSchema((Request) `drop relation User.products`, s);
+	 //p.runUpdateForSchema((Request) `insert Product {@id: #guitar, name: "Guitar", description: "Wood", availability: 50 }`, s);
+	 //rs = p.runQueryForSchema((Request) `from Product p select p.@id, p.availability`, s);
+	 //p.assertEquals("test5", rs,  <["p.@id", "p.availability"],[[ "guitar", 50 ]]>);
+}
 
 
 TestExecuter getExecuter(Log log = NO_LOG()) = 
