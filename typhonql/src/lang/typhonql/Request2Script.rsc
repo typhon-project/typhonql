@@ -24,6 +24,11 @@ import lang::typhonql::relational::Query2SQL;
 import lang::typhonql::mongodb::Query2Mongo;
 import lang::typhonql::mongodb::DBCollection;
 
+import lang::typhonql::neo4j::Query2Neo;
+import lang::typhonql::neo4j::Neo2Text;
+import lang::typhonql::neo4j::Neo;
+
+
 import lang::typhonql::util::Log;
 
 import IO;
