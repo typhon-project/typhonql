@@ -8,6 +8,8 @@ import lang::typhonql::Session;
 import lang::typhonql::TDBC;
 import lang::typhonql::Order;
 import lang::typhonql::Normalize;
+import  lang::typhonql::DDL;
+
 
 import lang::typhonql::util::Log;
 
@@ -16,7 +18,7 @@ import lang::typhonql::relational::Util;
 import lang::typhonql::relational::SQL2Text;
 import lang::typhonql::relational::Query2SQL;
 import lang::typhonql::relational::SQL2Text;
-import lang::typhonql::relational::Schema2SQL;
+import lang::typhonql::relational::SchemaToSQL;
 
 import lang::typhonql::mongodb::Query2Mongo;
 import lang::typhonql::mongodb::DBCollection;
@@ -82,12 +84,12 @@ Script ddl2scriptAux((Request) `create <EId eId>.<Id relation> ( <Id inverse> ) 
 
 Script ddl2scriptAux((Request) `create <EId eId>.<Id relation> <Arrow arrow> <EId targetId> [ <CardinalityEnd lower> .. <CardinalityEnd upper>]`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
-	return createRelation(p, entity, "<relation>", "<targetId>", toCardinality("<lower>", "<upper>"), (Arrow) `:-\>` := arrow, nothing(), s, log = log);
+  	return createRelation(p, entity, "<relation>", "<targetId>", toCardinality("<lower>", "<upper>"), (Arrow) `:-\>` := arrow, Maybe::nothing(), s, log = log);
   }
   throw "Not found entity <eId>";
 }
 
-Script createRelation(p:<sql(), str dbName>, str entity, str relation, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
+Script createRelation(p:<sql(), str dbName>, str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
 	list[Step] steps = [];
 	// where to get the roles? apparently they are in the ML model but not in the DDL create relation operation
  	// we designed
@@ -111,13 +113,13 @@ Script createRelation(p:<sql(), str dbName>, str entity, str relation, Cardinali
     return script(steps);
 }
 
-Script createRelation(p:<mongodb(), str dbName>, str entity, str relation,Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
+Script createRelation(p:<mongodb(), str dbName>, str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
 	Call call = mongo(
 				findAndUpdateMany(dbName, entity, "{}", "{$set: { \"<relation>\" : null}}"));
 	return script([step(dbName, call, ())]);
 }
 
-default Script createRelation(p:<db, str dbName>,  str entity, str relation,Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
+default Script createRelation(p:<db, str dbName>,  str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
 }
 
@@ -174,7 +176,7 @@ Script ddl2scriptAux((Request) `drop relation <EId eId>.<Id relation>`, Schema s
   throw "Not found entity <eId>";
 }
 
-Script dropRelation(p:<sql(), str dbName>, str entity, str relation, str to, str toRole, str containment, Schema s, Log log = noLog) {
+Script dropRelation(p:<sql(), str dbName>, str entity, str relation, str to, str toRole, bool containment, Schema s, Log log = noLog) {
 	doForeignKeys = true;
  	if (containment) {
  		list[Step] steps = [];
@@ -189,23 +191,23 @@ Script dropRelation(p:<sql(), str dbName>, str entity, str relation, str to, str
     	}  
     	return script(steps);
 	} else {
-		str tbl = junctionTableName(from, fromRole, to, toRole);
+		str tbl = junctionTableName(entity, relation, to, toRole);
 		SQLStat stat = dropTable([tbl], true, []);
 		return script([step(dbName, sql(executeStatement(dbName, pp(stat))), ())]);	
 	}
 }
 
-Script dropRelation(p:<mongodb(), str dbName>, str entity, str relation, str to, str toRole, str containment, Schema s, Log log = noLog) {
+Script dropRelation(p:<mongodb(), str dbName>, str entity, str relation, str to, str toRole, bool containment, Schema s, Log log = noLog) {
 	if (containment) {
 		return script([]);
 	} else {
 		Call call = mongo(
-				findAndUpdateMany(dbName, entity, "{}", "{$unset: { \"<fromRole>\" : 1}}"));
+				findAndUpdateMany(dbName, entity, "{}", "{$unset: { \"<relation>\" : 1}}"));
 		return script([step(dbName, call, ())]);
 	}
 }
 
-default Script dropRelation(p:<db, str dbName>,  str entity, str relation, str to, str toRole, str containment, Schema s, Log log = noLog) {
+default Script dropRelation(p:<db, str dbName>,  str entity, str relation, str to, str toRole, bool containment, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
 }
 
@@ -217,14 +219,14 @@ Script ddl2scriptAux((Request) `rename <EId eId> to <EId newName>`, Schema s, Lo
 }
 
 Script renameEntity(p:<sql(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
-	if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+	if (<p:<db, dbName>, eId> <- s.placement, entity == eId) {
 		return rename(tableName(entity), tableName(newName));
   	}
   	throw "Not found entity <eId>";
 }
 
 Script renameEntity(p:<mongodb(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
-	if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+	if (<p:<db, dbName>, eId> <- s.placement, entity == eId) {
 		return script([step(dbName, mongo(renameCollection(dbName, entity, newName)), ())]);
   	}
   	throw "Not found entity <eId>";
@@ -288,11 +290,11 @@ default Script renameRelation(p:<db, str dbName>, str entity, str attribute, str
 	throw "Unrecognized backend: <db>";
 }
 
-Cardinality toCardinality("ONE_MANY") = one_many();
-Cardinality toCardinality("ZERO_MANY") = zero_many();
-Cardinality toCardinality("ZERO_ONE") = zero_one();
-Cardinality toCardinality("ONE") = \one();
-default Cardinality toCardinality(str card) {
-	throw "Unknown cardinality: <card>";
+Cardinality toCardinality("1", "*") = one_many();
+Cardinality toCardinality("0", "*") = zero_many();
+Cardinality toCardinality("0", "1") = zero_one();
+Cardinality toCardinality("1", "1") = \one();
+default Cardinality toCardinality(str src, str tgt) {
+	throw "Unknown cardinality: <src>..<tgt>";
 } 	
 

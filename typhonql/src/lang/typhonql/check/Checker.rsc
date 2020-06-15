@@ -123,7 +123,12 @@ void collect((Expr)`<Real r>`, Collector c) {
 }
 
 void collect((Expr)`<DateTime dt>`, Collector c) {
-    c.fact(dt, dateTimeType());
+    if (dt is date) {
+        c.fact(dt, dateType());
+    }
+    else {
+        c.fact(dt, dateTimeType());
+    }
 }
 
 void collect((Expr)`<Point pt >`, Collector c) {
@@ -207,8 +212,10 @@ void requireValidCardinality(KeyVal current, Id key, EId entity, Solver s) {
 }
 
 
-void collect(current:(Expr)`<Custom customValue>`, Collector c) {
-    reportUnsupported(current, c);
+void collect(current:(Expr)`<EId typ> ( <{KeyVal ","}* params>)`, Collector c) {
+    c.fact(current, typ);
+    c.fact(typ, userDefinedType("<typ>"));
+    collectKeyVal(params, typ, c);
 }
 
 //void collect(current:(Expr)`[<{Obj ","}*entries>]`, Collector c) {

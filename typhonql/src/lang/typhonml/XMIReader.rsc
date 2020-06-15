@@ -76,7 +76,7 @@ Model loadTyphonML(loc l) = xmiString2Model(readFile(l));
 
 Model xmiString2Model(str s) = xmiNode2Model(readXML(s, fullyQualify=true));
 
-Schema loadSchemaFromXMI(str s) = model2schema(m)
+Schema loadSchemaFromXMI(str s, bool normalize=true) = model2schema(m, normalize=normalize)
 	when Model m := xmiString2Model(s);
 
 @doc{
