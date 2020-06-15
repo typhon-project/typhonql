@@ -141,6 +141,21 @@ void setup(PolystoreInstance p, bool doTest) {
 	  rs = p.runQuery((Request)`from Product p select p.inventory where p.@id == #radio`);
 	  p.assertResultEquals("radio inventory obtained", rs, <["p.inventory"], [[U("radio1")], [U("radio2")]]>);
 	}	
+	
+	p.runUpdate((Request) `insert Wish { @id: #wish1, intensity: 7, user: #pablo, product: #tv }`);
+	
+	if (doTest) {
+	  rs = p.runQuery((Request)`from Wish w select w.@id`);
+	  p.assertResultEquals("items were inserted", rs, <["w.@id"], [
+	    [U("wish1")]
+	  ]>);
+	  
+	  rs = p.runQuery((Request)`from Product p select p.wish where p.@id == #tv`);
+	  p.assertResultEquals("wish obtained from product", rs, <["p.wish"], [[U("wish1")]]>);
+	  
+	  rs = p.runQuery((Request)`from User u select u.wish where u.@id == #pablo`);
+	  p.assertResultEquals("wish obtained from user", rs, <["u.wish"], [[U("wish1")]]>);
+	}	
 		
 }
 
@@ -486,7 +501,6 @@ void testGISonCrossMongoSQL(PolystoreInstance p) {
   p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "u.name"], [[U("rev1"), "Pablo"], [U("rev2"), "Davy"]]>);
 }
 
-
 void testGISPrint(PolystoreInstance p) {
     rs = p.runQuery((Request)`from Product p select p.availabilityRegion`);
     p.assertResultEquals("GIS Print - SQL", rs, <["p.availabilityRegion"], [["POLYGON ((10 10, 40 10, 40 40, 10 40, 10 10))"],["POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))"]]>);
@@ -496,6 +510,26 @@ void testGISPrint(PolystoreInstance p) {
     p.assertResultEquals("GIS Print - Mongo", rs, <["r.location"], [["POINT (2 3)"],["POINT (20 30)"], ["POINT (3 2)"]]>);
 }
 
+
+void testInsertNeo(PolystoreInstance p) {
+  // TODO: this shows the cyclic reference problem we still need to solve.
+  // NB: we have to insert the product first.
+
+  // inventory: [#laptop1, #laptop2], 
+  p.runUpdate((Request) `insert User { @id: #paul, name: "Paul", location: #point(2.0 3.0), photoURL: "klint",
+	                      '  billing: addres( street: "Eigth", city: "Ams"
+	                      '   , zipcode: zip(nums: "1234", letters: "ab")
+	                      '   , location: #point(2.0 3.0))}`);
+  rs = p.runQuery((Request)`from User u select u.@id, u.name where u.name == "Paul"`);
+  p.assertResultEquals("users were inserted", rs, <["u.@id", "u.name"], [[U("paul"), "Paul"]]>);
+	 
+  p.runUpdate((Request) `insert Wish { @id: #wish2, intensity: 7, user: #paul, product: #tv }`);
+	
+  rs = p.runQuery((Request)`from Wish w select w.@id, w.intensity where w.@id ==#wish2`);
+  p.assertResultEquals("items were inserted", rs, <["w.@id", "w.intensity"], [
+	    [U("wish2"), 7]
+	  ]>);
+}
 
 
 void test1(PolystoreInstance p) {
