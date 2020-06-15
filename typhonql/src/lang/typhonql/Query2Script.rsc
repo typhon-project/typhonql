@@ -22,6 +22,10 @@ import lang::typhonql::relational::Query2SQL;
 import lang::typhonql::mongodb::Query2Mongo;
 import lang::typhonql::mongodb::DBCollection;
 
+import lang::typhonql::neo4j::Query2Neo;
+import lang::typhonql::neo4j::Neo;
+import lang::typhonql::neo4j::Neo2Text;
+
 import lang::typhonql::util::Log;
 
 import IO;
@@ -120,7 +124,7 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<neo4j(), str dbName>, Schema 
   if (neoStat.match.patterns == []) {
     return [];
   }
-  return [step(dbName, neo(executeNeoQuery(dbName, pp(sqlStat))), params
+  return [step(dbName, neo(executeNeoQuery(dbName, neopp(neoStat))), params
      , signature=
          filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s)
            +  where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];
