@@ -20,6 +20,7 @@ import nl.cwi.swat.typhonql.backend.QueryExecutor;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultIterator;
 import nl.cwi.swat.typhonql.backend.ResultStore;
+import nl.cwi.swat.typhonql.backend.UpdateExecutor;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 
@@ -30,6 +31,19 @@ public class Neo4JEngine extends Engine {
 			Driver driver) {
 		super(store, script, updates, uuids);
 		this.driver = driver;
+	}
+	
+	public void executeUpdate(String query, Map<String, Binding> bindings) {
+		new UpdateExecutor(store, updates, uuids, bindings) {
+			@Override
+			protected void performUpdate(Map<String, Object> values) {
+				Map<String, Object> pars = toNeo4JObjects(values);
+				try (Session session = driver.session()) {
+					session.run(query, pars);
+				}
+			}
+			
+		}.executeUpdate();
 	}
 
 	public void executeMatch(String resultId, String query, Map<String, Binding> bindings, List<Path> signature) {

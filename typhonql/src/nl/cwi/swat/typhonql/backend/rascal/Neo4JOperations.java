@@ -78,6 +78,20 @@ public class Neo4JOperations implements Operations, AutoCloseable {
 		});
 	}
 	
+	private ICallableValue makeExecuteUpdate(Function<String, Neo4JEngine> getEngine,
+			TyphonSessionState state, FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf) {
+		return makeFunction(ctx, state, executeType, args -> {
+			String dbName = ((IString) args[0]).getValue();
+			String query = ((IString) args[1]).getValue();
+			IMap bindings = (IMap) args[2];
+
+			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
+			
+			getEngine.apply(dbName).executeUpdate(query, bindingsMap);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
+		});
+	}
+	
 	public ITuple newNeo4JOperations(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, 
 			TyphonSessionState state, Map<String, String> uuids, IEvaluatorContext ctx, IValueFactory vf) {
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("Neo4JOperations"));
@@ -86,12 +100,14 @@ public class Neo4JOperations implements Operations, AutoCloseable {
 		}
 
 		FunctionType executeMatchType = (FunctionType) aliasedTuple.getFieldType("executeMatch");
+		FunctionType executeUpdateType = (FunctionType) aliasedTuple.getFieldType("executeUpdate");
 		
 		Function<String, Neo4JEngine> getEngine = 
 				(dbName) ->
 					new Neo4JEngine(store, script, updates, uuids, getConnection(dbName, true));
 
-		return vf.tuple(makeExecuteMatch(getEngine, state, executeMatchType, ctx, vf));
+		return vf.tuple(makeExecuteMatch(getEngine, state, executeMatchType, ctx, vf),
+				makeExecuteUpdate(getEngine, state, executeUpdateType, ctx, vf));
 	}
 
 	
