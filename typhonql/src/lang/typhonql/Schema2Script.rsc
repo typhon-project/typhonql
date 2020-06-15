@@ -4,6 +4,7 @@ import IO;
 import ValueIO;
 import List;
 import String;
+import util::Maybe;
 
 import lang::typhonml::Util;
 import lang::typhonql::Script;
@@ -12,6 +13,9 @@ import lang::typhonql::relational::SchemaToSQL;
 import lang::typhonql::cassandra::Schema2CQL;
 import lang::typhonql::cassandra::CQL;
 import lang::typhonql::cassandra::CQL2Text;
+
+import lang::typhonql::neo4j::Neo;
+import lang::typhonql::neo4j::Neo2Text;
 
 import lang::typhonql::util::Log;
 
@@ -71,6 +75,14 @@ list[Step] place2script(p:<mongodb(), str db>, Schema s, Log log = noLog) {
        | <db, indexSpec(str name, rel[str, str] ftrs)> <- s.pragmas, <entity, str attrOrRef> <- ftrs ];
           
   }
-
+  
   return steps;
+ }
+
+list[Step] place2script(p: <neo4j(), str db>, Schema s, Log log = noLog) {
+	list[Step] steps = [step(db, neo(executeNeoUpdate(db, 
+		neopp(matchUpdate(
+		    just(match([pattern(nodePattern("n", [], []), [])], [], [])),
+			detachDelete(pattern(nodePattern("n", [], []), [])))))), ())];
+	return steps;
 }
