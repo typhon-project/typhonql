@@ -29,17 +29,17 @@ str PASSWORD = "admin1@";
 public Log PRINT() = void(value v) { println("LOG: <v>"); };
 
 KeyVal aBillingKeyVal =
-  (KeyVal)`billing: addres( street: "Commelin", city: "Ams"
+  (KeyVal)`billing: address( street: "Commelin", city: "Ams"
           '   , zipcode: zip(nums: "1093", letters: "VX")
           '   , location: #point(2.0 3.0))`;
 
 void setup(PolystoreInstance p, bool doTest) {
 	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo", location: #point(2.0 3.0), photoURL: "moustache",
-	                      '  billing: addres( street: "Seventh", city: "Ams"
+	                      '  billing: address( street: "Seventh", city: "Ams"
 	                      '   , zipcode: zip(nums: "1234", letters: "ab")
 	                      '   , location: #point(2.0 3.0))}`);
 	p.runUpdate((Request) `insert User { @id: #davy, name: "Davy", location: #point(20.0 30.0), photoURL: "beard",
-	                      '  billing: addres( street: "Bla", city: "Almere"
+	                      '  billing: address( street: "Bla", city: "Almere"
 	                      '   , zipcode: zip(nums: "4566", letters: "cd")
 	                      '   , location: #point(20.0 30.0))}`);
 	
@@ -200,7 +200,7 @@ void testLoneVars(PolystoreInstance p) {
 
 void testCustomDataTypes(PolystoreInstance p) {
   p.runUpdate((Request) `insert User { @id: #jurgen, name: "Jurgen", location: #point(2.0 3.0), photoURL: "moustache",
-                        '  billing: addres( street: "Seventh", city: "Ams"
+                        '  billing: address( street: "Seventh", city: "Ams"
 	                    '   , zipcode: zip(nums: "1234", letters: "ab")
 	                    '   , location: #point(2.0 3.0))}`);
 	                    

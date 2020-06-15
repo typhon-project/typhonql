@@ -80,16 +80,17 @@ PolystoreInfo readTyphonConfig(loc file) {
    	typhonConf.PolystoreUser, typhonConf.PolystorePassword>; 
 }
 
-Schema getSchema(loc polystoreUri, str user, str password) {
+tuple[Schema, Schema] getSchema(loc polystoreUri, str user, str password) {
     str modelStr = readHttpModel(polystoreUri, user, password);
-    Schema newSch = loadSchemaFromXMI(modelStr);
+    Schema newSch = loadSchemaFromXMI(modelStr, normalize = true);
+    Schema plainSch = loadSchemaFromXMI(modelStr, normalize = false);
     
     set[Message] msgs = schemaSanity(newSch, polystoreUri);
     if (msgs != {}) {
       println(msgs);
       throw "Not all entities assigned to backend in the model in polystore. Please upload a consistent model before continuing.";
     }
-    return newSch;
+    return <newSch, plainSch>;
 }
 
 Tree checkQL(Tree input, CheckerMLSchema sch){
@@ -132,8 +133,8 @@ void setupIDE(bool isDevMode = false) {
   Schema currentSchema(Tree tree) {
 	if (schema({}, {}) := sch) {
         <polystoreUri, user, password> = readTyphonConfig(tree@\loc);
-        sch = getSchema(polystoreUri, user, password);
-        cSch = convertModel(sch);
+        <sch, plainSch> = getSchema(polystoreUri, user, password);
+        cSch = convertModel(plainSch);
     }
     return sch;
   }

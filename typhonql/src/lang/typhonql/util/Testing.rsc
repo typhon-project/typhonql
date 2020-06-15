@@ -10,6 +10,7 @@ import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
 import lang::typhonml::XMIReader;
 import lang::typhonql::RunUsingCompiler;
+import lang::typhonql::check::Checker;
 
 import IO;
 import ParseTree;
@@ -63,8 +64,20 @@ alias TestExecuter =
 TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password, Log log = NO_LOG()) {
 	Conn conn = <host, port, user, password>;
 	Schema sch = fetchSchema(conn);
+	CheckerMLSchema checkSch = convertModel(fetchNonNormalizedModel(conn));
 	map[str, Connection] connections =  readConnectionsInfo(conn.host, toInt(conn.port), conn.user, conn.password);
 	Session session;
+	
+	void checkRequest(Request r, Schema schm = sch) {
+	   try {
+           model = checkQLTree(r, (schm == sch) ? checkSch : converModel(schm));
+           for (m <- model.messages) {
+               println("  <failEmoji> checker: <m>");
+           }
+	   } catch value v: {
+	       println("Checker crashed with: <v>");
+	   }
+	};
 	
 	Stats stats = ();
 	
@@ -94,43 +107,50 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		ses.done();
 	};
 	ResultTable(Request req) myRunQuery = ResultTable(Request req) {
+        checkRequest(req);
 		ses = newSession(connections, log = log);
 		result = runQueryInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
 	ResultTable(Request req, Schema s) myRunQueryForSchema = ResultTable(Request req, Schema s) {
+        checkRequest(req, schm = s);
 		ses = newSession(connections, log = log);
 		result = runQueryInTest(req, s, ses, log);
 		ses.done();
 		return result;
 	};
 	CommandResult(Request req) myRunUpdate = CommandResult(Request req) {
+        checkRequest(req);
 		ses = newSession(connections, log = log);
 		result = runUpdateInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
 	CommandResult(Request req, Schema s) myRunUpdateForSchema = CommandResult(Request req, Schema s) {
+        checkRequest(req, schm = s);
 		ses = newSession(connections, log = log);
 		result = runUpdateInTest(req, s, ses, log);
 		ses.done();
 		return result;
 	};
 	CommandResult(Request req) myRunDDL = CommandResult(Request req) {
+        checkRequest(req);
 		ses = newSession(connections, log = log);
 		result = runDDLInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
 	CommandResult(Request req, Schema s) myRunDDLForSchema = CommandResult(Request req, Schema s) {
+        checkRequest(req);
 		ses = newSession(connections, log = log);
 		result = runDDLInTest(req, s, ses, log);
 		ses.done();
 		return result;
 	};
-	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs)
+	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) 
 		myRunPreparedUpdate = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
+        checkRequest(req);
 	    ses = newSession(connections, log = log); 
 		result = runPreparedUpdateInTest(req, columnNames, vs, sch, ses, log);
 		ses.done();
@@ -209,6 +229,8 @@ Schema fetchSchema(Conn c) {
 	Schema sch = loadSchemaFromXMI(modelStr);
 	return sch;
 }
+Schema fetchNonNormalizedModel(Conn c)
+    = loadSchemaFromXMI(readHttpModel(|http://<c.host>:<c.port>|, c.user, c.password), normalize = false);
 
 CommandResult runDDLInTest(Request req, Schema s, Session session, Log log) {
 	runDDL(req, s, session, log = log);
