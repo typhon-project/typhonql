@@ -69,7 +69,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   Place p = placeOf(entity, s);
   str myId = newParam();
   Bindings myParams = ( myId: generatedId(myId) | !hasId(kvs) );
-  SQLExpr sqlMe = hasId(kvs) ? SQLExpr::lit(text(evalId(kvs))) : SQLExpr::placeholder(name=myId);
+  SQLExpr sqlMe = hasId(kvs) ? SQLExpr::lit(Value::text(evalId(kvs))) : SQLExpr::placeholder(name=myId);
   DBObject mongoMe = hasId(kvs) ? \value(evalId(kvs)) : DBObject::placeholder(name=myId);
   CQLExpr cqlMe = hasId(kvs) ? cTerm(cUUID(evalId(kvs))) : cBindMarker(name=myId);
   NeoExpr neoMe = hasId(kvs) ? NeoExpr::lit(text(evalId(kvs))) : NeoExpr::placeholder(name=myId);
@@ -120,7 +120,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
     //println("- Was: <theInsert>");
     theCreate = block(theCreate);
     //println("- Became: <theInsert>");
-    updateStep(idx, step(p.name, neo(executeNeoQuery(p.name, pp(theCreate))), myParams));
+    updateStep(idx, step(p.name, neo(executeNeoUpdate(p.name, neopp(theCreate))), myParams));
   }
 
   addSteps([ newId(myId) | !hasId(kvs) ]);
@@ -201,9 +201,9 @@ list[Step] compileNeoNode({KeyVal ","}* kvs, InsertContext ctx) {
 	steps = [];
 	for (<<neo4j(), db>, e> <- ctx.schema.placement) {
 		if (<e, _, _, _, _, entity, _> <- ctx.schema.rels, entity == ctx.entity) {
-			str createStmt = pp(\matchUpdate(Maybe::nothing(), 
-				create(pattern(nodePattern("n", [nodeName("<ctx.entity>")], [property(typhonId(ctx.entity), ctx.neoMe)]), []))));
-			steps += [step(db, neo(executeNeoQuery(db, createStmt)), ctx.myParams)];
+			str createStmt = neopp(\matchUpdate(Maybe::nothing(), 
+				create(pattern(nodePattern("n", [ctx.entity], [property(typhonId(ctx.entity), ctx.neoMe)]), []))));
+			steps += [step(db, neo(executeNeoUpdate(db, createStmt)), ctx.myParams)];
 		} 
 	}
 	return steps;
@@ -290,8 +290,8 @@ void compileRefBinding(
   Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
   UUID ref, InsertContext ctx
 ) {      
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, parent, parentRole, lit(text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
-  ctx.addSteps(insertIntoJunction(other, parent, parentRole, from, fromRole, lit(text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, parent, parentRole, SQLExpr::lit(text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(other, parent, parentRole, from, fromRole, SQLExpr::lit(text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
 }
 
 
@@ -314,12 +314,12 @@ void compileRefBinding(
     str fk = fkName(to, from, fromRole == "" ? toRole : fromRole);
     ctx.updateSQLInsert(SQLStat(SQLStat theInsert) {
       theInsert.colNames += [ fk ];
-      theInsert.values += [ lit(text(uuid2str(ref))) ];
+      theInsert.values += [ SQLExpr::lit(Value::text(uuid2str(ref))) ];
       return theInsert;
     });
   }
   else {
-    ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(text(uuid2str(ref)))], ctx.myParams));
+    ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [SQLExpr::lit(Value::text(uuid2str(ref)))], ctx.myParams));
   }
 }
 
@@ -386,7 +386,7 @@ void compileRefBinding(
     obj.props += [ <fromRole, \value(uuid2str(ref))> ];
     return obj;
   });
-  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, SQLExpr::lit(Value::text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
 }
 
 void compileRefBinding(
@@ -603,32 +603,33 @@ list[SQLExpr] evalKeyVal((KeyVal)`@id: <Expr e>`) = [lit(evalExpr(e))];
 Value evalExpr((Expr)`<VId v>`) { throw "Variable still in expression"; }
  
 // todo: unescaping (e.g. \" to ")!
-Value evalExpr((Expr)`<Str s>`) = text("<s>"[1..-1]);
+Value evalExpr((Expr)`<Str s>`) = Value::text("<s>"[1..-1]);
 
-Value evalExpr((Expr)`<Int n>`) = integer(toInt("<n>"));
+Value evalExpr((Expr)`<Int n>`) = Value::integer(toInt("<n>"));
 
-Value evalExpr((Expr)`<Bool b>`) = boolean("<b>" == "true");
+Value evalExpr((Expr)`<Bool b>`) = Value::boolean("<b>" == "true");
 
-Value evalExpr((Expr)`<Real r>`) = decimal(toReal("<r>"));
+Value evalExpr((Expr)`<Real r>`) = Value::decimal(toReal("<r>"));
 
-Value evalExpr((Expr)`#point(<Real x> <Real y>)`) = point(toReal("<x>"), toReal("<y>"));
+Value evalExpr((Expr)`#point(<Real x> <Real y>)`) = Value::point(toReal("<x>"), toReal("<y>"));
 
 Value evalExpr((Expr)`#polygon(<{Segment ","}* segs>)`)
-  = polygon([ seg2lrel(s) | Segment s <- segs ]);
+  = Value::polygon([ seg2lrel(s) | Segment s <- segs ]);
   
 lrel[real, real] seg2lrel((Segment)`(<{XY ","}* xys>)`)
   = [ <toReal("<x>"), toReal("<y>")> | (XY)`<Real x> <Real y>` <- xys ]; 
 
-Value evalExpr((Expr)`<DateAndTime d>`) = dateTime(readTextValueString(#datetime, "<d>"));
+Value evalExpr((Expr)`<DateAndTime d>`) =Value::dateTime(readTextValueString(#datetime, "<d>"));
 
-Value evalExpr((Expr)`<JustDate d>`) = date(readTextValueString(#datetime, "<d>"));
+Value evalExpr((Expr)`<JustDate d>`) = Value::date(readTextValueString(#datetime, "<d>"));
 
 // should only happen for @id field (because refs should be done via keys etc.)
-Value evalExpr((Expr)`<UUID u>`) = text("<u>"[1..]);
+Value evalExpr((Expr)`<UUID u>`) = Value::text("<u>"[1..]);
 
-Value evalExpr((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
+Value evalExpr((Expr)`<PlaceHolder p>`) = Value::placeholder(name="<p>"[2..]);
 
 default Value evalExpr(Expr ex) { throw "missing case for <ex>"; }
+
 
 bool isKeyValAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) 
   = isKeyValAttr(e, "<x>", s) != [];
@@ -701,32 +702,32 @@ void smoke2createWithAllOnSameNeoDB() {
 	
   Request r = (Request)`insert Product { @id: #tv, name: "TV", description: "Dumb box"}`;  
   println(insert2script(r,s));
-  if (step(_, neo(executeNeoQuery(_, q)), _) := insert2script(r, s).steps[1]) {
+  if (step(_, neo(executeNeoUpdate(_, q)), _) := insert2script(r, s).steps[1]) {
   	println(q);
   }
   
   r = (Request)`insert Product { @id: #radio, name: "Radio", description: "TV without images"}`;  
   println(insert2script(r,s));
-  if (step(_, neo(executeNeoQuery(_, q)), _) := insert2script(r, s).steps[1]) {
+  if (step(_, neo(executeNeoUpdate(_, q)), _) := insert2script(r, s).steps[1]) {
   	println(q);
   }
   
   r = (Request)`insert User { @id: #pablo, name: "Pablo"}`;  
   println(insert2script(r,s));
-  if (step(_, neo(executeNeoQuery(_, q)), _) := insert2script(r, s).steps[1]) {
+  if (step(_, neo(executeNeoUpdate(_, q)), _) := insert2script(r, s).steps[1]) {
   	println(q);
   }
   
   
   r = (Request)`insert Concordance { @id: #conc1, from: #tv, to: #radio, weight: 15 }`;  
   println(insert2script(r,s));
-  if (step(_, neo(executeNeoQuery(_, q)), _) := insert2script(r, s).steps[0]) {
+  if (step(_, neo(executeNeoUpdate(_, q)), _) := insert2script(r, s).steps[0]) {
   	println(q);
   }
   
   r = (Request)`insert Wish { @id: #wish1, user: #pablo, product: #tv, amount: 15 }`;  
   println(insert2script(r,s));
-  if (step(_, neo(executeNeoQuery(_, q)), _) := insert2script(r, s).steps[0]) {
+  if (step(_, neo(executeNeoUpdate(_, q)), _) := insert2script(r, s).steps[0]) {
   	println(q);
   }
   

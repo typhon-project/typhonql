@@ -92,7 +92,7 @@ Steps to compile to SQL
 tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`
   , Schema s, Place p, Log log = noLog) {
 
-  NeoStat q = matchQuery(match([pattern(nodePattern("", [], []), [relationshipPattern(doubleArrow(), "",  "", [], nodePattern("", [], []))])], [where([])], []));
+  NeoStat q = matchQuery(match([pattern(nodePattern("__n1", [], []), [relationshipPattern(doubleArrow(), "",  "", [], nodePattern("__n2", [], []))])], [where([])], []));
   
   void addWhere(NeoExpr e) {
     // println("ADDING where clause: <pp(e)>");
@@ -252,7 +252,7 @@ NeoExpr expr2neo(e:(Expr)`<VId x>.@id`, Ctx ctx, Log log = noLog) {
     return NeoExpr::placeholder(name=token);
   }
   str entity = ctx.env["<x>"];
-  return property("<x>", typhonId(entity));
+  return property("<x>", neoTyphonId(entity));
 }
   
 // only one level of navigation because of normalization
@@ -458,7 +458,7 @@ Schema testSchema() = schema({
     <"Concordance", "weight", "int">,
     <"Product", "name", "string[256]">,
     <"User", "name", "string[256]">,
-    <"Wish", "amount", "int">
+    <"Wish", "intensity", "int">
   },
   placement = {
     <<sql(), "Inventory">, "Product">,
@@ -485,7 +485,7 @@ void smoke2neoSelectWithAllOnSameNeoDB() {
    	<stat, params> = compile2neo(restrict(q, p, order, s), s, p); 
     println(stat);
     
-    println(pp(stat));
+    println(neopp(stat));
   }
   
 }
@@ -503,7 +503,7 @@ void smoke2neoSelectWithAllOnSameNeoDB2() {
    	<stat, params> = compile2neo(restrict(q, p, order, s), s, p); 
     println(stat);
     
-    println(pp(stat));
+    println(neopp(stat));
   }
   
 }
@@ -512,7 +512,7 @@ void smoke2neoSelectWithAllOnSameNeoDB3() {
   s = testSchema();	  
   println("\n\n#####");
   println("## ordered weights");
-  Request q = (Request)`from User u1, Product p1, Wish w select w.amount where u1.name == "Pablo", p1.name == "TV", p1.wish == w, u1.wish == w, w.amount \>10`;  
+  Request q = (Request)`from User u1, Product p1, Wish w select w.intensity where u1.name == "Pablo", p1.name == "TV", p1.wish == w, u1.wish == w, w.intensity \>10`;  
   println("Ordering <q>");
   order = orderPlaces(q, s);
   println("ORDER = <order>");
@@ -521,7 +521,26 @@ void smoke2neoSelectWithAllOnSameNeoDB3() {
    	<stat, params> = compile2neo(restrict(q, p, order, s), s, p); 
     println(stat);
     
-    println(pp(stat));
+    println(neopp(stat));
+  }
+  
+}
+
+
+void smoke2neoSelectWithAllOnSameNeoDB4() {
+  s = testSchema();	  
+  println("\n\n#####");
+  println("## ordered weights");
+  Request q = (Request)`from Wish w select w.intensity where w.@id ==#wish2`;  
+  println("Ordering <q>");
+  order = orderPlaces(q, s);
+  println("ORDER = <order>");
+  for (Place p:<neo4j(), _> <- order) {
+    println("\n\t#### Translation of <restrict(q, p, order, s)>");
+   	<stat, params> = compile2neo(restrict(q, p, order, s), s, p); 
+    println(stat);
+    
+    println(neopp(stat));
   }
   
 }
