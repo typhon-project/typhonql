@@ -225,7 +225,8 @@ public class TyphonQL {
         	connectionType =tf.constructor(ts, adtType, "cassandraConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
         	break;
         case "neo4j":
-        	throw new UnsupportedOperationException("neo4j nog supported yet");
+        	connectionType =tf.constructor(ts, adtType, "neoConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
+        	break;
         }
         return vf.constructor(connectionType, vf.string(host), vf.integer(port), vf.string(user), vf.string(password));
 	}
