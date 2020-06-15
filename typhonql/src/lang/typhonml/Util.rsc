@@ -152,12 +152,13 @@ default Placement place(Database db, Model m) {
 }
 
 
-Schema model2schema(Model m)
-  = inlineCustomDataTypes(inferAuxEntities(schema(model2rels(m), model2attrs(m),
+Schema model2schema(Model m, bool normalize=true)
+  =  ( schema(model2rels(m), model2attrs(m),
        customs = model2customs(m), 
-       placement =model2placement(m),
+       placement= model2placement(m),
        pragmas = model2pragmas(m),
-       changeOperators = model2changeOperators(m))));
+       changeOperators = model2changeOperators(m))  
+       | inlineCustomDataTypes(inferAuxEntities(it)) | normalize );
 
 str keyValEntity(str db, str ent) = "<ent>__<db>";
 
