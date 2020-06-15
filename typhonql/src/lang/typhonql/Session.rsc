@@ -48,6 +48,11 @@ alias CassandraOperations = tuple[
 	void (str dbName, str query, Bindings bindings) executeGlobalStatement
 ];
 
+alias Neo4JOperations = tuple[
+	void (str resultId, str dbName, str query, Bindings bindings, list[Path] paths) executeMatch,
+	void (str dbName, str query, Bindings bindings) executeUpdate
+];
+
 alias MongoOperations = tuple[
 	void (str resultId, str dbName, str collection, str query, Bindings bindings, list[Path] paths) find,
 	void (str resultId, str dbName, str collection, str query, str projection, Bindings bindings, list[Path] paths) findWithProjection,
