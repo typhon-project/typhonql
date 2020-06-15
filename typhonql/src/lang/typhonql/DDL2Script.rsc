@@ -16,7 +16,7 @@ import lang::typhonql::relational::Util;
 import lang::typhonql::relational::SQL2Text;
 import lang::typhonql::relational::Query2SQL;
 import lang::typhonql::relational::SQL2Text;
-import lang::typhonql::relational::Schema2SQL;
+import lang::typhonql::relational::SchemaToSQL;
 
 import lang::typhonql::mongodb::Query2Mongo;
 import lang::typhonql::mongodb::DBCollection;
@@ -217,14 +217,14 @@ Script ddl2scriptAux((Request) `rename <EId eId> to <EId newName>`, Schema s, Lo
 }
 
 Script renameEntity(p:<sql(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
-	if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+	if (<p:<db, dbName>, eId> <- s.placement, entity == eId) {
 		return rename(tableName(entity), tableName(newName));
   	}
   	throw "Not found entity <eId>";
 }
 
 Script renameEntity(p:<mongodb(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
-	if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+	if (<p:<db, dbName>, eId> <- s.placement, entity == eId) {
 		return script([step(dbName, mongo(renameCollection(dbName, entity, newName)), ())]);
   	}
   	throw "Not found entity <eId>";
