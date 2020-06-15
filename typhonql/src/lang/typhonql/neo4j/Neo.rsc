@@ -13,6 +13,7 @@ data Match
   
 data UpdateClause
 	= create(Pattern pattern)
+	| detachDelete(Pattern pattern)
   	;
  	
 data Pattern
@@ -34,7 +35,7 @@ data Set
 data NeoExpr
   = property(str \node, str name) // NB: always qualified
   | property(str name) // only for use in update
-  | lit(Value val)
+  | lit(NeoValue val)
   | named(NeoExpr arg, str as) // p.name as x1
   | placeholder(str name = "") // for representing ? or :name 
   | not(NeoExpr arg) 
@@ -53,8 +54,8 @@ data NeoExpr
   | like(NeoExpr lhs, NeoExpr rhs) 
   | or(NeoExpr lhs, NeoExpr rhs) 
   | and(NeoExpr lhs, NeoExpr rhs) 
-  | notIn(NeoExpr arg, list[Value] vals)
-  | \in(NeoExpr arg, list[Value] vals)
+  | notIn(NeoExpr arg, list[NeoValue] vals)
+  | \in(NeoExpr arg, list[NeoValue] vals)
   | fun(str name, list[NeoExpr] args)
   ;
 
@@ -92,7 +93,7 @@ data PropertyType
   | dateTime()
   ; 
   
-data Value
+data NeoValue
   = text(str strVal)
   | decimal(real realVal)
   | integer(int intVal)
