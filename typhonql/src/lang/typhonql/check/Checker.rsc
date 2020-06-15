@@ -257,6 +257,12 @@ void collect(current:(Expr)`<VId name> (<{Expr ","}* args>)`, Collector c) {
 }
 
 
+void requirePointOrPolygon(Collector c, Tree current, Tree t) {
+    c.require("Point or polygon", current, [t], void (Solver s) {
+        requirePointOrPolygon(s, t);
+    });
+}
+
 void requirePointOrPolygon(Solver s, Tree t) {
     s.requireTrue(s.getType(t) in {polygonType(), pointType()}, error(t, "Expected polygon or point, got %t", t));
 }
@@ -346,8 +352,8 @@ void collect(current:(Expr)`<Expr lhs> like <Expr rhs>`, Collector c) {
 
 void collect(current:(Expr)`<Expr lhs> & <Expr rhs>`, Collector c) {
     c.fact(current, boolType());
-    c.requireEqual(polygonType(), lhs, error(lhs, "intersection can only be between polygons (got %t)", lhs));
-    c.requireEqual(polygonType(), rhs, error(rhs, "intersection can only be between polygons (got %t)", rhs));
+    requirePointOrPolygon(c, current, lhs);
+    requirePointOrPolygon(c, current, rhs);
     collect(lhs, rhs, c);
 }
 
