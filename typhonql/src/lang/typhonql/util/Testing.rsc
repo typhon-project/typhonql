@@ -43,6 +43,7 @@ alias PolystoreInstance =
 		CommandResult(Request req) runUpdate,
 		CommandResult(Request req, Schema s) runUpdateForSchema,
 		CommandResult(Request req) runDDL,
+		CommandResult(Request req, Schema s) runDDLForSchema,
 		list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs)
 			runPreparedUpdate,
 		Schema() fetchSchema,
@@ -122,6 +123,12 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		ses.done();
 		return result;
 	};
+	CommandResult(Request req, Schema s) myRunDDLForSchema = CommandResult(Request req, Schema s) {
+		ses = newSession(connections, log = log);
+		result = runDDLInTest(req, s, ses, log);
+		ses.done();
+		return result;
+	};
 	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs)
 		myRunPreparedUpdate = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
 	    ses = newSession(connections, log = log); 
@@ -153,7 +160,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	PolystoreInstance proxy = <myResetStats, myGetStats, mySetStat,
 		myResetDatabases, myStartSession, 
 		myCloseSession, myRunQuery, myRunQueryForSchema,
-		myRunUpdate, myRunUpdateForSchema, myRunDDL, myRunPreparedUpdate, 
+		myRunUpdate, myRunUpdateForSchema, myRunDDL, myRunDDLForSchema, myRunPreparedUpdate, 
 		myFetchSchema, myPrintSchema,  myAssertEquals, myAssertResultEquals,
 		myAssertException>;
 		
