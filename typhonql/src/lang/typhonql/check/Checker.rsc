@@ -161,7 +161,7 @@ void collect(current:(Obj)`<Label? label> <EId entity> { <{KeyVal ","}* keyVals>
     collectEntityType(entity, c);
     collectKeyVal(keyVals, entity, c);
     if (inInsert(c)) {
-        requireAttributesSet(current, entity, keyVals, c);
+        requireAttributesSet(entity, entity, keyVals, c);
     }
 }
 
@@ -236,7 +236,7 @@ void collect(current:(Expr)`<EId typ> ( <{KeyVal ","}* params>)`, Collector c) {
     
     collectKeyVal(params, typ, c);
     if (inInsert(c)) {
-        requireAttributesSet(current, typ, params, c);
+        requireAttributesSet(typ, typ, params, c);
     }
 }
 
