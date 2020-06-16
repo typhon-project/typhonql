@@ -34,11 +34,16 @@ KeyVal aBillingKeyVal =
           '   , location: #point(2.0 3.0))`;
 
 void setup(PolystoreInstance p, bool doTest) {
-	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo", location: #point(2.0 3.0), photoURL: "moustache",
-	                      '  billing: address( street: "Seventh", city: "Ams"
+	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo", location: #point(2.0 3.0), 
+	                      '   photoURL: "moustache",
+	                      '   avatarURL: "blocky",
+	                      '   address: "alsoThere",
+	                      '   billing: address( street: "Seventh", city: "Ams"
 	                      '   , zipcode: zip(nums: "1234", letters: "ab")
 	                      '   , location: #point(2.0 3.0))}`);
 	p.runUpdate((Request) `insert User { @id: #davy, name: "Davy", location: #point(20.0 30.0), photoURL: "beard",
+	                      '   avatarURL: "blockyBeard",
+	                      '   address: "alsoThere",
 	                      '  billing: address( street: "Bla", city: "Almere"
 	                      '   , zipcode: zip(nums: "4566", letters: "cd")
 	                      '   , location: #point(20.0 30.0))}`);
@@ -56,8 +61,9 @@ void setup(PolystoreInstance p, bool doTest) {
 	  
 	}
 	
-	p.runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat", productionDate:  $2020-04-13$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);
-	p.runUpdate((Request) `insert Product {@id: #radio, name: "Radio", description: "Loud" , productionDate:  $2020-04-13$, availabilityRegion: #polygon((10.0 10.0, 40.0 10.0, 40.0 40.0, 10.0 40.0, 10.0 10.0)) }`);
+	p.runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat", productionDate:  $2020-04-13$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)), price: 20 }`);
+	p.runUpdate((Request) `insert Product {@id: #radio, name: "Radio", description: "Loud" , productionDate:  $2020-04-13$, availabilityRegion: #polygon((10.0 10.0, 40.0 10.0, 40.0 40.0, 10.0 40.0, 10.0 10.0)), price: 30 }`);
+	
 	
 	
 	if (doTest) {
@@ -199,7 +205,10 @@ void testLoneVars(PolystoreInstance p) {
 }
 
 void testCustomDataTypes(PolystoreInstance p) {
-  p.runUpdate((Request) `insert User { @id: #jurgen, name: "Jurgen", location: #point(2.0 3.0), photoURL: "moustache",
+  p.runUpdate((Request) `insert User { @id: #jurgen, name: "Jurgen", location: #point(2.0 3.0), 
+                        '  photoURL: "moustache",
+                        '  avatarURL: "blockyMoustache",
+	                    '  address: "Address 2",
                         '  billing: address( street: "Seventh", city: "Ams"
 	                    '   , zipcode: zip(nums: "1234", letters: "ab")
 	                    '   , location: #point(2.0 3.0))}`);
@@ -232,6 +241,7 @@ void testInsertSingleValuedSQLCross(PolystoreInstance p) {
   p.runUpdate((Request)`insert Product {@id: #nespresso, 
   					 '  name: "Nespresso", 
   					 '  price: 23, 
+  					 '  description: "Nice coffee",
   					 '  productionDate: $2020-04-15$,
   					 '  availabilityRegion: #polygon((1.0 1.0)),
   					 '  category: #appliances
@@ -246,7 +256,7 @@ void testInsertManyValuedSQLLocal(PolystoreInstance p) {
   // NB: we have to insert the product first.
 
   // inventory: [#laptop1, #laptop2], 
-  p.runUpdate((Request)`insert Product { @id: #laptop, name: "MacBook", availabilityRegion: #polygon((1.0 1.0))}`);
+  p.runUpdate((Request)`insert Product { @id: #laptop, name: "MacBook", availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-03-03$, price: 4000, description: "expensive laptop"}`);
 
   p.runUpdate((Request)`insert Item { @id: #laptop1, shelf: 1, product: #laptop}`);	
   p.runUpdate((Request)`insert Item { @id: #laptop2, shelf: 1, product: #laptop}`);	
@@ -318,14 +328,14 @@ void testDeleteKidsRemovesParentLinksSQLCross(PolystoreInstance p) {
 }
 
 void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", tags: [#fun, #social], availabilityRegion: #polygon((1.0 1.0))}`);
+  p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", tags: [#fun, #social], availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-01-01$, price: 400}`);
   rs = p.runQuery((Request)`from Product p select p.name where p.tags == #fun`);
   p.assertResultEquals("insertManyXrefsSQLLocal", rs, <["p.name"], [["iPhone"]]>);
 }
 
 void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy}`);
-  p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", reviews: [#newReview], availabilityRegion: #polygon((1.0 1.0))}`);
+  p.runUpdate((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, location: #point(1.0 1.0)}`);
+  p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", reviews: [#newReview], availabilityRegion: #polygon((1.0 1.0)), price: 400, productionDate: $2001-01-01$}`);
   
   // this below query is not as intended, r remains unconstrained, so you get all review contents.
   //rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, p.reviews == #newReview`);
@@ -387,7 +397,7 @@ void testUpdateManyXrefSQLLocalSetToEmpty(PolystoreInstance p) {
 
 
 void testUpdateManyContainSQLtoExternal(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, content: "super!", user: #davy}`);
+  p.runUpdate((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0)}`);
   p.runUpdate((Request)`update Product p where p.@id == #tv set {reviews +: [#newReview]}`);
   
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #tv, p.reviews == r`);
@@ -403,7 +413,7 @@ void testUpdateManyContainSQLtoExternalRemove(PolystoreInstance p) {
 
 
 void testUpdateManyContainSQLtoExternalSet(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, content: "super!", user: #davy}`);
+  p.runUpdate((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0)}`);
   p.runUpdate((Request)`update Product p where p.@id == #tv set {reviews: [#newReview]}`);
   
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #tv, p.reviews == r`);
@@ -547,7 +557,7 @@ void test9(PolystoreInstance p) {
 
 
 void test10(PolystoreInstance p) {
-	p.runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description, availabilityRegion: #polygon((1.0 1.0)) }`,
+	p.runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description, availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-01-01$, price: 2000 }`,
 						  ["name", "description"],
 						  [
 						   ["\"IPhone\"", "\"Apple\""],
@@ -567,13 +577,13 @@ void test11(PolystoreInstance p) {
 
 
 void test12(PolystoreInstance p) {
-	p.runUpdate((Request) `insert User { @id: #tijs, name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0) }`);
+	p.runUpdate((Request) `insert User { @id: #tijs, name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0), address: "a", avatarURL: "b", photoURL: "c" }`);
 	rs = p.runQuery((Request) `from User u select u.@id where u.@id == #tijs`);
 	p.assertResultEquals("basic insert in sql", rs, <["u.@id"],[[U("tijs")]]>);
 }
 
 void test13(PolystoreInstance p) {
-	<_, names> = p.runUpdate((Request) `insert User { name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0) }`);
+	<_, names> = p.runUpdate((Request) `insert User { name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0), address: "a", avatarURL: "b", photoURL: "c" }`);
 	p.assertEquals("one insert is one object inserted", size(names), 1);
 	uuid = names["uuid"];
 	rs = p.runQuery([Request] "from User u select u.@id where u.@id == #<uuid>");
