@@ -57,7 +57,24 @@ data TyphonQLManifest
       str PolystorePassword = ""
     );        
  
-private loc configFile(loc file) =  project(file) + "META-INF/RASCAL.MF"; 
+private loc configFile(loc file) {
+    p = project(file);
+    return firstExisting([
+        (file.parent).top + "typhon.mf",
+        p + "typhon.mf",
+        p + "src/typhon.mf",
+        p + "META-INF/typhon.mf",
+        p + "META-INF/TYPHON.MF",
+        p + "META-INF/RASCAL.MF"
+    ]);
+}
+
+private loc firstExisting(list[loc] candidates) {
+    for (c <- candidates, exists(c)) {
+        return c;
+    }
+    throw "Cannot find typhon.mf file, tried: <candidates>";
+}
 
 private loc project(loc file) {
    assert file.scheme == "project";
@@ -70,11 +87,9 @@ PathConfig getDefaultPathConfig() = pathConfig();
 alias PolystoreInfo = tuple[loc uri, str user, str password];
 
 PolystoreInfo readTyphonConfig(loc file) {
-   assert file.scheme == "project";
-
-   p = project(file);
    cfgFile = configFile(file);
    typhonConf = readManifest(#TyphonQLManifest, cfgFile);
+   println("<cfgFile> : <typhonConf>");
    
    return <|http://<typhonConf.PolystoreHost>:<typhonConf.PolystorePort>|,
    	typhonConf.PolystoreUser, typhonConf.PolystorePassword>; 

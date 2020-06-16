@@ -50,7 +50,7 @@ delete FinesseLog f
 update FinesseLog f set { Log_data: "y" }
 
 insert User { name: "Claudio", 
-	address: Address (street: "Carolina", number: 200,  city: "Amsterdam")
+	billing: address (street: "Carolina", number: 200,  city: "Amsterdam")
 
 }
 
