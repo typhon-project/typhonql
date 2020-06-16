@@ -4,7 +4,3 @@ Main-Module: lang::typhonql::IDE
 Project-Name: typhonide
 Require-Libraries: |lib://typhonql|, |lib://typepal|
 Source: src
-PolystoreHost: localhost
-PolystorePort: 8080
-PolystoreUser: admin
-PolystorePassword: admin1@
