@@ -517,7 +517,7 @@ void testInsertNeo(PolystoreInstance p) {
 
   // inventory: [#laptop1, #laptop2], 
   p.runUpdate((Request) `insert User { @id: #paul, name: "Paul", location: #point(2.0 3.0), photoURL: "klint",
-	                      '  billing: addres( street: "Eigth", city: "Ams"
+	                      '  billing: address( street: "Eigth", city: "Ams"
 	                      '   , zipcode: zip(nums: "1234", letters: "ab")
 	                      '   , location: #point(2.0 3.0))}`);
   rs = p.runQuery((Request)`from User u select u.@id, u.name where u.name == "Paul"`);
