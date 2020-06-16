@@ -160,6 +160,9 @@ void collect(current:(Expr)`<Obj objValue>`, Collector c) {
 void collect(current:(Obj)`<Label? label> <EId entity> { <{KeyVal ","}* keyVals> }`, Collector c) {
     collectEntityType(entity, c);
     collectKeyVal(keyVals, entity, c);
+    if (inInsert(c)) {
+        requireAttributesSet(current, entity, keyVals, c);
+    }
 }
 
 void collectKeyVal({KeyVal ","}* keyVals, EId entity, Collector c) {
@@ -188,10 +191,16 @@ void collectKeyVal(current:(KeyVal)`<Id key> : <Expr val>`, EId entity, Collecto
 }
 
 void collectKeyVal(current:(KeyVal)`<Id key> +: <Expr val>`, EId entity, Collector c) {
+    if (inInsert(c)) {
+        c.report(error(kv, "Update collection not supported in insert"));
+    }
     collectKVUpdate(current, key, val, entity, c);
 }
 
 void collectKeyVal(current:(KeyVal)`<Id key> -: <Expr val>`, EId entity, Collector c) {
+    if (inInsert(c)) {
+        c.report(error(kv, "Update collection not supported in insert"));
+    }
     collectKVUpdate(current, key, val, entity, c);
 }
 
@@ -214,8 +223,21 @@ void requireValidCardinality(KeyVal current, Id key, EId entity, Solver s) {
 
 void collect(current:(Expr)`<EId typ> ( <{KeyVal ","}* params>)`, Collector c) {
     c.fact(current, typ);
-    c.fact(typ, userDefinedType("<typ>"));
+    tp = userDefinedType("<typ>");
+    if (tp in c.getConfig().mlSchema) {
+        c.fact(typ, tp);
+    }
+    else {
+        c.calculate("invalid user type", typ, [], AType (Solver s) {
+            s.report(error(typ, "Not a valid user defined type"));
+            return voidType();
+        });
+    }
+    
     collectKeyVal(params, typ, c);
+    if (inInsert(c)) {
+        requireAttributesSet(current, typ, params, c);
+    }
 }
 
 //void collect(current:(Expr)`[<{Obj ","}*entries>]`, Collector c) {
@@ -486,11 +508,25 @@ void collect((OrderBy)`order <{Expr ","}+ vars>`, Collector c) {
  * DML *
  *******/
  
+bool inInsert(Collector c) = true := c.top("insert");
+ 
 void collect(current:(Statement)`insert <{Obj ","}* objs>`, Collector c) {
     c.enterScope(current);
+    c.push("insert", true);
     collect(objs, c);
-    // todo check that +: and -: aren't used in insert query
+    c.pop("insert");
     c.leaveScope(current);
+}
+
+void requireAttributesSet(Tree current, Tree typ, {KeyVal ","}* args, Collector c) {
+    keysSet = { key | (KeyVal)`<Id key> : <Expr _>` <- args };
+    sch = c.getConfig().mlSchema;
+    c.require("Attributes set", current, [typ, *keysSet], void (Solver s) {
+        attrs = sch[s.getType(typ)]?();
+        required = { k | k <- attrs, <entityType(_), _> !:= attrs[k], <userDefinedType(_), _> !:= attrs[k] };
+        missing = required - { "<k>" | k <- keysSet};
+        s.requireTrue(missing == {}, error(current, "%t is missing the following attributes: %v", typ, missing));
+    });
 }
 
 
@@ -505,11 +541,13 @@ void collect(current:(Statement)`delete <Binding b> <Where? where>`, Collector c
 
 void collect(current:(Statement)`update <Binding b> <Where? where> set { <{KeyVal ","}* keyVals>}`, Collector c) {
     c.enterScope(current);
+    c.push("insert", false);
     collect(b, c);
     if (w <- where) {
         collect(w, c);
     }
     collectKeyVal(keyVals, b.entity, c);
+    c.pop("insert");
     c.leaveScope(current);
 }
 
