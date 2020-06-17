@@ -17,15 +17,16 @@
    <extension
          point="org.eclipse.ui.newWizards">
       <category
-            id="typhonql-ide"
+            id="typhonql_nature"
             name="Typhon QL">
       </category>
       <wizard
-            category="typhonql-ide"
+            category="typhonql_nature"
             class="lang.typhonql.ide.NewProjectWizard"
             icon="icons/ql-logo.png"
             id="lang.typhonql.ide.NewProjectWizard"
-            name="New Typhon QL project">
+            name="Typhon QL project"
+            project="true">
       </wizard>
    </extension>
  

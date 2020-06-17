@@ -96,7 +96,9 @@ public class NewProjectWizard extends BasicNewProjectResourceWizard  {
 						"// *** example scratch file *** " + System.lineSeparator()
 						+ "// write your queries here and run them by right clicking on them" + System.lineSeparator()
 						+ System.lineSeparator()
-						+ "from User u select u.name where u.password == \"welcome\"" + System.lineSeparator();
+						+ "from User u" + System.lineSeparator()
+						+ "select u.name" + System.lineSeparator()
+						+ "where u.password == \"welcome\"" + System.lineSeparator();
 						;
 				project.getFile(new Path("/scratch.tql"))
 					.create(new ByteArrayInputStream(example.getBytes(StandardCharsets.UTF_8)), true, monitor);
