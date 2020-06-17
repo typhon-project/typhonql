@@ -83,7 +83,6 @@ public class NewProjectWizard extends BasicNewProjectResourceWizard  {
 			}
 
 			private void createTyphonQLParts(IProject project, IProgressMonitor monitor) throws CoreException {
-				
 				String config = 
 						"PolystoreHost: " + settings.getHostValue() + System.lineSeparator() + 
 						"PolystorePort: " + settings.getPortValue() + System.lineSeparator() +

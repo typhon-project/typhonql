@@ -30,7 +30,7 @@ public class TyphonSettingsPage extends WizardPage {
 		super("polyStoreConnection");
 		setTitle("Typhon Polystore Configuration");
 		setDescription("Setup the connection information for the polystore");
-		URL logo = FileLocator.find(Platform.getBundle("typhonql-ide"), new Path("icons/ql-logo-large.png"));
+		URL logo = FileLocator.find(Platform.getBundle("typhonql-ide"), new Path("icons/typhon-logo-full.png"));
 		setImageDescriptor(ImageDescriptor.createFromURL(logo));
 	}
 
@@ -58,6 +58,7 @@ public class TyphonSettingsPage extends WizardPage {
 		Text result = new Text(container, SWT.BORDER | SWT.SINGLE);
 		result.setLayoutData( new GridData(SWT.FILL, SWT.BEGINNING, true, false));
 		result.setText(defaultValue);
+		valueTarget.accept(defaultValue);
 		result.addModifyListener(e -> {
 			String contents = result.getText();
 			valueTarget.accept(contents);

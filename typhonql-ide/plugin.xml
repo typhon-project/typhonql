@@ -23,7 +23,7 @@
       <wizard
             category="typhonql_nature"
             class="lang.typhonql.ide.NewProjectWizard"
-            icon="icons/ql-logo.png"
+            icon="icons/typhon_icon.png"
             id="lang.typhonql.ide.NewProjectWizard"
             name="Typhon QL project"
             project="true">
