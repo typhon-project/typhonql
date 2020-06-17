@@ -30,7 +30,7 @@ public class TyphonSettingsPage extends WizardPage {
 		super("polyStoreConnection");
 		setTitle("Typhon Polystore Configuration");
 		setDescription("Setup the connection information for the polystore");
-		URL logo = FileLocator.find(Platform.getBundle("typhonql-ide"), new Path("icons/typhon-logo-full.png"));
+		URL logo = Platform.getBundle("typhonql-ide").getResource("icons/typhon-logo-full.png");
 		setImageDescriptor(ImageDescriptor.createFromURL(logo));
 	}
 
