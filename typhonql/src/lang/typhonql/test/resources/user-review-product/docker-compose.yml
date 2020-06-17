@@ -24,19 +24,22 @@ services:
     ports:
       - target: 7000
     restart: always
-  inventory:
+    environment:
+      _JAVA_OPTIONS : -Dlog4j2.level=TRACE
+
+  Inventory:
     image: mariadb:latest
     environment:
       MYSQL_ROOT_PASSWORD: example
     ports:
       - target: 3306
         published: 3306
-  stuff:
+  Stuff:
     image: cassandra:latest
     ports:
       - target: 9042
         published: 9042
-  reviews:
+  Reviews:
     image: mongo:latest
     environment:
       MONGO_INITDB_ROOT_USERNAME: username
