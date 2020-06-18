@@ -185,7 +185,9 @@ void setupIDE(bool isDevMode = false) {
   
   actions = [
       action("Execute",  void (Tree tree, loc selection) {
+        println("Execute: <selection>");
       	if (treeFound(Tree req) := findRequest(tree, selection)) {
+      	 println("Found subtree: <req>");
         	if (isDevMode) {
 	          try {
 	          	if ((Request) `<Query q>` := req) {
@@ -214,6 +216,8 @@ void setupIDE(bool isDevMode = false) {
 	          		text(parseJSON(#TableResultJSON, "{\"contents\": <executeQuery(polystoreUri, user, password, "<req>")> }"));
 	          	}
 	          	else if ((Request) `<Statement s>` := req)  {
+	          	    println("Got statement: <s>");
+                    <polystoreUri, user, password> = readTyphonConfig(tree@\loc);
 	          		if (isDDL(s)) {
 	          			executeDDLUpdate(polystoreUri, user, password, "<req>");
 	          		}
@@ -221,6 +225,10 @@ void setupIDE(bool isDevMode = false) {
 	          	    	executeUpdate(polystoreUri, user, password, "<req>");
 	          	    }
 	            	alert("Operation succesfully executed");
+	          	}
+	          	else {
+	          	    println("Could not match: <#Statement>");
+	          	
 	          	}
 	          } catch e: {
         		alert("Error: <e> ");
