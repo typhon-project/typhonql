@@ -90,6 +90,7 @@ str neopp(\set(str c, NeoExpr e)) = "<q(c)> = <neopp(e)>";
 
 str neopp(property(str \node, str name)) = "<\node>.<q(name)>";
 str neopp(named(NeoExpr e, str as)) = "<neopp(e)> as <q(as)>";
+str neopp(variable(name)) = name;
 str neopp(lit(NeoValue val)) = neopp(val);
 str neopp(mapLit(map[str, NeoExpr] exprs)) = "{ <intercalate(", ", ["<k> : <neopp(exprs[k])>"| k <- exprs])> }";
 str neopp(placeholder(name = str name)) =  name == "" ? "?" : "${<name>}";
