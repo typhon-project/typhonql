@@ -202,7 +202,7 @@ list[Step] compileNeoNode({KeyVal ","}* kvs, InsertContext ctx) {
 	for (<<neo4j(), db>, e> <- ctx.schema.placement) {
 		if (<e, _, _, _, _, entity, _> <- ctx.schema.rels, entity == ctx.entity) {
 			str createStmt = neopp(\matchUpdate(Maybe::nothing(), 
-				create(pattern(nodePattern("n", [ctx.entity], [property(typhonId(ctx.entity), ctx.neoMe)]), []))));
+				create(pattern(nodePattern("__n1", [ctx.entity], [property(typhonId(ctx.entity), ctx.neoMe)]), []))));
 			steps += [step(db, neo(executeNeoUpdate(db, createStmt)), ctx.myParams)];
 		} 
 	}
