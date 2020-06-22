@@ -44,6 +44,7 @@ alias DeleteContext = tuple[
   SQLExpr sqlMe,
   DBObject mongoMe,
   CQLExpr cqlMe,
+  NeoExpr neoMe,
   void (list[Step]) addSteps,
   Schema schema
 ];
@@ -137,7 +138,7 @@ void deleteObject(<neo(), str dbName>, DeleteContext ctx) {
  		delete(pattern(nodePattern("__n1", [], []), 
  			[relationshipPattern(doubleArrow(), "__r1", ctx.entity, [ property(typhonId(ctx.entity), ctx.neoMe) ], nodePattern("n__2", [], []))])));
       
-  ctx.addSteps([ step(dbName, neo(executeNeoUpdate(dbName, pp(stat))), ctx.myParams) ]);
+  ctx.addSteps([ step(dbName, neo(executeNeoUpdate(dbName, neopp(stat))), ctx.myParams) ]);
 }
 
 /*
