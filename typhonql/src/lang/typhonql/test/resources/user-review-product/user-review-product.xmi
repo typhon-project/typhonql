@@ -30,6 +30,7 @@
     <relations name="tags" type="//@entities.4" cardinality="zero_many"/>
     <relations name="inventory" type="//@entities.3" cardinality="zero_many" isContainment="true"/>
     <relations name="category" type="//@entities.2" cardinality="one"/>
+    <relations name="wish" type="//@entities.8" cardinality="one" opposite="//@entities.8/@relations.1" isContainment="true"/>
   </entities>
   <entities name="Category">
     <attributes xsi:type="typhonml:Attribute" name="id">
@@ -69,6 +70,7 @@
     </attributes>
     <relations name="biography" type="//@entities.6" opposite="//@entities.6/@relations.0" isContainment="true"/>
     <relations name="reviews" type="//@entities.0" cardinality="zero_many" opposite="//@entities.0/@relations.1"/>
+    <relations name="wish" type="//@entities.8" cardinality="one" opposite="//@entities.8/@relations.0" isContainment="true"/>
   </entities>
   <entities name="Biography">
     <attributes xsi:type="typhonml:Attribute" name="content">
@@ -82,6 +84,13 @@
     </attributes>
     <relations name="source" type="//@entities.1" cardinality="one"/>
     <relations name="target" type="//@entities.1" cardinality="one"/>
+  </entities>
+  <entities name="Wish">
+    <attributes xsi:type="typhonml:Attribute" name="intensity">
+      <type xsi:type="typhonml:IntType"/>
+    </attributes>
+    <relations name="user" type="//@entities.5" cardinality="one"/>
+    <relations name="product" type="//@entities.1" cardinality="one"/>
   </entities>
   <databases xsi:type="typhonml:RelationalDB" name="Inventory">
     <tables name="UserDB" entity="//@entities.5">
@@ -97,12 +106,10 @@
   <databases xsi:type="typhonml:DocumentDB" name="Reviews">
     <collections name="Review" entity="//@entities.0"/>
     <collections name="Biography" entity="//@entities.6"/>
-    <collections name="Category" entity="//@entities.2">
-      <indexSpec name="CategoryIndex" attributes="//@entities.2/@attributes.0 //@entities.2/@attributes.1"/>
-    </collections>
+    <collections name="Category" entity="//@entities.2"/>
   </databases>
   <databases xsi:type="typhonml:GraphDB" name="MoreStuff">
-    <edges from="//@entities.7/@relations.0" to="//@entities.7/@relations.1" entity="//@entities.7"/>
+    <edges from="//@entities.8/@relations.0" to="//@entities.8/@relations.1" entity="//@entities.8"/>
   </databases>
   <customDataTypes name="address">
     <elements xsi:type="typhonml:SimpleDataType" name="street">
