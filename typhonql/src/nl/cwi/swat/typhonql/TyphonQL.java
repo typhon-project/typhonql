@@ -18,6 +18,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 import org.rascalmpl.values.ValueFactoryFactory;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -203,14 +204,21 @@ public class TyphonQL {
 					d.get("externalHost").textValue(),
 					d.get("externalPort").intValue(), 
 					d.get("dbType").textValue().toLowerCase(),
-					d.has("username") ? null : d.get("username").textValue(),
-					d.has("username") ? null : d.get("password").textValue());
+					!d.has("username") ? null : d.get("username").textValue(),
+					!d.has("password") ? null : d.get("password").textValue());
 				mw.put(vf.string(dbName), info);
 			} catch (UnsupportedOperationException e) {
 				// skipping unsupported technology for now
 			}
 		});
 		return mw.done();
+	}
+
+	private static void log(String prettyString) {
+		try {
+			ThreadSafeImpulseConsole.INSTANCE.getWriter().write(prettyString);
+		} catch (IOException e) {
+		}
 	}
 
 	private IConstructor buildConnectionInfo(String host, int port, String dbType, String user,
