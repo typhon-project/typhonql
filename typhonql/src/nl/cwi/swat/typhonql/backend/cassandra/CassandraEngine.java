@@ -10,7 +10,6 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.io.WKTWriter;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import nl.cwi.swat.typhonql.backend.Binding;
@@ -70,7 +69,7 @@ public class CassandraEngine extends Engine {
 
 	private Object encode(Object value) {
 		if (value instanceof Geometry) {
-			return new WKTWriter().write((Geometry) value);
+			throw new RuntimeException("Geo values not supported on Cassandra");
 		}
 		if (value instanceof String) {
 			String str = (String)value;
