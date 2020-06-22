@@ -26,14 +26,17 @@ services:
     ports:
       - target: 7000
     restart: always
-  inventory:
+    environment:
+      _JAVA_OPTIONS : -Dlog4j2.level=TRACE
+
+  Inventory:
     image: mariadb:latest
     environment:
       MYSQL_ROOT_PASSWORD: example
     ports:
       - target: 3306
         published: 3306
-  stuff:
+  Stuff:
     image: cassandra:latest
     ports:
       - target: 9042
@@ -41,14 +44,14 @@ services:
     environment:
       MAX_HEAP_SIZE: 2G
       HEAP_NEWSIZE: 400M
-  morestuff:
+  MoreStuff:
     image: neo4j:latest
     environment:
       NEO4J_AUTH: neo4j/password
     ports:
       - target: 7687
         published: 7687
-  reviews:
+  Reviews:
     image: mongo:latest
     environment:
       MONGO_INITDB_ROOT_USERNAME: username

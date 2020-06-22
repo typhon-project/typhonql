@@ -21,7 +21,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
 		<tycho-version>1.6.0</tycho-version>
-        <dependency-bundle-version>0.14.0</dependency-bundle-version>
+        <dependency-bundle-version>0.15.0</dependency-bundle-version>
     </properties>
 
 	<build>
@@ -91,9 +91,9 @@
         </repository>
 
         <repository>
-            <id>neon</id>
+            <id>eclipse</id>
             <layout>p2</layout>
-            <url>https://nexus.usethesource.io/content/repositories/eclipse-oxygen/</url>
+            <url>http://ftp.snt.utwente.nl/pub/software/eclipse/releases/2019-09/</url>
         </repository>
         <repository>
             <id>tm</id>

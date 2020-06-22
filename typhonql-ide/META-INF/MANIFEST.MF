@@ -4,5 +4,12 @@ Bundle-Name: typhonql-ide
 Bundle-SymbolicName: typhonql-ide;singleton:=true
 Bundle-Version: 0.1.0.qualifier
 Require-Bundle: rascal_eclipse,
- typhonql
+ typhonql,
+ impulse,
+ org.eclipse.ui.ide,
+ org.eclipse.core.resources,
+ org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.osgi,
+ org.eclipse.pde.core
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8

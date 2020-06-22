@@ -2,5 +2,5 @@ Manifest-Version: 0.0.1
 Main-Function: main
 Main-Module: lang::typhonql::IDE
 Project-Name: typhonide
-Require-Libraries: |lib://typhonql|, |lib://typepal|
+Require-Libraries: |lib://typhonql|, |lib://typepal|, |lib://typhonql|
 Source: src

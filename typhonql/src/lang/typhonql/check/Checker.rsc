@@ -523,7 +523,7 @@ void requireAttributesSet(Tree current, Tree typ, {KeyVal ","}* args, Collector 
     sch = c.getConfig().mlSchema;
     c.require("Attributes set", current, [typ, *keysSet], void (Solver s) {
         attrs = sch[s.getType(typ)]?();
-        required = { k | k <- attrs, <entityType(_), _> !:= attrs[k], <userDefinedType(_), _> !:= attrs[k] };
+        required = { k | k <- attrs, <entityType(_), _> !:= attrs[k] };
         missing = required - { "<k>" | k <- keysSet};
         s.requireTrue(missing == {}, error(current, "%t is missing the following attributes: %v", typ, missing));
     });

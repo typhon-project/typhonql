@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="typhonql_feature"
-      label="typhonql IDE"
+      label="TyphonQL IDE"
       version="0.1.0.qualifier">
 
    <description url="http://www.example.com/description">
@@ -17,10 +17,21 @@
          version="0.0.0"
          search-location="both"/>
 
+   <requires>
+      <import plugin="org.junit"/>
+      <import plugin="org.eclipse.ui.ide"/>
+      <import plugin="org.eclipse.core.resources"/>
+      <import plugin="org.eclipse.ui"/>
+      <import plugin="org.eclipse.core.runtime"/>
+      <import plugin="org.eclipse.osgi"/>
+      <import plugin="org.eclipse.pde.core"/>
+   </requires>
+
    <plugin
          id="typepal"
-         version="0.0.0"
-         search-location="both"/>
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
 
    <plugin
          id="engineering.swat.typhon.bundle-typhonql-dependencies"
@@ -29,20 +40,18 @@
          version="0.0.0"
          unpack="false"/>
 
-
-
    <plugin
          id="typhonql-ide"
          download-size="0"
          install-size="0"
          version="0.0.0"
          unpack="false"/>
-         
+
    <plugin
          id="typhonql"
          download-size="0"
          install-size="0"
          version="0.0.0"
-         unpack="false"/>         
+         unpack="false"/>
 
 </feature>

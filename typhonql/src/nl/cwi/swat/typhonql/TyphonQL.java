@@ -18,12 +18,12 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.bson.BsonArray;
-import org.bson.BsonDocument;
-import org.bson.BsonInvalidOperationException;
-import org.bson.BsonValue;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 import org.rascalmpl.values.ValueFactoryFactory;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.usethesource.vallang.IBool;
 import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IInteger;
@@ -55,9 +55,12 @@ public class TyphonQL {
 	public IString readHttpModel(ISourceLocation path, IString user, IString password) {
 		URI uri = buildUri(path.getURI(), "/api/models/ml");
 		String json = doGet(uri, user.getValue(), password.getValue());
-		BsonArray array = BsonArray.parse(json);
-		String contents = array.get(0).asDocument().getString("contents").getValue();
-		return vf.string(contents);
+		try {
+			JsonNode array = new ObjectMapper(new JsonFactory()).readTree(json);
+            return vf.string(array.get(0).get("contents").textValue());
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}  
 	}
 	
 	public IBool executeResetDatabases(ISourceLocation path, IString user, IString password) {
@@ -186,26 +189,27 @@ public class TyphonQL {
 	public IMap readConnectionsInfo(ISourceLocation path, IString user, IString password) throws URISyntaxException {
 		URI uri = buildUri(path.getURI(), "/api/databases");
 		String json = doGet(uri, user.getValue(), password.getValue());
-		BsonArray array = BsonArray.parse(json);
+		JsonNode array;
+		try {
+			array = new ObjectMapper(new JsonFactory()).readTree(json);
+		} catch (JsonProcessingException e1) {
+			throw new RuntimeException(e1);
+		}
 		IMapWriter mw = vf.mapWriter();
-		for (BsonValue v : array.getValues()) {
-			BsonDocument d = v.asDocument();
+		array.iterator().forEachRemaining(d -> {
 			try {
-				String dbName = d.getString("name").getValue();
+				String dbName = d.get("name").textValue();
 				IConstructor info = buildConnectionInfo(
-					d.getString("externalHost").getValue(),
-					d.getNumber("externalPort").intValue(), 
-					d.getString("dbType").getValue().toLowerCase(),
-					d.isNull("username") ? null : d.getString("username").getValue(),
-					d.isNull("username") ? null : d.getString("password").getValue());
+					d.get("externalHost").textValue(),
+					d.get("externalPort").intValue(), 
+					d.get("dbType").textValue().toLowerCase(),
+					d.has("username") ? null : d.get("username").textValue(),
+					d.has("username") ? null : d.get("password").textValue());
 				mw.put(vf.string(dbName), info);
-			} catch (BsonInvalidOperationException e) {
-				// TODO not do anything if row of connection information is unparsable
 			} catch (UnsupportedOperationException e) {
 				// skipping unsupported technology for now
 			}
-
-		}
+		});
 		return mw.done();
 	}
 

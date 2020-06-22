@@ -214,6 +214,7 @@ void setupIDE(bool isDevMode = false) {
 	          		text(parseJSON(#TableResultJSON, "{\"contents\": <executeQuery(polystoreUri, user, password, "<req>")> }"));
 	          	}
 	          	else if ((Request) `<Statement s>` := req)  {
+                    <polystoreUri, user, password> = readTyphonConfig(tree@\loc);
 	          		if (isDDL(s)) {
 	          			executeDDLUpdate(polystoreUri, user, password, "<req>");
 	          		}
@@ -221,6 +222,10 @@ void setupIDE(bool isDevMode = false) {
 	          	    	executeUpdate(polystoreUri, user, password, "<req>");
 	          	    }
 	            	alert("Operation succesfully executed");
+	          	}
+	          	else {
+	          	    println("Could not match: <#Statement>");
+	          	
 	          	}
 	          } catch e: {
         		alert("Error: <e> ");
