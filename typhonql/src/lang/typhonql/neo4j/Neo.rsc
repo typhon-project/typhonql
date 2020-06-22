@@ -13,8 +13,9 @@ data Match
   
 data UpdateClause
 	= create(Pattern pattern)
-	| detachDelete(Pattern pattern)
-	| delete(Pattern pattern)
+	| detachDelete(list[NeoExpr] exprs)
+	| delete(list[NeoExpr] exprs)
+	| \set(list[SetItem] setitems)
   	;
  	
 data Pattern
@@ -30,13 +31,16 @@ data RelationshipPattern
 data Direction
 	= doubleArrow(); 
  
-data Set
-  = \set(str property, NeoExpr expr);
+data SetItem
+  = setEquals(str variable, NeoExpr expr)
+  | setPlusEquals(str variable, NeoExpr expr);
   
 data NeoExpr
   = property(str \node, str name) // NB: always qualified
   | property(str name) // only for use in update
   | lit(NeoValue val)
+  | mapLit(map[str, NeoExpr] exprs)
+  | variable(str name)
   | named(NeoExpr arg, str as) // p.name as x1
   | placeholder(str name = "") // for representing ? or :name 
   | not(NeoExpr arg) 

@@ -37,8 +37,20 @@ str neopp(matchQuery(match(list[Pattern] ps, list[Clause] cs, list[NeoExpr] es))
 str neopp(create(Pattern pattern))
   = "create <neopp(pattern)>";
   
-str neopp(detachDelete(Pattern pattern))
-  = "detach delete <neopp(pattern)>";
+str neopp(detachDelete(list[NeoExpr] exprs))
+  = "detach delete <intercalate(", ", [neopp(e) | e <- exprs])>";
+
+str neopp(delete(list[NeoExpr] exprs))
+  = "delete <intercalate(", ", [neopp(e) | e <- exprs])>";
+
+str neopp(\set(list[SetItem] setItems))
+  = "set <intercalate(", ", [neopp(i) | i <- setItems])>";
+  
+str neopp(setEquals(str variable, NeoExpr expr))
+  = "<variable> = <neopp(expr)>";
+  
+str neopp(setPlusEquals(str variable, NeoExpr expr))
+  = "<variable> += <neopp(expr)>";  
   
 str neopp(pattern(nodePattern, rels))
 	= "<neopp(nodePattern)><intercalate(" ", [neopp(r) | r <- rels])>";
@@ -79,6 +91,7 @@ str neopp(\set(str c, NeoExpr e)) = "<q(c)> = <neopp(e)>";
 str neopp(property(str \node, str name)) = "<\node>.<q(name)>";
 str neopp(named(NeoExpr e, str as)) = "<neopp(e)> as <q(as)>";
 str neopp(lit(NeoValue val)) = neopp(val);
+str neopp(mapLit(map[str, NeoExpr] exprs)) = "{ <intercalate(", ", ["<k> : <neopp(exprs[k])>"| k <- exprs])> }";
 str neopp(placeholder(name = str name)) =  name == "" ? "?" : "${<name>}";
 str neopp(not(NeoExpr arg)) = "not (<neopp(arg)>)";
 str neopp(neg(NeoExpr arg)) = "-(<neopp(arg)>)"; 
