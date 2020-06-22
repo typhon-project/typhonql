@@ -37,6 +37,7 @@ import lang::typhonql::neo4j::NeoUtil;
 
 import IO;
 import List;
+import util::Maybe;
 
 alias DeleteContext = tuple[
   str entity,
@@ -148,8 +149,9 @@ void deleteReferenceInNeo(DeleteContext ctx) {
 	steps = [];
 	for (<<neo4j(), db>, e> <- ctx.schema.placement) {
 		if (<e, _, _, _, _, entity, _> <- ctx.schema.rels, entity == ctx.entity) {
-			str deleteStmt = neopp(\matchUpdate(Maybe::nothing(), 
-				detachDelete(pattern(nodePattern("__n1", [ctx.entity], [property(typhonId(ctx.entity), ctx.neoMe)]), []))));
+			str deleteStmt = neopp(
+				\matchUpdate(just(match([pattern(nodePattern("__n1", [ctx.entity], [property(typhonId(ctx.entity), ctx.neoMe)]), [NeoExpr::lit(boolean(true))])])),
+					detachDelete([variable("__n1")])));
 			steps += [step(db, neo(executeNeoUpdate(db, createStmt)), ctx.myParams)];
 		} 
 	}
