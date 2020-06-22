@@ -1,3 +1,4 @@
+
 module lang::typhonql::Delete2Script
 
 
@@ -29,6 +30,10 @@ import lang::typhonql::cassandra::CQL2Text;
 import lang::typhonql::cassandra::Query2CQL;
 import lang::typhonql::cassandra::Schema2CQL;
 
+import lang::typhonql::neo4j::Neo;
+import lang::typhonql::neo4j::Neo2Text;
+import lang::typhonql::neo4j::NeoUtil;
+
 
 import IO;
 import List;
@@ -54,6 +59,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   SQLExpr sqlMe = lit(Value::placeholder(name=myId));
   DBObject mongoMe = DBObject::placeholder(name=myId);
   CQLExpr cqlMe = cBindMarker(name=myId);
+  NeoExpr neoMe = NeoExpr::placeholder(name=myId);
   Bindings myParams = ( myId: toBeDeleted );
   Script theScript = script([]);
   
@@ -64,6 +70,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   if ((Where)`where <VId _>.@id == <UUID mySelf>` := (Where)`where <{Expr ","}+ ws>`) {
     sqlMe = lit(evalExpr((Expr)`<UUID mySelf>`));
     mongoMe = \value(uuid2str(mySelf));
+    neoMe = NeoExpr::lit(evalExpr((NeoExpr)`<UUID mySelf>`));
     myParams = ();
   }
   else {
@@ -80,6 +87,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
     sqlMe,
     mongoMe,
     cqlMe,
+    neoMe,
     addSteps,
     s
   >;
@@ -104,6 +112,8 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   
   deleteObject(p, ctx);
   
+  deleteReferenceInNeo(ctx);
+  
   theScript.steps += [finish()];
   
   return theScript;
@@ -121,6 +131,29 @@ void deleteObject(<mongodb(), str dbName>, DeleteContext ctx) {
   ctx.addSteps([ step(dbName, mongo(deleteOne(dbName, ctx.entity, pp(object([<"_id", ctx.mongoMe>])))), ctx.myParams) ]);
 }
 
+void deleteObject(<neo(), str dbName>, DeleteContext ctx) {
+ NeoStat stat = 
+ 	\matchUpdate(Maybe::just(match([], [], [NeoExpr::lit(boolean(true))])), 
+ 		delete(pattern(nodePattern("__n1", [], []), 
+ 			[relationshipPattern(doubleArrow(), "__r1", ctx.entity, [ property(typhonId(ctx.entity), ctx.neoMe) ], nodePattern("n__2", [], []))])));
+      
+  ctx.addSteps([ step(dbName, neo(executeNeoUpdate(dbName, pp(stat))), ctx.myParams) ]);
+}
+
+/*
+ * Remove reference in Neo
+ */
+void deleteReferenceInNeo(DeleteContext ctx) {
+	steps = [];
+	for (<<neo4j(), db>, e> <- ctx.schema.placement) {
+		if (<e, _, _, _, _, entity, _> <- ctx.schema.rels, entity == ctx.entity) {
+			str deleteStmt = neopp(\matchUpdate(Maybe::nothing(), 
+				detachDelete(pattern(nodePattern("__n1", [ctx.entity], [property(typhonId(ctx.entity), ctx.neoMe)]), []))));
+			steps += [step(db, neo(executeNeoUpdate(db, createStmt)), ctx.myParams)];
+		} 
+	}
+	ctx.addSteps(steps);
+}
 
 /*
  * Cascade to owned objects

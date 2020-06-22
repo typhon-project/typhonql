@@ -14,6 +14,7 @@ data Match
 data UpdateClause
 	= create(Pattern pattern)
 	| detachDelete(Pattern pattern)
+	| delete(Pattern pattern)
   	;
  	
 data Pattern
