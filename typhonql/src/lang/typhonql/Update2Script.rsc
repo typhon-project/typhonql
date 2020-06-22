@@ -26,6 +26,7 @@ import lang::typhonql::Normalize;
 import IO;
 import List;
 import String;
+import util::Maybe;
 
 
 bool isDelta((KeyVal)`<Id _> +: <Expr _>`) = true;
@@ -38,9 +39,11 @@ alias UpdateContext = tuple[
   Bindings myParams,
   SQLExpr sqlMe,
   DBObject mongoMe,
+  NeoExpr neoMe,
   void (list[Step]) addSteps,
   void (SQLStat(SQLStat)) updateSQLUpdate,
   void (DBObject(DBObject)) updateMongoUpdate,
+  void (NeoStat(NeoStat)) updateNeoUpdate,
   Schema schema
 ];
 
@@ -71,6 +74,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   str myId = newParam();
   SQLExpr sqlMe = lit(Value::placeholder(name=myId));
   DBObject mongoMe = DBObject::placeholder(name=myId);
+  NeoExpr neoMe = NeoExpr::placeholder(name=myId);
   CQLExpr cqlMe = cBindMarker(name=myId);
   
   Bindings myParams = ( myId: toBeUpdated );
@@ -113,15 +117,29 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   
   updateMongoUpdate(DBObject(DBObject d) { return d; });
   
+  NeoStat theNeoUpdate = \matchUpdate(
+  	just(match([pattern(nodePattern("__n1", [], []), [relationshipPattern(doubleArrow(), "__r1",  ctx.entity, [property(typhonId(ctx.entity), ctx.neoMe)], nodePattern("__n2", [], []))])], [], [NeoExpr::lit(boolean(true))])),
+	\set([setPlusEquals("__r1", mapLit(()))]));
+					
+  void updateNeoUpdate(NeoStat(NeoStat) block) {
+    theNeoUpdate = block(theNeoUpdate);
+    Step st = step(p.name, sql(executeNeoUpdate(p.name, neopp(theNeoUpdate))), myParams);
+    updateStep(statIndex, st);
+  }
+
+  updateNeoUpdate(NeoStat(NeoStat s) { return s; });
+  
   
   UpdateContext ctx = <
     ent,
     myParams,
     sqlMe,
     mongoMe,
+    neoMe,
     addSteps,
     updateSQLUpdate,
     updateMongoUpdate,
+    updateNeoUpdate,
     s
   >;
   
@@ -199,6 +217,13 @@ void compileAttrSets(<sql(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
 void compileAttrSets(<mongodb(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
   ctx.updateMongoUpdate(DBObject(DBObject upd) {
     upd.props += [ <"$set", object([keyVal2prop(kv)])> | KeyVal kv <- kvs ];
+    return upd;
+  });
+}
+
+void compileAttrSets(<neo(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
+  ctx.updateNeoUpdate(NeoStat(NeoStat upd) {
+    upd.updateClause.setItems[0].expr.exprs = ( nodeName(kv has key ? "<kv.key>" : "@id", ctx.entity) : NeoExpr::lit(evalNeoExpr(kv.\value)) | KeyVal kv <- kvs );
     return upd;
   });
 }
