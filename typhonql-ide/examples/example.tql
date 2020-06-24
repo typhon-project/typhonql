@@ -25,6 +25,18 @@ from Product p select p.name
 from Order o select o
 
 
+insert User {
+    name: "Davy",
+    address: "Netherlands",
+    location: #point(1.0 2.0),
+    avatarURL: "davy-small.png",
+    photoURL: "davy-big.png",
+    billing: address(street:"Science Park", city: "Amsterdam", zipcode: zip(number:"1098XG"), location: #point(10.0 22.0))
+
+
+}
+
+
 update Comment c set {id: "Geor" }
 
 insert FinesseLog { 
