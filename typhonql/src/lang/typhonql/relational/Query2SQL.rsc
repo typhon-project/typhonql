@@ -339,7 +339,9 @@ SQLExpr expr2sql((Expr)`#polygon(<{Segment ","}* segments>)`, Ctx ctx, Log log =
 
 SQLExpr expr2sql((Expr)`false`, Ctx ctx, Log log = noLog) = lit(boolean(false));
 
-SQLExpr expr2sql((Expr)`<UUID u>`, Ctx ctx, Log log = noLog) = lit(text("<u>"[1..]));
+SQLExpr expr2sql((Expr)`<UUID u>`, Ctx ctx, Log log = noLog) = lit(text("<u.part>"));
+
+SQLExpr expr2sql((Expr)`<BlobPointer bp>`, Ctx ctx, Log log = noLog) = lit(blobPointer("<bp.part>"));
 
 SQLExpr expr2sql((Expr)`true`, Ctx ctx, Log log = noLog) = lit(boolean(true));
 

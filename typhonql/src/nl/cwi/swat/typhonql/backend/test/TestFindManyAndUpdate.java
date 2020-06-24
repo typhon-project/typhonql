@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +24,7 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 public class TestFindManyAndUpdate {
 
 	public static void main(String[] args) throws SQLException {
-		ResultStore store = new ResultStore();
+		ResultStore store = new ResultStore(Collections.emptyMap());
 		
 		Map<String, String> uuids = new HashMap<String, String>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();

@@ -173,6 +173,8 @@ str pp(null()) = "null";
 
 str pp(Value::placeholder(name = str name)) = "${<name>}";
 
+str pp(blobPointer(str pointer)) = "#__blob__:<pointer>#";
+
 // TableConstraint
 
 str pp(primaryKey(str c)) = "primary key (<q(c)>)";

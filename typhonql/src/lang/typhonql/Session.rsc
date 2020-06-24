@@ -71,7 +71,7 @@ data Connection
 
 @reflect
 @javaClass{nl.cwi.swat.typhonql.backend.rascal.TyphonSession}
-java Session newSession(map[str, Connection] config);
+java Session newSession(map[str, Connection] config, map[str uuid, str contents] fileMap = ());
 
 
 private int _nameCounter = 0;

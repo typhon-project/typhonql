@@ -4,10 +4,12 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.Runner;
@@ -20,7 +22,7 @@ public class TestSelect4 {
 		
 	public static void main(String[] args) throws SQLException {
 		
-		ResultStore store = new ResultStore();
+		ResultStore store = new ResultStore(Collections.emptyMap());
 		
 		Map<String, String> uuids = new HashMap<String, String>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();

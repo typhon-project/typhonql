@@ -1,8 +1,12 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -11,14 +15,17 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
+
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.env.ModuleEnvironment;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
@@ -46,11 +53,11 @@ public class TyphonSession implements Operations {
 		this.vf = vf;
 	}
 
-	public ITuple newSession(IMap connections, IEvaluatorContext ctx) {
-		return newSessionWrapper(connections, ctx).getTuple();
+	public ITuple newSession(IMap connections, IMap fileMap, IEvaluatorContext ctx) {
+		return newSessionWrapper(connections, fileMap, ctx).getTuple();
 	}
 	
-	public SessionWrapper newSessionWrapper(IMap connections, IEvaluatorContext ctx) {
+	public SessionWrapper newSessionWrapper(IMap connections, IMap fileMap, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
@@ -78,10 +85,18 @@ public class TyphonSession implements Operations {
                     break;
 			}
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, ctx);
+		Map<String, InputStream> actualFileMap = new HashMap<>();
+		Iterator<Entry<IValue, IValue>> it = fileMap.entryIterator();
+		while (it.hasNext()) {
+			Entry<IValue, IValue> cur = it.next();
+			String key = ((IString)cur.getKey()).getValue();
+			String value = ((IString)cur.getValue()).getValue();
+			actualFileMap.put(key, new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8)));
+		}
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, actualFileMap, ctx);
 	}
 
-	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, IEvaluatorContext ctx) {
+	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, Map<String, InputStream> fileMap, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
@@ -102,11 +117,11 @@ public class TyphonSession implements Operations {
 				throw new RuntimeException("Missing type: " + db.getDbms());
 			}
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, fileMap, ctx);
 	}
 
 	private SessionWrapper newSessionWrapper(Map<String, ConnectionData> mariaDbConnections,
-			Map<String, ConnectionData> mongoConnections, Map<String, ConnectionData> cassandraConnections, IEvaluatorContext ctx) {
+			Map<String, ConnectionData> mongoConnections, Map<String, ConnectionData> cassandraConnections, Map<String, InputStream> fileMap, IEvaluatorContext ctx) {
 		// checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function
 		// type ourself
@@ -129,7 +144,7 @@ public class TyphonSession implements Operations {
 		FunctionType newIdType = (FunctionType) aliasedTuple.getFieldType("newId");
 
 		// construct the session tuple
-		ResultStore store = new ResultStore();
+		ResultStore store = new ResultStore(fileMap);
 		Map<String, String> uuids = new HashMap<>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();
