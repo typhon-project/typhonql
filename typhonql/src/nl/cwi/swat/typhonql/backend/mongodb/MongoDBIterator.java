@@ -3,24 +3,40 @@ package nl.cwi.swat.typhonql.backend.mongodb;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+
 import org.bson.Document;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.LinearRing;
 import org.locationtech.jts.geom.PrecisionModel;
+
+import com.mongodb.MongoGridFSException;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.MongoIterable;
+import com.mongodb.client.gridfs.GridFSBucket;
+import com.mongodb.client.gridfs.GridFSBuckets;
+
 import nl.cwi.swat.typhonql.backend.ResultIterator;
 
 public class MongoDBIterator implements ResultIterator {
-	private MongoIterable<Document> results;
+	private final MongoIterable<Document> results;
+	private final MongoDatabase source;
+	private GridFSBucket gridBucket = null;
 	private MongoCursor<Document> cursor = null;
 	private Document current = null;
 
-	public MongoDBIterator(MongoIterable<Document> results) {
+	public MongoDBIterator(MongoIterable<Document> results, MongoDatabase source) {
 		this.results = results;
+		this.source = source;
 		this.cursor = results.cursor();
+	}
+	
+	public GridFSBucket getGridBucket() {
+		if (gridBucket == null) {
+			return gridBucket = GridFSBuckets.create(source);
+		}
+		return gridBucket;
 	}
 
 	@Override
@@ -80,6 +96,18 @@ public class MongoDBIterator implements ResultIterator {
 		}
 		else if (fromDB instanceof Date) {
 			return ((Date)fromDB).toInstant().atZone(ZoneId.of("UTC")).toLocalDateTime();
+		}
+		else if (fromDB instanceof String) {
+			String strValue = (String)fromDB;
+			if (strValue.startsWith("#blob:")) {
+				String blobName = strValue.substring("#blob:".length());
+				try {
+					return getGridBucket().openDownloadStream(blobName);
+				}
+				catch (MongoGridFSException e) {
+                    throw new RuntimeException("Referenced blob: " + blobName + " doesn't exist", e);
+				}
+			}
 		}
 		return fromDB;
 	}

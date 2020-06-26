@@ -481,8 +481,11 @@ DBObject obj2dbObj((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
 
 DBObject obj2dbObj((Expr)`<UUID id>`) = \value("<id>"[1..]);
 
+DBObject obj2dbObj((Expr)`#blob:<UUIDPart prt>`) = \value("#blob:<prt>");
+
 DBObject obj2dbObj((Expr)`<DateTime d>`) 
   = object([<"$date", \value(readTextValueString(#datetime, "<d>"))>]);
+
 
 DBObject obj2dbObj((Expr)`#point(<Real x> <Real y>)`) 
   = object([<"type", \value("Point")>, 
@@ -546,6 +549,8 @@ Value evalExpr((Expr)`<JustDate d>`) = date(readTextValueString(#datetime, "<d>"
 
 // should only happen for @id field (because refs should be done via keys etc.)
 Value evalExpr((Expr)`<UUID u>`) = text("<u>"[1..]);
+
+Value evalExpr((Expr)`#blob:<UUIDPart prt>`) = blobPointer("<prt>");
 
 Value evalExpr((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
 

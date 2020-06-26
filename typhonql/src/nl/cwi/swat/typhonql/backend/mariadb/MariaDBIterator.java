@@ -7,12 +7,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
+
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBReader;
 import org.mariadb.jdbc.internal.ColumnType;
+
 import nl.cwi.swat.typhonql.backend.ResultIterator;
 
 public class MariaDBIterator implements ResultIterator {
@@ -36,30 +37,31 @@ public class MariaDBIterator implements ResultIterator {
 		Object apply(ResultSet s, int column) throws SQLException;
 	}
 	
-	private static final Map<String, ColumnMapperFunction> columnMapperFuncs;
+	private static final Map<Integer, ColumnMapperFunction> columnMapperFuncs;
 	private static final GeometryFactory wsgFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
 	static {
 		columnMapperFuncs = new HashMap<>();
 		// TODO: consider not using class name but something else for this mapping (like SQL type)
-		columnMapperFuncs.put(ColumnType.BIGINT.getClassName(), (r, i) -> r.getBigDecimal(i));
-		columnMapperFuncs.put(ColumnType.BIT.getClassName(), (r, i) -> r.getBoolean(i));
-		columnMapperFuncs.put(ColumnType.BLOB.getClassName(), (r, i) -> r.getBlob(i).getBinaryStream());
-		columnMapperFuncs.put(ColumnType.DATE.getClassName(), (r, i) -> r.getObject(i, LocalDate.class));
-		columnMapperFuncs.put(ColumnType.DATETIME.getClassName(), (r, i) -> r.getObject(i, LocalDateTime.class));
-		columnMapperFuncs.put(ColumnType.DOUBLE.getClassName(), (r, i) -> r.getDouble(i));
-		columnMapperFuncs.put(ColumnType.FLOAT.getClassName(), (r, i) -> r.getDouble(i));
-		columnMapperFuncs.put(ColumnType.GEOMETRY.getClassName(), (r, i) -> {
+		columnMapperFuncs.put(ColumnType.BIGINT.getSqlType(), (r, i) -> r.getBigDecimal(i));
+		columnMapperFuncs.put(ColumnType.BIT.getSqlType(), (r, i) -> r.getBoolean(i));
+		columnMapperFuncs.put(ColumnType.LONGBLOB.getSqlType(), (r, i) -> r.getBlob(i).getBinaryStream());
+		columnMapperFuncs.put(ColumnType.DATE.getSqlType(), (r, i) -> r.getObject(i, LocalDate.class));
+		columnMapperFuncs.put(ColumnType.DATETIME.getSqlType(), (r, i) -> r.getObject(i, LocalDateTime.class));
+		columnMapperFuncs.put(ColumnType.DOUBLE.getSqlType(), (r, i) -> r.getDouble(i));
+		columnMapperFuncs.put(ColumnType.FLOAT.getSqlType(), (r, i) -> r.getDouble(i));
+		columnMapperFuncs.put(ColumnType.GEOMETRY.getSqlType(), (r, i) -> {
 			try {
 				return new WKBReader(wsgFactory).read(r.getBytes(i));
 			} catch (ParseException e) {
+
 				// TODO, this class name overlaps with all other things that can give bytes, so we have to map them
 				throw new SQLException(e);
 			}
 		});
-		columnMapperFuncs.put(ColumnType.INTEGER.getClassName(), (r, i) -> r.getInt(i));
-		columnMapperFuncs.put(ColumnType.NULL.getClassName(), (r, i) -> null);
-		columnMapperFuncs.put(ColumnType.STRING.getClassName(), (r, i) -> r.getString(i));
+		columnMapperFuncs.put(ColumnType.INTEGER.getSqlType(), (r, i) -> r.getInt(i));
+		columnMapperFuncs.put(ColumnType.NULL.getSqlType(), (r, i) -> null);
+		columnMapperFuncs.put(ColumnType.STRING.getSqlType(), (r, i) -> r.getString(i));
 	}
 	
 	@FunctionalInterface
@@ -72,9 +74,9 @@ public class MariaDBIterator implements ResultIterator {
 		Map<String, CellSupplier> result = new HashMap<>();
 		ResultSetMetaData meta = rs.getMetaData();
 		for (int c = 1; c <= meta.getColumnCount(); c++) {
-			ColumnMapperFunction func = columnMapperFuncs.get(meta.getColumnClassName(c));
+			ColumnMapperFunction func = columnMapperFuncs.get(meta.getColumnType(c));
 			if (func == null) {
-				throw new SQLException("Column "+ meta.getColumnName(c) + " (type: " + meta.getColumnClassName(c) + ") does not have a mapper in QL yet");
+				throw new SQLException("Column "+ meta.getColumnName(c) + " (type: " + meta.getColumnType(c) + ") does not have a mapper in QL yet");
 			}
 			int column = c;
 			result.put(meta.getColumnLabel(c), () -> func.apply(rs, column));
