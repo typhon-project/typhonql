@@ -1,20 +1,23 @@
 package nl.cwi.swat.typhonql.backend.mariadb;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.text.StringSubstitutor;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKBWriter;
+import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
 
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Engine;
@@ -28,41 +31,58 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 public class MariaDBEngine extends Engine {
 
 	private final Supplier<Connection> connection;
-	private static final Pattern QL_PARAMS = Pattern.compile("\\$\\{(\\w*?)\\}");
 
 	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids, Supplier<Connection> sqlConnection) {
 		super(store, script, updates, uuids);
 		this.connection = sqlConnection;
 	}
 
-	private PreparedStatement prepareQuery(String query, List<String> vars) throws SQLException {
+	private PreparedStatement prepareQuery(String query, List<String> vars, Set<String> blobs) throws SQLException {
 		Matcher m = QL_PARAMS.matcher(query);
-		Map<String, String> map = new HashMap<String, String>();
+		StringBuffer result = new StringBuffer(query.length());
 		while (m.find()) {
-			vars.add(m.group(1));
-			map.put(m.group(1), "?");
+            m.appendReplacement(result, "?");
+			String param = m.group(1);
+            vars.add(param);
+			log("Match: " + param + " details: " + m + "\n");
+            if (param.startsWith("blob:")) {
+            	blobs.add(param.substring("blob:".length()));
+            }
 		}
-
-		StringSubstitutor sub = new StringSubstitutor(map);
-		String jdbcQuery = sub.replace(query);
+		m.appendTail(result);
+		String jdbcQuery = result.toString();
+		log("query: " + jdbcQuery + "\n");
         return connection.get().prepareStatement(jdbcQuery);
+	}
+	
+	private static void log(String msg) {
+		try {
+			ThreadSafeImpulseConsole.INSTANCE.getWriter().append(msg);
+		} catch (IOException e) {
+		}
 	}
 
     private PreparedStatement prepareAndBind(String query, Map<String, Object> values)
             throws SQLException {
         List<String> vars = new ArrayList<>();
-        PreparedStatement stm = prepareQuery(query, vars);
+        Set<String> blobs = new HashSet<>();
+        PreparedStatement stm = prepareQuery(query, vars, blobs);
         int i = 1;
         for (String varName : vars) {
-            Object value = values.get(varName);
-            if (value instanceof Geometry) {
-                stm.setBytes(i, new WKBWriter().write((Geometry) value));
-            }
-            else {
-                // TODO: what to do with NULL?
-                // other classes jdbc can take care of itself
-                stm.setObject(i, value);
-            }
+        	if (blobs.contains(varName)) {
+        		stm.setBlob(i, store.getBlob(varName));
+        	}
+        	else {
+                Object value = values.get(varName);
+                if (value instanceof Geometry) {
+                    stm.setBytes(i, new WKBWriter().write((Geometry) value));
+                }
+                else {
+                    // TODO: what to do with NULL?
+                    // other classes jdbc can take care of itself
+                    stm.setObject(i, value);
+                }
+        	}
             i++;
         }
         return stm;

@@ -173,7 +173,7 @@ str pp(null()) = "null";
 
 str pp(Value::placeholder(name = str name)) = "${<name>}";
 
-str pp(blobPointer(str pointer)) = "#__blob__:<pointer>#";
+str pp(blobPointer(str pointer)) = "${blob:<pointer>}";
 
 // TableConstraint
 

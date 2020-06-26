@@ -14,11 +14,11 @@ import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 public class ResultStore {
 
 	private final Map<String, ResultIterator> store;
-	private final Map<String, InputStream> fileMap;
+	private final Map<String, InputStream> blobMap;
 
-	public ResultStore(Map<String, InputStream> fileMap) {
+	public ResultStore(Map<String, InputStream> blobMap) {
 		store = new HashMap<String, ResultIterator>();
-		this.fileMap = fileMap;
+		this.blobMap = blobMap;
 	}
 
 	@Override
@@ -38,8 +38,8 @@ public class ResultStore {
 		store.clear();
 	}
 	
-	public InputStream getFile(String key) {
-		return fileMap.get(key);
+	public InputStream getBlob(String key) {
+		return blobMap.get(key);
 	}
 
 }

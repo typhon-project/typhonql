@@ -57,7 +57,7 @@ public class TyphonSession implements Operations {
 		return newSessionWrapper(connections, fileMap, ctx).getTuple();
 	}
 	
-	public SessionWrapper newSessionWrapper(IMap connections, IMap fileMap, IEvaluatorContext ctx) {
+	public SessionWrapper newSessionWrapper(IMap connections, IMap blobMap, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
@@ -85,18 +85,18 @@ public class TyphonSession implements Operations {
                     break;
 			}
 		}
-		Map<String, InputStream> actualFileMap = new HashMap<>();
-		Iterator<Entry<IValue, IValue>> it = fileMap.entryIterator();
+		Map<String, InputStream> actualBlobMap = new HashMap<>();
+		Iterator<Entry<IValue, IValue>> it = blobMap.entryIterator();
 		while (it.hasNext()) {
 			Entry<IValue, IValue> cur = it.next();
 			String key = ((IString)cur.getKey()).getValue();
 			String value = ((IString)cur.getValue()).getValue();
-			actualFileMap.put(key, new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8)));
+			actualBlobMap.put(key, new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8)));
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, actualFileMap, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, actualBlobMap, ctx);
 	}
 
-	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, Map<String, InputStream> fileMap, IEvaluatorContext ctx) {
+	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, Map<String, InputStream> blobMap, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
@@ -117,11 +117,11 @@ public class TyphonSession implements Operations {
 				throw new RuntimeException("Missing type: " + db.getDbms());
 			}
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, fileMap, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, blobMap, ctx);
 	}
 
 	private SessionWrapper newSessionWrapper(Map<String, ConnectionData> mariaDbConnections,
-			Map<String, ConnectionData> mongoConnections, Map<String, ConnectionData> cassandraConnections, Map<String, InputStream> fileMap, IEvaluatorContext ctx) {
+			Map<String, ConnectionData> mongoConnections, Map<String, ConnectionData> cassandraConnections, Map<String, InputStream> blobMap, IEvaluatorContext ctx) {
 		// checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function
 		// type ourself
@@ -144,7 +144,7 @@ public class TyphonSession implements Operations {
 		FunctionType newIdType = (FunctionType) aliasedTuple.getFieldType("newId");
 
 		// construct the session tuple
-		ResultStore store = new ResultStore(fileMap);
+		ResultStore store = new ResultStore(blobMap);
 		Map<String, String> uuids = new HashMap<>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();

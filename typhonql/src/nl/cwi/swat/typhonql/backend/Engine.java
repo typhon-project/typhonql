@@ -10,7 +10,7 @@ public abstract class Engine {
 	protected final Map<String, String> uuids;
 	protected final List<Consumer<List<Record>>> script;
 	protected final List<Runnable> updates;
-	protected static final Pattern QL_PARAMS = Pattern.compile("\\$\\{(\\w*?)\\}");
+	protected static final Pattern QL_PARAMS = Pattern.compile("\\$\\{([\\w\\-]*?)\\}");
 
 	public Engine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids) {
 		this.store = store;

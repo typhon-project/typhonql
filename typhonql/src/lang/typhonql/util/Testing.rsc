@@ -42,6 +42,7 @@ alias PolystoreInstance =
 		ResultTable(Request req) runQuery,
 		ResultTable(Request req, Schema s) runQueryForSchema,
 		CommandResult(Request req) runUpdate,
+		CommandResult(Request req, map[str,str] blobMap) runUpdateWithFiles,
 		CommandResult(Request req, Schema s) runUpdateForSchema,
 		CommandResult(Request req) runDDL,
 		CommandResult(Request req, Schema s) runDDLForSchema,
@@ -94,7 +95,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	
 	void() myStartSession = void() {
-		session = newSession(connections, log = log);
+		session = newSession(connections);
 	};
 	
 	void() myCloseSession = void() {
@@ -102,27 +103,35 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	
 	void() myResetDatabases = void() {
-		ses = newSession(connections, log = log);
+		ses = newSession(connections);
 		resetDatabasesInTest(sch, ses, log);
 		ses.done();
 	};
 	ResultTable(Request req) myRunQuery = ResultTable(Request req) {
         checkRequest(req);
-		ses = newSession(connections, log = log);
+		ses = newSession(connections);
 		result = runQueryInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
 	ResultTable(Request req, Schema s) myRunQueryForSchema = ResultTable(Request req, Schema s) {
         checkRequest(req, schm = s);
-		ses = newSession(connections, log = log);
+		ses = newSession(connections);
 		result = runQueryInTest(req, s, ses, log);
 		ses.done();
 		return result;
 	};
 	CommandResult(Request req) myRunUpdate = CommandResult(Request req) {
         checkRequest(req);
-		ses = newSession(connections, log = log);
+		ses = newSession(connections);
+		result = runUpdateInTest(req, sch, ses, log);
+		ses.done();
+		return result;
+	};
+
+	myRunUpdateFiles = CommandResult(Request req, map[str,str] blobMap) {
+        checkRequest(req);
+		ses = newSession(connections, blobMap = blobMap);
 		result = runUpdateInTest(req, sch, ses, log);
 		ses.done();
 		return result;
@@ -136,14 +145,14 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	CommandResult(Request req) myRunDDL = CommandResult(Request req) {
         checkRequest(req);
-		ses = newSession(connections, log = log);
+		ses = newSession(connections);
 		result = runDDLInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
 	CommandResult(Request req, Schema s) myRunDDLForSchema = CommandResult(Request req, Schema s) {
         checkRequest(req);
-		ses = newSession(connections, log = log);
+		ses = newSession(connections);
 		result = runDDLInTest(req, s, ses, log);
 		ses.done();
 		return result;
@@ -151,7 +160,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) 
 		myRunPreparedUpdate = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
         checkRequest(req);
-	    ses = newSession(connections, log = log); 
+	    ses = newSession(connections); 
 		result = runPreparedUpdateInTest(req, columnNames, vs, sch, ses, log);
 		ses.done();
 		return result;
@@ -180,7 +189,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	PolystoreInstance proxy = <myResetStats, myGetStats, mySetStat,
 		myResetDatabases, myStartSession, 
 		myCloseSession, myRunQuery, myRunQueryForSchema,
-		myRunUpdate, myRunUpdateForSchema, myRunDDL, myRunDDLForSchema, myRunPreparedUpdate, 
+		myRunUpdate, myRunUpdateFiles, myRunUpdateForSchema, myRunDDL, myRunDDLForSchema, myRunPreparedUpdate, 
 		myFetchSchema, myPrintSchema,  myAssertEquals, myAssertResultEquals,
 		myAssertException>;
 		

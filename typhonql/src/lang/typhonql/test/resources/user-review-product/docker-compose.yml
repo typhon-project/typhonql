@@ -46,14 +46,12 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: password
     ports:
       - target: 27017
-        published: 27017
+        published: 27018
   polystore-mongo:
     image: mongo:latest
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin
       MONGO_INITDB_DATABASE: admin
-    ports:
-      - target: 27017
     volumes:
       - ./models/:/docker-entrypoint-initdb.d
