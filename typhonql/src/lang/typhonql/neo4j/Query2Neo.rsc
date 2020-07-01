@@ -92,36 +92,40 @@ Steps to compile to SQL
 tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`
   , Schema s, Place p, Log log = noLog) {
 
-  NeoStat q = matchQuery(match([pattern(nodePattern("__n1", [], []), [relationshipPattern(doubleArrow(), "",  "", [], nodePattern("__n2", [], []))])], [where([])], []));
+  NeoStat q = 
+  	matchQuery(
+  		[match(
+  			[pattern(nodePattern("__n1", [], []), [relationshipPattern(doubleArrow(), "",  "", [], nodePattern("__n2", [], []))])], [where([])])], 
+  		[]);
   
   void addWhere(NeoExpr e) {
     // println("ADDING where clause: <pp(e)>");
-    q.match.clauses[0].exprs += [e];
+    q.matches[0].clauses[0].exprs += [e];
   }
   
   void addFrom(str var, str label) {
     // println("ADDING table: <pp(as)>");
-    q.match.patterns += [pattern(nodePattern(var, [label], []), [])];
+    q.matches[0].patterns += [pattern(nodePattern(var, [label], []), [])];
   }
   
   void addRelation(str var, str label) {
-   q.match.patterns[0].rels[0].var = var;
-   q.match.patterns[0].rels[0].label = label;
+   q.matches[0].patterns[0].rels[0].var = var;
+   q.matches[0].patterns[0].rels[0].label = label;
   }
   
   void addSource(str var, str label) {
-    q.match.patterns[0].nodePattern.var = var;
-    q.match.patterns[0].nodePattern.labels = [label];
+    q.matches[0].patterns[0].nodePattern.var = var;
+    q.matches[0].patterns[0].nodePattern.labels = [label];
   }
   
   void addTarget(str var, str label) {
-    q.match.patterns[0].rels[0].nodePattern.var = var;
-    q.match.patterns[0].rels[0].nodePattern.labels = [label];
+    q.matches[0].patterns[0].rels[0].nodePattern.var = var;
+    q.matches[0].patterns[0].rels[0].nodePattern.labels = [label];
   }
   
   void addResult(NeoExpr e) {
     // println("ADDING result: <pp(e)>");
-    q.match.exprs += [e];
+    q.returnExprs += [e];
   }
   
   int _vars = -1;
@@ -192,7 +196,7 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
            addResult(named(expr2neo(x, ctx), "<y>.<ent>.<f>"));
            // todo: should be in Normalize
            idExpr = named(expr2neo((Expr)`<VId y>.@id`, ctx), "<y>.<ent>.@id");
-           if (idExpr notin q.match.exprs) {
+           if (idExpr notin q.returnExprs) {
              addResult(idExpr);
            }
          }
@@ -233,8 +237,8 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
     }
   }
   
-  if (q.match.clauses[0].exprs == []) {
-    q.match.clauses = [];
+  if (q.matches[0].clauses[0].exprs == []) {
+    q.matches[0].clauses = [];
   }
   
   // println("PARAMS: <params>");

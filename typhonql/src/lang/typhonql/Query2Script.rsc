@@ -121,7 +121,7 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<neo4j(), str dbName>, Schema 
   <neoStat, params> = compile2neo(r, s, p);
   // hack
 
-  if (neoStat.match.patterns == []) {
+  if (neoStat.matches[0].patterns == []) {
     return [];
   }
   return [step(dbName, neo(executeNeoQuery(dbName, neopp(neoStat))), params

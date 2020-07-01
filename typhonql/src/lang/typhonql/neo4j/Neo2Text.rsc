@@ -18,22 +18,30 @@ str neopp(map[Place,list[NeoStat]] placed)
 
 // NeoStat
 
-str neopp(matchUpdate(just(match(list[Pattern] ps, list[Clause] cs, list[NeoExpr] es)), UpdateClause uc))
+str neopp(matchUpdate(just(match(list[Pattern] ps, list[Clause] cs)), UpdateClause uc, list[NeoExpr] es))
   = "match <intercalate(", ", [ neopp(p) | Pattern p <- ps ])>
     '<intercalate("\n", [ neopp(c) | Clause c <- cs ])>
     '<neopp(uc)>
     '<isEmpty(es)?"":"return "><intercalate(", ", [ neopp(e) | NeoExpr e <- es ])>"
     ;  
 
-str neopp(matchUpdate(nothing(), UpdateClause uc))
-  = neopp(uc);  
+str neopp(matchUpdate(nothing(), UpdateClause uc, list[NeoExpr] es))
+  = "<neopp(uc)>
+    '<isEmpty(es)?"":"return "><intercalate(", ", [ neopp(e) | NeoExpr e <- es ])>";  
     
-str neopp(matchQuery(match(list[Pattern] ps, list[Clause] cs, list[NeoExpr] es)))
-  = "match <intercalate(", ", [ neopp(p) | Pattern p <- ps ])>
-    '<intercalate("\n", [ neopp(c) | Clause c <- cs ])>
+str neopp(matchQuery(list[Match] matches, list[NeoExpr] es))
+  = "<intercalate("\n", [neopp(m) | m <- matches])>
     'return <intercalate(", ", [ neopp(e) | NeoExpr e <- es ])>"
     ;  
     
+str neopp(match(list[Pattern] ps, list[Clause] cs)) 
+   ="match <intercalate(", ", [ neopp(p) | Pattern p <- ps ])>
+    '<intercalate("\n", [ neopp(c) | Clause c <- cs ])>";
+    
+str neopp(callYield(str name, list[NeoExpr] args, list[str] procedureResults))
+   ="call <name>(<intercalate(", ", [ neopp(e) | NeoExpr e <- args ])>)
+    'yield <intercalate(", ", [ p | str p <- procedureResults ])>";
+        
 str neopp(create(Pattern pattern))
   = "create <neopp(pattern)>";
   
