@@ -3,12 +3,13 @@ module lang::typhonql::neo4j::Neo
 import util::Maybe;
 
 data NeoStat
-  = matchQuery(Match match)
-  | matchUpdate(Maybe[Match] updateMatch, UpdateClause updateClause)
+  = matchQuery(list[Match] matches, list[NeoExpr] returnExprs)
+  | matchUpdate(Maybe[Match] updateMatch, UpdateClause updateClause, list[NeoExpr] returnExprs)
   ;
 
 data Match
-	= match(list[Pattern] patterns, list[Clause] clauses, list[NeoExpr] exprs)
+	= match(list[Pattern] patterns, list[Clause] clauses)
+	| callYield(str name, list[NeoExpr] args, list[str] procedureResults)
 	;  
   
 data UpdateClause
