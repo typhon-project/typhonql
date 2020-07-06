@@ -8,6 +8,16 @@ services:
     ports:
       - target: 8080
         published: 8080
+    entrypoint:
+      - wait-for-it
+      - polystore-mongo:27017
+      - -t
+      - '60'
+      - --
+      - java
+      - -cp
+      - /app/resources:/app/classes:/app/libs/*
+      - com.clms.typhonapi.Application
     restart: always
   polystore-ui:
     image: clms/typhon-polystore-ui:latest
@@ -21,29 +31,29 @@ services:
         published: 4200
   typhonql-server:
     image: swatengineering/typhonql-server
-    ports:
-      - target: 7000
     restart: always
     environment:
       _JAVA_OPTIONS : -Dlog4j2.level=TRACE
-
-  Inventory:
+  inventory:
     image: mariadb:latest
     environment:
-      MYSQL_ROOT_PASSWORD: example
+      MYSQL_ROOT_PASSWORD: XeNnEybEFjSe5aLy
     ports:
       - target: 3306
         published: 3306
-  Stuff:
+  stuff:
     image: cassandra:latest
+    environment:
+      MAX_HEAP_SIZE: 1500M
+      HEAP_NEWSIZE: 400M
     ports:
       - target: 9042
         published: 9042
-  Reviews:
+  reviews:
     image: mongo:latest
     environment:
-      MONGO_INITDB_ROOT_USERNAME: username
-      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: LciPZmCUQjR1Jp1Y
     ports:
       - target: 27017
         published: 27017
