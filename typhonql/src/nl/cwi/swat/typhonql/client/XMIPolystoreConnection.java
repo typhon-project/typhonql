@@ -6,6 +6,7 @@ import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.throwa
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -17,6 +18,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.rascalmpl.interpreter.Evaluator;
@@ -48,7 +50,6 @@ import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 public class XMIPolystoreConnection {
 	private static final StandardTextWriter VALUE_PRINTER = new StandardTextWriter(true, 2);
 	private static final IValueFactory VF = ValueFactoryFactory.getValueFactory();
-	private static final TypeFactory TF = TypeFactory.getInstance();
 
 	private final ConcurrentSoftReferenceObjectPool<Evaluator> evaluators;
 	private final TyphonSession sessionBuilder;
@@ -121,80 +122,48 @@ public class XMIPolystoreConnection {
 	
 	
 	public ResultTable executeQuery(String xmiModel, List<DatabaseInfo> connections, String query) {
-		return evaluators.useAndReturn(evaluator -> {
-			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, Collections.emptyMap(), evaluator)) {
-				synchronized (evaluator) {
-					// str src, str xmiString, Session session
-					IValue v = evaluator.call("runQueryAndGetJava", 
-							"lang::typhonql::RunUsingCompiler",
-                    		Collections.emptyMap(),
-							VF.string(query), 
-							VF.string(xmiModel),
-							session.getTuple());
-					return (ResultTable) v;
-				}
-			} catch (StaticError e) {
-				staticErrorMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
-				throw e;
-			} catch (Throw e) {
-				throwMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
-				throw e;
-			} catch (Throwable e) {
-				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
-				throw new RuntimeException(e);
-			}
-		});
+		return sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> 
+            (ResultTable) evaluator.call("runQueryAndGetJava", 
+                "lang::typhonql::RunUsingCompiler",
+                Collections.emptyMap(),
+                VF.string(query), 
+                VF.string(xmiModel),
+                session.getTuple())
+		);
 	}
 	
+	private static void throwRascalMessage(PrintWriter errorPrinter, Throw e, StandardTextWriter valuePrinter) {
+		IValue actual = e.getException();
+		if (actual instanceof IString) {
+			errorPrinter.append("TyphonQL failed to handle request, msg:\n");
+			errorPrinter.append(((IString) actual).getValue());
+			errorPrinter.append("\nTrace:\n");
+		}
+        throwMessage(errorPrinter, e, VALUE_PRINTER);
+	}
+
+
 	public ResultTable executeGetEntity(String xmiModel, List<DatabaseInfo> connections, String entity, String uuid) {
-		return evaluators.useAndReturn(evaluator -> {
-			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, Collections.emptyMap(), evaluator)) {
-				synchronized (evaluator) {
-					// str src, str xmiString, Session session
-					IValue v = evaluator.call("runGetEntity", 
-							"lang::typhonql::RunUsingCompiler",
-                    		Collections.emptyMap(),
-                    		VF.string(entity), 
-							VF.string(uuid), 
-							VF.string(xmiModel),
-							session.getTuple());
-					return (ResultTable) v;
-				}
-			} catch (StaticError e) {
-				staticErrorMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
-				throw e;
-			} catch (Throw e) {
-				throwMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
-				throw e;
-			} catch (Throwable e) {
-				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
-				throw new RuntimeException(e);
-			}
-		});
+		return sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> 
+            (ResultTable) evaluator.call("runGetEntity", 
+                "lang::typhonql::RunUsingCompiler",
+                Collections.emptyMap(),
+                VF.string(entity), 
+                VF.string(uuid), 
+                VF.string(xmiModel),
+                session.getTuple())
+        );
 	}
 	
 	public void executeDDLUpdate(String xmiModel, List<DatabaseInfo> connections, String update) {
-		evaluators.useAndReturn(evaluator -> {
-			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, Collections.emptyMap(), evaluator)) {
-				synchronized (evaluator) {
-					return evaluator.call("runDDL", 
-							"lang::typhonql::RunUsingCompiler",
-                    		Collections.emptyMap(),
-							VF.string(update), 
-							VF.string(xmiModel),
-							session.getTuple());
-				}
-			} catch (StaticError e) {
-				staticErrorMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
-				throw e;
-			} catch (Throw e) {
-				throwMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
-				throw e;
-			} catch (Throwable e) {
-				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
-				throw new RuntimeException(e);
-			}
-		});
+		sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> 
+            evaluator.call("runDDL", 
+                "lang::typhonql::RunUsingCompiler",
+                Collections.emptyMap(),
+                VF.string(update), 
+                VF.string(xmiModel),
+                session.getTuple())
+        );
 		
 	}
 	
@@ -204,34 +173,19 @@ public class XMIPolystoreConnection {
 	}
 	
 	
-	private IValue evaluateUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> fileMap, String update) {
-		return evaluators.useAndReturn(evaluator -> {
-			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, fileMap, evaluator)) {
-                
-				synchronized (evaluator) {
-					// str src, str xmiString, Session sessions
-					return evaluator.call("runUpdate", 
-							"lang::typhonql::RunUsingCompiler",
-                    		Collections.emptyMap(),
-							VF.string(update), 
-							VF.string(xmiModel),
-							session.getTuple());
-				}
-			} catch (StaticError e) {
-				staticErrorMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
-				throw e;
-			} catch (Throw e) {
-				throwMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
-				throw e;
-			} catch (Throwable e) {
-				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
-				throw new RuntimeException(e);
-			}
-		});
+	private IValue evaluateUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String update) {
+		return sessionCall(connections, blobMap, (session, evaluator) -> 
+			evaluator.call("runUpdate", 
+				"lang::typhonql::RunUsingCompiler",
+				Collections.emptyMap(),
+				VF.string(update), 
+				VF.string(xmiModel),
+				session.getTuple())
+        );
 	}
 	
 
-	private IValue evaluatePreparedStatementQuery(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> fileMap, String preparedStatement, String[] columnNames, String[][] matrix) {
+	private IValue evaluatePreparedStatementQuery(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String preparedStatement, String[] columnNames, String[][] matrix) {
 		IListWriter lw = VF.listWriter();
 		for (String[] row : matrix) {
 			List<IString> vs = Arrays.asList(row).stream().map(
@@ -242,48 +196,40 @@ public class XMIPolystoreConnection {
 		}
 		IListWriter columnsWriter = VF.listWriter();
 		columnsWriter.appendAll(Arrays.asList(columnNames).stream().map(columnName -> VF.string(columnName)).collect(Collectors.toList()));
-		return evaluators.useAndReturn(evaluator -> {
-			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, fileMap, evaluator)) {
-				synchronized (evaluator) {
-					// str src, str polystoreId, Schema s, Session session
-					return evaluator.call("runPrepared", 
-							"lang::typhonql::RunUsingCompiler",
-                    		Collections.emptyMap(),
-							VF.string(preparedStatement),
-							columnsWriter.done(),
-							lw.done(),
-							VF.string(xmiModel),
-							session.getTuple());
-				}
-			} catch (StaticError e) {
-				staticErrorMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
-				throw e;
-			} catch (Throw e) {
-				throwMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
-				throw e;
-			} catch (Throwable e) {
-				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
-				throw new RuntimeException(e);
-			}
-		});
+        return sessionCall(connections, blobMap, (session, evaluator) -> 
+        	evaluator.call("runPrepared", 
+                    "lang::typhonql::RunUsingCompiler",
+                    Collections.emptyMap(),
+                    VF.string(preparedStatement),
+                    columnsWriter.done(),
+                    lw.done(),
+                    VF.string(xmiModel),
+                    session.getTuple())
+        );
 	}
 	
+	
 	public void resetDatabases(String xmiModel, List<DatabaseInfo> connections) {
-		evaluators.useAndReturn(evaluator -> {
+        sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> 
+            evaluator.call("runSchema", 
+                "lang::typhonql::RunUsingCompiler",
+                Collections.emptyMap(),
+                VF.string(xmiModel), 
+                session.getTuple())
+        );
+	}
+
+	private <R> R sessionCall(List<DatabaseInfo> connections, Map<String, InputStream> blobs, BiFunction<SessionWrapper, Evaluator, R> exec) {
+		return evaluators.useAndReturn(evaluator -> {
 			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, Collections.emptyMap(), evaluator)) {
 				synchronized (evaluator) {
-					// str src, str polystoreId, Schema s,
-					return evaluator.call("runSchema", 
-							"lang::typhonql::RunUsingCompiler",
-                    		Collections.emptyMap(),
-                    		VF.string(xmiModel), 
-                    		session.getTuple());
+					return exec.apply(session, evaluator);
 				}
 			} catch (StaticError e) {
 				staticErrorMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
 				throw e;
 			} catch (Throw e) {
-				throwMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
+				throwRascalMessage(evaluator.getErrorPrinter(), e, VALUE_PRINTER);
 				throw e;
 			} catch (Throwable e) {
 				throwableMessage(evaluator.getErrorPrinter(), e, evaluator.getStackTrace(), VALUE_PRINTER);
@@ -291,6 +237,7 @@ public class XMIPolystoreConnection {
 			}
 		});
 	}
+
 
 	private static int calculateMaxEvaluators() {
         int numberOfEvaluators = Math.min(4, Runtime.getRuntime().availableProcessors() - 2);

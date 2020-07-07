@@ -13,6 +13,7 @@ import lang::typhonql::Script;
 import lang::typhonml::XMIReader;
 
 import lang::typhonql::util::Log;
+import Exception;
 
 import IO;
 import Set;
@@ -77,9 +78,9 @@ value runQueryAndGetJava(Request r, Schema sch, Session session, Log log = noLog
 value runGetEntity(str entity, str uuid, Schema sch, Session session, Log log = noLog) {
 	list[str] attributes = [att | <entity, att, _> <- sch.attrs];
 	// TODO put alias to the columns
-	Request r = [Request] "from <entity> e select
+	Request r = parseRequest("from <entity> e select
 	                      ' <intercalate(", ", ["e.<a>" | a <- attributes])> 
-	                      'where e.@id == #<uuid>";	
+	                      'where e.@id == #<uuid>");	
 	runScriptForQuery(r, sch, session, log = log);
 	return session.getJavaResult();
 }
@@ -121,7 +122,7 @@ CommandResult runUpdate(str src, str xmiString, map[str, Connection] connections
 CommandResult runUpdate(str src, str xmiString, Session session, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
-  Request req = [Request]src;
+  Request req = parseRequest(src);
   return runUpdate(req, s, session, log = log);
 }
 
@@ -133,7 +134,7 @@ ResultTable runQuery(str src, str xmiString, map[str, Connection] connections, L
 ResultTable runQuery(str src, str xmiString, Session session, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
-  Request req = [Request]src;
+  Request req = parseRequest(src);
   return runQuery(req, s, session, log = log);
 }
 
@@ -145,7 +146,7 @@ value runQueryAndGetJava(str src, str xmiString, map[str, Connection] connection
 value runQueryAndGetJava(str src, str xmiString, Session session, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
-  Request req = [Request]src;
+  Request req = parseREquest(src);
   return runQueryAndGetJava(req, s, session, log = log);
 }
 
@@ -163,7 +164,15 @@ value runGetEntity(str entity, str uuid, str xmiString, Session session, Log log
 list[CommandResult] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, Session session, Log log = noLog) {
  	Model m = xmiString2Model(xmiString);
   	Schema s = model2schema(m);	
-	return runPrepared([Request] src, columnNames, values, s, session, log = log);
+	return runPrepared(parseRequest(src), columnNames, values, s, session, log = log);
+}
+
+Request parseRequest(str src) {
+    try {
+        return [Request]src;
+    } catch parseError(loc of): {
+        throw "Error parsing:\n<src>\nposition: <of.begin> -- <of.end>";
+    }
 }
 
 list[CommandResult] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, map[str, Connection] connections, Log log = noLog) {
@@ -174,7 +183,7 @@ list[CommandResult] runPrepared(str src, list[str] columnNames, list[list[str]] 
 void runDDL(str src,  str xmiString, Session session, Log log = noLog) {
 	Model m = xmiString2Model(xmiString);
   	Schema s = model2schema(m);	
-	runDDL([Request] src, s, session, log = log);
+	runDDL(parseRequest(src), s, session, log = log);
 }
 
 void runDDL(str src,  str xmiString, map[str, Connection] connections, Log log = noLog) {
