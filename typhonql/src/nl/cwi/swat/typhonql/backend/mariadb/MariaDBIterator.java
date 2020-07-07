@@ -3,6 +3,7 @@ package nl.cwi.swat.typhonql.backend.mariadb;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -62,6 +63,8 @@ public class MariaDBIterator implements ResultIterator {
 		columnMapperFuncs.put(ColumnType.INTEGER.getSqlType(), (r, i) -> r.getInt(i));
 		columnMapperFuncs.put(ColumnType.NULL.getSqlType(), (r, i) -> null);
 		columnMapperFuncs.put(ColumnType.STRING.getSqlType(), (r, i) -> r.getString(i));
+		columnMapperFuncs.put(ColumnType.VARCHAR.getSqlType(), (r, i) -> r.getString(i));
+		columnMapperFuncs.put(Types.CHAR, (r, i) -> r.getString(i));
 	}
 	
 	@FunctionalInterface
