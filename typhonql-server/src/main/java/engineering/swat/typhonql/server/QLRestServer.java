@@ -183,7 +183,9 @@ public class QLRestServer {
 					+ ((parameterNames != null && parameterNames.length > 0)
 							? ("parameterNames: " + Arrays.toString(parameterNames) + "\n")
 							: "")
-					+ ((boundRows != null) ? ("boundRows: " + boundRows.length + "\n") : "") + "xmi: " + xmi + "\n"
+					+ ((boundRows != null) ? ("boundRows: " + boundRows.length + "\n") : "") 
+					+ ((blobs != null) ? "blobs: " + blobs.keySet() + "\n" : "")
+					+ "xmi: " + xmi + "\n"
 					+ "databaseInfo" + databaseInfo + "}";
 		}
 	}
