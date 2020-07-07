@@ -16,6 +16,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import javax.swing.text.StyledEditorKit.BoldAction;
+
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.env.ModuleEnvironment;
 import org.rascalmpl.interpreter.result.ICallableValue;
@@ -125,6 +127,9 @@ public class TyphonSession implements Operations {
 		// checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function
 		// type ourself
+		if (blobMap == null) {
+			blobMap = Collections.emptyMap();
+		}
 		ModuleEnvironment aliasModule = ctx.getHeap().getModule("lang::typhonql::Session");
 		if (aliasModule == null) {
 			throw new IllegalArgumentException("Missing my own module");
