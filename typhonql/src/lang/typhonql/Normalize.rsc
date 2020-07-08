@@ -419,18 +419,21 @@ Request eliminateCustomDataTypes(Request req, Schema s) {
 }
 
 
-str pUUID(UUID uuid) = pUUID("<uuid>"[1..]);
+str pUUID(UUIDPart uuid) = hashUUID("<uuid>");
 str pUUID(str uuid) = hashUUID(uuid);
 
 
-bool isProperUUID(UUID uuid) 
-  = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/ := "<uuid>"[1..];
+bool isProperUUID(UUIDPart uuid) 
+  = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/ := "<uuid>";
 
 Request injectProperUUIDs(Request req) {
   return visit (req) {
-    case UUID uuid => [UUID]"#<pUUID(uuid)>"
+    case UUID uuid => [UUID]"#<pUUID(uuid.part)>"
       when
-        !isProperUUID(uuid)
+        !isProperUUID(uuid.part)
+    case (BlobPointer)`#blob:<UUIDPart part>` => [BlobPointer]"#blob:<pUUID(part)>"
+      when
+        !isProperUUID(part)
   }
 }
 

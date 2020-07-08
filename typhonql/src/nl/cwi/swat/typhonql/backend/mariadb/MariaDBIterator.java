@@ -1,5 +1,7 @@
 package nl.cwi.swat.typhonql.backend.mariadb;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -11,6 +13,7 @@ import java.util.Map;
 
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.io.InputStreamInStream;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBReader;
 import org.mariadb.jdbc.internal.ColumnType;
@@ -46,25 +49,35 @@ public class MariaDBIterator implements ResultIterator {
 		// TODO: consider not using class name but something else for this mapping (like SQL type)
 		columnMapperFuncs.put(ColumnType.BIGINT.getSqlType(), (r, i) -> r.getBigDecimal(i));
 		columnMapperFuncs.put(ColumnType.BIT.getSqlType(), (r, i) -> r.getBoolean(i));
-		columnMapperFuncs.put(ColumnType.LONGBLOB.getSqlType(), (r, i) -> r.getBlob(i).getBinaryStream());
+		columnMapperFuncs.put(ColumnType.LONGBLOB.getSqlType(), (r, i) -> blobOrGeo(r.getBinaryStream(i)));
 		columnMapperFuncs.put(ColumnType.DATE.getSqlType(), (r, i) -> r.getObject(i, LocalDate.class));
 		columnMapperFuncs.put(ColumnType.DATETIME.getSqlType(), (r, i) -> r.getObject(i, LocalDateTime.class));
 		columnMapperFuncs.put(ColumnType.DOUBLE.getSqlType(), (r, i) -> r.getDouble(i));
 		columnMapperFuncs.put(ColumnType.FLOAT.getSqlType(), (r, i) -> r.getDouble(i));
-		columnMapperFuncs.put(ColumnType.GEOMETRY.getSqlType(), (r, i) -> {
-			try {
-				return new WKBReader(wsgFactory).read(r.getBytes(i));
-			} catch (ParseException e) {
-
-				// TODO, this class name overlaps with all other things that can give bytes, so we have to map them
-				throw new SQLException(e);
-			}
-		});
+		columnMapperFuncs.put(ColumnType.GEOMETRY.getSqlType(), (r, i) -> blobOrGeo(r.getBinaryStream(i)));
 		columnMapperFuncs.put(ColumnType.INTEGER.getSqlType(), (r, i) -> r.getInt(i));
 		columnMapperFuncs.put(ColumnType.NULL.getSqlType(), (r, i) -> null);
 		columnMapperFuncs.put(ColumnType.STRING.getSqlType(), (r, i) -> r.getString(i));
-		columnMapperFuncs.put(ColumnType.VARCHAR.getSqlType(), (r, i) -> r.getString(i));
 		columnMapperFuncs.put(Types.CHAR, (r, i) -> r.getString(i));
+	}
+	
+	private static Object blobOrGeo(InputStream b) {
+		if (b.markSupported()) {
+			try {
+				b.mark(Integer.MAX_VALUE);
+				return new WKBReader(wsgFactory).read(new InputStreamInStream(b));
+			} catch (ParseException | IOException e) {
+				try {
+					b.reset();
+				} catch (IOException e1) {
+					// should not be possible due to check earlier
+				}
+				return b;
+			}
+		}
+        System.err.println("Mark not supported so cannot gues blob type");
+		return b;
+		
 	}
 	
 	@FunctionalInterface

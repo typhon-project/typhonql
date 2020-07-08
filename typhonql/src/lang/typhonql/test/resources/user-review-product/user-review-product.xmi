@@ -7,6 +7,9 @@
     <attributes xsi:type="typhonml:Attribute" name="location">
       <type xsi:type="typhonml:PointType"/>
     </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="screenshot">
+      <type xsi:type="typhonml:BlobType"/>
+    </attributes>
     <relations name="product" type="//@entities.1" cardinality="one"/>
     <relations name="user" type="//@entities.5" cardinality="one"/>
   </entities>
@@ -42,6 +45,9 @@
   <entities name="Item">
     <attributes xsi:type="typhonml:Attribute" name="shelf">
       <type xsi:type="typhonml:IntType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="picture">
+      <type xsi:type="typhonml:BlobType"/>
     </attributes>
     <relations name="product" type="//@entities.1" cardinality="one" opposite="//@entities.1/@relations.2"/>
   </entities>

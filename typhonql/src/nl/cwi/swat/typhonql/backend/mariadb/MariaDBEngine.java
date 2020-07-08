@@ -45,8 +45,8 @@ public class MariaDBEngine extends Engine {
 			String param = m.group(1);
             vars.add(param);
 			log("Match: " + param + " details: " + m + "\n");
-            if (param.startsWith("blob:")) {
-            	blobs.add(param.substring("blob:".length()));
+            if (param.startsWith("blob-")) {
+            	blobs.add(param.substring("blob-".length()));
             }
 		}
 		m.appendTail(result);
@@ -69,20 +69,18 @@ public class MariaDBEngine extends Engine {
         PreparedStatement stm = prepareQuery(query, vars, blobs);
         int i = 1;
         for (String varName : vars) {
-        	if (blobs.contains(varName)) {
-        		stm.setBlob(i, store.getBlob(varName));
-        	}
-        	else {
-                Object value = values.get(varName);
-                if (value instanceof Geometry) {
-                    stm.setBytes(i, new WKBWriter().write((Geometry) value));
-                }
-                else {
-                    // TODO: what to do with NULL?
-                    // other classes jdbc can take care of itself
-                    stm.setObject(i, value);
-                }
-        	}
+            Object value = values.get(varName);
+            if (value == null && blobs.contains(varName)) {
+                stm.setBlob(i, store.getBlob(varName));
+            }
+            else if (value instanceof Geometry) {
+                stm.setBytes(i, new WKBWriter().write((Geometry) value));
+            }
+            else {
+                // TODO: what to do with NULL?
+                // other classes jdbc can take care of itself
+                stm.setObject(i, value);
+            }
             i++;
         }
         return stm;

@@ -42,7 +42,7 @@ alias PolystoreInstance =
 		ResultTable(Request req) runQuery,
 		ResultTable(Request req, Schema s) runQueryForSchema,
 		CommandResult(Request req) runUpdate,
-		CommandResult(Request req, map[str,str] blobMap) runUpdateWithFiles,
+		CommandResult(Request req, map[str,str] blobMap) runUpdateWithBlobs,
 		CommandResult(Request req, Schema s) runUpdateForSchema,
 		CommandResult(Request req) runDDL,
 		CommandResult(Request req, Schema s) runDDLForSchema,
@@ -129,7 +129,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		return result;
 	};
 
-	myRunUpdateFiles = CommandResult(Request req, map[str,str] blobMap) {
+	myRunUpdateBlobs = CommandResult(Request req, map[str,str] blobMap) {
         checkRequest(req);
 		ses = newSession(connections, blobMap = blobMap);
 		result = runUpdateInTest(req, sch, ses, log);
@@ -189,7 +189,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	PolystoreInstance proxy = <myResetStats, myGetStats, mySetStat,
 		myResetDatabases, myStartSession, 
 		myCloseSession, myRunQuery, myRunQueryForSchema,
-		myRunUpdate, myRunUpdateFiles, myRunUpdateForSchema, myRunDDL, myRunDDLForSchema, myRunPreparedUpdate, 
+		myRunUpdate, myRunUpdateBlobs, myRunUpdateForSchema, myRunDDL, myRunDDLForSchema, myRunPreparedUpdate, 
 		myFetchSchema, myPrintSchema,  myAssertEquals, myAssertResultEquals,
 		myAssertException>;
 		
