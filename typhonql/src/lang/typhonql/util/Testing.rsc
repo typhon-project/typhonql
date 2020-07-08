@@ -58,8 +58,8 @@ alias PolystoreInstance =
 alias TestExecuter =
 	tuple[
 		void(void(PolystoreInstance, bool), bool) runSetup,
-		void(void(PolystoreInstance proxy)) runTest,
-		void(list[void(PolystoreInstance proxy)]) runTests,
+		void(void(PolystoreInstance proxy), bool) runTest,
+		void(list[void(PolystoreInstance proxy)], bool) runTests,
 		Schema() fetchSchema];
 		
 TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password, Log log = NO_LOG()) {
@@ -199,14 +199,14 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		proxy.closeSession();
 	};
 	
-	void(void(PolystoreInstance)) myRunTest = void(void(PolystoreInstance proxy) t) {
+	myRunTest = void(void(PolystoreInstance proxy) t, bool runTestsInSetup) {
 		proxy.resetStats();
-		runTest(proxy, setup, t, log = log);
+		runTest(proxy, setup, t, log = log, runTestsInSetup = runTestsInSetup);
 	};
 	
-	void(list[void(PolystoreInstance)]) myRunTests = void(list[void(PolystoreInstance proxy)] ts) {
+	myRunTests = void(list[void(PolystoreInstance proxy)] ts, bool runTestsInSetup) {
 		proxy.resetStats();
-		runTests(proxy, setup, ts, log = log);
+		runTests(proxy, setup, ts, log = log, runTestsInSetup = runTestsInSetup);
 	};
 	
 	Schema() myfetchSchema = Schema() {

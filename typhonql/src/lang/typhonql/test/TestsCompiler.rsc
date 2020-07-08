@@ -258,8 +258,8 @@ void testInsertManyValuedSQLLocal(PolystoreInstance p) {
   // inventory: [#laptop1, #laptop2], 
   p.runUpdate((Request)`insert Product { @id: #laptop, name: "MacBook", availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-03-03$, price: 4000, description: "expensive laptop"}`);
 
-  p.runUpdate((Request)`insert Item { @id: #laptop1, shelf: 1, product: #laptop}`);	
-  p.runUpdate((Request)`insert Item { @id: #laptop2, shelf: 1, product: #laptop}`);	
+  p.runUpdateWithBlobs((Request)`insert Item { @id: #laptop1, shelf: 1, product: #laptop, picture: #blob:b5 }`, (U("b5") : "dd"));	
+  p.runUpdateWithBlobs((Request)`insert Item { @id: #laptop2, shelf: 1, product: #laptop, picture: #blob:b6 }`, (U("b6") : "dd"));	
 	
   
   rs = p.runQuery((Request)`from Product p select p.inventory where p.@id == #laptop`);
@@ -267,7 +267,7 @@ void testInsertManyValuedSQLLocal(PolystoreInstance p) {
   p.assertResultEquals("many-valued inventory obtained from product", rs, <["p.inventory"],
       [[U("laptop1")], [U("laptop2")]]>);
   
-  rs = p.runQuery((Request)`from Item i select i.@id where i.product == #laptop`);
+  rs = p.runQuery((Request)`from Item i select i.@id, i.picture where i.product == #laptop`);
   p.assertResultEquals("many-valued inventory obtained via inverse", rs, <["i.@id"],
       [[U("laptop1")], [U("laptop2")]]>);
   
@@ -334,7 +334,7 @@ void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
 }
 
 void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, location: #point(1.0 1.0)}`);
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s4 }`, (U("s4") : "uu"));
   p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", reviews: [#newReview], availabilityRegion: #polygon((1.0 1.0)), price: 400, productionDate: $2001-01-01$}`);
   
   // this below query is not as intended, r remains unconstrained, so you get all review contents.
@@ -397,7 +397,7 @@ void testUpdateManyXrefSQLLocalSetToEmpty(PolystoreInstance p) {
 
 
 void testUpdateManyContainSQLtoExternal(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0)}`);
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s5 }`, (U("s5") : "uu"));
   p.runUpdate((Request)`update Product p where p.@id == #tv set {reviews +: [#newReview]}`);
   
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #tv, p.reviews == r`);
@@ -413,7 +413,7 @@ void testUpdateManyContainSQLtoExternalRemove(PolystoreInstance p) {
 
 
 void testUpdateManyContainSQLtoExternalSet(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0)}`);
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s6 }`, (U("s6") : "uu"));
   p.runUpdate((Request)`update Product p where p.@id == #tv set {reviews: [#newReview]}`);
   
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #tv, p.reviews == r`);
@@ -593,12 +593,12 @@ void test13(PolystoreInstance p) {
 
 TestExecuter executer(Log log = NO_LOG()) = initTest(setup, HOST, PORT, USER, PASSWORD, log = log);
 
-void runTest(void(PolystoreInstance) t, Log log = NO_LOG()) {
-	 executer(log = log).runTest(t); 
+void runTest(void(PolystoreInstance) t, Log log = NO_LOG(), bool runTestsInSetup = false) {
+	 executer(log = log).runTest(t, runTestsInSetup); 
 }
 
-void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG) {
-	executer(log = log).runTests(ts); 
+void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG, bool runTestsInSetup = false) {
+	executer(log = log).runTests(ts, runTestsInSetup); 
 }
 
 Schema fetchSchema() {
@@ -610,7 +610,7 @@ Schema printSchema() {
 }
 
 
-void runTests(Log log = NO_LOG()) {
+void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	tests = 
 	  [ testKeyValueFeatures
 	  , testCustomDataTypes
@@ -659,5 +659,5 @@ void runTests(Log log = NO_LOG()) {
 	  , test12
 	  , test13
 	];
-	runTests(tests, log = log);
+	runTests(tests, log = log, runTestsInSetup = runTestsInSetup);
 }

@@ -13,6 +13,7 @@ import lang::typhonql::Script;
 import lang::typhonml::XMIReader;
 
 import lang::typhonql::util::Log;
+import util::Benchmark;
 import Exception;
 
 import IO;
@@ -20,6 +21,8 @@ import Set;
 import List;
 import util::Maybe;
 import String;
+
+bool bench = false;
 
 void runDDL(Request r, Schema s, Session session, Log log = noLog) {
 	if ((Request) `<Statement stmt>` := r) {
@@ -42,9 +45,15 @@ CommandResult runUpdate(Request r, Schema s, Session session, Log log = noLog) {
 		// TODO This is needed because we do not have an explicit way to distinguish
 		// DDL updates from DML updates. Perhaps we should consider it
   		if (!isDDL(stmt)) {
+            startScript = getNanoTime();
   			scr = request2script(r, s, log = log);
 			log("[runUpdate] Script: <scr>");
+            endScript = getNanoTime();
 			res = runScript(scr, session, s);
+            endExecute = getNanoTime();
+            if (bench) {
+                println("BENCH: request, <endScript - startScript>, <endExecute - endScript>");
+            }
 			if (res != "")
 				return <-1, ("uuid" : res)>;
 			else
@@ -62,9 +71,15 @@ CommandResult runUpdate(Request r, Schema s, Session session, Log log = noLog) {
 
 void runScriptForQuery(Request r, Schema sch, Session session, Log log = noLog) {
 	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
+        startScript = getNanoTime();
 		scr = request2script(r, sch, log = log);
+        endScript = getNanoTime();
 		log("[runScriptForQuery] Script: <scr>");
 		runScript(scr, session, sch);
+        endExecute = getNanoTime();
+        if (bench) {
+            println("BENCH: query, <endScript - startScript>, <endExecute - endScript>");
+        }
 	}
 	else
 		throw "Expected query, given statement";
@@ -110,8 +125,14 @@ list[CommandResult] runPrepared(Request req, list[str] columnNames, list[list[st
 }
 
 void runSchema(Schema sch, Session session, Log log = noLog) {
+    startScript = getNanoTime();
 	scr = schema2script(sch, log = log);
+    endScript = getNanoTime();
 	runScript(scr, session, sch);
+    endExecute = getNanoTime();
+    if (bench) {
+        println("BENCH: schema, <endScript - startScript>, <endExecute - endScript>");
+    }
 }
 
 CommandResult runUpdate(str src, str xmiString, map[str, Connection] connections, Log log = noLog) {
