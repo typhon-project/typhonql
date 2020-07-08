@@ -72,9 +72,9 @@ void setup(PolystoreInstance p, bool doTest) {
 	     [[U("tv"), "TV", "Flat", "2020-04-13"], [U("radio"), "Radio", "Loud", "2020-04-13"]]>);
 	}
 	
-	p.runUpdate((Request) `insert Review { @id: #rev1, content: "Good TV", user: #pablo, product: #tv, location: #point(2.0 3.0) }`);
-	p.runUpdate((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv, location: #point(20.0 30.0) }`);
-	p.runUpdate((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio, location: #point(3.0 2.0) }`);
+	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev1, content: "Good TV", user: #pablo, product: #tv, location: #point(2.0 3.0), screenshot: #blob:s1 }`, (U("s1") : "xx"));
+	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv, location: #point(20.0 30.0), screenshot: #blob:s2 }`, (U("s2") : "yy"));
+	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio, location: #point(3.0 2.0), screenshot: #blob:s3 }`, (U("s3") : "zz"));
 	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Review r select r.@id, r.content, r.user, r.product`);
@@ -122,13 +122,13 @@ void setup(PolystoreInstance p, bool doTest) {
     }
 
 
-	p.runUpdate((Request) `insert Item { @id: #tv1, shelf: 1, product: #tv }`);	
-	p.runUpdate((Request) `insert Item { @id: #tv2, shelf: 1, product: #tv }`);	
-	p.runUpdate((Request) `insert Item { @id: #tv3, shelf: 3, product: #tv }`);	
-	p.runUpdate((Request) `insert Item { @id: #tv4, shelf: 3, product: #tv }`);
+	p.runUpdateWithBlobs((Request) `insert Item { @id: #tv1, shelf: 1, product: #tv, picture: #blob:b1 }`, (U("b1") : "aa"));	
+	p.runUpdateWithBlobs((Request) `insert Item { @id: #tv2, shelf: 1, product: #tv, picture: #blob:b2 }`, (U("b2") : "bb"));	
+	p.runUpdateWithBlobs((Request) `insert Item { @id: #tv3, shelf: 3, product: #tv, picture: #blob:b3 }`, (U("b3") : "cc"));	
+	p.runUpdateWithBlobs((Request) `insert Item { @id: #tv4, shelf: 3, product: #tv, picture: #blob:b4 }`, (U("b4") : "dd"));
 	
-	p.runUpdate((Request) `insert Item { @id: #radio1, shelf: 2, product: #radio }`);	
-	p.runUpdate((Request) `insert Item { @id: #radio2, shelf: 2, product: #radio }`);
+	p.runUpdateWithBlobs((Request) `insert Item { @id: #radio1, shelf: 2, product: #radio, picture: #blob:b5 }`, (U("b5") : "ee"));
+	p.runUpdateWithBlobs((Request) `insert Item { @id: #radio2, shelf: 2, product: #radio, picture: #blob:b6 }`, (U("b6") : "ff"));
 	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Item i select i.@id, i.shelf, i.product`);
@@ -258,8 +258,8 @@ void testInsertManyValuedSQLLocal(PolystoreInstance p) {
   // inventory: [#laptop1, #laptop2], 
   p.runUpdate((Request)`insert Product { @id: #laptop, name: "MacBook", availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-03-03$, price: 4000, description: "expensive laptop"}`);
 
-  p.runUpdate((Request)`insert Item { @id: #laptop1, shelf: 1, product: #laptop}`);	
-  p.runUpdate((Request)`insert Item { @id: #laptop2, shelf: 1, product: #laptop}`);	
+  p.runUpdateWithBlobs((Request)`insert Item { @id: #laptop1, shelf: 1, product: #laptop, picture: #blob:b5 }`, (U("b5") : "dd"));	
+  p.runUpdateWithBlobs((Request)`insert Item { @id: #laptop2, shelf: 1, product: #laptop, picture: #blob:b6 }`, (U("b6") : "dd"));	
 	
   
   rs = p.runQuery((Request)`from Product p select p.inventory where p.@id == #laptop`);
@@ -281,6 +281,17 @@ void testDeleteSomeMongoBasic(PolystoreInstance p) {
   p.runUpdate((Request)`delete Category c where c.@id == #other`);
   rs = p.runQuery((Request)`from Category c select c.@id`);
   p.assertResultEquals("delete with where from mongo deletes", rs, <["c.@id"], [["appliances"]]>);
+}
+
+void testBlobs(PolystoreInstance p) {
+  p.runUpdateWithBlobs((Request) `insert Item { @id: #tv5, shelf: 1, product: #tv, picture: #blob:tb1 }`, (U("tb1") : "aa"));	
+  rs = p.runQuery((Request)`from Item i select i.picture where i.@id == #tv5`);
+  p.assertResultEquals("Blob in SQL", rs, <["i.picture"], [["YWE="]]>);
+  
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s4 }`, (U("s4") : "uu"));
+  
+  rs = p.runQuery((Request)`from Review r select r.screenshot where r.@id == #newReview`);
+  p.assertResultEquals("Blob in Mongo", rs, <["r.screenshot"], [["dXU="]]>);
 }
   
 
@@ -334,7 +345,7 @@ void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
 }
 
 void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, location: #point(1.0 1.0)}`);
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s4 }`, (U("s4") : "uu"));
   p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", reviews: [#newReview], availabilityRegion: #polygon((1.0 1.0)), price: 400, productionDate: $2001-01-01$}`);
   
   // this below query is not as intended, r remains unconstrained, so you get all review contents.
@@ -397,7 +408,7 @@ void testUpdateManyXrefSQLLocalSetToEmpty(PolystoreInstance p) {
 
 
 void testUpdateManyContainSQLtoExternal(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0)}`);
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s5 }`, (U("s5") : "uu"));
   p.runUpdate((Request)`update Product p where p.@id == #tv set {reviews +: [#newReview]}`);
   
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #tv, p.reviews == r`);
@@ -413,7 +424,7 @@ void testUpdateManyContainSQLtoExternalRemove(PolystoreInstance p) {
 
 
 void testUpdateManyContainSQLtoExternalSet(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0)}`);
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s6 }`, (U("s6") : "uu"));
   p.runUpdate((Request)`update Product p where p.@id == #tv set {reviews: [#newReview]}`);
   
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #tv, p.reviews == r`);
@@ -593,12 +604,12 @@ void test13(PolystoreInstance p) {
 
 TestExecuter executer(Log log = NO_LOG()) = initTest(setup, HOST, PORT, USER, PASSWORD, log = log);
 
-void runTest(void(PolystoreInstance) t, Log log = NO_LOG()) {
-	 executer(log = log).runTest(t); 
+void runTest(void(PolystoreInstance) t, Log log = NO_LOG(), bool runTestsInSetup = false) {
+	 executer(log = log).runTest(t, runTestsInSetup); 
 }
 
-void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG) {
-	executer(log = log).runTests(ts); 
+void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG, bool runTestsInSetup = false) {
+	executer(log = log).runTests(ts, runTestsInSetup); 
 }
 
 Schema fetchSchema() {
@@ -610,7 +621,7 @@ Schema printSchema() {
 }
 
 
-void runTests(Log log = NO_LOG()) {
+void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	tests = 
 	  [ testKeyValueFeatures
 	  , testCustomDataTypes
@@ -645,6 +656,8 @@ void runTests(Log log = NO_LOG()) {
 	  , testGISonCrossMongoSQL
 	  , testGISPrint
 	  
+	  , testBlobs
+	  
 	  , test1
 	  , test2
 	  , test3
@@ -659,5 +672,5 @@ void runTests(Log log = NO_LOG()) {
 	  , test12
 	  , test13
 	];
-	runTests(tests, log = log);
+	runTests(tests, log = log, runTestsInSetup = runTestsInSetup);
 }

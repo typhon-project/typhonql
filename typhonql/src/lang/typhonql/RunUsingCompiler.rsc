@@ -13,12 +13,16 @@ import lang::typhonql::Script;
 import lang::typhonml::XMIReader;
 
 import lang::typhonql::util::Log;
+import util::Benchmark;
+import Exception;
 
 import IO;
 import Set;
 import List;
 import util::Maybe;
 import String;
+
+bool bench = false;
 
 void runDDL(Request r, Schema s, Session session, Log log = noLog) {
 	if ((Request) `<Statement stmt>` := r) {
@@ -41,9 +45,15 @@ CommandResult runUpdate(Request r, Schema s, Session session, Log log = noLog) {
 		// TODO This is needed because we do not have an explicit way to distinguish
 		// DDL updates from DML updates. Perhaps we should consider it
   		if (!isDDL(stmt)) {
+            startScript = getNanoTime();
   			scr = request2script(r, s, log = log);
 			log("[runUpdate] Script: <scr>");
+            endScript = getNanoTime();
 			res = runScript(scr, session, s);
+            endExecute = getNanoTime();
+            if (bench) {
+                println("BENCH: request, <endScript - startScript>, <endExecute - endScript>");
+            }
 			if (res != "")
 				return <-1, ("uuid" : res)>;
 			else
@@ -61,9 +71,15 @@ CommandResult runUpdate(Request r, Schema s, Session session, Log log = noLog) {
 
 void runScriptForQuery(Request r, Schema sch, Session session, Log log = noLog) {
 	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
+        startScript = getNanoTime();
 		scr = request2script(r, sch, log = log);
+        endScript = getNanoTime();
 		log("[runScriptForQuery] Script: <scr>");
 		runScript(scr, session, sch);
+        endExecute = getNanoTime();
+        if (bench) {
+            println("BENCH: query, <endScript - startScript>, <endExecute - endScript>");
+        }
 	}
 	else
 		throw "Expected query, given statement";
@@ -77,9 +93,9 @@ value runQueryAndGetJava(Request r, Schema sch, Session session, Log log = noLog
 value runGetEntity(str entity, str uuid, Schema sch, Session session, Log log = noLog) {
 	list[str] attributes = [att | <entity, att, _> <- sch.attrs];
 	// TODO put alias to the columns
-	Request r = [Request] "from <entity> e select
+	Request r = parseRequest("from <entity> e select
 	                      ' <intercalate(", ", ["e.<a>" | a <- attributes])> 
-	                      'where e.@id == #<uuid>";	
+	                      'where e.@id == #<uuid>");	
 	runScriptForQuery(r, sch, session, log = log);
 	return session.getJavaResult();
 }
@@ -109,8 +125,14 @@ list[CommandResult] runPrepared(Request req, list[str] columnNames, list[list[st
 }
 
 void runSchema(Schema sch, Session session, Log log = noLog) {
+    startScript = getNanoTime();
 	scr = schema2script(sch, log = log);
+    endScript = getNanoTime();
 	runScript(scr, session, sch);
+    endExecute = getNanoTime();
+    if (bench) {
+        println("BENCH: schema, <endScript - startScript>, <endExecute - endScript>");
+    }
 }
 
 CommandResult runUpdate(str src, str xmiString, map[str, Connection] connections, Log log = noLog) {
@@ -121,7 +143,7 @@ CommandResult runUpdate(str src, str xmiString, map[str, Connection] connections
 CommandResult runUpdate(str src, str xmiString, Session session, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
-  Request req = [Request]src;
+  Request req = parseRequest(src);
   return runUpdate(req, s, session, log = log);
 }
 
@@ -133,7 +155,7 @@ ResultTable runQuery(str src, str xmiString, map[str, Connection] connections, L
 ResultTable runQuery(str src, str xmiString, Session session, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
-  Request req = [Request]src;
+  Request req = parseRequest(src);
   return runQuery(req, s, session, log = log);
 }
 
@@ -145,7 +167,7 @@ value runQueryAndGetJava(str src, str xmiString, map[str, Connection] connection
 value runQueryAndGetJava(str src, str xmiString, Session session, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
-  Request req = [Request]src;
+  Request req = parseREquest(src);
   return runQueryAndGetJava(req, s, session, log = log);
 }
 
@@ -163,7 +185,15 @@ value runGetEntity(str entity, str uuid, str xmiString, Session session, Log log
 list[CommandResult] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, Session session, Log log = noLog) {
  	Model m = xmiString2Model(xmiString);
   	Schema s = model2schema(m);	
-	return runPrepared([Request] src, columnNames, values, s, session, log = log);
+	return runPrepared(parseRequest(src), columnNames, values, s, session, log = log);
+}
+
+Request parseRequest(str src) {
+    try {
+        return [Request]src;
+    } catch parseError(loc of): {
+        throw "Error parsing:\n<src>\nposition: <of.begin> -- <of.end>";
+    }
 }
 
 list[CommandResult] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, map[str, Connection] connections, Log log = noLog) {
@@ -174,7 +204,7 @@ list[CommandResult] runPrepared(str src, list[str] columnNames, list[list[str]] 
 void runDDL(str src,  str xmiString, Session session, Log log = noLog) {
 	Model m = xmiString2Model(xmiString);
   	Schema s = model2schema(m);	
-	runDDL([Request] src, s, session, log = log);
+	runDDL(parseRequest(src), s, session, log = log);
 }
 
 void runDDL(str src,  str xmiString, map[str, Connection] connections, Log log = noLog) {

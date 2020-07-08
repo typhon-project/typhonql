@@ -148,6 +148,10 @@ void collect((Expr)`<UUID u>`, Collector c) {
     c.fact(u, uuidType());
 }
 
+void collect((Expr)`<BlobPointer p>`, Collector c) {
+    c.fact(p, blobType());
+}
+
 void collect(current:(Expr)`(<Expr arg>)`, Collector c) {
     c.fact(current, arg);
     collect(arg, c);

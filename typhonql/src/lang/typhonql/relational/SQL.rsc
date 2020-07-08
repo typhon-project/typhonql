@@ -130,6 +130,7 @@ data Value
   | dateTime(datetime dateTimeVal)
   | date(datetime dateVal)
   | placeholder(str name="")
+  | blobPointer(str id)
   | null()
   ;
 

@@ -23,7 +23,7 @@ public class TestDDLMongo {
 
 		
 	public static void main(String[] args) throws SQLException {
-		ResultStore store = new ResultStore();
+		ResultStore store = new ResultStore(Collections.emptyMap());
 		
 		Map<String, String> uuids = new HashMap<String, String>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();

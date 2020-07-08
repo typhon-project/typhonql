@@ -173,6 +173,8 @@ str pp(null()) = "null";
 
 str pp(Value::placeholder(name = str name)) = "${<name>}";
 
+str pp(blobPointer(str pointer)) = "${blob-<pointer>}";
+
 // TableConstraint
 
 str pp(primaryKey(str c)) = "primary key (<q(c)>)";
@@ -218,7 +220,7 @@ str pp(integer()) = "integer";
 str pp(bigint()) = "bigint";
 str pp(float()) = "float";
 str pp(double()) = "double";
-str pp(blob()) = "blob";
+str pp(blob()) = "longblob";
 str pp(date()) = "date";
 str pp(dateTime()) = "datetime";
 str pp(point()) = "point";

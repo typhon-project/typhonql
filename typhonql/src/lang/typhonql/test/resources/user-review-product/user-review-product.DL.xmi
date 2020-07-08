@@ -31,7 +31,7 @@
           <deploys reference="//@elements.6"/>
           <ports>
             <key_values name="target" value="27017"/>
-            <key_values name="published" value="27017"/>
+            <key_values name="published" value="27018"/>
           </ports>
           <uri value="reviews:27017"/>
         </containers>

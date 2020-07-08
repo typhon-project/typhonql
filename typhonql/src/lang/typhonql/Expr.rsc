@@ -16,6 +16,7 @@ syntax Expr
   | @category="Constant" polygon: Polygon polygonValue
   | \bool: Bool boolValue
   | uuid: UUID uuidValue
+  | blob: BlobPointer blobPointerValue
   | bracket "(" Expr arg ")"
   | obj: Obj objValue // for use in insert and allow nesting of objects
   | custom: Custom customValue // for use in insert and allow nesting of custom data types
@@ -99,7 +100,9 @@ syntax KeyVal
 lexical PlaceHolder = "??" Id name;
 
 // textual encoding of reference
-lexical UUID = @category="Identifier"  "#"[\-a-zA-Z0-9]+ !>> [\-a-zA-Z0-9];
+lexical UUID = @category="Identifier" "#" UUIDPart part;
+lexical UUIDPart = [\-a-zA-Z0-9]+ !>> [\-a-zA-Z0-9];
+lexical BlobPointer = @category="Identifier" "#blob:" UUIDPart part;
 
 // todo: escaping etc.
 lexical Str = [\"] ![\"]* [\"];

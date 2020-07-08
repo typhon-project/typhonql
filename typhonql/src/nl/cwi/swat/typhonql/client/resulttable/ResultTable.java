@@ -1,6 +1,7 @@
 package nl.cwi.swat.typhonql.client.resulttable;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.time.LocalDate;
@@ -8,15 +9,18 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+
 import io.usethesource.vallang.IExternalValue;
 import io.usethesource.vallang.type.Type;
 
@@ -33,6 +37,7 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 		customSerializers.addSerializer(Point.class, new GeometrySerializer());
 		customSerializers.addSerializer(LocalDate.class, new LocalDateSerializer());
 		customSerializers.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer());
+		customSerializers.addSerializer(InputStream.class, new ByteStreamSerializer());
 
 		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
 		mapper.registerModule(customSerializers);
@@ -141,6 +146,20 @@ public class ResultTable implements JsonSerializableResult, IExternalValue {
 				throws IOException {
 			gen.writeString(value.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 		}
+	}
+
+	@SuppressWarnings("serial")
+	public static class ByteStreamSerializer extends StdSerializer<InputStream> {
+
+		protected ByteStreamSerializer() {
+			super(InputStream.class);
+		}
+
+		@Override
+		public void serialize(InputStream value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+			gen.writeBinary(value, -1);
+		}
+
 	}
 
 }

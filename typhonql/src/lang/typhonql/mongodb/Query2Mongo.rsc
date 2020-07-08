@@ -488,6 +488,7 @@ DBObject expr2obj((Expr)`<Int i>`, Ctx _) = \value(toInt("<i>"));
 
 DBObject expr2obj((Expr)`<Real r>`, Ctx _) = \value(toReal("<r>"));
 
+DBObject expr2obj((Expr)`#blob:<UUIDPart prt>`, Ctx _) = \value("#blob:<prt>");
 
 // warning, clones of Insert2Script!
 DBObject expr2obj((Expr)`#point(<Real x> <Real y>)`, _) 
