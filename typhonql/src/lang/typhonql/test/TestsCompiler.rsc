@@ -267,7 +267,7 @@ void testInsertManyValuedSQLLocal(PolystoreInstance p) {
   p.assertResultEquals("many-valued inventory obtained from product", rs, <["p.inventory"],
       [[U("laptop1")], [U("laptop2")]]>);
   
-  rs = p.runQuery((Request)`from Item i select i.@id, i.picture where i.product == #laptop`);
+  rs = p.runQuery((Request)`from Item i select i.@id where i.product == #laptop`);
   p.assertResultEquals("many-valued inventory obtained via inverse", rs, <["i.@id"],
       [[U("laptop1")], [U("laptop2")]]>);
   
@@ -281,6 +281,17 @@ void testDeleteSomeMongoBasic(PolystoreInstance p) {
   p.runUpdate((Request)`delete Category c where c.@id == #other`);
   rs = p.runQuery((Request)`from Category c select c.@id`);
   p.assertResultEquals("delete with where from mongo deletes", rs, <["c.@id"], [["appliances"]]>);
+}
+
+void testBlobs(PolystoreInstance p) {
+  p.runUpdateWithBlobs((Request) `insert Item { @id: #tv5, shelf: 1, product: #tv, picture: #blob:tb1 }`, (U("tb1") : "aa"));	
+  rs = p.runQuery((Request)`from Item i select i.picture where i.@id == #tv5`);
+  p.assertResultEquals("Blob in SQL", rs, <["i.picture"], [["YWE="]]>);
+  
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s4 }`, (U("s4") : "uu"));
+  
+  rs = p.runQuery((Request)`from Review r select r.screenshot where r.@id == #newReview`);
+  p.assertResultEquals("Blob in Mongo", rs, <["r.screenshot"], [["dXU="]]>);
 }
   
 
@@ -644,6 +655,8 @@ void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	  , testGISonMongo
 	  , testGISonCrossMongoSQL
 	  , testGISPrint
+	  
+	  , testBlobs
 	  
 	  , test1
 	  , test2

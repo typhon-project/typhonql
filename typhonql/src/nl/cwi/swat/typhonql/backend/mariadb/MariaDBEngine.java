@@ -43,23 +43,15 @@ public class MariaDBEngine extends Engine {
 		while (m.find()) {
             m.appendReplacement(result, "?");
 			String param = m.group(1);
-            vars.add(param);
-			log("Match: " + param + " details: " + m + "\n");
             if (param.startsWith("blob-")) {
-            	blobs.add(param.substring("blob-".length()));
+            	param = param.substring("blob-".length());
+            	blobs.add(param);
             }
+            vars.add(param);
 		}
 		m.appendTail(result);
 		String jdbcQuery = result.toString();
-		log("query: " + jdbcQuery + "\n");
         return connection.get().prepareStatement(jdbcQuery);
-	}
-	
-	private static void log(String msg) {
-		try {
-			ThreadSafeImpulseConsole.INSTANCE.getWriter().append(msg);
-		} catch (IOException e) {
-		}
 	}
 
     private PreparedStatement prepareAndBind(String query, Map<String, Object> values)
