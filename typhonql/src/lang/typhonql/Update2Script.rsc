@@ -167,30 +167,30 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   // TODO: make less ugly how the rel is looked up here in if-statements (also with insert)
   for ((KeyVal)`<Id x>: <UUID ref>` <- kvs) {
     str fromRole = "<x>"; 
-    if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
+    if (Rel r:<ent, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
       //println("COMPILING rel: <r>");
-      compileRefSet(p, placeOf(to, s), entity, fromRole, r, ref, ctx);
+      compileRefSet(p, placeOf(to, s), ent, fromRole, r, ref, ctx);
     }
   }
 
   for ((KeyVal)`<Id x>: [<{UUID ","}* refs>]` <- kvs) {
     str fromRole = "<x>"; 
-    if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
-      compileRefSetMany(p, placeOf(to, s), entity, fromRole, r, refs, ctx);
+    if (Rel r:<ent, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
+      compileRefSetMany(p, placeOf(to, s), ent, fromRole, r, refs, ctx);
     }
   }
 
   for ((KeyVal)`<Id x> +: [<{UUID ","}* refs>]` <- kvs) {
     str fromRole = "<x>"; 
-    if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
-      compileRefAddTo(p, placeOf(to, s), entity, fromRole, r, refs, ctx);
+    if (Rel r:<ent, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
+      compileRefAddTo(p, placeOf(to, s), ent, fromRole, r, refs, ctx);
     }
   }
 
   for ((KeyVal)`<Id x> -: [<{UUID ","}* refs>]` <- kvs) {
     str fromRole = "<x>"; 
-    if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
-      compileRefRemoveFrom(p, placeOf(to, s), entity, fromRole, r, refs, ctx);
+    if (Rel r:<ent, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
+      compileRefRemoveFrom(p, placeOf(to, s), ent, fromRole, r, refs, ctx);
     }
   }
   
