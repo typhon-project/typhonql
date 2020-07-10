@@ -438,6 +438,16 @@ void testUpdateManyContainSQLtoExternalSetToEmpty(PolystoreInstance p) {
   p.assertResultEquals("updateManyContainSQLtoExternalSet", rs, <["r.content"], []>);
 }
 
+void testUpdateSingleRefSQLMongo(PolystoreInstance p) {
+  p.runUpdate((Request)`update Biography b where b.@id == #bio1 set {user: #davy}`);
+  rs = p.runQuery((Request)`from Biography b select b.@id, b.user where r.@id == #bio1`);
+  p.assertResultEquals("testUpdateRefSQLMongo", rs, <["b.@id", "b.user"], [[ U("bio1"), U("davy")]]>);
+  rs = p.runQuery((Request)`from User u select u.@id, u.biography where u.@id == #davy`);
+  p.assertResultEquals("testUpdateRefSQLMongoTo", rs, <["u.@id", "u.biography"], [[ U("davy"), U("bio1")]]>);
+  rs = p.runQuery((Request)`from User u select u.@id, u.biography where u.@id == #pablo`);
+  p.assertResultEquals("testUpdateRefSQLMongoFormerTo", rs, <["u.@id", "u.biography"], [[ U("pablo"), {}]]>);
+}
+
 
 void testSelectViaSQLInverseLocal(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i.shelf where i.product == #tv`);
