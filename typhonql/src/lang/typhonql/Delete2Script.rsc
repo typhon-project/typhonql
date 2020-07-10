@@ -134,34 +134,43 @@ void deleteObject(<mongodb(), str dbName>, DeleteContext ctx) {
 }
 
 void deleteObject(<neo4j(), str dbName>, DeleteContext ctx) {
+	ctx.addSteps(deleteNeoObject(dbName, ctx.entity, ctx.neoMe, ctx.myParams));
+}
+
+list[Step] deleteNeoObject(str dbName, str entity, NeoExpr neoMe, Bindings params) {
  NeoStat stat = 
  	\nMatchUpdate(Maybe::just(nMatch([nPattern(nNodePattern("__n1", [], []), 
- 			[nRelationshipPattern(nDoubleArrow(), "__r1", ctx.entity, [ nProperty(typhonId(ctx.entity), ctx.neoMe) ], nNodePattern("n__2", [], []))])], [])), 
+ 			[nRelationshipPattern(nDoubleArrow(), "__r1", entity, [ nProperty(typhonId(entity), neoMe) ], nNodePattern("n__2", [], []))])], [])), 
  		nDelete([nVariable("__r1")]),
  		[nLit(nBoolean(true))]);
       
-  ctx.addSteps([ step(dbName, neo(executeNeoUpdate(dbName, neopp(stat))), ctx.myParams) ]);
+  return [ step(dbName, neo(executeNeoUpdate(dbName, neopp(stat))), params) ];
 }
 
 /*
  * Remove reference in Neo
  */
 void deleteReferenceInNeo(DeleteContext ctx) {
+	ctx.addSteps(deleteReferenceInNeo(ctx.entity, ctx.neoMe, ctx.myParams, ctx.schema));
+	
+} 
+ 
+list[Step] deleteReferenceInNeo(str theEntity, NeoExpr neoMe, Bindings params, Schema sch) {
 	steps = [];
-	for (<<neo4j(), db>, e> <- ctx.schema.placement) {
-		if (<e, _, _, _, _, entity, _> <- ctx.schema.rels, entity == ctx.entity) {
+	for (<<neo4j(), db>, e> <- sch.placement) {
+		if (<e, _, _, _, _, entity, _> <- sch.rels, entity == theEntity) {
 			str deleteStmt = neopp(
 				\nMatchUpdate(
 					just(nMatch(
-							[nPattern(nNodePattern("__n1", [ctx.entity], [nProperty(typhonId(ctx.entity), ctx.neoMe)]), [])],
+							[nPattern(nNodePattern("__n1", [theEntity], [nProperty(typhonId(theEntity), neoMe)]), [])],
 							[]
 					)),
 					nDetachDelete([nVariable("__n1")]),
 					[nLit(nBoolean(true))]));
-			steps += [step(db, neo(executeNeoUpdate(db, deleteStmt)), ctx.myParams)];
+			steps += [step(db, neo(executeNeoUpdate(db, deleteStmt)), params)];
 		} 
 	}
-	ctx.addSteps(steps);
+	return steps;
 }
 
 /*
@@ -230,11 +239,16 @@ void deleteKids(
 ) {
   ctx.addSteps(removeFromJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, ctx.myParams));
   //ctx.addSteps(cascadeViaInverseNeo(other, to, toRole, from, ctx.neoMe, ctx.myParams, ctx.schema));
-  nLit(nText(uuid)) = ctx.neoMe; 
-  Request removeEdge = [Request] "delete <to> edge where edge.<toRole> == #<uuid>";
-  Script scr = delete2script(removeEdge, ctx.schema);
-  ctx.addSteps(scr.steps);
-     
+  // TODO this is hacky. Besides, what happens if neoMe is a placeholder?
+  str reference = "";
+  if (nLit(nText(txt)) := ctx.neoMe) {
+  	reference = "#<txt>";
+	Request removeEdge = [Request] "delete <to> edge where edge.<toRole> == <reference>";
+  	Script scr = delete2script(removeEdge, ctx.schema);
+  	ctx.addSteps(scr.steps);
+  }
+  //deleteObject(<neo4j(), other>, ctx);
+  //deleteReferenceInNeo(to, ctx.neoMe, ctx.myParams, ctx.schema);
 }
 
 /*
