@@ -11,13 +11,17 @@ import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::Util;
 import lang::typhonql::relational::SQL2Text;
 
+import lang::typhonql::neo4j::Neo;
+import lang::typhonql::neo4j::Neo2Text;
+import lang::typhonql::neo4j::NeoUtil;
+
 import lang::typhonql::mongodb::DBCollection;
 
 
 import IO;
 import List;
 import String;
-
+import util::Maybe;
 
 // TODO: if junction tables are symmetric, i.e. normalized name order in junctionTableName
 // then we don't have to swap arguments if maintaining the inverse at outside sql db.
@@ -33,6 +37,29 @@ list[Step] updateIntoJunctionMany(str dbName, str from, str fromRole, str to, st
       + insertIntoJunction(dbName, from, fromRole, to, toRole, src, trgs, params);
 }
 
+list[Step] neoReplaceEnd(
+  str dbName,
+  str edgeEntity,
+  str targetEntity,
+  str role,
+  NeoExpr subject,
+  NeoExpr target,
+  Bindings params,
+  Schema schema) {
+   	str procedureName =
+   		(relationIsFromEdge(dbName, edgeEntity, role, schema))?"from":"to";  
+	NeoStat theNeoUpdate = 
+		\matchQuery(
+  			[match([pattern(nodePattern("__n1", [], []), 
+  				[relationshipPattern(doubleArrow(), "__r1",  edgeEntity, [property(typhonId(edgeEntity), subject)],
+  				 nodePattern("__n2", [], []))]
+  				)], []),
+  		     match([pattern(nodePattern("__n3", [], [property(typhonId(targetEntity), target)]), [])], []),
+  		     callYield("apoc.refactor.<procedureName>", [NeoExpr::variable("__r1"), NeoExpr::variable("__n3")], ["input", "output"])],
+  		     [NeoExpr::variable("input"), NeoExpr::variable("output")]);
+	steps =[ step(dbName, neo(executeNeoUpdate(dbName, neopp(theNeoUpdate))), params)];
+	return steps;
+}
 
 list[Step] insertIntoJunction(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, list[SQLExpr] trgs, Bindings params) {
   str tbl = junctionTableName(from, fromRole, to, toRole);
@@ -114,6 +141,36 @@ list[Step] cascadeViaInverse(str dbName, str coll, str role, DBObject parent, Bi
   return [step(dbName, mongo(deleteMany(dbName, coll, pp(q))), params)];
 }
 
+bool relationIsFromEdge(str dbName, str edge, str relation, Schema s) {
+	if (<dbName, graphSpec(edges)> <-s.pragmas) {
+		if (<edge, relation, _> <- edges)
+			return true;
+		if (<edge, _, relation> <- edges)
+			return false;
+	}
+	throw "Wrong relation for a graph-based entity";
+}
+
+list[Step] cascadeViaInverseNeo(str dbName, str edge, str role, str \node, NeoExpr parent, Bindings params, Schema s) {
+  NodePattern n1 = nodePattern("__n1", [], []);
+  NodePattern n2 = nodePattern("__n2", [], []);
+  
+  bool fromEdge = relationIsFromEdge(dbName, edge, role, s); 
+  Property prop = property(graphPropertyName("@id", \node), parent);
+  if (fromEdge)
+  	n1.properties += [prop];
+  else 
+  	n2.properties += [prop];
+   
+  stat = \matchUpdate(
+  	Maybe::just(match([pattern(n1, 
+ 			[relationshipPattern(doubleArrow(), "__r1", edge, [  ], n2)])], [])), 
+ 		delete([variable("__r1")]),
+ 		[NeoExpr::lit(boolean(true))]);
+ 		
+  return [step(dbName, neo(executeNeoUpdate(dbName, neopp(stat))), params)];
+}
+
 
 list[Step] removeAllObjectPointers(str dbName, str coll, str role, Cardinality card, DBObject target, Bindings params) {
   if (card in {zero_many(), one_many()}) {
@@ -153,6 +210,18 @@ list[Step] deleteManyMongo(str dbName, str coll, list[DBObject] objs, Bindings p
        | DBObject obj <- objs ];
 }
 
+list[Step] updateNeoPointer(str dbName, str from, str fromRole, str to, str toRole, NeoExpr subject, NeoExpr target, Bindings params) {
+      NeoStat update = 
+      \matchUpdate(Maybe::just(match([], [], [NeoExpr::lit(boolean(true))])), 
+      		create(pattern(nodePattern("__n1", [], [ property(graphPropertyName("@id", from), subject)]), 
+      			[relationshipPattern(doubleArrow(), "__r1", toRole, [], nodePattern("__n2", [], [property(graphPropertyName("@id", to), target)]))])));
+    return [step(dbName, neo(update), params)];
+      /*
+         findAndUpdateOne(dbName, coll,
+          pp(object([<"_id", subject>])), 
+          pp(object([<"$set", object([<role, target>])>])))), params)
+          ];*/
+}
 
 /*
 
