@@ -76,7 +76,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
 
   SQLStat theInsert = \insert(tableName("<e>"), [], []);
   DBObject theObject = object([ ]);
-  NeoStat theCreate = \matchUpdate(Maybe::just(match([], [], [NeoExpr::lit(boolean(true))])), create(pattern(nodePattern("n", [], []), [relationshipPattern(doubleArrow(), "", "", [], nodePattern("", [], []))])));
+  NeoStat theCreate = \matchUpdate(Maybe::just(match([], [])), create(pattern(nodePattern("n", [], []), [relationshipPattern(doubleArrow(), "", "", [], nodePattern("", [], []))])), [NeoExpr::lit(boolean(true))]);
 
   Script theScript = script([]);
   
@@ -145,6 +145,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   >;
   
   
+  theScript.steps += compileNeoNode(kvs, ctx);
   
   // this functions doesn't add steps
   // but modifies the mongo/sql insert
@@ -191,7 +192,6 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
       compileRefBindingMany(p, placeOf(to, s), entity, fromRole, r, refs, ctx);
     }
   }
-  theScript.steps += compileNeoNode(kvs, ctx);
   theScript.steps += [finish()];
 
   return theScript;
@@ -199,11 +199,18 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
 
 list[Step] compileNeoNode({KeyVal ","}* kvs, InsertContext ctx) {
 	steps = [];
-	for (<<neo4j(), db>, e> <- ctx.schema.placement) {
-		if (<e, _, _, _, _, entity, _> <- ctx.schema.rels, entity == ctx.entity) {
-			str createStmt = neopp(\matchUpdate(Maybe::nothing(), 
-				create(pattern(nodePattern("__n1", [ctx.entity], [property(typhonId(ctx.entity), ctx.neoMe)]), []))));
-			steps += [step(db, neo(executeNeoUpdate(db, createStmt)), ctx.myParams)];
+	visited = {};
+	for (<<neo4j(), db>, edge> <- ctx.schema.placement) {
+		if (r:<edge, _, _, _, _, entity, _> <- ctx.schema.rels, entity == ctx.entity) {
+			if (entity notin visited) {
+				str createStmt = 
+					neopp(
+						\matchUpdate(
+							Maybe::nothing(), 
+							create(pattern(nodePattern("__n1", [ctx.entity], [property(typhonId(ctx.entity), ctx.neoMe)]), [])), []));
+				steps += [step(db, neo(executeNeoUpdate(db, createStmt)), ctx.myParams)];
+				visited += {entity};
+			}
 		} 
 	}
 	return steps;
@@ -397,12 +404,10 @@ void compileRefBinding(
   throw "Relations between two Neo4J edges are not possible";
 }
 
-default void compileRefBinding(
-  <neo4j(), str dbName>, <_, str other>, str from, str fromRole, 
-  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, bool _>,
-  UUID ref, InsertContext ctx
-) {
-   ctx.updateNeoInsert(NeoStat(NeoStat create) {
+void updateNeoUpdate(str dbName,
+  str from, str fromRole, str to,
+  UUID ref, InsertContext ctx) {
+    ctx.updateNeoInsert(NeoStat(NeoStat create) {
    	 if (isEmpty(create.updateMatch.val.patterns)) { 
      	create.updateMatch.val.patterns += [ 
      		pattern(
@@ -429,6 +434,65 @@ default void compileRefBinding(
      return create;
   });
 }
+
+void compileRefBinding(
+  <neo4j(), str dbName>, <mongodb(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, bool _>,
+  UUID ref, InsertContext ctx
+) {// to mongo
+   	updateNeoUpdate(dbName, from, fromRole, to, ref, ctx);
+   	//if (r notin trueCrossRefs(ctx.schema.rels)) {
+  	//  fail compileRefBinding;
+  	//}
+  	ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+   
+}
+
+void compileRefBinding(
+  <neo4j(), str dbName>, <DB::sql(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, bool _>,
+  UUID ref, InsertContext ctx
+) {	
+  // to sql
+  updateNeoUpdate(dbName, from, fromRole, to, ref, ctx);
+  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, SQLExpr::lit(Value::text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+   
+}
+
+
+void compileRefBinding(
+  <mongodb(), str dbName>, <neo4j(), str other>, str from, str fromRole,
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>,
+  UUID ref, InsertContext ctx
+) {
+  // TODO
+  // from mongo 
+  ctx.updateMongoInsert(DBObject(DBObject obj) {
+    obj.props += [ <fromRole, \value(uuid2str(ref))> ];
+    return obj;
+  });
+  
+  ctx.addSteps(neoReplaceEnd(other, to, from, toRole, NeoExpr::lit(NeoValue::text(uuid2str(ref))), ctx.neoMe, ctx.myParams, ctx.schema));
+}
+
+void compileRefBinding(
+  <DB::sql(), str dbName>, <neo4j(), str other>, str from, str fromRole,
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>,
+  UUID ref, InsertContext ctx
+) {
+  // TODO
+  // from sql
+  //if (r notin trueCrossRefs(ctx.schema.rels)) {
+  //  fail compileRefBinding;
+  //}
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [SQLExpr::lit(Value::text(uuid2str(ref)))], ctx.myParams));
+  //ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  
+  ctx.addSteps(neoReplaceEnd(other, to, from, toRole, NeoExpr::lit(NeoValue::text(uuid2str(ref))), ctx.neoMe, ctx.myParams, ctx.schema));
+
+}
+
+
 
 void compileRefBindingMany(
  <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole,
@@ -583,52 +647,6 @@ DBObject obj2dbObj((Expr)`<Str x>`) = \value("<x>"[1..-1]);
 Prop keyVal2prop((KeyVal)`<Id x>: <Expr e>`) = <"<x>", obj2dbObj(e)>;
   
 Prop keyVal2prop((KeyVal)`@id: <UUID u>`) = <"_id", \value("<u>"[1..])>;
-  
-
-list[str] columnName((KeyVal)`<Id x>: <EId customType> (<{KeyVal ","}* keyVals>)`, str entity) = [columnName("<x>", entity, "<customType>", "<y>") | (KeyVal)`<Id y>: <Expr e>` <- keyVals];
-
-list[str] columnName((KeyVal)`<Id x>: <Expr e>`, str entity) = [columnName("<x>", entity)]
-	when (Expr) `<Custom c>` !:= e;
-
-list[str] columnName((KeyVal)`@id: <Expr _>`, str entity) = [typhonId(entity)]; 
-
-list[SQLExpr] evalKeyVal((KeyVal) `<Id x>: <EId customType> (<{KeyVal ","}* keyVals>)`) 
-  = [lit(evalExpr(e)) | (KeyVal)`<Id x>: <Expr e>` <- keyVals];
-
-list[SQLExpr] evalKeyVal((KeyVal)`<Id _>: <Expr e>`) = [lang::typhonql::relational::SQL::lit(evalExpr(e))]
-	when (Expr) `<Custom c>` !:= e;
-
-list[SQLExpr] evalKeyVal((KeyVal)`@id: <Expr e>`) = [lit(evalExpr(e))];
-
-Value evalExpr((Expr)`<VId v>`) { throw "Variable still in expression"; }
- 
-// todo: unescaping (e.g. \" to ")!
-Value evalExpr((Expr)`<Str s>`) = Value::text("<s>"[1..-1]);
-
-Value evalExpr((Expr)`<Int n>`) = Value::integer(toInt("<n>"));
-
-Value evalExpr((Expr)`<Bool b>`) = Value::boolean("<b>" == "true");
-
-Value evalExpr((Expr)`<Real r>`) = Value::decimal(toReal("<r>"));
-
-Value evalExpr((Expr)`#point(<Real x> <Real y>)`) = Value::point(toReal("<x>"), toReal("<y>"));
-
-Value evalExpr((Expr)`#polygon(<{Segment ","}* segs>)`)
-  = Value::polygon([ seg2lrel(s) | Segment s <- segs ]);
-  
-lrel[real, real] seg2lrel((Segment)`(<{XY ","}* xys>)`)
-  = [ <toReal("<x>"), toReal("<y>")> | (XY)`<Real x> <Real y>` <- xys ]; 
-
-Value evalExpr((Expr)`<DateAndTime d>`) =Value::dateTime(readTextValueString(#datetime, "<d>"));
-
-Value evalExpr((Expr)`<JustDate d>`) = Value::date(readTextValueString(#datetime, "<d>"));
-
-// should only happen for @id field (because refs should be done via keys etc.)
-Value evalExpr((Expr)`<UUID u>`) = Value::text("<u>"[1..]);
-
-Value evalExpr((Expr)`<PlaceHolder p>`) = Value::placeholder(name="<p>"[2..]);
-
-default Value evalExpr(Expr ex) { throw "missing case for <ex>"; }
 
 
 bool isKeyValAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) 
