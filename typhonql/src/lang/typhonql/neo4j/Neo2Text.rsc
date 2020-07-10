@@ -10,7 +10,6 @@ import util::Maybe;
 // NB: we use ` to escape identifiers, however, this is not ANSI SQL, but works in MySQL
 str q(str x) = "`<x>`";
 
-
 str neopp(list[NeoStat] stats) = intercalate("\n\n", [ neopp(s) | NeoStat s <- stats ]);
 
 str neopp(map[Place,list[NeoStat]] placed)
@@ -100,8 +99,8 @@ str neopp(property(str \node, str name)) = "<\node>.<q(name)>";
 str neopp(named(NeoExpr e, str as)) = "<neopp(e)> as <q(as)>";
 str neopp(variable(name)) = name;
 str neopp(lit(NeoValue val)) = neopp(val);
-str neopp(mapLit(map[str, NeoExpr] exprs)) = "{ <intercalate(", ", ["<k> : <neopp(exprs[k])>"| k <- exprs])> }";
-str neopp(placeholder(name = str name)) =  name == "" ? "?" : "${<name>}";
+str neopp(mapLit(map[str, NeoExpr] exprs)) = "{ <intercalate(", ", ["<q(k)> : <neopp(exprs[k])>"| k <- exprs])> }";
+str neopp(placeholder(name = str name)) =  name == "" ? "?" : "$<name>";
 str neopp(not(NeoExpr arg)) = "not (<neopp(arg)>)";
 str neopp(neg(NeoExpr arg)) = "-(<neopp(arg)>)"; 
 str neopp(pos(NeoExpr arg)) = "+(<neopp(arg)>)";
@@ -125,7 +124,7 @@ str neopp(\in(NeoExpr arg, list[NeoValue] vals))
 
 str neopp(fun(str name, vals)) = "<name>(<intercalate(", ", [neopp(v) | v <- vals])>)";
 
-str neopp(NeoExpr::placeholder(name = str name)) = "${<name>}";
+str neopp(NeoExpr::placeholder(name = str name)) = "$<name>";
 
 // Clause
 
@@ -169,7 +168,7 @@ str seg2str(lrel[real,real] seg)
 
 str neopp(null()) = "null";
 
-str neopp(NeoValue::placeholder(name = str name)) = "${<name>}";
+str neopp(NeoValue::placeholder(name = str name)) = "$<name>";
 
 // TableConstraint
 
