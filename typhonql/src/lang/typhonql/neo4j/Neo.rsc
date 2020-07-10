@@ -3,113 +3,112 @@ module lang::typhonql::neo4j::Neo
 import util::Maybe;
 
 data NeoStat
-  = matchQuery(list[Match] matches, list[NeoExpr] returnExprs)
-  | matchUpdate(Maybe[Match] updateMatch, UpdateClause updateClause, list[NeoExpr] returnExprs)
+  = nMatchQuery(list[NeoMatch] matches, list[NeoExpr] returnExprs)
+  | nMatchUpdate(Maybe[NeoMatch] updateMatch, NeoUpdateClause updateClause, list[NeoExpr] returnExprs)
   ;
 
-data Match
-	= match(list[Pattern] patterns, list[Clause] clauses)
-	| callYield(str name, list[NeoExpr] args, list[str] procedureResults)
+data NeoMatch
+	= nMatch(list[NeoPattern] patterns, list[NeoClause] clauses)
+	| nCallYield(str name, list[NeoExpr] args, list[str] procedureResults)
 	;  
   
-data UpdateClause
-	= create(Pattern pattern)
-	| detachDelete(list[NeoExpr] exprs)
-	| delete(list[NeoExpr] exprs)
-	| \set(list[SetItem] setitems)
+data NeoUpdateClause
+	= nCreate(NeoPattern pattern)
+	| nDetachDelete(list[NeoExpr] exprs)
+	| nDelete(list[NeoExpr] exprs)
+	| nSet(list[NeoSetItem] setitems)
   	;
  	
-data Pattern
-	= pattern(NodePattern nodePattern, list[RelationshipPattern] rels)
+data NeoPattern
+	= nPattern(NeoNodePattern nodePattern, list[NeoRelationshipPattern] rels)
 	; 
 	
-data NodePattern
-	= nodePattern(str var, list[str] labels, list[Property] properties);
+data NeoNodePattern
+	= nNodePattern(str var, list[str] labels, list[NeoProperty] properties);
 	
-data RelationshipPattern
-	= relationshipPattern(Direction dir, str var, str label, list[Property] properties, NodePattern nodePattern);
+data NeoRelationshipPattern
+	= nRelationshipPattern(NeoDirection dir, str var, str label, list[NeoProperty] properties, NeoNodePattern nodePattern);
 	
-data Direction
-	= doubleArrow(); 
+data NeoDirection
+	= nDoubleArrow(); 
  
-data SetItem
-  = setEquals(str variable, NeoExpr expr)
-  | setPlusEquals(str variable, NeoExpr expr);
+data NeoSetItem
+  = nSetEquals(str variable, NeoExpr expr)
+  | nSetPlusEquals(str variable, NeoExpr expr);
   
 data NeoExpr
-  = property(str \node, str name) // NB: always qualified
-  | property(str name) // only for use in update
-  | lit(NeoValue val)
-  | mapLit(map[str, NeoExpr] exprs)
-  | variable(str name)
-  | named(NeoExpr arg, str as) // p.name as x1
-  | placeholder(str name = "") // for representing ? or :name 
-  | not(NeoExpr arg) 
-  | neg(NeoExpr arg) 
-  | pos(NeoExpr arg) 
-  | mul(NeoExpr lhs, NeoExpr rhs) 
-  | div(NeoExpr lhs, NeoExpr rhs) 
-  | add(NeoExpr lhs, NeoExpr rhs) 
-  | sub(NeoExpr lhs, NeoExpr rhs) 
-  | equ(NeoExpr lhs, NeoExpr rhs) 
-  | neq(NeoExpr lhs, NeoExpr rhs) 
-  | leq(NeoExpr lhs, NeoExpr rhs) 
-  | geq(NeoExpr lhs, NeoExpr rhs) 
-  | lt(NeoExpr lhs, NeoExpr rhs) 
-  | gt(NeoExpr lhs, NeoExpr rhs) 
-  | like(NeoExpr lhs, NeoExpr rhs) 
-  | or(NeoExpr lhs, NeoExpr rhs) 
-  | and(NeoExpr lhs, NeoExpr rhs) 
-  | notIn(NeoExpr arg, list[NeoValue] vals)
-  | \in(NeoExpr arg, list[NeoValue] vals)
-  | fun(str name, list[NeoExpr] args)
+  = nProperty(str \node, str name) // NB: always qualified
+  | nProperty(str name) // only for use in update
+  | nLit(NeoValue val)
+  | nMapLit(map[str, NeoExpr] exprs)
+  | nVariable(str name)
+  | nNamed(NeoExpr arg, str as) // p.name as x1
+  | nPlaceholder(str name = "") // for representing ? or :name 
+  | nNot(NeoExpr arg) 
+  | nNeg(NeoExpr arg) 
+  | nPos(NeoExpr arg) 
+  | nMul(NeoExpr lhs, NeoExpr rhs) 
+  | nDiv(NeoExpr lhs, NeoExpr rhs) 
+  | nAdd(NeoExpr lhs, NeoExpr rhs) 
+  | nSub(NeoExpr lhs, NeoExpr rhs) 
+  | nEqu(NeoExpr lhs, NeoExpr rhs) 
+  | nNeq(NeoExpr lhs, NeoExpr rhs) 
+  | nLeq(NeoExpr lhs, NeoExpr rhs) 
+  | nGeq(NeoExpr lhs, NeoExpr rhs) 
+  | nLt(NeoExpr lhs, NeoExpr rhs) 
+  | nGt(NeoExpr lhs, NeoExpr rhs) 
+  | nLike(NeoExpr lhs, NeoExpr rhs) 
+  | nOr(NeoExpr lhs, NeoExpr rhs) 
+  | nAnd(NeoExpr lhs, NeoExpr rhs) 
+  | nNotIn(NeoExpr arg, list[NeoValue] vals)
+  | nIn(NeoExpr arg, list[NeoValue] vals)
+  | nFun(str name, list[NeoExpr] args)
   ;
 
-data Clause
-  = where(list[NeoExpr] exprs)
-  | groupBy(list[NeoExpr] exprs) // for now just property(t,n) is supported
-  | having(list[NeoExpr] exprs)
-  | orderBy(list[NeoExpr] exprs, Dir dir)
-  | limit(NeoExpr expr)
+data NeoClause
+  = nWhere(list[NeoExpr] exprs)
+  | nGroupBy(list[NeoExpr] exprs) // for now just property(t,n) is supported
+  | nHaving(list[NeoExpr] exprs)
+  | nOrderBy(list[NeoExpr] exprs, NeoDir dir)
+  | nLimit(NeoExpr expr)
   ; 
   
-data Dir
- = asc()
- | desc()
+data NeoDir
+ = nAsc()
+ | nDesc()
  ;
 
   
-data Property
-  = property(str name, NeoExpr expr);
+data NeoProperty
+  = nProperty(str name, NeoExpr expr);
 
 
-// https://dev.mysql.com/doc/refman/8.0/en/data-types.html  
-data PropertyType
-  = varchar(int size)
-  | char(int size)
-  | text()
-  | integer()
-  | bigint()
-  | float()
-  | double()
-  | blob()
-  | point()
-  | polygon()
-  | date()
-  | dateTime()
+data NeoPropertyType
+  = nVarchar(int size)
+  | nChar(int size)
+  | nText()
+  | nInteger()
+  | nBigint()
+  | nFloat()
+  | nDouble()
+  | nBlob()
+  | nPoint()
+  | nPolygon()
+  | nDate()
+  | nDateTime()
   ; 
   
 data NeoValue
-  = text(str strVal)
-  | decimal(real realVal)
-  | integer(int intVal)
-  | boolean(bool boolVal)
-  | point(real x, real y)
-  | polygon(list[lrel[real, real]] segs)
-  | dateTime(datetime dateTimeVal)
-  | date(datetime dateVal)
-  | placeholder(str name="")
-  | null()
+  = nText(str strVal)
+  | nDecimal(real realVal)
+  | nInteger(int intVal)
+  | nBoolean(bool boolVal)
+  | nPoint(real x, real y)
+  | nPolygon(list[lrel[real, real]] segs)
+  | nDateTime(datetime dateTimeVal)
+  | nDate(datetime dateVal)
+  | nPlaceholder(str name="")
+  | nNull()
   ;
 
 

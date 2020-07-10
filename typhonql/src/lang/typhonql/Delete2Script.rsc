@@ -61,7 +61,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   SQLExpr sqlMe = lit(Value::placeholder(name=myId));
   DBObject mongoMe = DBObject::placeholder(name=myId);
   CQLExpr cqlMe = cBindMarker(name=myId);
-  NeoExpr neoMe = NeoExpr::placeholder(name=myId);
+  NeoExpr neoMe = NeoExpr::nPlaceholder(name=myId);
   Bindings myParams = ( myId: toBeDeleted );
   Script theScript = script([]);
   
@@ -72,7 +72,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   if ((Where)`where <VId _>.@id == <UUID mySelf>` := (Where)`where <{Expr ","}+ ws>`) {
     sqlMe = lit(lang::typhonql::relational::Util::evalExpr((Expr)`<UUID mySelf>`));
     mongoMe = \value(uuid2str(mySelf));
-    neoMe = NeoExpr::lit(evalExpr((Expr)`<UUID mySelf>`));
+    neoMe = nLit(evalNeoExpr((Expr)`<UUID mySelf>`));
     myParams = ();
   }
   else {
@@ -135,10 +135,10 @@ void deleteObject(<mongodb(), str dbName>, DeleteContext ctx) {
 
 void deleteObject(<neo4j(), str dbName>, DeleteContext ctx) {
  NeoStat stat = 
- 	\matchUpdate(Maybe::just(match([pattern(nodePattern("__n1", [], []), 
- 			[relationshipPattern(doubleArrow(), "__r1", ctx.entity, [ property(typhonId(ctx.entity), ctx.neoMe) ], nodePattern("n__2", [], []))])], [])), 
- 		delete([variable("__r1")]),
- 		[NeoExpr::lit(boolean(true))]);
+ 	\nMatchUpdate(Maybe::just(nMatch([nPattern(nNodePattern("__n1", [], []), 
+ 			[nRelationshipPattern(nDoubleArrow(), "__r1", ctx.entity, [ nProperty(typhonId(ctx.entity), ctx.neoMe) ], nNodePattern("n__2", [], []))])], [])), 
+ 		nDelete([nVariable("__r1")]),
+ 		[nLit(nBoolean(true))]);
       
   ctx.addSteps([ step(dbName, neo(executeNeoUpdate(dbName, neopp(stat))), ctx.myParams) ]);
 }
@@ -151,13 +151,13 @@ void deleteReferenceInNeo(DeleteContext ctx) {
 	for (<<neo4j(), db>, e> <- ctx.schema.placement) {
 		if (<e, _, _, _, _, entity, _> <- ctx.schema.rels, entity == ctx.entity) {
 			str deleteStmt = neopp(
-				\matchUpdate(
-					just(match(
-							[pattern(nodePattern("__n1", [ctx.entity], [property(typhonId(ctx.entity), ctx.neoMe)]), [])],
+				\nMatchUpdate(
+					just(nMatch(
+							[nPattern(nNodePattern("__n1", [ctx.entity], [nProperty(typhonId(ctx.entity), ctx.neoMe)]), [])],
 							[]
 					)),
-					detachDelete([variable("__n1")]),
-					[NeoExpr::lit(NeoValue::boolean(true))]));
+					nDetachDelete([nVariable("__n1")]),
+					[nLit(nBoolean(true))]));
 			steps += [step(db, neo(executeNeoUpdate(db, deleteStmt)), ctx.myParams)];
 		} 
 	}
@@ -230,7 +230,7 @@ void deleteKids(
 ) {
   ctx.addSteps(removeFromJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, ctx.myParams));
   //ctx.addSteps(cascadeViaInverseNeo(other, to, toRole, from, ctx.neoMe, ctx.myParams, ctx.schema));
-  lit(text(uuid)) = ctx.neoMe; 
+  nLit(nText(uuid)) = ctx.neoMe; 
   Request removeEdge = [Request] "delete <to> edge where edge.<toRole> == #<uuid>";
   Script scr = delete2script(removeEdge, ctx.schema);
   ctx.addSteps(scr.steps);

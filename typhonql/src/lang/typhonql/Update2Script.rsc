@@ -78,7 +78,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   str myId = newParam();
   SQLExpr sqlMe = lit(Value::placeholder(name=myId));
   DBObject mongoMe = DBObject::placeholder(name=myId);
-  NeoExpr neoMe = NeoExpr::placeholder(name=myId);
+  NeoExpr neoMe = NeoExpr::nPlaceholder(name=myId);
   CQLExpr cqlMe = cBindMarker(name=myId);
   
   Bindings myParams = ( myId: toBeUpdated );
@@ -87,7 +87,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
     sqlMe = lit(lang::typhonql::relational::Util::evalExpr((Expr)`<UUID mySelf>`));
     mongoMe = \value(uuid2str(mySelf));
     cqlMe = cTerm(cUUID(uuid2str(mySelf)));
-    neoMe = NeoExpr::lit(evalExpr((Expr)`<UUID mySelf>`));
+    neoMe = nLit(evalNeoExpr((Expr)`<UUID mySelf>`));
     myParams = ();
   }
   else {
@@ -122,7 +122,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   
   updateMongoUpdate(DBObject(DBObject d) { return d; });
   
-  Maybe[NeoStat] theNeoUpdate = Maybe::just(matchQuery([],[])); 
+  Maybe[NeoStat] theNeoUpdate = Maybe::just(nMatchQuery([],[])); 
 					
   void updateNeoUpdate(Maybe[NeoStat](Maybe[NeoStat]) block) {
     theNeoUpdate = block(theNeoUpdate);
@@ -227,11 +227,11 @@ void compileAttrSets(<mongodb(), str dbName>, list[KeyVal] kvs, UpdateContext ct
 void compileAttrSets(<neo4j(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
   ctx.updateNeoUpdate(Maybe[NeoStat](Maybe[NeoStat] upd) {
     upd.val =
-       \matchUpdate(
-  			just(match
-  				([pattern(nodePattern("__n1", [], []), [relationshipPattern(doubleArrow(), "__r1",  ctx.entity, [property(typhonId(ctx.entity), ctx.neoMe)], nodePattern("__n2", [], []))])], [])),
-			\set([setPlusEquals("__r1", mapLit(( graphPropertyName(kv has key ? "<kv.key>" : "@id", ctx.entity) : NeoExpr::lit(evalExpr(kv.\value)) | KeyVal kv <- kvs )))]),
-			[NeoExpr::lit(boolean(true))]);
+       \nMatchUpdate(
+  			just(nMatch
+  				([nPattern(nNodePattern("__n1", [], []), [nRelationshipPattern(nDoubleArrow(), "__r1",  ctx.entity, [nProperty(typhonId(ctx.entity), ctx.neoMe)], nNodePattern("__n2", [], []))])], [])),
+			nSet([nSetPlusEquals("__r1", nMapLit(( graphPropertyName(kv has key ? "<kv.key>" : "@id", ctx.entity) : nLit(evalNeoExpr(kv.\value)) | KeyVal kv <- kvs )))]),
+			[nLit(nBoolean(true))]);
     return upd;
   });
 }
@@ -402,7 +402,7 @@ void compileRefSet(
 ) {
   
   ctx.addSteps(neoReplaceEnd(dbName, from, to, fromRole, 
-  	ctx.neoMe, NeoExpr::lit(NeoValue::text(uuid2str(ref))), ctx.myParams, ctx.schema));
+  	ctx.neoMe, nLit(nText(uuid2str(ref))), ctx.myParams, ctx.schema));
 
   /*ctx.updateMongoUpdate(DBObject(DBObject upd) {
     upd.props += [ <"$set", \value(uuid2str(ref))> ];

@@ -72,11 +72,11 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   SQLExpr sqlMe = hasId(kvs) ? SQLExpr::lit(Value::text(evalId(kvs))) : SQLExpr::placeholder(name=myId);
   DBObject mongoMe = hasId(kvs) ? \value(evalId(kvs)) : DBObject::placeholder(name=myId);
   CQLExpr cqlMe = hasId(kvs) ? cTerm(cUUID(evalId(kvs))) : cBindMarker(name=myId);
-  NeoExpr neoMe = hasId(kvs) ? NeoExpr::lit(text(evalId(kvs))) : NeoExpr::placeholder(name=myId);
+  NeoExpr neoMe = hasId(kvs) ? nLit(nText(evalId(kvs))) : nPlaceholder(name=myId);
 
   SQLStat theInsert = \insert(tableName("<e>"), [], []);
   DBObject theObject = object([ ]);
-  NeoStat theCreate = \matchUpdate(Maybe::just(match([], [])), create(pattern(nodePattern("n", [], []), [relationshipPattern(doubleArrow(), "", "", [], nodePattern("", [], []))])), [NeoExpr::lit(boolean(true))]);
+  NeoStat theCreate = \nMatchUpdate(Maybe::just(nMatch([], [])), nCreate(nPattern(nNodePattern("n", [], []), [nRelationshipPattern(nDoubleArrow(), "", "", [], nNodePattern("", [], []))])), [nLit(nBoolean(true))]);
 
   Script theScript = script([]);
   
@@ -205,9 +205,9 @@ list[Step] compileNeoNode({KeyVal ","}* kvs, InsertContext ctx) {
 			if (entity notin visited) {
 				str createStmt = 
 					neopp(
-						\matchUpdate(
+						\nMatchUpdate(
 							Maybe::nothing(), 
-							create(pattern(nodePattern("__n1", [ctx.entity], [property(typhonId(ctx.entity), ctx.neoMe)]), [])), []));
+							nCreate(nPattern(nNodePattern("__n1", [ctx.entity], [nProperty(typhonId(ctx.entity), ctx.neoMe)]), [])), []));
 				steps += [step(db, neo(executeNeoUpdate(db, createStmt)), ctx.myParams)];
 				visited += {entity};
 			}
@@ -235,8 +235,8 @@ void compileAttrs(<mongodb(), str dbName>, list[KeyVal] kvs, InsertContext ctx) 
 void compileAttrs(<neo4j(), str dbName>, list[KeyVal] kvs, InsertContext ctx) {
   ctx.updateNeoInsert(NeoStat(NeoStat create) {
      create.updateClause.pattern.rels[0].properties
-     	 = [ property(propertyName(kv, ctx.entity)[0], lang::typhonql::neo4j::NeoUtil::evalKeyVal(kv)[0]) | KeyVal kv  <- kvs ] 
-     	 	+ [ property(typhonId(ctx.entity), ctx.neoMe)];
+     	 = [ nProperty(propertyName(kv, ctx.entity)[0], lang::typhonql::neo4j::NeoUtil::evalKeyVal(kv)[0]) | KeyVal kv  <- kvs ] 
+     	 	+ [ nProperty(typhonId(ctx.entity), ctx.neoMe)];
      return create;
   });
 } 
@@ -410,21 +410,21 @@ void updateNeoUpdate(str dbName,
     ctx.updateNeoInsert(NeoStat(NeoStat create) {
    	 if (isEmpty(create.updateMatch.val.patterns)) { 
      	create.updateMatch.val.patterns += [ 
-     		pattern(
-     			nodePattern(fromRole, [to], []), 
+     		nPattern(
+     			nNodePattern(fromRole, [to], []), 
      			[])];
      	create.updateMatch.val.clauses += 
-     		[ where([equ(property(fromRole, "<to>.@id"), lit(text("<ref>"[1..])))])];
- 		create.updateClause.pattern.nodePattern =  nodePattern(fromRole, [], []);
+     		[ nWhere([nEqu(nProperty(fromRole, "<to>.@id"), nLit(nText("<ref>"[1..])))])];
+ 		create.updateClause.pattern.nodePattern =  nNodePattern(fromRole, [], []);
  		create.updateClause.pattern.rels[0].var = "r";
  		create.updateClause.pattern.rels[0].label = ctx.entity;    			
      }
      else {
-     	create.updateMatch.val.patterns += [pattern(
-     			nodePattern(fromRole, [to], []), 
+     	create.updateMatch.val.patterns += [nPattern(
+     			nNodePattern(fromRole, [to], []), 
      			[])];
      	create.updateMatch.val.clauses[0].exprs += 
-     		[equ(property(fromRole, "<to>.@id"), lit(text("<ref>"[1..])))];
+     		[nEqu(nProperty(fromRole, "<to>.@id"), nLit(nText("<ref>"[1..])))];
      	create.updateClause.pattern.rels[0].nodePattern.var = fromRole;
         	
      }
@@ -488,7 +488,7 @@ void compileRefBinding(
   ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [SQLExpr::lit(Value::text(uuid2str(ref)))], ctx.myParams));
   //ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
   
-  ctx.addSteps(neoReplaceEnd(other, to, from, toRole, NeoExpr::lit(NeoValue::text(uuid2str(ref))), ctx.neoMe, ctx.myParams, ctx.schema));
+  ctx.addSteps(neoReplaceEnd(other, to, from, toRole, nLit(nText(uuid2str(ref))), ctx.neoMe, ctx.myParams, ctx.schema));
 
 }
 

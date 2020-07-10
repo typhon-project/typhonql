@@ -49,14 +49,14 @@ list[Step] neoReplaceEnd(
    	str procedureName =
    		(relationIsFromEdge(dbName, edgeEntity, role, schema))?"from":"to";  
 	NeoStat theNeoUpdate = 
-		\matchQuery(
-  			[match([pattern(nodePattern("__n1", [], []), 
-  				[relationshipPattern(doubleArrow(), "__r1",  edgeEntity, [property(typhonId(edgeEntity), subject)],
-  				 nodePattern("__n2", [], []))]
+		\nMatchQuery(
+  			[nMatch([nPattern(nNodePattern("__n1", [], []), 
+  				[nRelationshipPattern(nDoubleArrow(), "__r1",  edgeEntity, [nProperty(typhonId(edgeEntity), subject)],
+  				 nNodePattern("__n2", [], []))]
   				)], []),
-  		     match([pattern(nodePattern("__n3", [], [property(typhonId(targetEntity), target)]), [])], []),
-  		     callYield("apoc.refactor.<procedureName>", [NeoExpr::variable("__r1"), NeoExpr::variable("__n3")], ["input", "output"])],
-  		     [NeoExpr::variable("input"), NeoExpr::variable("output")]);
+  		     nMatch([nPattern(nNodePattern("__n3", [], [nProperty(typhonId(targetEntity), target)]), [])], []),
+  		     nCallYield("apoc.refactor.<procedureName>", [nVariable("__r1"), nVariable("__n3")], ["input", "output"])],
+  		     [nVariable("input"), nVariable("output")]);
 	steps =[ step(dbName, neo(executeNeoUpdate(dbName, neopp(theNeoUpdate))), params)];
 	return steps;
 }
@@ -152,21 +152,22 @@ bool relationIsFromEdge(str dbName, str edge, str relation, Schema s) {
 }
 
 list[Step] cascadeViaInverseNeo(str dbName, str edge, str role, str \node, NeoExpr parent, Bindings params, Schema s) {
-  NodePattern n1 = nodePattern("__n1", [], []);
-  NodePattern n2 = nodePattern("__n2", [], []);
+  NodePattern n1 = nNodePattern("__n1", [], []);
+  NodePattern n2 = nNodePattern("__n2", [], []);
   
   bool fromEdge = relationIsFromEdge(dbName, edge, role, s); 
-  Property prop = property(graphPropertyName("@id", \node), parent);
+  Property prop = nProperty(graphPropertyName("@id", \node), parent);
+  
   if (fromEdge)
   	n1.properties += [prop];
   else 
   	n2.properties += [prop];
    
-  stat = \matchUpdate(
-  	Maybe::just(match([pattern(n1, 
- 			[relationshipPattern(doubleArrow(), "__r1", edge, [  ], n2)])], [])), 
- 		delete([variable("__r1")]),
- 		[NeoExpr::lit(boolean(true))]);
+  stat = nMatchUpdate(
+  	Maybe::just(nMatch([nPattern(n1, 
+ 			[nRelationshipPattern(nDoubleArrow(), "__r1", edge, [  ], n2)])], [])), 
+ 		nDelete([nVariable("__r1")]),
+ 		[nLit(boolean(true))]);
  		
   return [step(dbName, neo(executeNeoUpdate(dbName, neopp(stat))), params)];
 }
@@ -212,9 +213,9 @@ list[Step] deleteManyMongo(str dbName, str coll, list[DBObject] objs, Bindings p
 
 list[Step] updateNeoPointer(str dbName, str from, str fromRole, str to, str toRole, NeoExpr subject, NeoExpr target, Bindings params) {
       NeoStat update = 
-      \matchUpdate(Maybe::just(match([], [], [NeoExpr::lit(boolean(true))])), 
-      		create(pattern(nodePattern("__n1", [], [ property(graphPropertyName("@id", from), subject)]), 
-      			[relationshipPattern(doubleArrow(), "__r1", toRole, [], nodePattern("__n2", [], [property(graphPropertyName("@id", to), target)]))])));
+      \nMatchUpdate(Maybe::just(nMatch([], [], [nLit(nBoolean(true))])), 
+      		nCreate(nPattern(nNodePattern("__n1", [], [ nProperty(graphPropertyName("@id", from), subject)]), 
+      			[nRelationshipPattern(nDoubleArrow(), "__r1", toRole, [], nNodePattern("__n2", [], [nProperty(graphPropertyName("@id", to), target)]))])));
     return [step(dbName, neo(update), params)];
       /*
          findAndUpdateOne(dbName, coll,

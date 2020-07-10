@@ -93,9 +93,9 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
   , Schema s, Place p, Log log = noLog) {
 
   NeoStat q = 
-  	matchQuery(
-  		[match(
-  			[pattern(nodePattern("__n1", [], []), [relationshipPattern(doubleArrow(), "",  "", [], nodePattern("__n2", [], []))])], [where([])])], 
+  	nMatchQuery(
+  		[nMatch(
+  			[nPattern(nNodePattern("__n1", [], []), [nRelationshipPattern(nDoubleArrow(), "",  "", [], nNodePattern("__n2", [], []))])], [nWhere([])])], 
   		[]);
   
   void addWhere(NeoExpr e) {
@@ -105,7 +105,7 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
   
   void addFrom(str var, str label) {
     // println("ADDING table: <pp(as)>");
-    q.matches[0].patterns += [pattern(nodePattern(var, [label], []), [])];
+    q.matches[0].patterns += [nPattern(nNodePattern(var, [label], []), [])];
   }
   
   void addRelation(str var, str label) {
@@ -186,16 +186,16 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
          log("##### record results: var <y>.@id");
     
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
-           addResult(named(expr2neo(x, ctx), "<y>.<ent>.@id"));
+           addResult(nNamed(expr2neo(x, ctx), "<y>.<ent>.@id"));
          }
       }
       case x:(Expr)`<VId y>.<Id f>`: {
          log("##### record results: <y>.<f>");
     
          if (str ent := env["<y>"], <p, ent> <- ctx.schema.placement) {
-           addResult(named(expr2neo(x, ctx), "<y>.<ent>.<f>"));
+           addResult(nNamed(expr2neo(x, ctx), "<y>.<ent>.<f>"));
            // todo: should be in Normalize
-           idExpr = named(expr2neo((Expr)`<VId y>.@id`, ctx), "<y>.<ent>.@id");
+           idExpr = nNamed(expr2neo((Expr)`<VId y>.@id`, ctx), "<y>.<ent>.@id");
            if (idExpr notin q.returnExprs) {
              addResult(idExpr);
            }
@@ -253,10 +253,10 @@ NeoExpr expr2neo(e:(Expr)`<VId x>.@id`, Ctx ctx, Log log = noLog) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_<ctx.vars()>";
     ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "@id"));
-    return NeoExpr::placeholder(name=token);
+    return nPlaceholder(name=token);
   }
   str entity = ctx.env["<x>"];
-  return property("<x>", neoTyphonId(entity));
+  return nProperty("<x>", neoTyphonId(entity));
 }
   
 // only one level of navigation because of normalization
@@ -268,10 +268,10 @@ NeoExpr expr2neo(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_<f>_<ctx.vars()>";
     ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "<f>"));
-    return NeoExpr::placeholder(name=token);
+    return nPlaceholder(name=token);
   }
 
-  
+  // TODO translate to neo
   if (<entity, _, role, str toRole, _, str to, true> <- ctx.schema.rels, placeOf(to, ctx.schema) == ctx.place) {
     log("########### local containment <entity> -<role>/<toRole>-\> <to>");
     str tbl1 = "<x>";
@@ -311,11 +311,11 @@ NeoExpr expr2neo(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
   	//  equ(column(tbl2, junctionFkName(entity, role)), column(tbl1, typhonId(entity))));
   	
   	// return the column of the target
-  	return property(var, nodeName(to, "@id"));
+  	return nProperty(var, nodeName(to, "@id"));
   }
   else if (<entity, role, str atype> <- ctx.schema.attrs) { 
     log("# an attribute <entity>.<role>");
-    normalAccess = property("<x>", nodeName(entity, role));
+    normalAccess = nProperty("<x>", nodeName(entity, role));
     if (atype in {"point", "polygon"}) {
         return fun("ST_AsWKB", [normalAccess]);
     }
@@ -336,89 +336,89 @@ bool isTo(str entity, str relName, Place p:<neo4j(), dbName>, Schema s) {
 	return  <dbName, graphSpec({ _*, <entity, _, relName> , _*})> <- s.pragmas;
 }
 
-NeoExpr expr2neo((Expr)`?`, Ctx ctx, Log log = noLog) = placeholder();
+NeoExpr expr2neo((Expr)`?`, Ctx ctx, Log log = noLog) = nPlaceholder();
 
-NeoExpr expr2neo((Expr)`<Int i>`, Ctx ctx, Log log = noLog) = lit(integer(toInt("<i>")));
+NeoExpr expr2neo((Expr)`<Int i>`, Ctx ctx, Log log = noLog) = nLit(nInteger(toInt("<i>")));
 
-NeoExpr expr2neo((Expr)`<Real r>`, Ctx ctx, Log log = noLog) = lit(decimal(toReal("<r>")));
+NeoExpr expr2neo((Expr)`<Real r>`, Ctx ctx, Log log = noLog) = nLit(nDecimal(toReal("<r>")));
 
-NeoExpr expr2neo((Expr)`<Str s>`, Ctx ctx, Log log = noLog) = lit(text("<s>"[1..-1]));
+NeoExpr expr2neo((Expr)`<Str s>`, Ctx ctx, Log log = noLog) = nLit(nText("<s>"[1..-1]));
 
-NeoExpr expr2neo((Expr)`<DateAndTime d>`, Ctx ctx, Log log = noLog) = lit(dateTime(readTextValueString(#datetime, "<d>")));
+NeoExpr expr2neo((Expr)`<DateAndTime d>`, Ctx ctx, Log log = noLog) = nLit(nDateTime(readTextValueString(#datetime, "<d>")));
 
-NeoExpr expr2neo((Expr)`<JustDate d>`, Ctx ctx, Log log = noLog) = lit(date(readTextValueString(#datetime, "<d>")));
+NeoExpr expr2neo((Expr)`<JustDate d>`, Ctx ctx, Log log = noLog) = nLit(nDate(readTextValueString(#datetime, "<d>")));
 
-NeoExpr expr2neo((Expr)`#point(<Real x> <Real y>)`, Ctx ctx, Log log = noLog) = lit(point(toReal("<x>"), toReal("<y>")));
+NeoExpr expr2neo((Expr)`#point(<Real x> <Real y>)`, Ctx ctx, Log log = noLog) = nLit(nPoint(toReal("<x>"), toReal("<y>")));
 
 NeoExpr expr2neo((Expr)`#polygon(<{Segment ","}* segments>)`, Ctx ctx, Log log = noLog) 
-    = lit(polygon([ [<toReal("<x>"), toReal("<y>")> | (XY)`<Real x> <Real y>` <- s.points] | s <- segments]));
+    = nLit(nPolygon([ [<toReal("<x>"), toReal("<y>")> | (XY)`<Real x> <Real y>` <- s.points] | s <- segments]));
 
 
-NeoExpr expr2neo((Expr)`false`, Ctx ctx, Log log = noLog) = lit(boolean(false));
+NeoExpr expr2neo((Expr)`false`, Ctx ctx, Log log = noLog) = nLit(nBoolean(false));
 
-NeoExpr expr2neo((Expr)`<UUID u>`, Ctx ctx, Log log = noLog) = lit(text("<u>"[1..]));
+NeoExpr expr2neo((Expr)`<UUID u>`, Ctx ctx, Log log = noLog) = nLit(nText("<u>"[1..]));
 
-NeoExpr expr2neo((Expr)`true`, Ctx ctx, Log log = noLog) = lit(boolean(true));
+NeoExpr expr2neo((Expr)`true`, Ctx ctx, Log log = noLog) = nLit(nBoolean(true));
 
-NeoExpr expr2neo((Expr)`false`, Ctx ctx, Log log = noLog) = lit(boolean(false));
+NeoExpr expr2neo((Expr)`false`, Ctx ctx, Log log = noLog) = nLit(nBoolean(false));
 
 NeoExpr expr2neo((Expr)`(<Expr e>)`, Ctx ctx, Log log = noLog) = expr2neo(e, ctx);
 
-NeoExpr expr2neo((Expr)`null`, Ctx ctx, Log log = noLog) = lit(null());
+NeoExpr expr2neo((Expr)`null`, Ctx ctx, Log log = noLog) = nLit(nNull());
 
-NeoExpr expr2neo((Expr)`+<Expr e>`, Ctx ctx, Log log = noLog) = pos(expr2neo(e, ctx));
+NeoExpr expr2neo((Expr)`+<Expr e>`, Ctx ctx, Log log = noLog) = nPos(expr2neo(e, ctx));
 
-NeoExpr expr2neo((Expr)`-<Expr e>`, Ctx ctx, Log log = noLog) = neg(expr2neo(e, ctx));
+NeoExpr expr2neo((Expr)`-<Expr e>`, Ctx ctx, Log log = noLog) = nNeg(expr2neo(e, ctx));
 
-NeoExpr expr2neo((Expr)`!<Expr e>`, Ctx ctx, Log log = noLog) = not(expr2neo(e, ctx));
+NeoExpr expr2neo((Expr)`!<Expr e>`, Ctx ctx, Log log = noLog) = nNot(expr2neo(e, ctx));
 
 NeoExpr expr2neo((Expr)`<Expr lhs> * <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = mul(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  = nMul(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
 
 NeoExpr expr2neo((Expr)`<Expr lhs> / <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = div(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  = nDiv(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
 
 NeoExpr expr2neo((Expr)`<Expr lhs> + <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = add(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  = nAdd(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
 
 NeoExpr expr2neo((Expr)`<Expr lhs> - <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = sub(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  = nSub(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
 
 NeoExpr expr2neo((Expr)`<Expr lhs> == <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = equ(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  = nEqu(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
 
 NeoExpr expr2neo((Expr)`<Expr lhs> != <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = neq(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  = nNeq(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
 
 NeoExpr expr2neo((Expr)`<Expr lhs> \>= <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = geq(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  = nGeq(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
 
 NeoExpr expr2neo((Expr)`<Expr lhs> \<= <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = leq(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  = nLeq(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
 
 NeoExpr expr2neo((Expr)`<Expr lhs> \> <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = gt(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  = nGt(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
 
 NeoExpr expr2neo((Expr)`<Expr lhs> \< <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = lt(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  = nLt(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
 
 NeoExpr expr2neo((Expr)`<Expr lhs> like <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = like(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  = nLike(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
 
 NeoExpr expr2neo((Expr)`<Expr lhs> && <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = and(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  = nAnd(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
 
 NeoExpr expr2neo((Expr)`<Expr lhs> || <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = or(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  = nOr(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
 
 NeoExpr removeWKB(fun("ST_AsWKB", [a])) = a;
 default NeoExpr removeWKB(NeoExpr other) = other;
 
 NeoExpr expr2neo((Expr)`<Expr lhs> & <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = equ(fun("ST_Intersects", [removeWKB(expr2neo(lhs, ctx)), removeWKB(expr2neo(rhs, ctx))]), lit(integer(1)));
+  = nEqu(nFun("ST_Intersects", [removeWKB(expr2neo(lhs, ctx)), removeWKB(expr2neo(rhs, ctx))]), nLit(nInteger(1)));
 
 NeoExpr expr2neo((Expr)`<Expr lhs> in <Expr rhs>`, Ctx ctx, Log log = noLog) 
-  = equ(fun("ST_Within", [removeWKB(expr2neo(lhs, ctx)), removeWKB(expr2neo(rhs, ctx))]), lit(integer(1)));
+  = nEqu(nFun("ST_Within", [removeWKB(expr2neo(lhs, ctx)), removeWKB(expr2neo(rhs, ctx))]), nLit(nInteger(1)));
 
 NeoExpr expr2neo((Expr)`distance(<Expr from>, <Expr to>)`, Ctx ctx, Log log = noLog)
   = fun("ST_Distance", [removeWKB(expr2neo(from, ctx)), removeWKB(expr2neo(from, ctx))]);

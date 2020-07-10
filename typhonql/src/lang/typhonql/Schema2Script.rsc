@@ -82,12 +82,12 @@ list[Step] place2script(p:<mongodb(), str db>, Schema s, Log log = noLog) {
 list[Step] place2script(p: <neo4j(), str db>, Schema s, Log log = noLog) {
 	list[Step] steps = [step(db, neo(executeNeoUpdate(db, 
 		neopp(
-			matchUpdate(
+			nMatchUpdate(
 		    	just(
-		    		match(
-		    			[pattern(nodePattern("__n1", [], []), [])],
+		    		nMatch(
+		    			[nPattern(nNodePattern("__n1", [], []), [])],
 		    		    [])),
-				detachDelete([variable("__n1")]), 
-				[NeoExpr::lit(boolean(true))])))), ())];
+				nDetachDelete([nVariable("__n1")]), 
+				[nLit(nBoolean(true))])))), ())];
 	return steps;
 }

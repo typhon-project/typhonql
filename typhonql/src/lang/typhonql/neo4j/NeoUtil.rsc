@@ -19,42 +19,42 @@ list[str] propertyName((KeyVal)`<Id x>: <Expr e>`, str entity) = [graphPropertyN
 list[str] propertyName((KeyVal)`@id: <Expr _>`, str entity) = [typhonId(entity)]; 
 
 list[NeoExpr] evalKeyVal((KeyVal) `<Id x>: <EId customType> (<{KeyVal ","}* keyVals>)`) 
-  = [lit(evalExpr(e)) | (KeyVal)`<Id x>: <Expr e>` <- keyVals];
+  = [lit(evalNeoExpr(e)) | (KeyVal)`<Id x>: <Expr e>` <- keyVals];
 
-list[NeoExpr] evalKeyVal((KeyVal)`<Id _>: <Expr e>`) = [lit(evalExpr(e))]
+list[NeoExpr] evalKeyVal((KeyVal)`<Id _>: <Expr e>`) = [nLit(evalNeoExpr(e))]
 	when (Expr) `<Custom c>` !:= e;
 
-list[NeoExpr] evalKeyVal((KeyVal)`@id: <Expr e>`) = [lit(evalExpr(e))];
+list[NeoExpr] evalKeyVal((KeyVal)`@id: <Expr e>`) = [nLit(evalNeoExpr(e))];
 
-NeoValue evalExpr((Expr)`<VId v>`) { throw "Variable still in expression"; }
+NeoValue evalNeoExpr((Expr)`<VId v>`) { throw "Variable still in expression"; }
  
 // todo: unescaping (e.g. \" to ")!
-NeoValue evalExpr((Expr)`<Str s>`) = text("<s>"[1..-1]);
+NeoValue evalNeoExpr((Expr)`<Str s>`) = nText("<s>"[1..-1]);
 
-NeoValue evalExpr((Expr)`<Int n>`) = integer(toInt("<n>"));
+NeoValue evalNeoExpr((Expr)`<Int n>`) = nInteger(toInt("<n>"));
 
-NeoValue evalExpr((Expr)`<Bool b>`) = boolean("<b>" == "true");
+NeoValue evalNeoExpr((Expr)`<Bool b>`) = nBoolean("<b>" == "true");
 
-NeoValue evalExpr((Expr)`<Real r>`) = decimal(toReal("<r>"));
+NeoValue evalNeoExpr((Expr)`<Real r>`) = nDecimal(toReal("<r>"));
 
-NeoValue evalExpr((Expr)`#point(<Real x> <Real y>)`) = point(toReal("<x>"), toReal("<y>"));
+NeoValue evalNeoExpr((Expr)`#point(<Real x> <Real y>)`) = nPoint(toReal("<x>"), toReal("<y>"));
 
-NeoValue evalExpr((Expr)`#polygon(<{Segment ","}* segs>)`)
-  = polygon([ seg2lrel(s) | Segment s <- segs ]);
+NeoValue evalNeoExpr((Expr)`#polygon(<{Segment ","}* segs>)`)
+  = nPolygon([ seg2lrel(s) | Segment s <- segs ]);
   
 lrel[real, real] seg2lrel((Segment)`(<{XY ","}* xys>)`)
   = [ <toReal("<x>"), toReal("<y>")> | (XY)`<Real x> <Real y>` <- xys ]; 
 
-NeoValue evalExpr((Expr)`<DateAndTime d>`) = dateTime(readTextValueString(#datetime, "<d>"));
+NeoValue evalNeoExpr((Expr)`<DateAndTime d>`) = nDateTime(readTextValueString(#datetime, "<d>"));
 
-NeoValue evalExpr((Expr)`<JustDate d>`) = date(readTextValueString(#datetime, "<d>"));
+NeoValue evalNeoExpr((Expr)`<JustDate d>`) = nDate(readTextValueString(#datetime, "<d>"));
 
 // should only happen for @id field (because refs should be done via keys etc.)
-NeoValue evalExpr((Expr)`<UUID u>`) = text("<u>"[1..]);
+NeoValue evalNeoExpr((Expr)`<UUID u>`) = nText("<u>"[1..]);
 
-NeoValue evalExpr((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
+NeoValue evalNeoExpr((Expr)`<PlaceHolder p>`) = nPlaceholder(name="<p>"[2..]);
 
-default NeoValue evalExpr(Expr ex) { throw "missing case for <ex>"; }
+default NeoValue evalNeoExpr(Expr ex) { throw "missing case for <ex>"; }
 
 bool isAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) = <e, "<x>", _> <- s.attrs;
 
