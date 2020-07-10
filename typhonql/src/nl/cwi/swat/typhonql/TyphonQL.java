@@ -254,7 +254,7 @@ public class TyphonQL {
 		IMap  m = ql.readConnectionsInfo(vf.string("localhost"), vf.integer(8080), vf.string("admin"), vf.string("admin1@"));
 		System.out.println(m);
 		IString t = ql.executeQuery(vf.sourceLocation(new URI("http://localhost:8080")),
-				vf.string("pablo"), vf.string("antonio"), vf.string("from User u select u"));
+				vf.string("admin"), vf.string("admin1@"), vf.string("from User u select u"));
 		
 		System.out.println(t);
 	}
