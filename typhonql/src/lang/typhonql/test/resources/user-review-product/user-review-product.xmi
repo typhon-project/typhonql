@@ -110,6 +110,7 @@
   </databases>
   <databases xsi:type="typhonml:GraphDB" name="MoreStuff">
     <edges from="//@entities.8/@relations.0" to="//@entities.8/@relations.1" entity="//@entities.8"/>
+    <edges from="//@entities.7/@relations.0" to="//@entities.7/@relations.1" entity="//@entities.7"/>
   </databases>
   <customDataTypes name="address">
     <elements xsi:type="typhonml:SimpleDataType" name="street">
