@@ -21,6 +21,10 @@ import lang::typhonql::cassandra::CQL2Text;
 import lang::typhonql::cassandra::Query2CQL;
 import lang::typhonql::cassandra::Schema2CQL;
 
+import lang::typhonql::neo4j::Neo;
+import lang::typhonql::neo4j::Neo2Text;
+import lang::typhonql::neo4j::NeoUtil;
+
 import lang::typhonql::Normalize;
 
 import IO;
@@ -43,7 +47,7 @@ alias UpdateContext = tuple[
   void (list[Step]) addSteps,
   void (SQLStat(SQLStat)) updateSQLUpdate,
   void (DBObject(DBObject)) updateMongoUpdate,
-  void (NeoStat(NeoStat)) updateNeoUpdate,
+  void (Maybe[NeoStat](Maybe[NeoStat])) updateNeoUpdate,
   Schema schema
 ];
 
@@ -80,9 +84,10 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   Bindings myParams = ( myId: toBeUpdated );
   
   if ((Where)`where <VId _>.@id == <UUID mySelf>` := (Where)`where <{Expr ","}+ ws>`) {
-    sqlMe = lit(evalExpr((Expr)`<UUID mySelf>`));
+    sqlMe = lit(lang::typhonql::relational::Util::evalExpr((Expr)`<UUID mySelf>`));
     mongoMe = \value(uuid2str(mySelf));
     cqlMe = cTerm(cUUID(uuid2str(mySelf)));
+    neoMe = NeoExpr::lit(evalExpr((Expr)`<UUID mySelf>`));
     myParams = ();
   }
   else {
@@ -117,17 +122,15 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   
   updateMongoUpdate(DBObject(DBObject d) { return d; });
   
-  NeoStat theNeoUpdate = \matchUpdate(
-  	just(match([pattern(nodePattern("__n1", [], []), [relationshipPattern(doubleArrow(), "__r1",  ctx.entity, [property(typhonId(ctx.entity), ctx.neoMe)], nodePattern("__n2", [], []))])], [], [NeoExpr::lit(boolean(true))])),
-	\set([setPlusEquals("__r1", mapLit(()))]));
+  Maybe[NeoStat] theNeoUpdate = Maybe::just(matchQuery([],[])); 
 					
-  void updateNeoUpdate(NeoStat(NeoStat) block) {
+  void updateNeoUpdate(Maybe[NeoStat](Maybe[NeoStat]) block) {
     theNeoUpdate = block(theNeoUpdate);
-    Step st = step(p.name, sql(executeNeoUpdate(p.name, neopp(theNeoUpdate))), myParams);
+    Step st = step(p.name, neo(executeNeoUpdate(p.name, neopp(theNeoUpdate.val))), myParams);
     updateStep(statIndex, st);
   }
 
-  updateNeoUpdate(NeoStat(NeoStat s) { return s; });
+  updateNeoUpdate(Maybe[NeoStat](Maybe[NeoStat] s) { return s; });
   
   
   UpdateContext ctx = <
@@ -221,9 +224,14 @@ void compileAttrSets(<mongodb(), str dbName>, list[KeyVal] kvs, UpdateContext ct
   });
 }
 
-void compileAttrSets(<neo(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
-  ctx.updateNeoUpdate(NeoStat(NeoStat upd) {
-    upd.updateClause.setItems[0].expr.exprs = ( nodeName(kv has key ? "<kv.key>" : "@id", ctx.entity) : NeoExpr::lit(evalNeoExpr(kv.\value)) | KeyVal kv <- kvs );
+void compileAttrSets(<neo4j(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
+  ctx.updateNeoUpdate(Maybe[NeoStat](Maybe[NeoStat] upd) {
+    upd.val =
+       \matchUpdate(
+  			just(match
+  				([pattern(nodePattern("__n1", [], []), [relationshipPattern(doubleArrow(), "__r1",  ctx.entity, [property(typhonId(ctx.entity), ctx.neoMe)], nodePattern("__n2", [], []))])], [])),
+			\set([setPlusEquals("__r1", mapLit(( graphPropertyName(kv has key ? "<kv.key>" : "@id", ctx.entity) : NeoExpr::lit(evalExpr(kv.\value)) | KeyVal kv <- kvs )))]),
+			[NeoExpr::lit(boolean(true))]);
     return upd;
   });
 }
@@ -342,7 +350,7 @@ void compileRefSet(
     upd.props += [ <"$set", \value(uuid2str(ref))> ];
     return upd;
   });
-  ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
+  ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, SQLExpr::lit(Value::text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
 }
 
 // sql/same sql xref
@@ -384,6 +392,24 @@ void compileRefSet(
 ) {
   ctx.addSteps(updateIntoJunctionSingle(dbName, from, fromRole, to, toRole, ctx.sqlMe, lit(text(uuid2str(ref))), ctx.myParams));
   ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+}
+
+// mongo/sql containment or xref
+void compileRefSet(
+  <DB::neo4j(), str dbName>, <DB::sql(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  UUID ref, UpdateContext ctx
+) {
+  
+  ctx.addSteps(neoReplaceEnd(dbName, from, to, fromRole, 
+  	ctx.neoMe, NeoExpr::lit(NeoValue::text(uuid2str(ref))), ctx.myParams, ctx.schema));
+
+  /*ctx.updateMongoUpdate(DBObject(DBObject upd) {
+    upd.props += [ <"$set", \value(uuid2str(ref))> ];
+    return upd;
+  });
+  */
+  ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, SQLExpr::lit(Value::text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
 }
 
 
