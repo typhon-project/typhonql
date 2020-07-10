@@ -11,6 +11,7 @@ import java.util.function.Function;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.ResultFactory;
@@ -24,6 +25,7 @@ import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import nl.cwi.swat.typhonql.backend.Binding;
+import nl.cwi.swat.typhonql.backend.Closables;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.neo4j.Neo4JEngine;
@@ -114,6 +116,6 @@ public class Neo4JOperations implements Operations, AutoCloseable {
 
 	@Override
 	public void close() throws Exception {
-		
+		Closables.autoCloseAll(connections.values(), Neo4jException.class);
 	}
 }
