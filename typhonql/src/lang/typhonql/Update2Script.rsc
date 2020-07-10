@@ -288,7 +288,7 @@ void compileRefSet(
   UUID ref, UpdateContext ctx
 ) {
   ctx.updateMongoUpdate(DBObject(DBObject upd) {
-    upd.props += [ <"$set", \value(uuid2str(ref))> ];
+    upd.props += [ <"$set", object([<fromRole, \value(uuid2str(ref))>])> ];
     return upd;
   });
   ctx.addSteps(updateObjectPointer(dbName, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
@@ -301,7 +301,7 @@ void compileRefSet(
   UUID ref, UpdateContext ctx
 ) {
   ctx.updateMongoUpdate(DBObject(DBObject upd) {
-    upd.props += [ <"$set", \value(uuid2str(ref))> ];
+    upd.props += [ <"$set", object([<fromRole, \value(uuid2str(ref))>])> ];
     return upd;
   });
   ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
@@ -314,7 +314,7 @@ void compileRefSet(
   UUID ref, UpdateContext ctx
 ) {
   ctx.updateMongoUpdate(DBObject(DBObject upd) {
-    upd.props += [ <"$set", \value(uuid2str(ref))> ];
+    upd.props +=[ <"$set", object([<fromRole, \value(uuid2str(ref))>])> ];
     return upd;
   });
   ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
@@ -462,7 +462,7 @@ void compileRefSetMany(
   {UUID ","}* refs, UpdateContext ctx
 ) {
   ctx.updateMongoUpdate(DBObject(DBObject upd) {
-    upd.props += [ <"$set", array([ \value(uuid2str(ref )) | UUID ref <- refs ])> ];
+    upd.props += [ <"$set", object([<fromRole, array([ \value(uuid2str(ref )) | UUID ref <- refs ])>])> ];
     return upd;
   });
   ctx.addSteps([ *updateObjectPointer(dbName, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams)
@@ -472,7 +472,7 @@ void compileRefSetMany(
   // whose _id is not in refs, and in case of containment, delete them [do we have containment that is not native in Mongo?]
   
   DBObject q = object([<"_id", object([<"$nin", array([ \value(uuid2str(ref)) | UUID ref <- refs ])>])>, <toRole, ctx.mongoMe>]);
-  DBObject u = object([<"$set", object([<toRole, object([<"$set", DBObject::null()>])>])>]); 
+  DBObject u = object([<"$set", object([<toRole, DBObject::null()>])>]); 
   if (toCard in {zero_many(), one_many()}) { 
     u = object([<"$pull", 
                object([<toRole, 
@@ -488,7 +488,7 @@ void compileRefSetMany(
   {UUID ","}* refs, UpdateContext ctx
 ) {
   ctx.updateMongoUpdate(DBObject(DBObject upd) {
-    upd.props += [ <"$set", array([ \value(uuid2str(ref )) | UUID ref <- refs ])> ];
+    upd.props += [ <"$set", object([<fromRole, array([ \value(uuid2str(ref )) | UUID ref <- refs ])>])> ];
     return upd;
   });
   ctx.addSteps([ *updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams)
@@ -498,7 +498,7 @@ void compileRefSetMany(
   // whose _id is not in refs, and in case of containment, delete them [do we have containment that is not native in Mongo?]
   
   DBObject q = object([<"_id", object([<"$nin", array([ \value(uuid2str(ref)) | UUID ref <- refs ])>])>, <toRole, ctx.mongoMe>]);
-  DBObject u = object([<"$set", object([<toRole, object([<"$set", null()>])>])>]); 
+  DBObject u = object([<"$set", object([<toRole, DBObject::null()>])>]); 
   if (toCard in {zero_many(), one_many()}) { 
     u = object([<"$pull", 
                object([<toRole, 
@@ -514,7 +514,7 @@ void compileRefSetMany(
   {UUID ","}* refs, UpdateContext ctx
 ) {
   ctx.updateMongoUpdate(DBObject(DBObject upd) {
-    upd.props += [ <"$set", array([ \value(uuid2str(ref )) | UUID ref <- refs ])> ];
+    upd.props += [ <"$set", object([<fromRole, array([ \value(uuid2str(ref )) | UUID ref <- refs ])>])> ];
     return upd;
   });
   ctx.addSteps([ *updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), ctx.sqlMe, ctx.myParams)
