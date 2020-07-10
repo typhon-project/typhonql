@@ -152,7 +152,7 @@ void setup(PolystoreInstance p, bool doTest) {
 	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Wish w select w.@id`);
-	  p.assertResultEquals("items were inserted", rs, <["w.@id"], [
+	  p.assertResultEquals("whish was inserted", rs, <["w.@id"], [
 	    [U("wish1")]
 	  ]>);
 	  
@@ -161,8 +161,7 @@ void setup(PolystoreInstance p, bool doTest) {
 	  
 	  rs = p.runQuery((Request)`from User u select u.wish where u.@id == #pablo`);
 	  p.assertResultEquals("wish obtained from user", rs, <["u.wish"], [[U("wish1")]]>);
-	}	
-		
+	}
 }
 
 void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
@@ -369,6 +368,72 @@ void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
   p.assertResultEquals("InsertManyContainSQLtoExternal", rs, <["r.content"], [["expensive"]]>);
 }
 
+void testInsertSQLNeo(PolystoreInstance p) {
+  p.runUpdate((Request)`insert Product {@id: #laptop, name: "Laptop", wish: #wish1, description: "Practical", productionDate:  $2020-04-14$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)), price: 150}`);
+  rs = p.runQuery((Request)`from Wish w select w.product where w.@id == #wish1`);
+  p.assertResultEquals("testInsertSQLNeoToEnd", rs, <["w.product"], [[U("laptop")]]>);
+  
+  p.runUpdate((Request) `insert User { @id: #tijs, name: "Tijs", location: #point(2.0 3.0), 
+	                      '   photoURL: "cwi",
+	                      '   avatarURL: "something",
+	                      '   address: "somwehere",
+	                      '   wish: #wish1,
+	                      '   billing: address( street: "Eigth", city: "Ams"
+	                      '   , zipcode: zip(nums: "2345", letters: "cd")
+	                      '   , location: #point(2.0 3.0))}`);
+	                      	                      
+  rs = p.runQuery((Request)`from Wish w select w.user where w.@id == #wish1`);
+  p.assertResultEquals("testInsertSQLNeoNeoFromEnd", rs, <["w.user"], [[U("tijs")]]>);
+  
+}
+
+void testDeleteSQLNeoSimple(PolystoreInstance p) {
+  p.runUpdate((Request)`delete Wish w where w.@id == #wish1`);
+  rs = p.runQuery((Request)`from Wish w select w.@id where w.@id == #wish1`);
+  p.assertResultEquals("testDeleteSQLNeoSimple", rs, <["w.@id"], []>);
+  rs = p.runQuery((Request)`from Product p select p.@id, p.wish where p.@id == #tv`);
+  p.assertResultEquals("testDeleteSQLNeoSimpleToEnd", rs, <["p.@id", "p.wish"], [[U("tv"), {}]]>);
+  rs = p.runQuery((Request)`from User u select u.@id, u.wish where u.@id == #pablo`);
+  p.assertResultEquals("testDeleteSQLNeoSimpleFromEnd", rs, <["u.@id", "u.wish"], [[U("pablo"), {}]]>);
+  
+}
+
+void testDeleteSQLNeoCascade(PolystoreInstance p) {
+  p.runUpdate((Request)`delete Product p where p.@id == #tv`);
+  rs = p.runQuery((Request)`from Wish w select w.@id where w.@id == #wish1`);
+  p.assertResultEquals("testDeleteSQLNeoCascade", rs, <["w.@id"], []>);
+  rs = p.runQuery((Request)`from Product p select p.@id, p.wish where p.@id == #tv`);
+  p.assertResultEquals("testDeleteSQLNeoCascadeToEnd", rs, <["p.@id", "p.wish"], []>);
+  rs = p.runQuery((Request)`from User u select u.@id, u.wish where u.@id == #pablo`);
+  p.assertResultEquals("testDeleteSQLNeoCascadeFromEnd", rs, <["u.@id", "u.wish"], [[U("pablo"), {}]]>);
+  
+}
+
+void testUpdateSingleRefSQLNeo(PolystoreInstance p) {
+  p.runUpdate((Request)`update Wish w where w.@id == #wish1 set {product: #radio}`);
+  rs = p.runQuery((Request)`from Wish w select w.@id, w.product where w.@id == #wish1`);
+  p.assertResultEquals("testUpdateRefSQLNeo", rs, <["w.@id", "w.product"], [[ U("wish1"), U("radio")]]>);
+  rs = p.runQuery((Request)`from Product p select p.@id, p.wish where p.@id == #radio`);
+  p.assertResultEquals("testUpdateRefSQLNeoTo", rs, <["p.@id", "p.wish"], [[ U("radio"), U("wish1")]]>);
+  rs = p.runQuery((Request)`from Product p select p.@id, p.wish where p.@id == #tv`);
+  p.assertResultEquals("testUpdateRefSQLNeoFormerTo", rs, <["p.@id", "p.wish"], [[ U("radio"), {}]]>);
+}
+
+void testUpdateAttrNeo(PolystoreInstance p) {
+  p.runUpdate((Request)`update Wish w where w.@id == #wish1 set {intensity: 3}`);
+  rs = p.runQuery((Request)`from Wish w select w.@id, w.intensity where w.@id == #wish1`);
+  p.assertResultEquals("testUpdateAttrNeo", rs, <["w.@id", "w.intensity"], [[ U("wish1"), 3]]>);
+}
+
+void testUpdateSingleRefSQLMongo(PolystoreInstance p) {
+  p.runUpdate((Request)`update Biography b where b.@id == #bio1 set {user: #davy}`);
+  rs = p.runQuery((Request)`from Biography b select b.@id, b.user where b.@id == #bio1`);
+  p.assertResultEquals("testUpdateRefSQLMongo", rs, <["b.@id", "b.user"], [[ U("bio1"), U("davy")]]>);
+  rs = p.runQuery((Request)`from User u select u.@id, u.biography where u.@id == #davy`);
+  p.assertResultEquals("testUpdateRefSQLMongoTo", rs, <["u.@id", "u.biography"], [[ U("davy"), U("bio1")]]>);
+  rs = p.runQuery((Request)`from User u select u.@id, u.biography where u.@id == #pablo`);
+  p.assertResultEquals("testUpdateRefSQLMongoFormerTo", rs, <["u.@id", "u.biography"], [[ U("pablo"), {}]]>);
+}
 
 void testUpdateManyXrefSQLLocal(PolystoreInstance p) {
   p.runUpdate((Request)`update Product p where p.@id == #tv set {tags +: [#fun, #social]}`);
@@ -441,6 +506,8 @@ void testUpdateManyContainSQLtoExternalSetToEmpty(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.reviews == r, p.@id == #tv`);
   p.assertResultEquals("updateManyContainSQLtoExternalSet", rs, <["r.content"], []>);
 }
+
+
 
 
 void testSelectViaSQLInverseLocal(PolystoreInstance p) {
@@ -695,3 +762,16 @@ void runTests(Log log = NO_LOG()) {
 	];
 	runTests(tests, log = log);
 }
+
+void runNeoTests(Log log = NO_LOG()) {
+	tests = 
+	  [ testInsertSQLNeo,
+	  testDeleteSQLNeoSimple,
+	  testDeleteSQLNeoCascade,
+	  testUpdateSingleRefSQLNeo,
+	  testUpdateAttrNeo,
+	  testInsertNeo
+	];
+	runTests(tests, log = log);
+}
+
