@@ -479,7 +479,7 @@ DBObject expr2obj(e:(Expr)`<VId x>.@id`, Ctx ctx) {
 
 DBObject expr2obj((Expr)`?`, Ctx _) = placeholder();
 
-DBObject expr2obj((Expr)`<UUID id>`, Ctx _) = uuid("<id>"[1..]);
+DBObject expr2obj((Expr)`<UUID id>`, Ctx _) = mUuid("<id.part>");
 
 DBObject expr2obj((Expr)`<DateTime d>`, Ctx _) 
   = object([<"$date", \value(readTextValueString(#datetime, "<d>"))>]);

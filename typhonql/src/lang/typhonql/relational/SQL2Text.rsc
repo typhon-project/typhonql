@@ -175,7 +175,7 @@ str pp(Value::placeholder(name = str name)) = "${<name>}";
 
 str pp(blobPointer(str pointer)) = "${blob-<pointer>}";
 
-str pp(Value::uuid(str uuid)) = "unhex(\'<replaceAll("<uuid>", "-", "")>\')";
+str pp(sUuid(str uuid)) = "unhex(\'<replaceAll("<uuid>", "-", "")>\')";
 
 // TableConstraint
 

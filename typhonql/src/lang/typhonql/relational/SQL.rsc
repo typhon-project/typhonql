@@ -132,7 +132,7 @@ data Value
   | date(datetime dateVal)
   | placeholder(str name="")
   | blobPointer(str id)
-  | uuid(str uuid)
+  | sUuid(str uuid)
   | null()
   ;
 

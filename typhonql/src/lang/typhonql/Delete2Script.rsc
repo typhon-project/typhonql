@@ -63,7 +63,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   
   if ((Where)`where <VId _>.@id == <UUID mySelf>` := (Where)`where <{Expr ","}+ ws>`) {
     sqlMe = lit(evalExpr((Expr)`<UUID mySelf>`));
-    mongoMe = DBObject::uuid(uuid2str(mySelf));
+    mongoMe = mUuid(uuid2str(mySelf));
     myParams = ();
   }
   else {
