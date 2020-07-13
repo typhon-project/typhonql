@@ -236,7 +236,6 @@ void compileAttrSets(<neo4j(), str dbName>, list[KeyVal] kvs, UpdateContext ctx)
   });
 }
 
-
 /*
  * Assign to a relation, single-valued
  */
@@ -394,7 +393,7 @@ void compileRefSet(
   ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
-// mongo/sql containment or xref
+// neo/sql containment or xref
 void compileRefSet(
   <DB::neo4j(), str dbName>, <DB::sql(), str other>, str from, str fromRole, 
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
@@ -410,6 +409,19 @@ void compileRefSet(
   });
   */
   ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, SQLExpr::lit(Value::text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
+}
+
+// neo/sql containment or xref
+void compileRefSet(
+  <DB::neo4j(), str dbName>, <DB::mongodb()(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  UUID ref, UpdateContext ctx
+) {
+  
+  ctx.addSteps(neoReplaceEnd(dbName, from, to, fromRole, 
+  	ctx.neoMe, nLit(nText(uuid2str(ref))), ctx.myParams, ctx.schema));
+
+  ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
 

@@ -273,6 +273,23 @@ void deleteKids(
   ctx.addSteps([step(other, cassandra(cExecuteStatement(other, pp(stmt))), ctx.myParams)]);  
 }
 
+void deleteKids(
+  <mongodb(), str dbName>, <neo4j(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
+  DeleteContext ctx
+) {
+  str reference = "";
+  if (nLit(nText(txt)) := ctx.neoMe) {
+  	reference = "#<txt>";
+	Request removeEdge = [Request] "delete <to> edge where edge.<toRole> == <reference>";
+  	Script scr = delete2script(removeEdge, ctx.schema);
+  	ctx.addSteps(scr.steps);
+  }
+  //deleteObject(<neo4j(), other>, ctx);
+  //deleteReferenceInNeo(to, ctx.neoMe, ctx.myParams, ctx.schema);
+}
+
+
 /*
  * Break pointers into the deleted objects
  */
