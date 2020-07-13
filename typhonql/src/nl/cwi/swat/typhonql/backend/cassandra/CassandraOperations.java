@@ -5,20 +5,24 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.Result;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
+
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
@@ -66,7 +70,7 @@ public class CassandraOperations  implements Operations, AutoCloseable {
 	}
 
 	public IValue buildOperations(ResultStore store, List<Consumer<List<Record>>> script,
-			List<Runnable> updates, TyphonSessionState state, Map<String, String> uuids,
+			List<Runnable> updates, TyphonSessionState state, Map<String, UUID> uuids,
 			IEvaluatorContext ctx, IValueFactory vf) {
 
 		Type aliasedTuple = unalias(Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("CassandraOperations")));

@@ -6,7 +6,7 @@ import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
 extend analysis::typepal::TypePal;
 
-extend lang::typhonql::TDBC;
+import lang::typhonql::TDBC;
 
 /***********
  *  Types  *

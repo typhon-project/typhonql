@@ -5,7 +5,6 @@ import java.net.URISyntaxException;
 import java.util.List;
 
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
-import nl.cwi.swat.typhonql.client.PolystoreConnection;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 
 public class XMIBasedTyphonQLResetDatabasesTest {
@@ -23,9 +22,9 @@ public class XMIBasedTyphonQLResetDatabasesTest {
 		
 		String xmiString = PolystoreAPIHelper.readHttpModel(HOST, PORT, USER, PASSWORD);
 
-		PolystoreConnection conn = new XMIPolystoreConnection(xmiString, infos);
+		XMIPolystoreConnection conn = new XMIPolystoreConnection();
 		
-		conn.resetDatabases();
+		conn.resetDatabases(xmiString, infos);
 		
 	}
 }

@@ -109,12 +109,14 @@ public class XMIPolystoreConnection {
 			}
 			result.addClassLoader(cl);
 
+			long start = System.nanoTime();
 			System.out.println("Starting a fresh evaluator to interpret the query (" + Integer.toHexString(System.identityHashCode(result)) + ")");
 			System.out.flush();
 			// now we are ready to import our main module
 			result.doImport(null, "lang::typhonql::RunUsingCompiler");
 			result.doImport(null, "lang::typhonql::Session");
-			System.out.println("Finished initializing evaluator: " + Integer.toHexString(System.identityHashCode(result)));
+			long stop = System.nanoTime();
+			System.out.println("Finished initializing evaluator: " + Integer.toHexString(System.identityHashCode(result)) + " in " + TimeUnit.NANOSECONDS.toMillis(stop - start) + "ms");
 			System.out.flush();
 			return result;
 		});

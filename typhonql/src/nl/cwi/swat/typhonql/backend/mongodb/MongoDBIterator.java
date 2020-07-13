@@ -3,8 +3,10 @@ package nl.cwi.swat.typhonql.backend.mongodb;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import org.bson.Document;
+import org.bson.types.Binary;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LinearRing;
@@ -17,6 +19,7 @@ import com.mongodb.client.MongoIterable;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 
+import lang.typhonql.util.MakeUUID;
 import nl.cwi.swat.typhonql.backend.ResultIterator;
 
 public class MongoDBIterator implements ResultIterator {
@@ -50,8 +53,8 @@ public class MongoDBIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentId(String label, String type) {
-		return current.getString("_id");
+	public UUID getCurrentId(String label, String type) {
+		return current.get("_id", UUID.class);
 	}
 
 	@Override
@@ -67,31 +70,31 @@ public class MongoDBIterator implements ResultIterator {
 		if (fromDB instanceof Document) {
 			// might be a geo field?
 			Document geo = (Document) fromDB;
-			switch (geo.get("type", "")) {
-				case "Point": {
-					List<Double> coords = geo.getList("coordinates", Double.class);
-					if (coords.size() == 2) {
-						return wsgFactory.createPoint(createCoordinate(coords));
-					}
-					break;
-				}
-				case "Polygon": {
-					List<List> lines = geo.getList("coordinates", List.class);
-					if (lines.size() > 0) {
-						try {
+            switch (geo.get("type", "")) {
+                case "Point": {
+                    List<Double> coords = geo.getList("coordinates", Double.class);
+                    if (coords.size() == 2) {
+                        return wsgFactory.createPoint(createCoordinate(coords));
+                    }
+                    break;
+                }
+                case "Polygon": {
+                    List<List> lines = geo.getList("coordinates", List.class);
+                    if (lines.size() > 0) {
+                        try {
                             LinearRing shell = createRing(lines.get(0));
                             LinearRing[] holes = new LinearRing[lines.size() - 1];
                             for (int i = 0; i < holes.length; i++) {
                                 holes[i] = createRing(lines.get(i + 1));
                             }
                             return wsgFactory.createPolygon(shell, holes);
-						}
-						catch (Exception e) {
-							throw new RuntimeException("Failure to translate Polygon to Geometry: " + geo, e);
-						}
-					}
-				}
-			}
+                        }
+                        catch (Exception e) {
+                            throw new RuntimeException("Failure to translate Polygon to Geometry: " + geo, e);
+                        }
+                    }
+                }
+            }
 			throw new RuntimeException("Unsupported document in result. Doc:" + geo);
 		}
 		else if (fromDB instanceof Date) {

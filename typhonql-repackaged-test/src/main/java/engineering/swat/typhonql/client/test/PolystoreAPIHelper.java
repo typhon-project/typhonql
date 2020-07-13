@@ -23,9 +23,6 @@ import org.bson.BsonDocument;
 import org.bson.BsonInvalidOperationException;
 import org.bson.BsonValue;
 
-import nl.cwi.swat.typhonql.DBType;
-import nl.cwi.swat.typhonql.MariaDB;
-import nl.cwi.swat.typhonql.MongoDB;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 
 public class PolystoreAPIHelper {
@@ -96,23 +93,21 @@ public class PolystoreAPIHelper {
 		return readConnectionsInfo(uri, user, password);
 	}
 	
+	
 	public static List<DatabaseInfo> readConnectionsInfo(URI path, String user, String password) throws URISyntaxException {
 		URI uri = buildUri(path, "/api/databases");
 		String json = doGet(uri, user, password);
+
 		BsonArray array = BsonArray.parse(json);
 		List<DatabaseInfo> lst = new ArrayList<DatabaseInfo>();
 		for (BsonValue v : array.getValues()) {
 			BsonDocument d = v.asDocument();
 			try {
-				String engineType = d.getString("engineType").getValue().toLowerCase() + "db";
-				DBType dbType = DBType.valueOf(engineType);
-				if (dbType == null)
-					throw new RuntimeException("Engine type " + d.getString("engineType").getValue() + " not known");
 				DatabaseInfo info = new DatabaseInfo(d.getString("externalHost").getValue(),
 						d.getNumber("externalPort").intValue(), 
 						d.getString("name").getValue(),
-						dbType,
-						getDBEngine(dbType),
+						d.getString("dbType").getValue(),
+						d.getString("dbType").getValue(),
 						d.getString("username").getValue(),
 						d.getString("password").getValue());
 				lst.add(info);
@@ -121,16 +116,6 @@ public class PolystoreAPIHelper {
 			}
 		}
 		return lst;
-	}
-
-	private static String getDBEngine(DBType dbType) {
-		switch (dbType) {
-        case documentdb:
-        	return new MongoDB().getName();
-        case relationaldb:
-        	return new MariaDB().getName();
-        }
-		throw new RuntimeException("Wrong DB type: " + dbType);
 	}
 
 }

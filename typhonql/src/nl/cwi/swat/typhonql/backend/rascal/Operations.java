@@ -1,6 +1,7 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,6 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
 
+import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.control_exceptions.MatchFailed;
 import org.rascalmpl.interpreter.env.Environment;
@@ -53,7 +55,12 @@ public interface Operations {
 			@Override
 			public Result<IValue> call(Type[] argTypes, IValue[] argValues, Map<String, IValue> keyArgValues) throws MatchFailed {
 				checkIsActive(state);
-				return body.apply(argValues);
+				try {
+					return body.apply(argValues);
+				} catch (NullPointerException e) {
+					e.printStackTrace(new PrintWriter(ThreadSafeImpulseConsole.INSTANCE.getWriter()));
+					throw e;
+				}
 			}
 		};
 		

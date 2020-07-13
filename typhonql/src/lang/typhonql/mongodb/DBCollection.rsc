@@ -4,6 +4,7 @@ import IO;
 import List;
 import String;
 import DateTime;
+import lang::typhonql::util::UUID;
 
 alias Prop
   = tuple[str name, DBObject val];  
@@ -12,6 +13,7 @@ data DBObject
   = object(list[Prop] props)
   | array(list[DBObject] values)
   | \value(value v)
+  | mUuid(str uuid)
   | placeholder(str name="") 
   | null()
   ;
@@ -31,6 +33,13 @@ str pp(\value(str s)) = "\"<strEscape(s)>\"";
 str pp(\value(bool b)) = "<b>";
 
 str pp(\value(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
+
+str pp(mUuid(val)) = pp(object([
+        <"$binary", object([
+            <"base64", \value(uuidToBase64(val))>,
+            <"subType", \value("04")>
+        ])>
+    ]));
 
 str pp(null()) = "null";
 

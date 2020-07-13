@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
@@ -18,6 +19,7 @@ import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBReader;
 import org.mariadb.jdbc.internal.ColumnType;
 
+import lang.typhonql.util.MakeUUID;
 import nl.cwi.swat.typhonql.backend.ResultIterator;
 
 public class MariaDBIterator implements ResultIterator {
@@ -49,6 +51,7 @@ public class MariaDBIterator implements ResultIterator {
 		// TODO: consider not using class name but something else for this mapping (like SQL type)
 		columnMapperFuncs.put(ColumnType.BIGINT.getSqlType(), (r, i) -> r.getBigDecimal(i));
 		columnMapperFuncs.put(ColumnType.BIT.getSqlType(), (r, i) -> r.getBoolean(i));
+		columnMapperFuncs.put(Types.BINARY, (r, i) -> MakeUUID.uuidFromBytes(r.getBytes(i)));
 		columnMapperFuncs.put(ColumnType.LONGBLOB.getSqlType(), (r, i) -> blobOrGeo(r.getBinaryStream(i)));
 		columnMapperFuncs.put(ColumnType.DATE.getSqlType(), (r, i) -> r.getObject(i, LocalDate.class));
 		columnMapperFuncs.put(ColumnType.DATETIME.getSqlType(), (r, i) -> r.getObject(i, LocalDateTime.class));
@@ -125,9 +128,9 @@ public class MariaDBIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentId(String label, String type) {
+	public UUID getCurrentId(String label, String type) {
 		try {
-			return rs.getString(label + "." + type + ".@id");
+			return MakeUUID.uuidFromBytes(rs.getBytes(label + "." + type + ".@id"));
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}

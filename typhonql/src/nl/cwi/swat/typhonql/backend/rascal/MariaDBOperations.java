@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.rascalmpl.interpreter.IEvaluatorContext;
@@ -106,7 +107,7 @@ public class MariaDBOperations implements Operations, AutoCloseable {
 
 
 	public ITuple newSQLOperations(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, 
-			TyphonSessionState state, Map<String, String> uuids, IEvaluatorContext ctx, IValueFactory vf) {
+			TyphonSessionState state, Map<String, UUID> uuids, IEvaluatorContext ctx, IValueFactory vf) {
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("SQLOperations"));
 		while (aliasedTuple.isAliased()) {
 			aliasedTuple = aliasedTuple.getAliased();

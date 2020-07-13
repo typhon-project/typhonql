@@ -35,7 +35,7 @@ public class TestMultipleInsert {
 		
 		ResultStore store = new ResultStore(Collections.emptyMap());
 		
-		Map<String, String> uuids = new HashMap<String, String>();
+		Map<String, UUID> uuids = new HashMap<>();
 		
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();
@@ -43,7 +43,7 @@ public class TestMultipleInsert {
 		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
 		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, () -> conn1);
 		LinkedHashMap<String, Binding> map0 = new LinkedHashMap<String, Binding>();
-		String uuid = UUID.randomUUID().toString();
+		UUID uuid = UUID.randomUUID();
 		uuids.put("param_611", uuid);
 		map0.put("param_611", new GeneratedIdentifier("param_611"));
 		e1.executeUpdate("insert into `Product` (`Product.name`, `Product.description`, `Product.@id`) \nvalues (\'IPhone\', \'Apple\', ${param_611});", map0);
@@ -51,7 +51,7 @@ public class TestMultipleInsert {
 		Runner.executeUpdates(script, updates);
 
 
-		String uuid2 = UUID.randomUUID().toString();
+		UUID uuid2 = UUID.randomUUID();
 		uuids.put("param_612", uuid2);
 			
 		LinkedHashMap<String, Binding> map1 = new LinkedHashMap<String, Binding>();

@@ -150,7 +150,7 @@ public class TyphonSession implements Operations {
 
 		// construct the session tuple
 		ResultStore store = new ResultStore(blobMap);
-		Map<String, String> uuids = new HashMap<>();
+		Map<String, UUID> uuids = new HashMap<>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();
 		TyphonSessionState state = new TyphonSessionState();
@@ -174,13 +174,13 @@ public class TyphonSession implements Operations {
 				), state);
 	}
 
-	private IValue makeNewId(Map<String, String> uuids, TyphonSessionState state, FunctionType newIdType,
+	private IValue makeNewId(Map<String, UUID> uuids, TyphonSessionState state, FunctionType newIdType,
 			IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, newIdType, args -> {
 			String idName = ((IString) args[0]).getValue();
-			String uuid = UUID.randomUUID().toString();
+			UUID uuid = UUID.randomUUID();
 			uuids.put(idName, uuid);
-			return ResultFactory.makeResult(TF.stringType(), vf.string(uuid), ctx);
+			return ResultFactory.makeResult(TF.stringType(), vf.string(uuid.toString()), ctx);
 		});
 	}
 

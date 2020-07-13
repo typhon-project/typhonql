@@ -4,14 +4,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.bson.UuidRepresentation;
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
 
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
@@ -49,10 +53,17 @@ public class MongoOperations implements Operations, AutoCloseable {
 			if (cd == null) {
 				throw new RuntimeException("Missing database config for " + nm);
 			}
-			MongoClient client = clients.computeIfAbsent(cd.getHost(), h -> MongoClients.create(
-					"mongodb://" + cd.getUser() + ":" + cd.getPassword() + "@" + cd.getHost() + ":" + cd.getPort()));
+			MongoClient client = clients.computeIfAbsent(cd.getHost(), h -> buildNewConnection(cd));
 			return client.getDatabase(nm);
 		});
+	}
+	
+	private static MongoClient buildNewConnection(ConnectionData cd) {
+		return MongoClients.create(MongoClientSettings.builder()
+				.uuidRepresentation(UuidRepresentation.STANDARD)
+				.applyConnectionString(new ConnectionString("mongodb://" + cd.getUser() + ":" + cd.getPassword() + "@" + cd.getHost() + ":" + cd.getPort()))
+				.build()
+        );
 	}
 
 	private ICallableValue makeFind(Function<String, MongoDBEngine> engine, TyphonSessionState state, FunctionType executeType, IEvaluatorContext ctx,
@@ -250,7 +261,7 @@ public class MongoOperations implements Operations, AutoCloseable {
 	}
 	
 	public ITuple newMongoOperations(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
-			TyphonSessionState state, Map<String, String> uuids, IEvaluatorContext ctx, IValueFactory vf) {
+			TyphonSessionState state, Map<String, UUID> uuids, IEvaluatorContext ctx, IValueFactory vf) {
 
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("MongoOperations"));
 		while (aliasedTuple.isAliased()) {

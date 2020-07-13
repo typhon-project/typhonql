@@ -175,6 +175,8 @@ str pp(Value::placeholder(name = str name)) = "${<name>}";
 
 str pp(blobPointer(str pointer)) = "${blob-<pointer>}";
 
+str pp(sUuid(str uuid)) = "unhex(\'<replaceAll("<uuid>", "-", "")>\')";
+
 // TableConstraint
 
 str pp(primaryKey(str c)) = "primary key (<q(c)>)";
@@ -215,6 +217,7 @@ str pp(unique()) = "unique";
 
 str pp(char(int size)) = "char(<size>)";
 str pp(varchar(int size)) = "varchar(<size>)";
+str pp(uuidType()) = "binary(16)";
 str pp(text()) = "text";
 str pp(integer()) = "integer";
 str pp(bigint()) = "bigint";

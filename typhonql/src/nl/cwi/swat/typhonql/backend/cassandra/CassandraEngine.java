@@ -23,7 +23,7 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class CassandraEngine extends Engine {
 
-	public CassandraEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids) {
+	public CassandraEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, UUID> uuids) {
 		super(store, script, updates, uuids);
 	}
 
@@ -70,20 +70,6 @@ public class CassandraEngine extends Engine {
 	private Object encode(Object value) {
 		if (value instanceof Geometry) {
 			throw new RuntimeException("Geo values not supported on Cassandra");
-		}
-		if (value instanceof String) {
-			String str = (String)value;
-			if (str.length() == 36 && str.charAt(8) == '-') {
-				// chance that is an uuid, so let's try
-				try {
-					return UUID.fromString(str);
-				}
-				catch (IllegalArgumentException e) {
-					// it was not a UUID
-					return str;
-				}
-			}
-			return str;
 		}
 		// other java values are just fine as they are
 		return value;

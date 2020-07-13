@@ -5,7 +5,6 @@ import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
 
 import lang::typhonql::TDBC;
-import lang::typhonql::DDL;
 import lang::typhonql::Session;
 import lang::typhonql::Request2Script;
 import lang::typhonql::Schema2Script;
@@ -167,7 +166,7 @@ value runQueryAndGetJava(str src, str xmiString, map[str, Connection] connection
 value runQueryAndGetJava(str src, str xmiString, Session session, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
-  Request req = parseREquest(src);
+  Request req = parseRequest(src);
   return runQueryAndGetJava(req, s, session, log = log);
 }
 
