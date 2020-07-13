@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import com.mongodb.client.MongoDatabase;
@@ -29,7 +30,7 @@ public class TestSelect {
 		
 		ResultStore store = new ResultStore(Collections.emptyMap());
 		
-		Map<String, String> uuids = new HashMap<String, String>();
+		Map<String, UUID> uuids = new HashMap<>();
 		
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();

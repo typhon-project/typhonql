@@ -4,6 +4,7 @@ package nl.cwi.swat.typhonql.backend;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -12,7 +13,7 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 public interface ResultIterator {
 	void nextResult();
 	boolean hasNextResult();
-	String getCurrentId(String label, String type);
+	UUID getCurrentId(String label, String type);
 	Object getCurrentField(String label, String type, String name);
 	void beforeFirst();
 	default Record buildRecord(List<Path> signature) {

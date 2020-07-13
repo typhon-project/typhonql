@@ -1,9 +1,9 @@
 package nl.cwi.swat.typhonql.backend;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 import org.rascalmpl.values.ValueFactoryFactory;
@@ -13,9 +13,9 @@ public abstract class UpdateExecutor {
 	private ResultStore store;
 	private List<Runnable> updates;
 	private Map<String, Binding> bindings;
-	private Map<String, String> uuids;
+	private Map<String, UUID> uuids;
 
-	public UpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, String> uuids, Map<String, Binding> bindings) {
+	public UpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, UUID> uuids, Map<String, Binding> bindings) {
 		this.store = store;
 		this.updates = updates;
 		this.bindings = bindings;

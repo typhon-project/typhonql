@@ -8,7 +8,6 @@ import lang::typhonml::TyphonML;
 
 import lang::typhonql::util::Testing;
 import lang::typhonml::Util;
-import lang::typhonql::DDL;
 import lang::typhonql::TDBC;
 
 /*

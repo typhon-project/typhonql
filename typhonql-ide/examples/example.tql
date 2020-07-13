@@ -1,6 +1,3 @@
-insert Order {
-	totalAmount: 32
-}
 
 from User u, Comment c select u, c where u.name == "test"
 
@@ -24,6 +21,9 @@ from Product p select p.name
 
 from Order o select o
 
+update Product p where p.@id == #tv set {reviews: []}
+
+from Product p, Review r select r.content where p.reviews == r, p.@id == #tv
 
 insert User {
     name: "Davy",

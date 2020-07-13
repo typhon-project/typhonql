@@ -6,7 +6,6 @@ import lang::typhonml::Util;
 import lang::typhonml::XMIReader;
 
 import lang::typhonql::TDBC;
-import lang::typhonql::DDL;
 import lang::typhonql::RunUsingCompiler;
 
 import lang::typhonql::check::Checker;
@@ -343,7 +342,7 @@ node scriptOutliner(start[Script] script) {
     
 }
 
-void main(bool isDevMode = false) {
+void main(bool isDevMode = true) {
   setupIDE(isDevMode = isDevMode);
 }
 

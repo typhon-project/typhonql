@@ -5,10 +5,12 @@ import lang::typhonql::util::Testing;
 
 import lang::typhonql::TDBC;
 import lang::typhonql::Normalize; // for pUUID
+import lang::typhonql::util::UUID; 
 
 import IO;
 import Set;
 import Map;
+import List;
 
 import lang::typhonml::Util;
 
@@ -19,6 +21,7 @@ import lang::typhonml::Util;
  
 
 private str U(str u) = pUUID(u);
+private str base64(str b) = base64Encode(b);
 
 //str HOST = "192.168.178.78";
 str HOST = "localhost";
@@ -195,8 +198,16 @@ actual: <["i.shelf","i.product"],[
 
 void testLoneVars(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i`);
-  p.assertEquals("all features from item retrieved", rs, <["i.shelf", "i.product"]
-    , [[2,U("radio")],[2, U("radio")],[1, U("tv")],[1, U("tv")],[3, U("tv")],[3, U("tv")]]>);
+  rs = <rs<0>, {*rs<1>}>;
+  p.assertEquals("all features from item retrieved", rs, <["i.picture", "i.shelf", "i.product"]
+    , {
+        [base64("aa"), 1, U("tv")],
+        [base64("bb"), 1, U("tv")],
+        [base64("cc"), 3, U("tv")],
+        [base64("dd"), 3, U("tv")],
+        [base64("ee"), 2, U("radio")],
+        [base64("ff"), 2, U("radio")]
+    }>);
     
   rs = p.runQuery((Request)`from Biography b select b`);
   p.assertEquals("all features from biography retrieved", rs, <["b.content", "b.user"]
@@ -608,7 +619,7 @@ void runTest(void(PolystoreInstance) t, Log log = NO_LOG(), bool runTestsInSetup
 	 executer(log = log).runTest(t, runTestsInSetup); 
 }
 
-void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG, bool runTestsInSetup = false) {
+void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG(), bool runTestsInSetup = false) {
 	executer(log = log).runTests(ts, runTestsInSetup); 
 }
 

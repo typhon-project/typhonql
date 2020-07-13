@@ -37,7 +37,7 @@ str fkName(str from, str to, str role) = columnName(role, "<from>.<to>");
 Column typhonIdColumn(str entity) = column(typhonId(entity), typhonIdType(), [notNull(), unique()]);
 
 
-ColumnType typhonIdType() = char(36); // UUID
+ColumnType typhonIdType() = uuidType();
 
 ColumnType typhonType2SQL("date") = date();
 

@@ -1,6 +1,7 @@
 package nl.cwi.swat.typhonql.backend;
 
 import java.util.List;
+import java.util.UUID;
 
 public class AggregatedResultIterator implements ResultIterator {
 	
@@ -41,7 +42,7 @@ public class AggregatedResultIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentId(String label, String type) {
+	public UUID getCurrentId(String label, String type) {
 		return results.get(index).getCurrentId(label, type);
 	}
 

@@ -7,7 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.function.Consumer;
+
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public abstract class QueryExecutor {
@@ -16,10 +18,10 @@ public abstract class QueryExecutor {
 	private List<Consumer<List<Record>>> script;
 	private Map<String, Binding> bindings;
 	private Map<Binding, String> inverseBindings;
-	private Map<String, String> uuids;
+	private Map<String, UUID> uuids;
 	private List<Path> signature;
 
-	public QueryExecutor(ResultStore store, List<Consumer<List<Record>>> script, Map<String, String> uuids, Map<String, Binding> bindings, List<Path> signature) {
+	public QueryExecutor(ResultStore store, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, Map<String, Binding> bindings, List<Path> signature) {
 		this.store = store;
 		this.script = script;
 		this.bindings = bindings;

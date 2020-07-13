@@ -1,6 +1,5 @@
 package nl.cwi.swat.typhonql.backend.mariadb;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -10,15 +9,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 
-import org.apache.commons.text.StringSubstitutor;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKBWriter;
-import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
 
+import lang.typhonql.util.MakeUUID;
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Engine;
 import nl.cwi.swat.typhonql.backend.QueryExecutor;
@@ -32,7 +31,7 @@ public class MariaDBEngine extends Engine {
 
 	private final Supplier<Connection> connection;
 
-	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids, Supplier<Connection> sqlConnection) {
+	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, UUID> uuids, Supplier<Connection> sqlConnection) {
 		super(store, script, updates, uuids);
 		this.connection = sqlConnection;
 	}
@@ -67,6 +66,9 @@ public class MariaDBEngine extends Engine {
             }
             else if (value instanceof Geometry) {
                 stm.setBytes(i, new WKBWriter().write((Geometry) value));
+            }
+            else if (value instanceof UUID) {
+            	stm.setBytes(i, MakeUUID.uuidToBytes((UUID)value));
             }
             else {
                 // TODO: what to do with NULL?

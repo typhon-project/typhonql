@@ -8,7 +8,6 @@ import lang::typhonql::Session;
 import lang::typhonql::TDBC;
 import lang::typhonql::Order;
 import lang::typhonql::Normalize;
-import  lang::typhonql::DDL;
 
 
 import lang::typhonql::util::Log;

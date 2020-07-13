@@ -117,6 +117,7 @@ data ColumnType
   | point()
   | polygon()
   | date()
+  | uuidType()
   | dateTime()
   ; 
   
@@ -131,6 +132,7 @@ data Value
   | date(datetime dateVal)
   | placeholder(str name="")
   | blobPointer(str id)
+  | uuid(str uuid)
   | null()
   ;
 

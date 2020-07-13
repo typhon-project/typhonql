@@ -1,7 +1,6 @@
 package nl.cwi.swat.typhonql.backend.test;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,7 +36,7 @@ public class TestInsertFromScript1 {
 		
 		ResultStore store = new ResultStore(Collections.emptyMap());
 		
-		Map<String, String> uuids = new HashMap<String, String>();
+		Map<String, UUID> uuids = new HashMap<>();
 		
 		List<Consumer<List<Record>>> script = new ArrayList<Consumer<List<Record>>>();
 		List<Runnable> updates = new ArrayList<>();
@@ -46,7 +45,7 @@ public class TestInsertFromScript1 {
 		
 		MariaDBEngine e1 = new MariaDBEngine(store, script, updates,uuids, () -> conn);
 		
-		uuids.put("param_0", UUID.randomUUID().toString());
+		uuids.put("param_0", UUID.randomUUID());
 		HashMap<String, Binding> map1 = new LinkedHashMap<String, Binding>();
 		map1.put("param_0", new GeneratedIdentifier("param_0"));
 		e1.executeUpdate("insert into `User` (`User.name`, `User.@id`) \nvalues (\'Tijs\', ${param_0});", map1);

@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -28,6 +29,7 @@ import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.GridFSDownloadStream;
 
+import lang.typhonql.util.MakeUUID;
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Engine;
 import nl.cwi.swat.typhonql.backend.QueryExecutor;
@@ -48,7 +50,7 @@ public class MongoDBEngine extends Engine {
 		return gridBucket;
 	}
 
-	public MongoDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids,
+	public MongoDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, UUID> uuids,
 			MongoDatabase db) {
 		super(store, script, updates, uuids);
 		this.db = db;
@@ -108,6 +110,10 @@ public class MongoDBEngine extends Engine {
 		}
 		else if (obj instanceof LocalDateTime) {
 			return "{\"$date\": {\"$numberLong\":" + ((LocalDateTime)obj).toEpochSecond(ZoneOffset.UTC) * 1000L + "}}";
+		}
+		else if (obj instanceof UUID) {
+			return "{ \"$binary\": {\"base64\": \"" + MakeUUID.uuidToBase64((UUID)obj) + "\", \"subType\": \"04\"}}";
+			
 		}
 		else
 			throw new RuntimeException("Query executor does not know how to serialize object of type " +obj.getClass());

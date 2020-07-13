@@ -4,6 +4,7 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinition;
@@ -64,8 +65,8 @@ public class CassandraIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentId(String label, String type) {
-		return current.getString(columnName(label, type, "@id"));
+	public UUID getCurrentId(String label, String type) {
+		return UUID.fromString(current.getString(columnName(label, type, "@id")));
 	}
 
 	@Override

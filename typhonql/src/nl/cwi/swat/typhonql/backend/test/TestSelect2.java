@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import com.mongodb.client.MongoDatabase;
@@ -28,7 +29,7 @@ public class TestSelect2 {
 	public static void main(String[] args) throws SQLException {
 		ResultStore store = new ResultStore(Collections.emptyMap());
 		
-		Map<String, String> uuids = new HashMap<String, String>();
+		Map<String, UUID> uuids = new HashMap<>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();
 		
@@ -39,7 +40,7 @@ public class TestSelect2 {
 		MongoDBEngine e2 = new MongoDBEngine(store, script, updates, uuids, conn2);
 		
 		e2.executeFindWithProjection("Reviews","Review","{\"contents\": \"***\"}","{\"_id\": 1, \"user\": 1}",
-				Collections.EMPTY_MAP, 
+				Collections.emptyMap(), 
 				Arrays.asList(new Path("Reviews", "r", "Review", new String[] { "user" })));
 		
 		LinkedHashMap<String, Binding> map1 = new LinkedHashMap<String, Binding>();
