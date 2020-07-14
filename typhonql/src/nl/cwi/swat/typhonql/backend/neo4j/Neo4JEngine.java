@@ -72,11 +72,11 @@ public class Neo4JEngine extends Engine {
 		if (obj == null) {
 			return null;
 		}
-		if (obj instanceof Integer || obj instanceof Boolean || obj instanceof Double) {
+		if (obj instanceof Integer || obj instanceof Boolean || obj instanceof Double| obj instanceof String) {
 			return String.valueOf(obj);
 		}
-		else if (obj instanceof String) {
-			return "\"" + (String) obj + "\"";
+		else if (obj instanceof UUID) {
+			return ((UUID) obj).toString();
 		}
 		if (obj instanceof Geometry) {
 			return new GeoJSONWriter().write((Geometry)obj).toString();
