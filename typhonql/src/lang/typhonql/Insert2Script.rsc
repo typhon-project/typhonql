@@ -500,7 +500,7 @@ void compileRefBinding(
   //if (r notin trueCrossRefs(ctx.schema.rels)) {
   //  fail compileRefBinding;
   //}
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, lit(sUuid(uuid2str(ref))), ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(sUuid(uuid2str(ref)))], ctx.myParams));
   //ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
   
   ctx.addSteps(neoReplaceEnd(other, to, from, toRole, nLit(nText(uuid2str(ref))), ctx.neoMe, ctx.myParams, ctx.schema));
