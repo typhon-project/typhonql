@@ -33,7 +33,8 @@ alias Session = tuple[
 	str (str) newId,
 	SQLOperations sql,
    	MongoOperations mongo,
-   	CassandraOperations cassandra
+   	CassandraOperations cassandra,
+   	Neo4JOperations neo
 ];
 
 alias ResultTable
@@ -63,6 +64,11 @@ alias CassandraOperations = tuple[
 	void (str dbName, str query, Bindings bindings) executeGlobalStatement
 ];
 
+alias Neo4JOperations = tuple[
+	void (str resultId, str dbName, str query, Bindings bindings, list[Path] paths) executeMatch,
+	void (str dbName, str query, Bindings bindings) executeUpdate
+];
+
 alias MongoOperations = tuple[
 	void (str resultId, str dbName, str collection, str query, Bindings bindings, list[Path] paths) find,
 	void (str resultId, str dbName, str collection, str query, str projection, Bindings bindings, list[Path] paths) findWithProjection,
@@ -83,6 +89,7 @@ data Connection
  = mariaConnection(str host, int port, str user, str password)
  | mongoConnection(str host, int port, str user, str password)
  | cassandraConnection(str host, int port, str user, str password)
+ | neoConnection(str host, int port, str user, str password)
  ;
 
 @reflect

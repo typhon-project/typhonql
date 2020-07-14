@@ -210,6 +210,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		myAssertException>;
 		
 	void(void(PolystoreInstance, bool), bool) myRunSetup = void(void(PolystoreInstance, bool) setupFun, bool doTests) {
+		proxy.resetDatabases();
 		proxy.startSession();
 		setupFun(proxy, doTests);
 		proxy.closeSession();

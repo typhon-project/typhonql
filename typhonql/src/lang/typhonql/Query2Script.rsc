@@ -38,6 +38,10 @@ import lang::typhonql::relational::Query2SQL;
 import lang::typhonql::mongodb::Query2Mongo;
 import lang::typhonql::mongodb::DBCollection;
 
+import lang::typhonql::neo4j::Query2Neo;
+import lang::typhonql::neo4j::Neo;
+import lang::typhonql::neo4j::Neo2Text;
+
 import lang::typhonql::util::Log;
 
 import IO;
@@ -87,7 +91,7 @@ Where getWhere((Query)`from <{Binding ","}+ _> select <{Result ","}+ _> <Where w
 
 list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s, Log log = noLog) {
   //r = expandNavigation(addWhereIfAbsent(r), s);
-  log("COMPILING: <r>");
+  log("COMPILING2SQL: <r>");
   <sqlStat, params> = compile2sql(r, s, p);
   // hack
 
@@ -113,8 +117,6 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schem
   return [];
 }
 
-
-
 list[Step] compileQuery(r:(Request)`<Query q>`, p:<cassandra(), str dbName>, Schema s, Log log = noLog) {
   log("COMPILING2CQL: <r>");
   
@@ -125,6 +127,20 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<cassandra(), str dbName>, Sch
     return [];
   }
   return [step(dbName, cassandra(cExecuteQuery(dbName, pp(cqlStat))), params
+     , signature=
+         filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s)
+           +  where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];
+}
+
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<neo4j(), str dbName>, Schema s, Log log = noLog) {
+  log("COMPILING2neo4j: <r>");
+  <neoStat, params> = compile2neo(r, s, p);
+  // hack
+
+  if (neoStat.matches[0].patterns == []) {
+    return [];
+  }
+  return [step(dbName, neo(executeNeoQuery(dbName, neopp(neoStat))), params
      , signature=
          filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s)
            +  where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];

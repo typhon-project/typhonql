@@ -40,6 +40,7 @@ data Call
   = sql(SQLCall jdbc)
   | mongo(MongoCall mongo) 
   | cassandra(CassandraCall cassandra)
+  | neo(NeoCall neo)
   ;
   
 data CassandraCall
@@ -52,6 +53,11 @@ data SQLCall
   = executeQuery(str dbName, str query)
   | executeStatement(str dbName, str stat)
   | executeGlobalStatement(str dbName, str stat)
+  ;
+  
+data NeoCall
+  = executeNeoQuery(str dbName, str query)
+  | executeNeoUpdate(str dbName, str stat)
   ;
   
 data MongoCall
@@ -139,6 +145,12 @@ str runScript(Script scr, Session session, Schema schema) {
        
       case step(str r, mongo(findAndUpdateMany(str db, str coll, str query, str update)), Bindings ps):
         session.mongo.findAndUpdateMany(db, coll, query, update, ps);
+        
+      case step(str r, neo(executeNeoQuery(str db, str q)), Bindings ps):
+        session.neo.executeMatch(r, db, q, ps, s.signature);
+        
+      case step(str r, neo(executeNeoUpdate(str db, str q)), Bindings ps):
+        session.neo.executeUpdate(db, q, ps);
       
       case newId(str var): {
         result = session.newId(var);

@@ -79,6 +79,7 @@ public class TyphonSession implements Operations {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
+		Map<String, ConnectionData> neoConnections = new HashMap<>();
 
 		Iterator<Entry<IValue, IValue>> connIter = connections.entryIterator();
 
@@ -101,6 +102,9 @@ public class TyphonSession implements Operations {
 				case "cassandraConnection":
                     cassandraConnections.put(dbName, data);
                     break;
+				case "neoConnection":
+                    neoConnections.put(dbName, data);
+                    break; 
 			}
 		}
 		Map<String, InputStream> actualBlobMap = new HashMap<>();
@@ -111,13 +115,14 @@ public class TyphonSession implements Operations {
 			String value = ((IString)cur.getValue()).getValue();
 			actualBlobMap.put(key, new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8)));
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, actualBlobMap, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, actualBlobMap, ctx);
 	}
 
 	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, Map<String, InputStream> blobMap, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
+		Map<String, ConnectionData> neoConnections = new HashMap<>();
 		for (DatabaseInfo db : connections) {
 			switch (db.getDbms().toLowerCase()) {
 			case "mongodb":
@@ -130,16 +135,18 @@ public class TyphonSession implements Operations {
 				cassandraConnections.put(db.getDbName(), new ConnectionData(db));
 				break;
 			case "neo4j":
+				neoConnections.put(db.getDbName(), new ConnectionData(db));
 				break;
 			default:
 				throw new RuntimeException("Missing type: " + db.getDbms());
 			}
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, blobMap, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, blobMap, ctx);
 	}
 
 	private SessionWrapper newSessionWrapper(Map<String, ConnectionData> mariaDbConnections,
-			Map<String, ConnectionData> mongoConnections, Map<String, ConnectionData> cassandraConnections, Map<String, InputStream> blobMap, IEvaluatorContext ctx) {
+			Map<String, ConnectionData> mongoConnections, Map<String, ConnectionData> cassandraConnections, 
+			Map<String, ConnectionData> neoConnections, Map<String, InputStream> blobMap, IEvaluatorContext ctx) {
 		// checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function
 		// type ourself
@@ -174,9 +181,11 @@ public class TyphonSession implements Operations {
 		MariaDBOperations mariaDBOperations = new MariaDBOperations(mariaDbConnections);
 		MongoOperations mongoOperations = new MongoOperations(mongoConnections);
 		CassandraOperations cassandra = new CassandraOperations(cassandraConnections);
+		Neo4JOperations neo = new Neo4JOperations(neoConnections);
 		state.addOpperations(mariaDBOperations);
 		state.addOpperations(mongoOperations);
 		state.addOpperations(cassandra);
+		state.addOpperations(neo);
 
 		return new SessionWrapper(vf.tuple(makeGetResult(state, getResultType, ctx),
 				makeGetJavaResult(state, getJavaResultType, ctx),
@@ -186,7 +195,8 @@ public class TyphonSession implements Operations {
 				makeNewId(uuids, state, newIdType, ctx),
 				mariaDBOperations.newSQLOperations(store, script, updates, state, uuids, ctx, vf),
 				mongoOperations.newMongoOperations(store, script, updates, state, uuids, ctx, vf),
-				cassandra.buildOperations(store, script, updates, state, uuids, ctx, vf)
+				cassandra.buildOperations(store, script, updates, state, uuids, ctx, vf),
+				neo.newNeo4JOperations(store, script, updates, state, uuids, ctx, vf)
 				), state);
 	}
 

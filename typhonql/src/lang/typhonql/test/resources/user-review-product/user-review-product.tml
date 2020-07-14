@@ -1,4 +1,3 @@
-
 customdatatype address {
 	street: string[256],
 	city: string[256],
@@ -31,12 +30,12 @@ entity Product {
 	tags -> Tag[0..*]
 	inventory :-> Item[0..*]
 	category -> Category[1]
+	wish :-> Wish."Wish.product"[1]
 }
 
 entity Category {
 	id: string[32]
 	name: string[32]
-	
 }
 
 entity Item {
@@ -60,6 +59,7 @@ entity User {
 
 	biography :-> Biography."Biography.user"[0..1]
 	reviews -> Review."Review.user"[0..*]
+	wish :-> Wish."Wish.user"[1]
 }
 
 entity Biography {
@@ -68,6 +68,21 @@ entity Biography {
 	user -> User."User.biography"[1]
 
 }
+
+entity Concordance {
+	weight: int
+	
+	source -> Product[1]
+	target -> Product[1]
+}
+
+entity Wish {
+	intensity: int
+	
+	user -> User[1]
+	product -> Product[1]
+}
+
 
 
 relationaldb Inventory {
@@ -96,10 +111,35 @@ documentdb Reviews {
 	collections {
 		Review : Review
 		Biography : Biography
-		Category: Category 
-		index CategoryIndex {
-		  attributes ("Category.id", "Category.name")
-		}
+		Category: Category
 	}
 }
 
+relationaldb Inventory {
+	tables {
+		table {
+			UserDB : User
+			index UserNameIndex {
+				attributes ("User.name", "User.location")
+			}
+		}
+		table {
+			ProductDB : Product
+		}
+		table { TagDB: Tag }
+		table { ItemDB: Item }
+	}
+}
+
+graphdb MoreStuff {
+	edges {
+		edge Wish {
+			from "Wish.user"
+			to "Wish.product"
+		},
+		edge Concordance {
+			from "Concordance.source"
+			to "Concordance.target"
+		}	
+	}
+}

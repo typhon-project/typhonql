@@ -50,7 +50,7 @@ alias Attrs = rel[str from, str name, str \type];
 alias ChangeOps = list[ChangeOp];
 alias ChangeOp = tuple[str name, list[str] properties];
 
-data DB = cassandra() | mongodb() | sql() | hyperj() | recombine() | unknown() | typhon();
+data DB = cassandra() | mongodb() | neo4j() | sql() | hyperj() | recombine() | unknown() | typhon();
 
 alias Place = tuple[DB db, str name];
 
@@ -59,8 +59,9 @@ alias Placement = rel[Place place, str entity];
 alias Pragmas = rel[str dbName, Option option];
 
 data Option
-  = indexSpec(str name, rel[str entity, str feature] features);
-
+  = indexSpec(str name, rel[str entity, str feature] features)
+  | graphSpec(rel[str entity, str from, str to] edges)
+  ;
 
 str ppSchema(Schema s) {
   str txt = "";
@@ -132,6 +133,17 @@ Pragmas pragmas(Database(RelationalDB(str name, list[Table] tables)), Model m) {
   return prags;
 }
 
+Pragmas pragmas(Database(GraphDB(str name, list[GraphNode] _, list[GraphEdge] edges)), Model m) {
+  es = {};
+  for (GraphEdge edge <- edges) {
+    str ent = lookup(m, #Entity, edge.entity).name;
+    str from = lookup(m, #Relation, edge.from).name;
+    str to = lookup(m, #Relation, edge.to).name;
+    es += {<ent, from, to>};
+  }
+  return {<name, graphSpec(es)>};
+}
+
 default Pragmas pragmas(Database _, Model _) = {};
 
 // NB: the place function is an extension point.
@@ -161,6 +173,9 @@ Placement place(Database(KeyValueDB(str name, list[KeyValueElement] elts)), Mode
  return { <<cassandra(), name>, p> | str p <- props };
 }
   //= {<<cassandra(), name>, lookup(m, #Attribute, c.entity).name> | KeyValueElement e <- elts };
+
+Placement place(Database(GraphDB(str name, list[GraphNode] nodes, list[GraphEdge] edges)), Model m)
+  = {<<neo4j(), name>, lookup(m, #Entity, e.entity).name> | GraphEdge e <- edges };
 
 
 default Placement place(Database db, Model m) {

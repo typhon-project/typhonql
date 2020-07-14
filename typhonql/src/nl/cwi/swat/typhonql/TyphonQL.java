@@ -253,7 +253,8 @@ public class TyphonQL {
         	connectionType =tf.constructor(ts, adtType, "cassandraConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
         	break;
         case "neo4j":
-        	throw new UnsupportedOperationException("neo4j nog supported yet");
+        	connectionType =tf.constructor(ts, adtType, "neoConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
+        	break;
         }
         return vf.constructor(connectionType, vf.string(host), vf.integer(port), vf.string(user), vf.string(password));
 	}
@@ -269,7 +270,7 @@ public class TyphonQL {
 		IMap  m = ql.readConnectionsInfo(vf.string("localhost"), vf.integer(8080), vf.string("admin"), vf.string("admin1@"));
 		System.out.println(m);
 		IString t = ql.executeQuery(vf.sourceLocation(new URI("http://localhost:8080")),
-				vf.string("pablo"), vf.string("antonio"), vf.string("from User u select u"));
+				vf.string("admin"), vf.string("admin1@"), vf.string("from User u select u"));
 		
 		System.out.println(t);
 	}

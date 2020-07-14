@@ -37,11 +37,16 @@ import lang::typhonql::cassandra::CQL2Text;
 import lang::typhonql::cassandra::Query2CQL;
 import lang::typhonql::cassandra::Schema2CQL;
 
+import lang::typhonql::neo4j::Neo;
+import lang::typhonql::neo4j::Neo2Text;
+import lang::typhonql::neo4j::NeoUtil;
+
 import lang::typhonql::Normalize;
 
 import IO;
 import List;
 import String;
+import util::Maybe;
 
 
 bool isDelta((KeyVal)`<Id _> +: <Expr _>`) = true;
@@ -54,9 +59,11 @@ alias UpdateContext = tuple[
   Bindings myParams,
   SQLExpr sqlMe,
   DBObject mongoMe,
+  NeoExpr neoMe,
   void (list[Step]) addSteps,
   void (SQLStat(SQLStat)) updateSQLUpdate,
   void (DBObject(DBObject)) updateMongoUpdate,
+  void (Maybe[NeoStat](Maybe[NeoStat])) updateNeoUpdate,
   Schema schema
 ];
 
@@ -87,6 +94,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   str myId = newParam();
   SQLExpr sqlMe = lit(Value::placeholder(name=myId));
   DBObject mongoMe = DBObject::placeholder(name=myId);
+  NeoExpr neoMe = NeoExpr::nPlaceholder(name=myId);
   CQLExpr cqlMe = cBindMarker(name=myId);
   
   Bindings myParams = ( myId: toBeUpdated );
@@ -95,6 +103,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
     sqlMe = lit(evalExpr((Expr)`<UUID mySelf>`));
     mongoMe = mUuid(uuid2str(mySelf));
     cqlMe = cTerm(cUUID(uuid2str(mySelf)));
+    neoMe = nLit(evalNeoExpr((Expr)`<UUID mySelf>`));
     myParams = ();
   }
   else {
@@ -129,15 +138,27 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
   
   updateMongoUpdate(DBObject(DBObject d) { return d; });
   
+  Maybe[NeoStat] theNeoUpdate = Maybe::just(nMatchQuery([],[])); 
+					
+  void updateNeoUpdate(Maybe[NeoStat](Maybe[NeoStat]) block) {
+    theNeoUpdate = block(theNeoUpdate);
+    Step st = step(p.name, neo(executeNeoUpdate(p.name, neopp(theNeoUpdate.val))), myParams);
+    updateStep(statIndex, st);
+  }
+
+  updateNeoUpdate(Maybe[NeoStat](Maybe[NeoStat] s) { return s; });
+  
   
   UpdateContext ctx = <
     ent,
     myParams,
     sqlMe,
     mongoMe,
+    neoMe,
     addSteps,
     updateSQLUpdate,
     updateMongoUpdate,
+    updateNeoUpdate,
     s
   >;
   
@@ -219,6 +240,17 @@ void compileAttrSets(<mongodb(), str dbName>, list[KeyVal] kvs, UpdateContext ct
   });
 }
 
+void compileAttrSets(<neo4j(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
+  ctx.updateNeoUpdate(Maybe[NeoStat](Maybe[NeoStat] upd) {
+    upd.val =
+       \nMatchUpdate(
+  			just(nMatch
+  				([nPattern(nNodePattern("__n1", [], []), [nRelationshipPattern(nDoubleArrow(), "__r1",  ctx.entity, [nProperty(typhonId(ctx.entity), ctx.neoMe)], nNodePattern("__n2", [], []))])], [])),
+			nSet([nSetPlusEquals("__r1", nMapLit(( graphPropertyName(kv has key ? "<kv.key>" : "@id", ctx.entity) : nLit(evalNeoExpr(kv.\value)) | KeyVal kv <- kvs )))]),
+			[nLit(nBoolean(true))]);
+    return upd;
+  });
+}
 
 /*
  * Assign to a relation, single-valued
@@ -374,6 +406,37 @@ void compileRefSet(
   UUID ref, UpdateContext ctx
 ) {
   ctx.addSteps(updateIntoJunctionSingle(dbName, from, fromRole, to, toRole, ctx.sqlMe, lit(sUuid(uuid2str(ref))), ctx.myParams));
+  ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+}
+
+// neo/sql containment or xref
+void compileRefSet(
+  <DB::neo4j(), str dbName>, <DB::sql(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  UUID ref, UpdateContext ctx
+) {
+  
+  ctx.addSteps(neoReplaceEnd(dbName, from, to, fromRole, 
+  	ctx.neoMe, nLit(nText(uuid2str(ref))), ctx.myParams, ctx.schema));
+
+  /*ctx.updateMongoUpdate(DBObject(DBObject upd) {
+    upd.props += [ <"$set", \value(uuid2str(ref))> ];
+    return upd;
+  });
+  */
+  ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(sUuid(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
+}
+
+// neo/sql containment or xref
+void compileRefSet(
+  <DB::neo4j(), str dbName>, <DB::mongodb()(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, _>,
+  UUID ref, UpdateContext ctx
+) {
+  
+  ctx.addSteps(neoReplaceEnd(dbName, from, to, fromRole, 
+  	ctx.neoMe, nLit(nText(uuid2str(ref))), ctx.myParams, ctx.schema));
+
   ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
