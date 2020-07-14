@@ -1,3 +1,19 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 module lang::typhonql::Insert2Script
 
 import lang::typhonml::Util;
@@ -38,7 +54,7 @@ str evalId({KeyVal ","}* kvs) = "<e>"[1..]
   when (KeyVal)`@id: <UUID e>` <- kvs;
 
 
-str uuid2str(UUID ref) = "<ref>"[1..];
+str uuid2str(UUID ref) = "<ref.part>";
 
 alias InsertContext = tuple[
   str entity,
@@ -69,8 +85,8 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   Place p = placeOf(entity, s);
   str myId = newParam();
   Bindings myParams = ( myId: generatedId(myId) | !hasId(kvs) );
-  SQLExpr sqlMe = hasId(kvs) ? SQLExpr::lit(Value::text(evalId(kvs))) : SQLExpr::placeholder(name=myId);
-  DBObject mongoMe = hasId(kvs) ? \value(evalId(kvs)) : DBObject::placeholder(name=myId);
+  SQLExpr sqlMe = hasId(kvs) ? lit(sUuid(evalId(kvs))) : SQLExpr::placeholder(name=myId);
+  DBObject mongoMe = hasId(kvs) ? mUuid(evalId(kvs)) : DBObject::placeholder(name=myId);
   CQLExpr cqlMe = hasId(kvs) ? cTerm(cUUID(evalId(kvs))) : cBindMarker(name=myId);
   NeoExpr neoMe = hasId(kvs) ? nLit(nText(evalId(kvs))) : NeoExpr::nPlaceholder(name=myId);
 
@@ -297,8 +313,8 @@ void compileRefBinding(
   Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
   UUID ref, InsertContext ctx
 ) {      
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, parent, parentRole, SQLExpr::lit(text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
-  ctx.addSteps(insertIntoJunction(other, parent, parentRole, from, fromRole, SQLExpr::lit(text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, parent, parentRole, lit(sUuid(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(other, parent, parentRole, from, fromRole, lit(sUuid(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
 }
 
 
@@ -307,8 +323,8 @@ void compileRefBinding(
   Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
   UUID ref, InsertContext ctx
 ) {
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, parent, parentRole, lit(text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
-  ctx.addSteps(updateObjectPointer(other, parent, parentRole, parentCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, parent, parentRole, lit(sUuid(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(updateObjectPointer(other, parent, parentRole, parentCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
 void compileRefBinding(
@@ -321,12 +337,12 @@ void compileRefBinding(
     str fk = fkName(to, from, fromRole == "" ? toRole : fromRole);
     ctx.updateSQLInsert(SQLStat(SQLStat theInsert) {
       theInsert.colNames += [ fk ];
-      theInsert.values += [ SQLExpr::lit(Value::text(uuid2str(ref))) ];
+      theInsert.values += [ lit(sUuid(uuid2str(ref))) ];
       return theInsert;
     });
   }
   else {
-    ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [SQLExpr::lit(Value::text(uuid2str(ref)))], ctx.myParams));
+    ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(sUuid(uuid2str(ref)))], ctx.myParams));
   }
 }
 
@@ -338,8 +354,8 @@ void compileRefBinding(
   //if (r notin trueCrossRefs(ctx.schema.rels)) {
   //  fail compileRefBinding;
   //}
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(text(uuid2str(ref)))], ctx.myParams));
-  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(sUuid(uuid2str(ref)))], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(sUuid(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
 }
 
 void compileRefBinding(
@@ -350,8 +366,8 @@ void compileRefBinding(
   //if (r notin trueCrossRefs(ctx.schema.rels)) {
   //  fail compileRefBinding;
   //}
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(text(uuid2str(ref)))], ctx.myParams));
-  ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(sUuid(uuid2str(ref)))], ctx.myParams));
+  ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
 /*
@@ -366,10 +382,10 @@ void compileRefBinding(
   UUID ref, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, \value(uuid2str(ref))> ];
+    obj.props += [ <fromRole, mUuid(uuid2str(ref))> ];
     return obj;
   });
-  ctx.addSteps(insertObjectPointer(dbName, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(insertObjectPointer(dbName, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
 void compileRefBinding(
@@ -378,10 +394,10 @@ void compileRefBinding(
   UUID ref, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, \value(uuid2str(ref))> ];
+    obj.props += [ <fromRole, mUuid(uuid2str(ref))> ];
     return obj;
   });
-  ctx.addSteps(insertObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(insertObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
 void compileRefBinding(
@@ -390,10 +406,10 @@ void compileRefBinding(
   UUID ref, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, \value(uuid2str(ref))> ];
+    obj.props += [ <fromRole, mUuid(uuid2str(ref))> ];
     return obj;
   });
-  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, SQLExpr::lit(Value::text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(sUuid(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
 }
 
 void compileRefBinding(
@@ -445,7 +461,6 @@ void compileRefBinding(
   	//  fail compileRefBinding;
   	//}
   	ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
-   
 }
 
 void compileRefBinding(
@@ -574,10 +589,10 @@ void compileRefBindingMany(
  {UUID ","}* refs, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, array([ \value(uuid2str(ref)) | UUID ref <- refs ]) > ];
+    obj.props += [ <fromRole, array([ mUuid(uuid2str(ref)) | UUID ref <- refs ]) > ];
     return obj;
   });
-  ctx.addSteps([ *insertObjectPointer(dbName, to, toRole, toCard, \value(uuid2str(ref)) , ctx.mongoMe, ctx.myParams)
+  ctx.addSteps([ *insertObjectPointer(dbName, to, toRole, toCard, sUuid(uuid2str(ref)) , ctx.mongoMe, ctx.myParams)
                 | UUID ref <- refs ]);
 }
 
@@ -587,10 +602,10 @@ void compileRefBindingMany(
  {UUID ","}* refs, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, array([ \value(uuid2str(ref)) | UUID ref <- refs ]) > ];
+    obj.props += [ <fromRole, array([ mUuid(uuid2str(ref)) | UUID ref <- refs ]) > ];
     return obj;
   });
-  ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)) , ctx.mongoMe, ctx.myParams)
+  ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, sUuid(uuid2str(ref)) , ctx.mongoMe, ctx.myParams)
                 | UUID ref <- refs ]);
 }
 
@@ -600,7 +615,7 @@ void compileRefBindingMany(
  {UUID ","}* refs, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, array([ \value(uuid2str(ref)) | UUID ref <- refs ]) > ];
+    obj.props += [ <fromRole, array([ mUuid(uuid2str(ref)) | UUID ref <- refs ]) > ];
     return obj;
   });
   ctx.addSteps([ *insertIntoJunction(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), 
@@ -622,10 +637,13 @@ DBObject obj2dbObj((Expr)`<Int n>`) = \value(toInt("<n>"));
 
 DBObject obj2dbObj((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
 
-DBObject obj2dbObj((Expr)`<UUID id>`) = \value("<id>"[1..]);
+DBObject obj2dbObj((Expr)`<UUID id>`) = mUuid("<id>"[1..]);
+
+DBObject obj2dbObj((Expr)`#blob:<UUIDPart prt>`) = \value("#blob:<prt>");
 
 DBObject obj2dbObj((Expr)`<DateTime d>`) 
   = object([<"$date", \value(readTextValueString(#datetime, "<d>"))>]);
+
 
 DBObject obj2dbObj((Expr)`#point(<Real x> <Real y>)`) 
   = object([<"type", \value("Point")>, 
@@ -648,7 +666,6 @@ Prop keyVal2prop((KeyVal)`<Id x>: <Expr e>`) = <"<x>", obj2dbObj(e)>;
   
 Prop keyVal2prop((KeyVal)`@id: <UUID u>`) = <"_id", \value("<u>"[1..])>;
 
-
 bool isKeyValAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) 
   = isKeyValAttr(e, "<x>", s) != [];
 
@@ -661,8 +678,6 @@ bool isAttr((KeyVal)`<Id x> +: <Expr _>`, str e, Schema s) = false;
 bool isAttr((KeyVal)`<Id x> -: <Expr _>`, str e, Schema s) = false;
 
 bool isAttr((KeyVal)`@id: <Expr _>`, str _, Schema _) = false;
-  
-
 
 Schema testSchema() = schema({
     <"Concordance", \one(), "from", "from^", \one(), "Product", false>,
@@ -751,3 +766,4 @@ void smoke2createWithAllOnSameNeoDB() {
   
   
 }
+

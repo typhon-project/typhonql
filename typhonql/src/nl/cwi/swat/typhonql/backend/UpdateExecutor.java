@@ -1,9 +1,25 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 package nl.cwi.swat.typhonql.backend;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 import org.rascalmpl.values.ValueFactoryFactory;
@@ -13,9 +29,9 @@ public abstract class UpdateExecutor {
 	private ResultStore store;
 	private List<Runnable> updates;
 	private Map<String, Binding> bindings;
-	private Map<String, String> uuids;
+	private Map<String, UUID> uuids;
 
-	public UpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, String> uuids, Map<String, Binding> bindings) {
+	public UpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, UUID> uuids, Map<String, Binding> bindings) {
 		this.store = store;
 		this.updates = updates;
 		this.bindings = bindings;
@@ -43,8 +59,7 @@ public abstract class UpdateExecutor {
 				Field field = (Field) binding;
 				ResultIterator results =  store.getResults(field.getReference());
 				if (results == null) {
-					throw RuntimeExceptionFactory.illegalArgument(ValueFactoryFactory.getValueFactory().string(field.toString()), null, null, 
-							"Results was null for field " + field.toString() + " and store " + store);
+					throw new RuntimeException("Results was null for field " + field.toString() + " and store " + store);
 				}
 				
 				results.beforeFirst();

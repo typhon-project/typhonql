@@ -1,3 +1,18 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
 
 module lang::typhonql::Delete2Script
 
@@ -70,9 +85,9 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   }
   
   if ((Where)`where <VId _>.@id == <UUID mySelf>` := (Where)`where <{Expr ","}+ ws>`) {
-    sqlMe = lit(lang::typhonql::relational::Util::evalExpr((Expr)`<UUID mySelf>`));
-    mongoMe = \value(uuid2str(mySelf));
-    neoMe = nLit(evalNeoExpr((Expr)`<UUID mySelf>`));
+    sqlMe = lit(evalExpr((Expr)`<UUID mySelf>`));
+    mongoMe = mUuid(uuid2str(mySelf));
+	neoMe = nLit(evalNeoExpr((Expr)`<UUID mySelf>`));
     myParams = ();
   }
   else {

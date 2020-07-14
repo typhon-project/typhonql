@@ -1,4 +1,10 @@
-/********************************************************************************
+#!/bin/bash
+
+original=$(<"$1")
+
+
+{
+echo "/********************************************************************************
 * Copyright (c) 2018-2020 CWI & Swat.engineering 
 *
 * This program and the accompanying materials are made available under the
@@ -13,25 +19,6 @@
 *
 * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
 ********************************************************************************/
-
-package engineering.swat.typhonql.server.crud;
-
-import java.util.HashMap;
-import java.util.Map;
-
-public class EntityFields {
-	private final Map<String, Object> fields;
-
-	public EntityFields(Map<String, Object> fields) {
-		this.fields = fields;
-	}
-	
-	public EntityFields() {
-		this(new HashMap<>());
-	}
-
-	public Map<String, Object> getFields() {
-		return fields;
-	}
-	
-}
+" 
+    echo "$original"
+} > "$1"

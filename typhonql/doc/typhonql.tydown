@@ -42,6 +42,7 @@ TyphonQL supports the following literal (constant) expressions:
 - Geographical points: `#point(23.4 343.34)`
 - Polygons: `#polygon((23.4 343.34), (2.0 0.0))`;
 - Null (indicating absence of a reference or value): `null`
+- Blob-pointers: `#blob:2ed99a8e-5259-4efd-8cb4-66748d52e8a1`
 
 Furthermore, TyphonQL supports syntax for dealing with objects (instances of entity types):
 
@@ -108,6 +109,12 @@ overlap:
 
 
 *note*: on mongodb backends distance is limited to the where query and only in presence of a comparision operator. 
+
+
+### Blobs
+
+Blobs are handled in a special way, during insertion/update you have to send them as a pointer to a blob: `#blob:<uuid>` (and pass along the contents of the blob to the API in a seperate field).
+While selecting them, you get a base64 encoded version of the blob. It is not possible to do any operations on them, they are opaque.
 
 ### Queries
 

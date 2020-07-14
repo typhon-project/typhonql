@@ -13,6 +13,7 @@ customdatatype zip {
 entity Review {
 	content : text
 	location: point
+	screenshot: blob
 
 	product -> Product[1]
 	user -> User[1]
@@ -35,10 +36,13 @@ entity Product {
 entity Category {
 	id: string[32]
 	name: string[32]
+	
 }
 
 entity Item {
 	shelf: int
+	picture: blob
+	
 	product -> Product."Product.inventory"[1]
 }
 

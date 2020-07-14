@@ -1,3 +1,19 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 module lang::typhonql::relational::SQL2Text
 
 import lang::typhonql::relational::SQL;
@@ -173,6 +189,10 @@ str pp(null()) = "null";
 
 str pp(Value::placeholder(name = str name)) = "${<name>}";
 
+str pp(blobPointer(str pointer)) = "${blob-<pointer>}";
+
+str pp(sUuid(str uuid)) = "unhex(\'<replaceAll("<uuid>", "-", "")>\')";
+
 // TableConstraint
 
 str pp(primaryKey(str c)) = "primary key (<q(c)>)";
@@ -213,14 +233,14 @@ str pp(unique()) = "unique";
 
 str pp(char(int size)) = "char(<size>)";
 str pp(varchar(int size)) = "varchar(<size>)";
+str pp(uuidType()) = "binary(16)";
 str pp(text()) = "text";
 str pp(integer()) = "integer";
 str pp(bigint()) = "bigint";
 str pp(float()) = "float";
 str pp(double()) = "double";
-str pp(blob()) = "blob";
+str pp(blob()) = "longblob";
 str pp(date()) = "date";
 str pp(dateTime()) = "datetime";
 str pp(point()) = "point";
 str pp(polygon()) = "polygon";
-

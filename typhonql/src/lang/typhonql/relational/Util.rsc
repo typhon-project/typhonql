@@ -1,3 +1,19 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 module lang::typhonql::relational::Util
 
 import lang::typhonql::Expr;
@@ -40,7 +56,7 @@ str fkName(str from, str to, str role) = columnName(role, "<from>.<to>");
 Column typhonIdColumn(str entity) = column(typhonId(entity), typhonIdType(), [notNull(), unique()]);
 
 
-ColumnType typhonIdType() = char(36); // UUID
+ColumnType typhonIdType() = uuidType();
 
 ColumnType typhonType2SQL("date") = date();
 
@@ -88,7 +104,6 @@ list[ColumnConstraint] typhonType2Constrains("point") = [notNull()];
 list[ColumnConstraint] typhonType2Constrains("polygon") = [notNull()];
 default list[ColumnConstraint] typhonType2Constrains(str t) = [];
 
-
 list[str] columnName((KeyVal)`<Id x>: <EId customType> (<{KeyVal ","}* keyVals>)`, str entity) = [columnName("<x>", entity, "<customType>", "<y>") | (KeyVal)`<Id y>: <Expr e>` <- keyVals];
 
 list[str] columnName((KeyVal)`<Id x>: <Expr e>`, str entity) = [columnName("<x>", entity)]
@@ -128,8 +143,10 @@ Value evalExpr((Expr)`<DateAndTime d>`) =Value::dateTime(readTextValueString(#da
 Value evalExpr((Expr)`<JustDate d>`) = Value::date(readTextValueString(#datetime, "<d>"));
 
 // should only happen for @id field (because refs should be done via keys etc.)
-Value evalExpr((Expr)`<UUID u>`) = Value::text("<u>"[1..]);
+Value evalExpr((Expr)`<UUID u>`) = sUuid("<u.part>");
 
-Value evalExpr((Expr)`<PlaceHolder p>`) = Value::placeholder(name="<p>"[2..]);
+Value evalExpr((Expr)`#blob:<UUIDPart prt>`) = blobPointer("<prt>");
+
+Value evalExpr((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
 
 default Value evalExpr(Expr ex) { throw "missing case for <ex>"; }

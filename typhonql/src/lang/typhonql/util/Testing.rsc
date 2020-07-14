@@ -1,3 +1,19 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 module lang::typhonql::util::Testing
 
 import lang::typhonql::util::Log;
@@ -42,6 +58,7 @@ alias PolystoreInstance =
 		ResultTable(Request req) runQuery,
 		ResultTable(Request req, Schema s) runQueryForSchema,
 		CommandResult(Request req) runUpdate,
+		CommandResult(Request req, map[str,str] blobMap) runUpdateWithBlobs,
 		CommandResult(Request req, Schema s) runUpdateForSchema,
 		CommandResult(Request req) runDDL,
 		CommandResult(Request req, Schema s) runDDLForSchema,
@@ -57,8 +74,8 @@ alias PolystoreInstance =
 alias TestExecuter =
 	tuple[
 		void(void(PolystoreInstance, bool), bool) runSetup,
-		void(void(PolystoreInstance proxy)) runTest,
-		void(list[void(PolystoreInstance proxy)]) runTests,
+		void(void(PolystoreInstance proxy), bool) runTest,
+		void(list[void(PolystoreInstance proxy)], bool) runTests,
 		Schema() fetchSchema];
 		
 TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password, Log log = NO_LOG()) {
@@ -94,7 +111,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	
 	void() myStartSession = void() {
-		session = newSession(connections, log = log);
+		session = newSession(connections);
 	};
 	
 	void() myCloseSession = void() {
@@ -102,27 +119,35 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	
 	void() myResetDatabases = void() {
-		ses = newSession(connections, log = log);
+		ses = newSession(connections);
 		resetDatabasesInTest(sch, ses, log);
 		ses.done();
 	};
 	ResultTable(Request req) myRunQuery = ResultTable(Request req) {
         checkRequest(req);
-		ses = newSession(connections, log = log);
+		ses = newSession(connections);
 		result = runQueryInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
 	ResultTable(Request req, Schema s) myRunQueryForSchema = ResultTable(Request req, Schema s) {
         checkRequest(req, schm = s);
-		ses = newSession(connections, log = log);
+		ses = newSession(connections);
 		result = runQueryInTest(req, s, ses, log);
 		ses.done();
 		return result;
 	};
 	CommandResult(Request req) myRunUpdate = CommandResult(Request req) {
         checkRequest(req);
-		ses = newSession(connections, log = log);
+		ses = newSession(connections);
+		result = runUpdateInTest(req, sch, ses, log);
+		ses.done();
+		return result;
+	};
+
+	myRunUpdateBlobs = CommandResult(Request req, map[str,str] blobMap) {
+        checkRequest(req);
+		ses = newSession(connections, blobMap = blobMap);
 		result = runUpdateInTest(req, sch, ses, log);
 		ses.done();
 		return result;
@@ -136,14 +161,14 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	CommandResult(Request req) myRunDDL = CommandResult(Request req) {
         checkRequest(req);
-		ses = newSession(connections, log = log);
+		ses = newSession(connections);
 		result = runDDLInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
 	CommandResult(Request req, Schema s) myRunDDLForSchema = CommandResult(Request req, Schema s) {
         checkRequest(req);
-		ses = newSession(connections, log = log);
+		ses = newSession(connections);
 		result = runDDLInTest(req, s, ses, log);
 		ses.done();
 		return result;
@@ -151,7 +176,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) 
 		myRunPreparedUpdate = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
         checkRequest(req);
-	    ses = newSession(connections, log = log); 
+	    ses = newSession(connections); 
 		result = runPreparedUpdateInTest(req, columnNames, vs, sch, ses, log);
 		ses.done();
 		return result;
@@ -180,7 +205,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	PolystoreInstance proxy = <myResetStats, myGetStats, mySetStat,
 		myResetDatabases, myStartSession, 
 		myCloseSession, myRunQuery, myRunQueryForSchema,
-		myRunUpdate, myRunUpdateForSchema, myRunDDL, myRunDDLForSchema, myRunPreparedUpdate, 
+		myRunUpdate, myRunUpdateBlobs, myRunUpdateForSchema, myRunDDL, myRunDDLForSchema, myRunPreparedUpdate, 
 		myFetchSchema, myPrintSchema,  myAssertEquals, myAssertResultEquals,
 		myAssertException>;
 		
@@ -191,14 +216,14 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		proxy.closeSession();
 	};
 	
-	void(void(PolystoreInstance)) myRunTest = void(void(PolystoreInstance proxy) t) {
+	myRunTest = void(void(PolystoreInstance proxy) t, bool runTestsInSetup) {
 		proxy.resetStats();
-		runTest(proxy, setup, t, log = log);
+		runTest(proxy, setup, t, log = log, runTestsInSetup = runTestsInSetup);
 	};
 	
-	void(list[void(PolystoreInstance)]) myRunTests = void(list[void(PolystoreInstance proxy)] ts) {
+	myRunTests = void(list[void(PolystoreInstance proxy)] ts, bool runTestsInSetup) {
 		proxy.resetStats();
-		runTests(proxy, setup, ts, log = log);
+		runTests(proxy, setup, ts, log = log, runTestsInSetup = runTestsInSetup);
 	};
 	
 	Schema() myfetchSchema = Schema() {

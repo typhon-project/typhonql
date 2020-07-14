@@ -1,8 +1,28 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 package nl.cwi.swat.typhonql.backend.rascal;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -11,6 +31,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
+
+import javax.swing.text.StyledEditorKit.BoldAction;
 
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.env.ModuleEnvironment;
@@ -49,11 +71,11 @@ public class TyphonSession implements Operations {
 		this.vf = vf;
 	}
 
-	public ITuple newSession(IMap connections, IEvaluatorContext ctx) {
-		return newSessionWrapper(connections, ctx).getTuple();
+	public ITuple newSession(IMap connections, IMap fileMap, IEvaluatorContext ctx) {
+		return newSessionWrapper(connections, fileMap, ctx).getTuple();
 	}
 	
-	public SessionWrapper newSessionWrapper(IMap connections, IEvaluatorContext ctx) {
+	public SessionWrapper newSessionWrapper(IMap connections, IMap blobMap, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
@@ -85,10 +107,18 @@ public class TyphonSession implements Operations {
                     break; 
 			}
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, ctx);
+		Map<String, InputStream> actualBlobMap = new HashMap<>();
+		Iterator<Entry<IValue, IValue>> it = blobMap.entryIterator();
+		while (it.hasNext()) {
+			Entry<IValue, IValue> cur = it.next();
+			String key = ((IString)cur.getKey()).getValue();
+			String value = ((IString)cur.getValue()).getValue();
+			actualBlobMap.put(key, new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8)));
+		}
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, actualBlobMap, ctx);
 	}
 
-	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, IEvaluatorContext ctx) {
+	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, Map<String, InputStream> blobMap, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
@@ -111,15 +141,18 @@ public class TyphonSession implements Operations {
 				throw new RuntimeException("Missing type: " + db.getDbms());
 			}
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, blobMap, ctx);
 	}
 
 	private SessionWrapper newSessionWrapper(Map<String, ConnectionData> mariaDbConnections,
 			Map<String, ConnectionData> mongoConnections, Map<String, ConnectionData> cassandraConnections, 
-			Map<String, ConnectionData> neoConnections, IEvaluatorContext ctx) {
+			Map<String, ConnectionData> neoConnections, Map<String, InputStream> blobMap, IEvaluatorContext ctx) {
 		// checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function
 		// type ourself
+		if (blobMap == null) {
+			blobMap = Collections.emptyMap();
+		}
 		ModuleEnvironment aliasModule = ctx.getHeap().getModule("lang::typhonql::Session");
 		if (aliasModule == null) {
 			throw new IllegalArgumentException("Missing my own module");
@@ -139,8 +172,8 @@ public class TyphonSession implements Operations {
 		FunctionType newIdType = (FunctionType) aliasedTuple.getFieldType("newId");
 
 		// construct the session tuple
-		ResultStore store = new ResultStore();
-		Map<String, String> uuids = new HashMap<>();
+		ResultStore store = new ResultStore(blobMap);
+		Map<String, UUID> uuids = new HashMap<>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();
 		TyphonSessionState state = new TyphonSessionState();
@@ -167,13 +200,13 @@ public class TyphonSession implements Operations {
 				), state);
 	}
 
-	private IValue makeNewId(Map<String, String> uuids, TyphonSessionState state, FunctionType newIdType,
+	private IValue makeNewId(Map<String, UUID> uuids, TyphonSessionState state, FunctionType newIdType,
 			IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, newIdType, args -> {
 			String idName = ((IString) args[0]).getValue();
-			String uuid = UUID.randomUUID().toString();
+			UUID uuid = UUID.randomUUID();
 			uuids.put(idName, uuid);
-			return ResultFactory.makeResult(TF.stringType(), vf.string(uuid), ctx);
+			return ResultFactory.makeResult(TF.stringType(), vf.string(uuid.toString()), ctx);
 		});
 	}
 
