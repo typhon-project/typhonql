@@ -2,6 +2,7 @@ package nl.cwi.swat.typhonql.backend.neo4j;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -34,8 +35,8 @@ public class Neo4JIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentId(String label, String type) {
-		return current.get(label + "." + type + ".@id", "");
+	public UUID getCurrentId(String label, String type) {
+		return UUID.fromString(current.get(label + "." + type + ".@id", ""));
 	}
 	
 	@Override

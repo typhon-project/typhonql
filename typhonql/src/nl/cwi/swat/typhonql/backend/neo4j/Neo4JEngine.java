@@ -6,6 +6,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -27,7 +28,7 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 public class Neo4JEngine extends Engine {
 	private final Driver driver;
 
-	public Neo4JEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids,
+	public Neo4JEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, UUID> uuids,
 			Driver driver) {
 		super(store, script, updates, uuids);
 		this.driver = driver;
