@@ -59,8 +59,7 @@ public abstract class UpdateExecutor {
 				Field field = (Field) binding;
 				ResultIterator results =  store.getResults(field.getReference());
 				if (results == null) {
-					throw RuntimeExceptionFactory.illegalArgument(ValueFactoryFactory.getValueFactory().string(field.toString()), null, null, 
-							"Results was null for field " + field.toString() + " and store " + store);
+					throw new RuntimeException("Results was null for field " + field.toString() + " and store " + store);
 				}
 				
 				results.beforeFirst();
