@@ -424,7 +424,7 @@ void compileRefSet(
     return upd;
   });
   */
-  ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, SQLExpr::lit(Value::text(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
+  ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(sUuid(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
 }
 
 // neo/sql containment or xref
@@ -437,7 +437,7 @@ void compileRefSet(
   ctx.addSteps(neoReplaceEnd(dbName, from, to, fromRole, 
   	ctx.neoMe, nLit(nText(uuid2str(ref))), ctx.myParams, ctx.schema));
 
-  ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
 

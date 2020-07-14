@@ -460,7 +460,7 @@ void compileRefBinding(
    	//if (r notin trueCrossRefs(ctx.schema.rels)) {
   	//  fail compileRefBinding;
   	//}
-  	ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  	ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
 void compileRefBinding(
@@ -470,7 +470,7 @@ void compileRefBinding(
 ) {	
   // to sql
   updateNeoUpdate(dbName, from, fromRole, to, ref, ctx);
-  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, SQLExpr::lit(Value::text(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(sUuid(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
    
 }
 
@@ -483,7 +483,7 @@ void compileRefBinding(
   // TODO
   // from mongo 
   ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, \value(uuid2str(ref))> ];
+    obj.props += [ <fromRole, mUuid(uuid2str(ref))> ];
     return obj;
   });
   
@@ -500,7 +500,7 @@ void compileRefBinding(
   //if (r notin trueCrossRefs(ctx.schema.rels)) {
   //  fail compileRefBinding;
   //}
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [SQLExpr::lit(Value::text(uuid2str(ref)))], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, lit(sUuid(uuid2str(ref))), ctx.myParams));
   //ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
   
   ctx.addSteps(neoReplaceEnd(other, to, from, toRole, nLit(nText(uuid2str(ref))), ctx.neoMe, ctx.myParams, ctx.schema));
