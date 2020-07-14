@@ -32,7 +32,6 @@ import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
-import nl.cwi.swat.typhonql.client.resulttable.JsonSerializableResult;
 
 public class CommandResult implements JsonSerializableResult {
 	private static final ObjectMapper mapper = new ObjectMapper()

@@ -18,13 +18,23 @@ package nl.cwi.swat.typhonql.backend;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
+import nl.cwi.swat.typhonql.client.resulttable.StreamingResultTable;
 
 public class Runner {
 	
@@ -35,6 +45,59 @@ public class Runner {
 		});
 		script.get(0).accept(new ArrayList<Record>());
 		return toResultTable(paths, result);
+	}
+	
+	private static final ExecutorService WORKERS = Executors.newCachedThreadPool();
+	
+	public static StreamingResultTable computeResultStream(List<Consumer<List<Record>>> script, List<Path> paths) {
+		List<String> columnNames = buildColumnNames(paths);
+		return new StreamingResultTable(columnNames, StreamSupport.stream(() -> {
+			BlockingDeque<Object[]> incomingRecords = new LinkedBlockingDeque<>(); 
+			
+			// once the stream has a terminal operator, we start the db operations
+			// on the background, so that we can have the iterator block until results are ready
+			WORKERS.execute(() -> {
+				try {
+					List<Field> fields = paths.stream().map(p -> toField(p)).collect(Collectors.toList());
+                    script.add(rows -> projectRaw(rows, fields, incomingRecords));
+                    script.get(0).accept(new ArrayList<Record>());
+				}
+				finally {
+					try {
+						incomingRecords.putLast(new Object[0]);
+					} catch (InterruptedException e) {
+					}
+				}
+			});
+
+			return Spliterators.spliteratorUnknownSize(new Iterator<Object[]>() {
+				private volatile Object[] current = null;
+				@Override
+				public boolean hasNext() {
+					Object[] value = current;
+					if (value != null && value.length == 0) {
+						return false;
+					}
+					try {
+						return (current = incomingRecords.takeFirst()).length != 0;
+					} catch (InterruptedException e) {
+						current = new Object[0];
+						return false;
+					}
+				}
+
+				@Override
+				public Object[] next() {
+					Object[] result = current;
+					if (result == null || result.length == 0) {
+						throw new NoSuchElementException();
+
+					}
+					return result;
+				}
+
+			}, Spliterator.ORDERED | Spliterator.NONNULL);
+		}, 0, false));
 	}
 	
 	public static void executeUpdates(List<Consumer<List<Record>>> script, List<Runnable> updates) {
@@ -54,6 +117,8 @@ public class Runner {
 		List<List<Object>> values = toValues(fields, result);
 		return new ResultTable(columnNames, values);
 	}
+	
+	
 
 	private static Field toField(Path p) {
 		return new Field(p.getDbName(), p.getVar(), p.getEntityType(), p.getSelectors()[0]);
@@ -81,6 +146,16 @@ public class Runner {
 		return ls;
 	}
 
+	private static void projectRaw(List<Record> rows, List<Field> fields, BlockingDeque<Object[]> results) {
+		try {
+			for (Record r: rows) {
+				results.putLast(projectRaw(r, fields));
+			}
+		} catch (InterruptedException e) {
+		}
+	}
+
+
 	private static Field match(Record r, Path p) {
 		for (Field f : r.getObjects().keySet()) {
 			if (f.getLabel().equals(p.getVar()) && f.getType().equals(p.getEntityType())
@@ -89,6 +164,14 @@ public class Runner {
 
 		}
 		return null;
+	}
+	
+	private static Object[] projectRaw(Record r, List<Field> fields) {
+		Object[] result = new Object[fields.size()];
+		for (int i = 0; i < result.length; i++) {
+			result[i] = r.getObject(fields.get(i));
+		}
+		return result;
 	}
 
 	private static Record project(Record r, List<Path> paths) {

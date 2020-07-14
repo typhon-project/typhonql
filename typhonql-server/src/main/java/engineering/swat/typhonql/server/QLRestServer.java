@@ -69,8 +69,8 @@ import engineering.swat.typhonql.server.crud.EntityFields;
 import engineering.swat.typhonql.server.crud.EntityFieldsDeserializer;
 import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
+import nl.cwi.swat.typhonql.client.JsonSerializableResult;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
-import nl.cwi.swat.typhonql.client.resulttable.JsonSerializableResult;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class QLRestServer {

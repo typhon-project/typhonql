@@ -14,7 +14,7 @@
 * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
 ********************************************************************************/
 
-package nl.cwi.swat.typhonql.client.resulttable;
+package nl.cwi.swat.typhonql.client;
 
 import java.io.IOException;
 import java.io.OutputStream;
