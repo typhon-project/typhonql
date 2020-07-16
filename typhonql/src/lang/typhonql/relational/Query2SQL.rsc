@@ -1,3 +1,19 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 module lang::typhonql::relational::Query2SQL
 
 import lang::typhonql::TDBC;
@@ -339,7 +355,9 @@ SQLExpr expr2sql((Expr)`#polygon(<{Segment ","}* segments>)`, Ctx ctx, Log log =
 
 SQLExpr expr2sql((Expr)`false`, Ctx ctx, Log log = noLog) = lit(boolean(false));
 
-SQLExpr expr2sql((Expr)`<UUID u>`, Ctx ctx, Log log = noLog) = lit(text("<u>"[1..]));
+SQLExpr expr2sql((Expr)`<UUID u>`, Ctx ctx, Log log = noLog) = lit(sUuid("<u.part>"));
+
+SQLExpr expr2sql((Expr)`<BlobPointer bp>`, Ctx ctx, Log log = noLog) = lit(blobPointer("<bp.part>"));
 
 SQLExpr expr2sql((Expr)`true`, Ctx ctx, Log log = noLog) = lit(boolean(true));
 

@@ -1,3 +1,19 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 module lang::typhonql::Session
 
 
@@ -17,7 +33,8 @@ alias Session = tuple[
 	str (str) newId,
 	SQLOperations sql,
    	MongoOperations mongo,
-   	CassandraOperations cassandra
+   	CassandraOperations cassandra,
+   	Neo4JOperations neo
 ];
 
 alias ResultTable
@@ -47,6 +64,11 @@ alias CassandraOperations = tuple[
 	void (str dbName, str query, Bindings bindings) executeGlobalStatement
 ];
 
+alias Neo4JOperations = tuple[
+	void (str resultId, str dbName, str query, Bindings bindings, list[Path] paths) executeMatch,
+	void (str dbName, str query, Bindings bindings) executeUpdate
+];
+
 alias MongoOperations = tuple[
 	void (str resultId, str dbName, str collection, str query, Bindings bindings, list[Path] paths) find,
 	void (str resultId, str dbName, str collection, str query, str projection, Bindings bindings, list[Path] paths) findWithProjection,
@@ -67,11 +89,12 @@ data Connection
  = mariaConnection(str host, int port, str user, str password)
  | mongoConnection(str host, int port, str user, str password)
  | cassandraConnection(str host, int port, str user, str password)
+ | neoConnection(str host, int port, str user, str password)
  ;
 
 @reflect
 @javaClass{nl.cwi.swat.typhonql.backend.rascal.TyphonSession}
-java Session newSession(map[str, Connection] config);
+java Session newSession(map[str, Connection] config, map[str uuid, str contents] blobMap = ());
 
 
 private int _nameCounter = 0;
@@ -81,4 +104,3 @@ str newParam() {
   _nameCounter += 1;
   return p;
 }
-

@@ -1,3 +1,19 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 module lang::typhonql::\test::TestsCompiler
 
 import lang::typhonql::util::Log;
@@ -5,10 +21,12 @@ import lang::typhonql::util::Testing;
 
 import lang::typhonql::TDBC;
 import lang::typhonql::Normalize; // for pUUID
+import lang::typhonql::util::UUID; 
 
 import IO;
 import Set;
 import Map;
+import List;
 
 import lang::typhonml::Util;
 
@@ -19,6 +37,7 @@ import lang::typhonml::Util;
  
 
 private str U(str u) = pUUID(u);
+private str base64(str b) = base64Encode(b);
 
 //str HOST = "192.168.178.78";
 str HOST = "localhost";
@@ -72,9 +91,9 @@ void setup(PolystoreInstance p, bool doTest) {
 	     [[U("tv"), "TV", "Flat", "2020-04-13"], [U("radio"), "Radio", "Loud", "2020-04-13"]]>);
 	}
 	
-	p.runUpdate((Request) `insert Review { @id: #rev1, content: "Good TV", user: #pablo, product: #tv, location: #point(2.0 3.0) }`);
-	p.runUpdate((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv, location: #point(20.0 30.0) }`);
-	p.runUpdate((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio, location: #point(3.0 2.0) }`);
+	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev1, content: "Good TV", user: #pablo, product: #tv, location: #point(2.0 3.0), screenshot: #blob:s1 }`, (U("s1") : "xx"));
+	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv, location: #point(20.0 30.0), screenshot: #blob:s2 }`, (U("s2") : "yy"));
+	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio, location: #point(3.0 2.0), screenshot: #blob:s3 }`, (U("s3") : "zz"));
 	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Review r select r.@id, r.content, r.user, r.product`);
@@ -122,13 +141,13 @@ void setup(PolystoreInstance p, bool doTest) {
     }
 
 
-	p.runUpdate((Request) `insert Item { @id: #tv1, shelf: 1, product: #tv }`);	
-	p.runUpdate((Request) `insert Item { @id: #tv2, shelf: 1, product: #tv }`);	
-	p.runUpdate((Request) `insert Item { @id: #tv3, shelf: 3, product: #tv }`);	
-	p.runUpdate((Request) `insert Item { @id: #tv4, shelf: 3, product: #tv }`);
+	p.runUpdateWithBlobs((Request) `insert Item { @id: #tv1, shelf: 1, product: #tv, picture: #blob:b1 }`, (U("b1") : "aa"));	
+	p.runUpdateWithBlobs((Request) `insert Item { @id: #tv2, shelf: 1, product: #tv, picture: #blob:b2 }`, (U("b2") : "bb"));	
+	p.runUpdateWithBlobs((Request) `insert Item { @id: #tv3, shelf: 3, product: #tv, picture: #blob:b3 }`, (U("b3") : "cc"));	
+	p.runUpdateWithBlobs((Request) `insert Item { @id: #tv4, shelf: 3, product: #tv, picture: #blob:b4 }`, (U("b4") : "dd"));
 	
-	p.runUpdate((Request) `insert Item { @id: #radio1, shelf: 2, product: #radio }`);	
-	p.runUpdate((Request) `insert Item { @id: #radio2, shelf: 2, product: #radio }`);
+	p.runUpdateWithBlobs((Request) `insert Item { @id: #radio1, shelf: 2, product: #radio, picture: #blob:b5 }`, (U("b5") : "ee"));
+	p.runUpdateWithBlobs((Request) `insert Item { @id: #radio2, shelf: 2, product: #radio, picture: #blob:b6 }`, (U("b6") : "ff"));
 	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Item i select i.@id, i.shelf, i.product`);
@@ -147,7 +166,21 @@ void setup(PolystoreInstance p, bool doTest) {
 	  rs = p.runQuery((Request)`from Product p select p.inventory where p.@id == #radio`);
 	  p.assertResultEquals("radio inventory obtained", rs, <["p.inventory"], [[U("radio1")], [U("radio2")]]>);
 	}	
-		
+	
+	p.runUpdate((Request) `insert Wish { @id: #wish1, intensity: 7, user: #pablo, product: #tv }`);
+	
+	if (doTest) {
+	  rs = p.runQuery((Request)`from Wish w select w.@id`);
+	  p.assertResultEquals("whish was inserted", rs, <["w.@id"], [
+	    [U("wish1")]
+	  ]>);
+	  
+	  rs = p.runQuery((Request)`from Product p select p.wish where p.@id == #tv`);
+	  p.assertResultEquals("wish obtained from product", rs, <["p.wish"], [[U("wish1")]]>);
+	  
+	  rs = p.runQuery((Request)`from User u select u.wish where u.@id == #pablo`);
+	  p.assertResultEquals("wish obtained from user", rs, <["u.wish"], [[U("wish1")]]>);
+	}
 }
 
 void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
@@ -195,8 +228,16 @@ actual: <["i.shelf","i.product"],[
 
 void testLoneVars(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i`);
-  p.assertEquals("all features from item retrieved", rs, <["i.shelf", "i.product"]
-    , [[2,U("radio")],[2, U("radio")],[1, U("tv")],[1, U("tv")],[3, U("tv")],[3, U("tv")]]>);
+  rs = <rs<0>, {*rs<1>}>;
+  p.assertEquals("all features from item retrieved", rs, <["i.picture", "i.shelf", "i.product"]
+    , {
+        [base64("aa"), 1, U("tv")],
+        [base64("bb"), 1, U("tv")],
+        [base64("cc"), 3, U("tv")],
+        [base64("dd"), 3, U("tv")],
+        [base64("ee"), 2, U("radio")],
+        [base64("ff"), 2, U("radio")]
+    }>);
     
   rs = p.runQuery((Request)`from Biography b select b`);
   p.assertEquals("all features from biography retrieved", rs, <["b.content", "b.user"]
@@ -258,8 +299,8 @@ void testInsertManyValuedSQLLocal(PolystoreInstance p) {
   // inventory: [#laptop1, #laptop2], 
   p.runUpdate((Request)`insert Product { @id: #laptop, name: "MacBook", availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-03-03$, price: 4000, description: "expensive laptop"}`);
 
-  p.runUpdate((Request)`insert Item { @id: #laptop1, shelf: 1, product: #laptop}`);	
-  p.runUpdate((Request)`insert Item { @id: #laptop2, shelf: 1, product: #laptop}`);	
+  p.runUpdateWithBlobs((Request)`insert Item { @id: #laptop1, shelf: 1, product: #laptop, picture: #blob:b5 }`, (U("b5") : "dd"));	
+  p.runUpdateWithBlobs((Request)`insert Item { @id: #laptop2, shelf: 1, product: #laptop, picture: #blob:b6 }`, (U("b6") : "dd"));	
 	
   
   rs = p.runQuery((Request)`from Product p select p.inventory where p.@id == #laptop`);
@@ -281,6 +322,17 @@ void testDeleteSomeMongoBasic(PolystoreInstance p) {
   p.runUpdate((Request)`delete Category c where c.@id == #other`);
   rs = p.runQuery((Request)`from Category c select c.@id`);
   p.assertResultEquals("delete with where from mongo deletes", rs, <["c.@id"], [["appliances"]]>);
+}
+
+void testBlobs(PolystoreInstance p) {
+  p.runUpdateWithBlobs((Request) `insert Item { @id: #tv5, shelf: 1, product: #tv, picture: #blob:tb1 }`, (U("tb1") : "aa"));	
+  rs = p.runQuery((Request)`from Item i select i.picture where i.@id == #tv5`);
+  p.assertResultEquals("Blob in SQL", rs, <["i.picture"], [["YWE="]]>);
+  
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s4 }`, (U("s4") : "uu"));
+  
+  rs = p.runQuery((Request)`from Review r select r.screenshot where r.@id == #newReview`);
+  p.assertResultEquals("Blob in Mongo", rs, <["r.screenshot"], [["dXU="]]>);
 }
   
 
@@ -334,7 +386,7 @@ void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
 }
 
 void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, location: #point(1.0 1.0)}`);
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s4 }`, (U("s4") : "uu"));
   p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", reviews: [#newReview], availabilityRegion: #polygon((1.0 1.0)), price: 400, productionDate: $2001-01-01$}`);
   
   // this below query is not as intended, r remains unconstrained, so you get all review contents.
@@ -354,6 +406,72 @@ void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
   p.assertResultEquals("InsertManyContainSQLtoExternal", rs, <["r.content"], [["expensive"]]>);
 }
 
+void testInsertSQLNeo(PolystoreInstance p) {
+  p.runUpdate((Request)`insert Product {@id: #laptop, name: "Laptop", wish: #wish1, description: "Practical", productionDate:  $2020-04-14$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)), price: 150}`);
+  rs = p.runQuery((Request)`from Wish w select w.product where w.@id == #wish1`);
+  p.assertResultEquals("testInsertSQLNeoToEnd", rs, <["w.product"], [[U("laptop")]]>);
+  
+  p.runUpdate((Request) `insert User { @id: #tijs, name: "Tijs", location: #point(2.0 3.0), 
+	                      '   photoURL: "cwi",
+	                      '   avatarURL: "something",
+	                      '   address: "somwehere",
+	                      '   wish: #wish1,
+	                      '   billing: address( street: "Eigth", city: "Ams"
+	                      '   , zipcode: zip(nums: "2345", letters: "cd")
+	                      '   , location: #point(2.0 3.0))}`);
+	                      	                      
+  rs = p.runQuery((Request)`from Wish w select w.user where w.@id == #wish1`);
+  p.assertResultEquals("testInsertSQLNeoNeoFromEnd", rs, <["w.user"], [[U("tijs")]]>);
+  
+}
+
+void testDeleteSQLNeoSimple(PolystoreInstance p) {
+  p.runUpdate((Request)`delete Wish w where w.@id == #wish1`);
+  rs = p.runQuery((Request)`from Wish w select w.@id where w.@id == #wish1`);
+  p.assertResultEquals("testDeleteSQLNeoSimple", rs, <["w.@id"], []>);
+  rs = p.runQuery((Request)`from Product p select p.@id, p.wish where p.@id == #tv`);
+  p.assertResultEquals("testDeleteSQLNeoSimpleToEnd", rs, <["p.@id", "p.wish"], [[U("tv"), {}]]>);
+  rs = p.runQuery((Request)`from User u select u.@id, u.wish where u.@id == #pablo`);
+  p.assertResultEquals("testDeleteSQLNeoSimpleFromEnd", rs, <["u.@id", "u.wish"], [[U("pablo"), {}]]>);
+  
+}
+
+void testDeleteSQLNeoCascade(PolystoreInstance p) {
+  p.runUpdate((Request)`delete Product p where p.@id == #tv`);
+  rs = p.runQuery((Request)`from Wish w select w.@id where w.@id == #wish1`);
+  p.assertResultEquals("testDeleteSQLNeoCascade", rs, <["w.@id"], []>);
+  rs = p.runQuery((Request)`from Product p select p.@id, p.wish where p.@id == #tv`);
+  p.assertResultEquals("testDeleteSQLNeoCascadeToEnd", rs, <["p.@id", "p.wish"], []>);
+  rs = p.runQuery((Request)`from User u select u.@id, u.wish where u.@id == #pablo`);
+  p.assertResultEquals("testDeleteSQLNeoCascadeFromEnd", rs, <["u.@id", "u.wish"], [[U("pablo"), {}]]>);
+  
+}
+
+void testUpdateSingleRefSQLNeo(PolystoreInstance p) {
+  p.runUpdate((Request)`update Wish w where w.@id == #wish1 set {product: #radio}`);
+  rs = p.runQuery((Request)`from Wish w select w.@id, w.product where w.@id == #wish1`);
+  p.assertResultEquals("testUpdateRefSQLNeo", rs, <["w.@id", "w.product"], [[ U("wish1"), U("radio")]]>);
+  rs = p.runQuery((Request)`from Product p select p.@id, p.wish where p.@id == #radio`);
+  p.assertResultEquals("testUpdateRefSQLNeoTo", rs, <["p.@id", "p.wish"], [[ U("radio"), U("wish1")]]>);
+  rs = p.runQuery((Request)`from Product p select p.@id, p.wish where p.@id == #tv`);
+  p.assertResultEquals("testUpdateRefSQLNeoFormerTo", rs, <["p.@id", "p.wish"], [[ U("radio"), {}]]>);
+}
+
+void testUpdateAttrNeo(PolystoreInstance p) {
+  p.runUpdate((Request)`update Wish w where w.@id == #wish1 set {intensity: 3}`);
+  rs = p.runQuery((Request)`from Wish w select w.@id, w.intensity where w.@id == #wish1`);
+  p.assertResultEquals("testUpdateAttrNeo", rs, <["w.@id", "w.intensity"], [[ U("wish1"), 3]]>);
+}
+
+void testUpdateSingleRefSQLMongo(PolystoreInstance p) {
+  p.runUpdate((Request)`update Biography b where b.@id == #bio1 set {user: #davy}`);
+  rs = p.runQuery((Request)`from Biography b select b.@id, b.user where b.@id == #bio1`);
+  p.assertResultEquals("testUpdateRefSQLMongo", rs, <["b.@id", "b.user"], [[ U("bio1"), U("davy")]]>);
+  rs = p.runQuery((Request)`from User u select u.@id, u.biography where u.@id == #davy`);
+  p.assertResultEquals("testUpdateRefSQLMongoTo", rs, <["u.@id", "u.biography"], [[ U("davy"), U("bio1")]]>);
+  rs = p.runQuery((Request)`from User u select u.@id, u.biography where u.@id == #pablo`);
+  p.assertResultEquals("testUpdateRefSQLMongoFormerTo", rs, <["u.@id", "u.biography"], [[ U("pablo"), {}]]>);
+}
 
 void testUpdateManyXrefSQLLocal(PolystoreInstance p) {
   p.runUpdate((Request)`update Product p where p.@id == #tv set {tags +: [#fun, #social]}`);
@@ -397,7 +515,7 @@ void testUpdateManyXrefSQLLocalSetToEmpty(PolystoreInstance p) {
 
 
 void testUpdateManyContainSQLtoExternal(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0)}`);
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s5 }`, (U("s5") : "uu"));
   p.runUpdate((Request)`update Product p where p.@id == #tv set {reviews +: [#newReview]}`);
   
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #tv, p.reviews == r`);
@@ -413,7 +531,7 @@ void testUpdateManyContainSQLtoExternalRemove(PolystoreInstance p) {
 
 
 void testUpdateManyContainSQLtoExternalSet(PolystoreInstance p) {
-  p.runUpdate((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0)}`);
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s6 }`, (U("s6") : "uu"));
   p.runUpdate((Request)`update Product p where p.@id == #tv set {reviews: [#newReview]}`);
   
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #tv, p.reviews == r`);
@@ -426,6 +544,18 @@ void testUpdateManyContainSQLtoExternalSetToEmpty(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.reviews == r, p.@id == #tv`);
   p.assertResultEquals("updateManyContainSQLtoExternalSet", rs, <["r.content"], []>);
 }
+
+void testUpdateSingleRefSQLMongo(PolystoreInstance p) {
+  p.runUpdate((Request)`update Biography b where b.@id == #bio1 set {user: #davy}`);
+  rs = p.runQuery((Request)`from Biography b select b.@id, b.user where r.@id == #bio1`);
+  p.assertResultEquals("testUpdateRefSQLMongo", rs, <["b.@id", "b.user"], [[ U("bio1"), U("davy")]]>);
+  rs = p.runQuery((Request)`from User u select u.@id, u.biography where u.@id == #davy`);
+  p.assertResultEquals("testUpdateRefSQLMongoTo", rs, <["u.@id", "u.biography"], [[ U("davy"), U("bio1")]]>);
+  rs = p.runQuery((Request)`from User u select u.@id, u.biography where u.@id == #pablo`);
+  p.assertResultEquals("testUpdateRefSQLMongoFormerTo", rs, <["u.@id", "u.biography"], [[ U("pablo"), {}]]>);
+}
+
+
 
 
 void testSelectViaSQLInverseLocal(PolystoreInstance p) {
@@ -496,7 +626,6 @@ void testGISonCrossMongoSQL(PolystoreInstance p) {
   p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "u.name"], [[U("rev1"), "Pablo"], [U("rev2"), "Davy"]]>);
 }
 
-
 void testGISPrint(PolystoreInstance p) {
     rs = p.runQuery((Request)`from Product p select p.availabilityRegion`);
     p.assertResultEquals("GIS Print - SQL", rs, <["p.availabilityRegion"], [["POLYGON ((10 10, 40 10, 40 40, 10 40, 10 10))"],["POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))"]]>);
@@ -506,6 +635,26 @@ void testGISPrint(PolystoreInstance p) {
     p.assertResultEquals("GIS Print - Mongo", rs, <["r.location"], [["POINT (2 3)"],["POINT (20 30)"], ["POINT (3 2)"]]>);
 }
 
+
+void testInsertNeo(PolystoreInstance p) {
+  // TODO: this shows the cyclic reference problem we still need to solve.
+  // NB: we have to insert the product first.
+
+  // inventory: [#laptop1, #laptop2], 
+  p.runUpdate((Request) `insert User { @id: #paul, name: "Paul", location: #point(2.0 3.0), photoURL: "klint",
+	                      '  billing: address( street: "Eigth", city: "Ams"
+	                      '   , zipcode: zip(nums: "1234", letters: "ab")
+	                      '   , location: #point(2.0 3.0))}`);
+  rs = p.runQuery((Request)`from User u select u.@id, u.name where u.name == "Paul"`);
+  p.assertResultEquals("users were inserted", rs, <["u.@id", "u.name"], [[U("paul"), "Paul"]]>);
+	 
+  p.runUpdate((Request) `insert Wish { @id: #wish2, intensity: 7, user: #paul, product: #tv }`);
+	
+  rs = p.runQuery((Request)`from Wish w select w.@id, w.intensity where w.@id ==#wish2`);
+  p.assertResultEquals("items were inserted", rs, <["w.@id", "w.intensity"], [
+	    [U("wish2"), 7]
+	  ]>);
+}
 
 
 void test1(PolystoreInstance p) {
@@ -593,12 +742,12 @@ void test13(PolystoreInstance p) {
 
 TestExecuter executer(Log log = NO_LOG()) = initTest(setup, HOST, PORT, USER, PASSWORD, log = log);
 
-void runTest(void(PolystoreInstance) t, Log log = NO_LOG()) {
-	 executer(log = log).runTest(t); 
+void runTest(void(PolystoreInstance) t, Log log = NO_LOG(), bool runTestsInSetup = false) {
+	 executer(log = log).runTest(t, runTestsInSetup); 
 }
 
-void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG) {
-	executer(log = log).runTests(ts); 
+void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG(), bool runTestsInSetup = false) {
+	executer(log = log).runTests(ts, runTestsInSetup); 
 }
 
 Schema fetchSchema() {
@@ -610,7 +759,7 @@ Schema printSchema() {
 }
 
 
-void runTests(Log log = NO_LOG()) {
+void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	tests = 
 	  [ testKeyValueFeatures
 	  , testCustomDataTypes
@@ -645,6 +794,8 @@ void runTests(Log log = NO_LOG()) {
 	  , testGISonCrossMongoSQL
 	  , testGISPrint
 	  
+	  , testBlobs
+	  
 	  , test1
 	  , test2
 	  , test3
@@ -659,5 +810,18 @@ void runTests(Log log = NO_LOG()) {
 	  , test12
 	  , test13
 	];
+	runTests(tests, log = log, runTestsInSetup = runTestsInSetup);
+}
+
+void runNeoTests(Log log = NO_LOG()) {
+	tests = 
+	  [ testInsertSQLNeo,
+	  testDeleteSQLNeoSimple,
+	  testDeleteSQLNeoCascade,
+	  testUpdateSingleRefSQLNeo,
+	  testUpdateAttrNeo,
+	  testInsertNeo
+	];
 	runTests(tests, log = log);
 }
+

@@ -1,3 +1,19 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 module lang::typhonql::Script
 
 import lang::typhonml::Util;
@@ -24,6 +40,7 @@ data Call
   = sql(SQLCall jdbc)
   | mongo(MongoCall mongo) 
   | cassandra(CassandraCall cassandra)
+  | neo(NeoCall neo)
   ;
   
 data CassandraCall
@@ -36,6 +53,11 @@ data SQLCall
   = executeQuery(str dbName, str query)
   | executeStatement(str dbName, str stat)
   | executeGlobalStatement(str dbName, str stat)
+  ;
+  
+data NeoCall
+  = executeNeoQuery(str dbName, str query)
+  | executeNeoUpdate(str dbName, str stat)
   ;
   
 data MongoCall
@@ -123,6 +145,12 @@ str runScript(Script scr, Session session, Schema schema) {
        
       case step(str r, mongo(findAndUpdateMany(str db, str coll, str query, str update)), Bindings ps):
         session.mongo.findAndUpdateMany(db, coll, query, update, ps);
+        
+      case step(str r, neo(executeNeoQuery(str db, str q)), Bindings ps):
+        session.neo.executeMatch(r, db, q, ps, s.signature);
+        
+      case step(str r, neo(executeNeoUpdate(str db, str q)), Bindings ps):
+        session.neo.executeUpdate(db, q, ps);
       
       case newId(str var): {
         result = session.newId(var);

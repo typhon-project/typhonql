@@ -1,3 +1,19 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 module lang::typhonql::Delete2Script
 
 
@@ -29,9 +45,14 @@ import lang::typhonql::cassandra::CQL2Text;
 import lang::typhonql::cassandra::Query2CQL;
 import lang::typhonql::cassandra::Schema2CQL;
 
+import lang::typhonql::neo4j::Neo;
+import lang::typhonql::neo4j::Neo2Text;
+import lang::typhonql::neo4j::NeoUtil;
+
 
 import IO;
 import List;
+import util::Maybe;
 
 alias DeleteContext = tuple[
   str entity,
@@ -39,6 +60,7 @@ alias DeleteContext = tuple[
   SQLExpr sqlMe,
   DBObject mongoMe,
   CQLExpr cqlMe,
+  NeoExpr neoMe,
   void (list[Step]) addSteps,
   Schema schema
 ];
@@ -54,6 +76,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   SQLExpr sqlMe = lit(Value::placeholder(name=myId));
   DBObject mongoMe = DBObject::placeholder(name=myId);
   CQLExpr cqlMe = cBindMarker(name=myId);
+  NeoExpr neoMe = NeoExpr::nPlaceholder(name=myId);
   Bindings myParams = ( myId: toBeDeleted );
   Script theScript = script([]);
   
@@ -63,7 +86,8 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   
   if ((Where)`where <VId _>.@id == <UUID mySelf>` := (Where)`where <{Expr ","}+ ws>`) {
     sqlMe = lit(evalExpr((Expr)`<UUID mySelf>`));
-    mongoMe = \value(uuid2str(mySelf));
+    mongoMe = mUuid(uuid2str(mySelf));
+	neoMe = nLit(evalNeoExpr((Expr)`<UUID mySelf>`));
     myParams = ();
   }
   else {
@@ -80,6 +104,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
     sqlMe,
     mongoMe,
     cqlMe,
+    neoMe,
     addSteps,
     s
   >;
@@ -104,6 +129,8 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   
   deleteObject(p, ctx);
   
+  deleteReferenceInNeo(ctx);
+  
   theScript.steps += [finish()];
   
   return theScript;
@@ -121,6 +148,45 @@ void deleteObject(<mongodb(), str dbName>, DeleteContext ctx) {
   ctx.addSteps([ step(dbName, mongo(deleteOne(dbName, ctx.entity, pp(object([<"_id", ctx.mongoMe>])))), ctx.myParams) ]);
 }
 
+void deleteObject(<neo4j(), str dbName>, DeleteContext ctx) {
+	ctx.addSteps(deleteNeoObject(dbName, ctx.entity, ctx.neoMe, ctx.myParams));
+}
+
+list[Step] deleteNeoObject(str dbName, str entity, NeoExpr neoMe, Bindings params) {
+ NeoStat stat = 
+ 	\nMatchUpdate(Maybe::just(nMatch([nPattern(nNodePattern("__n1", [], []), 
+ 			[nRelationshipPattern(nDoubleArrow(), "__r1", entity, [ nProperty(typhonId(entity), neoMe) ], nNodePattern("n__2", [], []))])], [])), 
+ 		nDelete([nVariable("__r1")]),
+ 		[nLit(nBoolean(true))]);
+      
+  return [ step(dbName, neo(executeNeoUpdate(dbName, neopp(stat))), params) ];
+}
+
+/*
+ * Remove reference in Neo
+ */
+void deleteReferenceInNeo(DeleteContext ctx) {
+	ctx.addSteps(deleteReferenceInNeo(ctx.entity, ctx.neoMe, ctx.myParams, ctx.schema));
+	
+} 
+ 
+list[Step] deleteReferenceInNeo(str theEntity, NeoExpr neoMe, Bindings params, Schema sch) {
+	steps = [];
+	for (<<neo4j(), db>, e> <- sch.placement) {
+		if (<e, _, _, _, _, entity, _> <- sch.rels, entity == theEntity) {
+			str deleteStmt = neopp(
+				\nMatchUpdate(
+					just(nMatch(
+							[nPattern(nNodePattern("__n1", [theEntity], [nProperty(typhonId(theEntity), neoMe)]), [])],
+							[]
+					)),
+					nDetachDelete([nVariable("__n1")]),
+					[nLit(nBoolean(true))]));
+			steps += [step(db, neo(executeNeoUpdate(db, deleteStmt)), params)];
+		} 
+	}
+	return steps;
+}
 
 /*
  * Cascade to owned objects
@@ -168,7 +234,7 @@ void deleteKids(
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
   DeleteContext ctx
 ) {
-  ctx.addSteps(cascadeViaInverse(other, to, toRole, ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(cascadeViaInverseNeo(other, to, toRole, from, ctx.neoMe, ctx.myParams));
 }
 
 void deleteKids(
@@ -179,6 +245,25 @@ void deleteKids(
   // cascadeViaJunction deletes from "to" and from the (inverse) junction table modeling
   // this containment relation
   ctx.addSteps(cascadeViaJunction(other, to, toRole, from, fromRole, ctx.sqlMe, ctx.myParams));  
+}
+
+void deleteKids(
+  <sql(), str dbName>, <neo4j(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
+  DeleteContext ctx
+) {
+  ctx.addSteps(removeFromJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, ctx.myParams));
+  //ctx.addSteps(cascadeViaInverseNeo(other, to, toRole, from, ctx.neoMe, ctx.myParams, ctx.schema));
+  // TODO this is hacky. Besides, what happens if neoMe is a placeholder?
+  str reference = "";
+  if (nLit(nText(txt)) := ctx.neoMe) {
+  	reference = "#<txt>";
+	Request removeEdge = [Request] "delete <to> edge where edge.<toRole> == <reference>";
+  	Script scr = delete2script(removeEdge, ctx.schema);
+  	ctx.addSteps(scr.steps);
+  }
+  //deleteObject(<neo4j(), other>, ctx);
+  //deleteReferenceInNeo(to, ctx.neoMe, ctx.myParams, ctx.schema);
 }
 
 /*
@@ -202,6 +287,23 @@ void deleteKids(
   CQLStat stmt = cDelete(cTableName(to), [cEq(CQLExpr::cColumn(cTyphonId(to)), ctx.cqlMe)]);
   ctx.addSteps([step(other, cassandra(cExecuteStatement(other, pp(stmt))), ctx.myParams)]);  
 }
+
+void deleteKids(
+  <mongodb(), str dbName>, <neo4j(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
+  DeleteContext ctx
+) {
+  str reference = "";
+  if (nLit(nText(txt)) := ctx.neoMe) {
+  	reference = "#<txt>";
+	Request removeEdge = [Request] "delete <to> edge where edge.<toRole> == <reference>";
+  	Script scr = delete2script(removeEdge, ctx.schema);
+  	ctx.addSteps(scr.steps);
+  }
+  //deleteObject(<neo4j(), other>, ctx);
+  //deleteReferenceInNeo(to, ctx.neoMe, ctx.myParams, ctx.schema);
+}
+
 
 /*
  * Break pointers into the deleted objects
@@ -276,6 +378,32 @@ void breakInboundPointers(
   ctx.addSteps(removeFromJunction(other, from, fromRole, deleted, toRole, ctx.sqlMe, ctx.myParams));
 }
 
+void breakInboundPointers(
+  del:<neo4j(), str dbName>, incoming:<sql(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str deleted, bool contain>, 
+  DeleteContext ctx
+) {
+  ctx.addSteps(removeFromJunction(other, from, fromRole, deleted, toRole, ctx.sqlMe, ctx.myParams));
+}
+
+void breakInboundPointers(
+  del:<sql(), str dbName>, incoming:<neo4j(), str other>,
+  <str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str deleted, bool contain>, 
+  DeleteContext ctx
+) {
+  // local junction tables are updated because of cascade delete
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    ;
+    // it has been deleted via deleteKids
+  }
+  else {
+  	;
+    // Not necessary in the case of neo
+    //ctx.addSteps(removeAllObjectPointers(other, from, fromRole, fromCard, ctx.mongoMe, ctx.myParams));
+  }
+}
+
+
 /*
  * Break cross-ref pointers out of the deleted objects
  */
@@ -345,7 +473,17 @@ void breakOutboundPointers(
   // but not for the inverse on sql
   ctx.addSteps(removeFromJunction(other, from, fromRole, to, toRole, ctx.sqlMe, ctx.myParams));
 }
- 
+
+void breakOutboundPointers(
+  del:<neo4j(), str dbName>, <sql(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
+  DeleteContext ctx
+) {
+  // automatic because of deletion of object in the from db
+  
+  // but not for the inverse on sql
+  ctx.addSteps(removeFromJunction(other, from, fromRole, to, toRole, ctx.sqlMe, ctx.myParams));
+} 
 
  
   

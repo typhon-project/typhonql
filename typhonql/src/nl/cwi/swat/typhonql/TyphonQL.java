@@ -1,3 +1,19 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 package nl.cwi.swat.typhonql;
 
 import java.io.ByteArrayOutputStream;
@@ -18,6 +34,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 import org.rascalmpl.values.ValueFactoryFactory;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -203,14 +220,21 @@ public class TyphonQL {
 					d.get("externalHost").textValue(),
 					d.get("externalPort").intValue(), 
 					d.get("dbType").textValue().toLowerCase(),
-					d.has("username") ? null : d.get("username").textValue(),
-					d.has("username") ? null : d.get("password").textValue());
+					!d.has("username") ? null : d.get("username").textValue(),
+					!d.has("password") ? null : d.get("password").textValue());
 				mw.put(vf.string(dbName), info);
 			} catch (UnsupportedOperationException e) {
 				// skipping unsupported technology for now
 			}
 		});
 		return mw.done();
+	}
+
+	private static void log(String prettyString) {
+		try {
+			ThreadSafeImpulseConsole.INSTANCE.getWriter().write(prettyString);
+		} catch (IOException e) {
+		}
 	}
 
 	private IConstructor buildConnectionInfo(String host, int port, String dbType, String user,
@@ -229,7 +253,8 @@ public class TyphonQL {
         	connectionType =tf.constructor(ts, adtType, "cassandraConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
         	break;
         case "neo4j":
-        	throw new UnsupportedOperationException("neo4j nog supported yet");
+        	connectionType =tf.constructor(ts, adtType, "neoConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
+        	break;
         }
         return vf.constructor(connectionType, vf.string(host), vf.integer(port), vf.string(user), vf.string(password));
 	}
@@ -245,7 +270,7 @@ public class TyphonQL {
 		IMap  m = ql.readConnectionsInfo(vf.string("localhost"), vf.integer(8080), vf.string("admin"), vf.string("admin1@"));
 		System.out.println(m);
 		IString t = ql.executeQuery(vf.sourceLocation(new URI("http://localhost:8080")),
-				vf.string("pablo"), vf.string("antonio"), vf.string("from User u select u"));
+				vf.string("admin"), vf.string("admin1@"), vf.string("from User u select u"));
 		
 		System.out.println(t);
 	}

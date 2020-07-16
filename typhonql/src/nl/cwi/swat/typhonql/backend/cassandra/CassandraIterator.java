@@ -1,15 +1,28 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 package nl.cwi.swat.typhonql.backend.cassandra;
 
 import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.PrecisionModel;
-import org.locationtech.jts.io.ParseException;
-import org.locationtech.jts.io.WKTReader;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinition;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
@@ -26,16 +39,7 @@ public class CassandraIterator implements ResultIterator {
 	private static final Map<Integer, BiFunction<Row, Integer, Object>> mappers;
 	
 	static {
-		GeometryFactory wsgFactory = new GeometryFactory(new PrecisionModel(), 4326);
 		mappers = new HashMap<Integer, BiFunction<Row,Integer,Object>>();
-		mappers.put(DataTypes.ASCII.getProtocolCode(), (r,c) -> {
-			// we use ASCII fields for geo fields, normal text for string
-			try {
-				return new WKTReader(wsgFactory).read(r.getString(c));
-			} catch (ParseException e) {
-				throw new RuntimeException("Unexpected geo parsing", e);
-			}
-		});
 		mappers.put(DataTypes.BOOLEAN.getProtocolCode(), Row::getBoolean);
 		mappers.put(DataTypes.DATE.getProtocolCode(), Row::getLocalDate);
 		mappers.put(DataTypes.DOUBLE.getProtocolCode(), Row::getDouble);
@@ -77,8 +81,8 @@ public class CassandraIterator implements ResultIterator {
 	}
 
 	@Override
-	public String getCurrentId(String label, String type) {
-		return current.getString(columnName(label, type, "@id"));
+	public UUID getCurrentId(String label, String type) {
+		return UUID.fromString(current.getString(columnName(label, type, "@id")));
 	}
 
 	@Override

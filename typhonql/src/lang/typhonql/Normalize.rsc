@@ -1,3 +1,19 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 module lang::typhonql::Normalize
 
 
@@ -419,18 +435,21 @@ Request eliminateCustomDataTypes(Request req, Schema s) {
 }
 
 
-str pUUID(UUID uuid) = pUUID("<uuid>"[1..]);
+str pUUID(UUIDPart uuid) = hashUUID("<uuid>");
 str pUUID(str uuid) = hashUUID(uuid);
 
 
-bool isProperUUID(UUID uuid) 
-  = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/ := "<uuid>"[1..];
+bool isProperUUID(UUIDPart uuid) 
+  = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/ := "<uuid>";
 
 Request injectProperUUIDs(Request req) {
   return visit (req) {
-    case UUID uuid => [UUID]"#<pUUID(uuid)>"
+    case UUID uuid => [UUID]"#<pUUID(uuid.part)>"
       when
-        !isProperUUID(uuid)
+        !isProperUUID(uuid.part)
+    case (BlobPointer)`#blob:<UUIDPart part>` => [BlobPointer]"#blob:<pUUID(part)>"
+      when
+        !isProperUUID(part)
   }
 }
 

@@ -1,20 +1,43 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 package engineering.swat.typhonql.server;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.collections.map.HashedMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -26,20 +49,28 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
+
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+
 import engineering.swat.typhonql.server.crud.EntityDeltaFields;
 import engineering.swat.typhonql.server.crud.EntityDeltaFieldsDeserializer;
 import engineering.swat.typhonql.server.crud.EntityFields;
 import engineering.swat.typhonql.server.crud.EntityFieldsDeserializer;
 import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
+import nl.cwi.swat.typhonql.client.JsonSerializableResult;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
-import nl.cwi.swat.typhonql.client.resulttable.JsonSerializableResult;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class QLRestServer {
@@ -137,6 +168,8 @@ public class QLRestServer {
 		public String command;
 		public String[] parameterNames;
 		public String[][] boundRows;
+	    @JsonDeserialize(using = Base64Deserializer.class)
+		public Map<String, InputStream> blobs;
 
 		public static RestArguments parse(HttpServletRequest r) throws IOException {
 			return parse(r.getReader());
@@ -166,9 +199,27 @@ public class QLRestServer {
 					+ ((parameterNames != null && parameterNames.length > 0)
 							? ("parameterNames: " + Arrays.toString(parameterNames) + "\n")
 							: "")
-					+ ((boundRows != null) ? ("boundRows: " + boundRows.length + "\n") : "") + "xmi: " + xmi + "\n"
+					+ ((boundRows != null) ? ("boundRows: " + boundRows.length + "\n") : "") 
+					+ ((blobs != null) ? "blobs: " + blobs.keySet() + "\n" : "")
+					+ "xmi: " + xmi + "\n"
 					+ "databaseInfo" + databaseInfo + "}";
 		}
+	}
+	
+	private static class Base64Deserializer extends JsonDeserializer<Map<String, InputStream>> {
+
+		@Override
+		public Map<String, InputStream> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+			Map<String, InputStream> result = new HashMap<>();
+			JsonToken current = p.currentToken();
+			while (!current.isStructEnd()) {
+				String fieldName = p.nextFieldName();
+				byte[] encodedBytes = p.nextValue().asByteArray();
+				result.put(fieldName, Base64.getDecoder().wrap(new ByteArrayInputStream(encodedBytes)));
+			}
+			return result;
+		}
+		
 	}
 
 	private static boolean isEmpty(String value) {
@@ -206,7 +257,7 @@ public class QLRestServer {
 			throw new IOException("Missing command in post body");
 		}
 		logger.trace("Running command: {}", args);
-		return engine.executeUpdate(args.xmi, args.databaseInfo, args.command);
+		return engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.command);
 	}
 
 	private static JsonSerializableResult handlePreparedCommand(XMIPolystoreConnection engine, RestArguments args,
@@ -215,7 +266,7 @@ public class QLRestServer {
 				|| args.boundRows.length == 0) {
 			throw new IOException("Missing arguments to the command");
 		}
-		CommandResult[] result = engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.command,
+		CommandResult[] result = engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.command,
 				args.parameterNames, args.boundRows);
 		return target -> {
 			target.write('[');

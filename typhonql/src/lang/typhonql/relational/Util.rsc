@@ -1,8 +1,27 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 module lang::typhonql::relational::Util
 
+import lang::typhonql::Expr;
 import lang::typhonql::relational::SQL;
 import List;
 import String;
+import IO;
+import ValueIO;
 
 str tableName(str entity) = "<entity>";
 
@@ -37,7 +56,7 @@ str fkName(str from, str to, str role) = columnName(role, "<from>.<to>");
 Column typhonIdColumn(str entity) = column(typhonId(entity), typhonIdType(), [notNull(), unique()]);
 
 
-ColumnType typhonIdType() = char(36); // UUID
+ColumnType typhonIdType() = uuidType();
 
 ColumnType typhonType2SQL("date") = date();
 
@@ -84,3 +103,50 @@ default ColumnType typhonType2SQL(str t) { throw "Unsupported Typhon type <t>"; 
 list[ColumnConstraint] typhonType2Constrains("point") = [notNull()];
 list[ColumnConstraint] typhonType2Constrains("polygon") = [notNull()];
 default list[ColumnConstraint] typhonType2Constrains(str t) = [];
+
+list[str] columnName((KeyVal)`<Id x>: <EId customType> (<{KeyVal ","}* keyVals>)`, str entity) = [columnName("<x>", entity, "<customType>", "<y>") | (KeyVal)`<Id y>: <Expr e>` <- keyVals];
+
+list[str] columnName((KeyVal)`<Id x>: <Expr e>`, str entity) = [columnName("<x>", entity)]
+	when (Expr) `<Custom c>` !:= e;
+
+list[str] columnName((KeyVal)`@id: <Expr _>`, str entity) = [typhonId(entity)]; 
+
+list[SQLExpr] evalKeyVal((KeyVal) `<Id x>: <EId customType> (<{KeyVal ","}* keyVals>)`) 
+  = [lit(evalExpr(e)) | (KeyVal)`<Id x>: <Expr e>` <- keyVals];
+
+list[SQLExpr] evalKeyVal((KeyVal)`<Id _>: <Expr e>`) = [lang::typhonql::relational::SQL::lit(evalExpr(e))]
+	when (Expr) `<Custom c>` !:= e;
+
+list[SQLExpr] evalKeyVal((KeyVal)`@id: <Expr e>`) = [lit(evalExpr(e))];
+
+Value evalExpr((Expr)`<VId v>`) { throw "Variable still in expression"; }
+ 
+// todo: unescaping (e.g. \" to ")!
+Value evalExpr((Expr)`<Str s>`) = Value::text("<s>"[1..-1]);
+
+Value evalExpr((Expr)`<Int n>`) = Value::integer(toInt("<n>"));
+
+Value evalExpr((Expr)`<Bool b>`) = Value::boolean("<b>" == "true");
+
+Value evalExpr((Expr)`<Real r>`) = Value::decimal(toReal("<r>"));
+
+Value evalExpr((Expr)`#point(<Real x> <Real y>)`) = Value::point(toReal("<x>"), toReal("<y>"));
+
+Value evalExpr((Expr)`#polygon(<{Segment ","}* segs>)`)
+  = Value::polygon([ seg2lrel(s) | Segment s <- segs ]);
+  
+lrel[real, real] seg2lrel((Segment)`(<{XY ","}* xys>)`)
+  = [ <toReal("<x>"), toReal("<y>")> | (XY)`<Real x> <Real y>` <- xys ]; 
+
+Value evalExpr((Expr)`<DateAndTime d>`) =Value::dateTime(readTextValueString(#datetime, "<d>"));
+
+Value evalExpr((Expr)`<JustDate d>`) = Value::date(readTextValueString(#datetime, "<d>"));
+
+// should only happen for @id field (because refs should be done via keys etc.)
+Value evalExpr((Expr)`<UUID u>`) = sUuid("<u.part>");
+
+Value evalExpr((Expr)`#blob:<UUIDPart prt>`) = blobPointer("<prt>");
+
+Value evalExpr((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
+
+default Value evalExpr(Expr ex) { throw "missing case for <ex>"; }

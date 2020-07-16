@@ -1,3 +1,19 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 package nl.cwi.swat.typhonql.backend.cassandra;
 
 import java.time.Duration;
@@ -10,7 +26,6 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.io.WKTWriter;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import nl.cwi.swat.typhonql.backend.Binding;
@@ -24,7 +39,7 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class CassandraEngine extends Engine {
 
-	public CassandraEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, String> uuids) {
+	public CassandraEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, UUID> uuids) {
 		super(store, script, updates, uuids);
 	}
 
@@ -70,21 +85,7 @@ public class CassandraEngine extends Engine {
 
 	private Object encode(Object value) {
 		if (value instanceof Geometry) {
-			return new WKTWriter().write((Geometry) value);
-		}
-		if (value instanceof String) {
-			String str = (String)value;
-			if (str.length() == 36 && str.charAt(8) == '-') {
-				// chance that is an uuid, so let's try
-				try {
-					return UUID.fromString(str);
-				}
-				catch (IllegalArgumentException e) {
-					// it was not a UUID
-					return str;
-				}
-			}
-			return str;
+			throw new RuntimeException("Geo values not supported on Cassandra");
 		}
 		// other java values are just fine as they are
 		return value;

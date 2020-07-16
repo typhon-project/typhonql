@@ -1,9 +1,26 @@
+/********************************************************************************
+* Copyright (c) 2018-2020 CWI & Swat.engineering 
+*
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* This Source Code may also be made available under the following Secondary
+* Licenses when the conditions for such availability set forth in the Eclipse
+* Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+* with the GNU Classpath Exception which is
+* available at https://www.gnu.org/software/classpath/license.html.
+*
+* SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+********************************************************************************/
+
 module lang::typhonql::Schema2Script
 
 import IO;
 import ValueIO;
 import List;
 import String;
+import util::Maybe;
 
 import lang::typhonml::Util;
 import lang::typhonql::Script;
@@ -12,6 +29,9 @@ import lang::typhonql::relational::SchemaToSQL;
 import lang::typhonql::cassandra::Schema2CQL;
 import lang::typhonql::cassandra::CQL;
 import lang::typhonql::cassandra::CQL2Text;
+
+import lang::typhonql::neo4j::Neo;
+import lang::typhonql::neo4j::Neo2Text;
 
 import lang::typhonql::util::Log;
 
@@ -71,6 +91,19 @@ list[Step] place2script(p:<mongodb(), str db>, Schema s, Log log = noLog) {
        | <db, indexSpec(str name, rel[str, str] ftrs)> <- s.pragmas, <entity, str attrOrRef> <- ftrs ];
           
   }
-
+  
   return steps;
+ }
+
+list[Step] place2script(p: <neo4j(), str db>, Schema s, Log log = noLog) {
+	list[Step] steps = [step(db, neo(executeNeoUpdate(db, 
+		neopp(
+			nMatchUpdate(
+		    	just(
+		    		nMatch(
+		    			[nPattern(nNodePattern("__n1", [], []), [])],
+		    		    [])),
+				nDetachDelete([nVariable("__n1")]), 
+				[nLit(nBoolean(true))])))), ())];
+	return steps;
 }
