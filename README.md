@@ -33,18 +33,18 @@ Basic primitive types.
 | Feature | Syntax | Backend | Remarks |
 |----|:---:|:---:|---|
 | `int` | 🌕 | 🌕 | |
-| `bigint` | 🌓 | 🌓 | |
+| `bigint` | 🌕 | 🌕 | |
 | `string[maxSize]` | 🌕 | 🌕 |  |
 | `text` | 🌕 | 🌕 |  |
-| `point` | 🌔  | 🌒 | operations are not yet implemented |
-| `polygon` | 🌔  | 🌒 | operations are not yet implemented |
+| `point` | 🌕  | 🌓 | not supported on neo4j yet |
+| `polygon` | 🌕  | 🌓 | not supported on neo4j yet |
 | `bool` | 🌕 | 🌕 | |
-| `float` | 🌕 | 🌔 | |
-| `blob` | 🌑 | 🌑 | We have to decide on a syntax for blobs |
+| `float` | 🌕 | 🌕 | |
+| `blob` | 🌕 | 🌕 | Only supported on mongo & mariadb backends |
 | `freetext[Id+]` | 🌔 | 🌑 | Syntax is almost finished, still requiring some work with ML & NLP teams |
-| `date` | 🌕 | 🌓 | |
-| `datetime` | 🌕 | 🌓 | |
-| Custom data types | 🌔 | 🌒 | |
+| `date` | 🌕 | 🌕 | |
+| `datetime` | 🌕 | 🌕 | |
+| Custom data types | 🌕 | 🌕 | |
 
 ## Relations
 
@@ -108,11 +108,11 @@ For cross references all combinations, with the above caveat about mandatory rel
 
 | Backend | Support | Remarks |
 | --- | :--: | --- |
-| MariaDB | 🌔 | Currently not using indexes on important columns |
-| MariaDB clusters | 🌑 | Have to talk with DL team what the influence will be |
+| MariaDB | 🌕 |  |
+| MariaDB clusters | 🌕 | DL makes this transparant |
 | MongoDB | 🌕 | |
-| Cassandra | 🌑 | |
-| Neo4J | 🌑 | |
+| Cassandra | 🌕 | |
+| Neo4J | 🌓 | geo features need to be added |
 
 ## Generic features
 
@@ -120,10 +120,10 @@ For cross references all combinations, with the above caveat about mandatory rel
 | --- | :--: | --- |
 | Query across different backends | 🌔 | |
 | Query validation | 🌔 | Syntax is validated and checked against the ML model |
-| Query type checking in IDE | 🌓 | |
+| Query type checking in IDE | 🌕 | |
 | Query optimization | 🌒 | We try to get where clauses on the correct backend |
 | Unicode Support | 🌔 | It should be possible to use unicode anywhere. Collation is currently fixed to utf8 (we have to think about extending this in ML if needed) |
-| DAL/Generated API | 🌑 | |
+| DAL/Generated API | 🌔 | |
 | Navigation based queries (path, reachability, transitive closure) | 🌑 | |
 | Transactions | 🌑 | unclear if we can add decent support for this |
 | Parametrized/Bulk queries | 🌓 | Currently doesn't provide a lot of performance benefit, but can in the future |
