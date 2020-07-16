@@ -42,6 +42,7 @@ TyphonQL supports the following literal (constant) expressions:
 - Geographical points: `#point(23.4 343.34)`
 - Polygons: `#polygon((23.4 343.34), (2.0 0.0))`;
 - Null (indicating absence of a reference or value): `null`
+- Blob-pointers: `#blob:2ed99a8e-5259-4efd-8cb4-66748d52e8a1`
 
 Furthermore, TyphonQL supports syntax for dealing with objects (instances of entity types):
 
@@ -109,6 +110,12 @@ overlap:
 
 *note*: on mongodb backends distance is limited to the where query and only in presence of a comparision operator. 
 
+
+### Blobs
+
+Blobs are handled in a special way, during insertion/update you have to send them as a pointer to a blob: `#blob:UUID` (and pass along the contents of the blob to the API in a seperate field).
+While selecting them, you get a base64 encoded version of the blob. It is not possible to do any operations on them, they are opaque.
+
 ### Queries
 
 Queries follow the tradition of SQL queries, except that the select and from parts are swapped. 
@@ -165,6 +172,7 @@ entity Product {
 	price : int
 	productionDate : date
 	reviews :-> Review."Review.product"[0..*]
+	wish :-> Wish."Wish.product"[1]
 }
 
 entity Review {
@@ -178,11 +186,18 @@ entity User {
 	address: string[256]
 	biography :-> Biography[0..1]
 	reviews -> Review."Review.user"[0..*]
+	wish :-> Wish."Wish.user"[1]
 }
 
 entity Biography{
 	content : string[256]
 	user -> User[1]
+}
+
+entity Wish {
+	intensity: int	
+	user -> User[1]
+	product -> Product[1]
 }
 
 relationaldb Inventory {
@@ -198,10 +213,18 @@ documentdb Reviews {
 	  Biography : Biography
 	}
 }
+
+graphdb Wishes {
+	edges {
+		edge Wish {
+			from "Wish.user"
+			to "Wish.product"
+		}
+	}
+}
 ```
 
-Entities Product and User are deployed to an SQL database (MariaDB), called Inventory, 
-whereas the Review and Biography entities are stored on a (MongoDB) document-store called Reviews.
+Entities Product and User are deployed to an SQL database (MariaDB), called Inventory; the Review and Biography entities are stored on a (MongoDB) document-store called Reviews; and the Wish entity is stored on a (Neo4J) graph database.
 
 Products own a number of Reviews ("deleting a product will delete associated reviews as well") via
 the relation `reviews`.
@@ -211,7 +234,14 @@ declaration on `reviews`.
 Reviews are also authored by users, which is modeled by the `reviews` relation on the User entity.
 This relation is not a containment relation, because an entity can only be owned by a single
 entity at one point in time. User biographies however are owned by User entities via the `biography` relation.
- 
+
+A Wish relates one user to one product, holding a value for the "intensity" of this relation. Entities that are
+stored in graph databases have a number of constraints, as they represent edges in this kind of backends. Wish 
+must have exactly two related entities with cardinality 1, and the opposite relation might be declared in the 
+related entities, as long as they represent containment and have cardinality one (see `wish` relation in Product
+and User). In other words, removing any of the entities that correspond to the vertices should also remoce
+the "edge" entity. The directionality of the relation is established in the database mapping, particularly, in the graphdb
+section, where we see which relation represent the source and which one the target inside the graph database.
 
 ## Well-formedness of TyphonML models
 
