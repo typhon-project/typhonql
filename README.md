@@ -98,8 +98,8 @@ For cross references all combinations, with the above caveat about mandatory rel
 | placeholders (`??<name>`) | 🌕 | 🌔 | |
 | lists (`[..]`) | 🌕 | 🌔 | only usable for relations |
 | positive `+` & negative `-` | 🌕 | 🌔 | if backends supports it |
-| math operations (`*+/-`) | 🌕 | ? | TODO: check support |
-| comparisons  (`==` and friends) | 🌕 | ? | TODO: check support|
+| math operations (`*+/-`) | 🌕 | 🌔 | if backends support it |
+| comparisons  (`==` and friends) | 🌕 | 🌔 | if backends support it|
 | boolean operations (`&&` and `\|\|`) | 🌕 | 🌔 | |
 | containment `x in y` | 🌕 | 🌓 | currently doesn't work from the inverse side |
 | text compare `x like y` | 🌕 | ? | TODO: check support |
