@@ -46,7 +46,7 @@ str USER = "admin";
 str PASSWORD = "admin1@";
 
 public Log PRINT() = void(value v) { println("LOG: <v>"); };
-
+ 
 KeyVal aBillingKeyVal =
   (KeyVal)`billing: address( street: "Commelin", city: "Ams"
           '   , zipcode: zip(nums: "1093", letters: "VX")
@@ -656,6 +656,27 @@ void testInsertNeo(PolystoreInstance p) {
 	  ]>);
 }
 
+void testEscapedStrings(PolystoreInstance p) {
+    p.runUpdate((Request)`insert Biography { @id: #escp1, content: "Es\\tcaped\\"", user: #pablo}`);
+    p.runUpdate((Request)`insert Tag { @id: #escp2, name: "Es\\tcaped\\""}`);
+
+    p.runUpdate((Request) `insert User { @id: #escp3, name: "Es\\tcaped\\"", location: #point(2.0 3.0), photoURL: "Es\\tcaped\\"",
+                          '  address: "aa",
+                          '  avatarURL: "bb",
+	                      '  billing: address( street: "Eigth", city: "Ams"
+	                      '   , zipcode: zip(nums: "1234", letters: "ab")
+	                      '   , location: #point(2.0 3.0))}`);
+    
+    rs = p.runQuery((Request)`from Biography b select b.content where b == #escp1`);
+    p.assertResultEquals("escaped chars in strings on mongo", rs, <["b.content"], [["Es\tcaped\""]]>);
+
+    rs = p.runQuery((Request)`from Tag t select t.name where t == #escp2`);
+    p.assertResultEquals("escaped chars in strings on mariadb", rs, <["t.name"], [["Es\tcaped\""]]>);
+
+    rs = p.runQuery((Request)`from User u select u.name, u.photoURL where u == #escp3`);
+    p.assertResultEquals("escaped chars in strings on cassandra", rs, <["u.name", "u.photoURL"], [["Es\tcaped\"", "Es\tcaped\""]]>);
+}
+
 
 void test1(PolystoreInstance p) {
 	rs = p.runQuery((Request) `from Product p select p.name`);
@@ -795,6 +816,7 @@ void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	  , testGISPrint
 	  
 	  , testBlobs
+	  , testEscapedStrings
 	  
 	  , test1
 	  , test2

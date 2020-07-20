@@ -1,0 +1,5 @@
+database Stuff : Cassandra {
+	environment {
+		MAX_HEAP_SIZE = 1G ; HEAP_NEWSIZE = 400M ;
+	}
+}

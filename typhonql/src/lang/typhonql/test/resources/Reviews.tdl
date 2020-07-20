@@ -1,0 +1,6 @@
+database Reviews : Mongo {
+	credentials {
+		username = admin ;
+		password = LciPZmCUQjR1Jp1Y ;
+	}
+}

@@ -1,0 +1,12 @@
+dbtype Mongo {
+	default image = mongo:latest;
+}
+dbtype Neo4j {
+	default image = neo4j:latest;
+}
+dbtype MariaDB {
+	default image = mariadb:latest;
+}
+dbtype Cassandra {
+	default image = cassandra:latest;
+}
