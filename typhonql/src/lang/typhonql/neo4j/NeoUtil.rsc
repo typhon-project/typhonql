@@ -3,6 +3,7 @@ module lang::typhonql::neo4j::NeoUtil
 import lang::typhonql::Expr;
 import lang::typhonql::neo4j::Neo;
 import lang::typhonml::Util;
+import lang::typhonql::util::Strings;
 
 import String;
 
@@ -29,7 +30,7 @@ list[NeoExpr] evalKeyVal((KeyVal)`@id: <Expr e>`) = [nLit(evalNeoExpr(e))];
 NeoValue evalNeoExpr((Expr)`<VId v>`) { throw "Variable still in expression"; }
  
 // todo: unescaping (e.g. \" to ")!
-NeoValue evalNeoExpr((Expr)`<Str s>`) = nText("<s>"[1..-1]);
+NeoValue evalNeoExpr((Expr)`<Str s>`) = nText(unescapeQLString(s));
 
 NeoValue evalNeoExpr((Expr)`<Int n>`) = nInteger(toInt("<n>"));
 

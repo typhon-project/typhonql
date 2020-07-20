@@ -17,6 +17,7 @@
 module lang::typhonql::relational::Util
 
 import lang::typhonql::Expr;
+import lang::typhonql::util::Strings;
 import lang::typhonql::relational::SQL;
 import List;
 import String;
@@ -94,11 +95,7 @@ ColumnType typhonType2SQL("Blob") = blob();
 
 ColumnType typhonType2SQL("natural_language") = text();
 
-
-
-
 default ColumnType typhonType2SQL(str t) { throw "Unsupported Typhon type <t>"; }
-
 
 list[ColumnConstraint] typhonType2Constrains("point") = [notNull()];
 list[ColumnConstraint] typhonType2Constrains("polygon") = [notNull()];
@@ -122,7 +119,7 @@ list[SQLExpr] evalKeyVal((KeyVal)`@id: <Expr e>`) = [lit(evalExpr(e))];
 Value evalExpr((Expr)`<VId v>`) { throw "Variable still in expression"; }
  
 // todo: unescaping (e.g. \" to ")!
-Value evalExpr((Expr)`<Str s>`) = Value::text("<s>"[1..-1]);
+Value evalExpr((Expr)`<Str s>`) = Value::text(unescapeQLString(s));
 
 Value evalExpr((Expr)`<Int n>`) = Value::integer(toInt("<n>"));
 

@@ -32,8 +32,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import javax.swing.text.StyledEditorKit.BoldAction;
-
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.env.ModuleEnvironment;
 import org.rascalmpl.interpreter.result.ICallableValue;
@@ -186,6 +184,7 @@ public class TyphonSession implements Operations {
 		state.addOpperations(mongoOperations);
 		state.addOpperations(cassandra);
 		state.addOpperations(neo);
+		
 
 		return new SessionWrapper(vf.tuple(makeGetResult(state, getResultType, ctx),
 				makeGetJavaResult(state, getJavaResultType, ctx),

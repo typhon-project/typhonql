@@ -16,7 +16,9 @@
 
 package nl.cwi.swat.typhonql.backend.mongodb;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -35,6 +37,9 @@ import org.apache.commons.text.StringSubstitutor;
 import org.bson.Document;
 import org.locationtech.jts.geom.Geometry;
 import org.wololo.jts2geojson.GeoJSONWriter;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.mongodb.BasicDBObject;
 import com.mongodb.MongoGridFSException;
 import com.mongodb.MongoNamespace;
@@ -116,7 +121,7 @@ public class MongoDBEngine extends Engine {
 			return String.valueOf(obj);
 		}
 		else if (obj instanceof String) {
-			return "\"" + (String) obj + "\"";
+			return encodeJsonString((String) obj);
 		}
 		else if (obj instanceof Geometry) {
 			return new GeoJSONWriter().write((Geometry)obj).toString();
@@ -133,6 +138,18 @@ public class MongoDBEngine extends Engine {
 		}
 		else
 			throw new RuntimeException("Query executor does not know how to serialize object of type " +obj.getClass());
+	}
+
+	private static String encodeJsonString(String obj) {
+		try {
+			StringWriter result = new StringWriter();
+			try (JsonGenerator gen = JsonFactory.builder().build().createGenerator(result)) {
+				gen.writeString(obj);
+			}
+			return result.toString();
+		} catch (IOException e) {
+			throw new RuntimeException("Not supposed to fail with writing to a string writer", e);
+		}
 	}
 
 	private static final Pattern BLOB_UUID = Pattern.compile("\"#blob:([a-zA-Z_\\-0-9]*?)\"");

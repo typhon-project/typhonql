@@ -30,6 +30,7 @@ import lang::typhonql::cassandra::Schema2CQL;
 
 
 import lang::typhonql::util::Log;
+import lang::typhonql::util::Strings;
 
 import String;
 import ValueIO;
@@ -206,7 +207,7 @@ CQLExpr expr2cql((Expr)`<Int i>`) = cTerm(cInteger(integer(toInt("<i>"))));
 
 CQLExpr expr2cql((Expr)`<Real r>`) = cTerm(cFloat(toReal("<r>")));
 
-CQLExpr expr2cql((Expr)`<Str s>`) = cTerm(cString("<s>"[1..-1]));
+CQLExpr expr2cql((Expr)`<Str s>`) = cTerm(cString(unescapeQLString(s)));
 
 // a la cql timestamp
 CQLExpr expr2cql((Expr)`<DateAndTime d>`) 
