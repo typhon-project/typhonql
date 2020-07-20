@@ -24,6 +24,7 @@ import lang::typhonql::Session;
 import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
 import lang::typhonql::mongodb::DBCollection;
+import lang::typhonql::util::Strings;
 
 import List;
 import IO;
@@ -520,7 +521,7 @@ DBObject seg2array((Segment)`(<{XY ","}* xys>)`)
   = array([ array([\value(toReal("<x>")), \value(toReal("<y>"))]) | (XY)`<Real x> <Real y>` <- xys ]);
 
 // todo: unescaping
-DBObject expr2obj((Expr)`<Str s>`, Ctx _) = \value("<s>"[1..-1]);
+DBObject expr2obj((Expr)`<Str s>`, Ctx _) = \value(unescapeQLString(s));
 
 DBObject expr2obj((Expr)`<Bool b>`, Ctx _) = \value("<b>" == "true");
 

@@ -19,6 +19,7 @@ module lang::typhonql::Insert2Script
 import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
 import lang::typhonql::Script;
+import lang::typhonql::util::Strings;
 import lang::typhonql::Normalize;
 import lang::typhonql::Session;
 import lang::typhonql::TDBC;
@@ -235,7 +236,7 @@ list[Step] compileNeoNode({KeyVal ","}* kvs, InsertContext ctx) {
 void compileAttrs(<DB::sql(), str dbName>, list[KeyVal] kvs, InsertContext ctx) {
   ctx.updateSQLInsert(SQLStat(SQLStat ins) {
      ins.colNames = [ *columnName(kv, ctx.entity) | KeyVal kv  <- kvs ] + [ lang::typhonql::relational::Util::typhonId(ctx.entity) ];
-     ins.values =  [ *lang::typhonql::Insert2Script::evalKeyVal(kv) | KeyVal kv <- kvs ] + [ ctx.sqlMe ];
+     ins.values =  [ *lang::typhonql::relational::Util::evalKeyVal(kv) | KeyVal kv <- kvs ] + [ ctx.sqlMe ];
      return ins;
   });
 } 
@@ -266,7 +267,7 @@ void compileRefBinding(
   // update ref's foreign key to point to sqlMe
   str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
   SQLStat theUpdate = update(tableName(to), [\set(fk, ctx.sqlMe)],
-    [where([equ(column(tableName(to), typhonId(to)), lit(text("<ref>"[1..])))])]);
+    [where([equ(column(tableName(to), typhonId(to)), lit(sUuid(uuid2str(ref))))])]);
                 
   ctx.addSteps([step(dbName, sql(executeStatement(dbName, pp(theUpdate))), ctx.myParams)]);
 
@@ -279,8 +280,8 @@ void compileRefBinding(
 ) {
 
   // insert entry in junction table between from and to on the current place.
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(text("<ref>"[1..]))], ctx.myParams));
-  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(text("<ref>"[1..])), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(sUuid(uuid2str(ref)))], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(sUuid(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
 }   
 void compileRefBinding(
   <DB::sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
@@ -288,8 +289,8 @@ void compileRefBinding(
   UUID ref, InsertContext ctx
 ) {
   // insert entry in junction table between from and to on the current place.
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(text("<ref>"[1..]))], ctx.myParams));
-  ctx.addSteps(insertObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(sUuid(uuid2str(ref)))], ctx.myParams));
+  ctx.addSteps(insertObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
 }
 
 //void compileRefBinding(
@@ -537,7 +538,7 @@ void compileRefBindingMany(
  {UUID ","}* refs, InsertContext ctx
 ) {
   ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams));
-  ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), ctx.mongoMe, ctx.myParams) 
+  ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams) 
                 | UUID ref <- refs ]);
 } 
 
@@ -579,7 +580,7 @@ void compileRefBindingMany(
 ) {
   ctx.addSteps([ *insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, 
     [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams) ]);
-  ctx.addSteps([*insertObjectPointer(other, to, toRole, toCard, \value("<ref>"[1..]), ctx.mongoMe, ctx.myParams)
+  ctx.addSteps([*insertObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams)
                  | UUID ref <- refs]);
 }
 
@@ -592,7 +593,7 @@ void compileRefBindingMany(
     obj.props += [ <fromRole, array([ mUuid(uuid2str(ref)) | UUID ref <- refs ]) > ];
     return obj;
   });
-  ctx.addSteps([ *insertObjectPointer(dbName, to, toRole, toCard, sUuid(uuid2str(ref)) , ctx.mongoMe, ctx.myParams)
+  ctx.addSteps([ *insertObjectPointer(dbName, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams)
                 | UUID ref <- refs ]);
 }
 
@@ -605,7 +606,7 @@ void compileRefBindingMany(
     obj.props += [ <fromRole, array([ mUuid(uuid2str(ref)) | UUID ref <- refs ]) > ];
     return obj;
   });
-  ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, sUuid(uuid2str(ref)) , ctx.mongoMe, ctx.myParams)
+  ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)) , ctx.mongoMe, ctx.myParams)
                 | UUID ref <- refs ]);
 }
 
@@ -637,7 +638,7 @@ DBObject obj2dbObj((Expr)`<Int n>`) = \value(toInt("<n>"));
 
 DBObject obj2dbObj((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
 
-DBObject obj2dbObj((Expr)`<UUID id>`) = mUuid("<id>"[1..]);
+DBObject obj2dbObj((Expr)`<UUID id>`) = mUuid(uuid2str(id));
 
 DBObject obj2dbObj((Expr)`#blob:<UUIDPart prt>`) = \value("#blob:<prt>");
 
@@ -659,12 +660,11 @@ DBObject seg2array((Segment)`(<{XY ","}* xys>)`)
 
 DBObject obj2dbObj((Expr)`<Real r>`) = \value(toReal("<r>"));
 
-// todo: unescaping
-DBObject obj2dbObj((Expr)`<Str x>`) = \value("<x>"[1..-1]);
+DBObject obj2dbObj((Expr)`<Str x>`) = \value(unescapeQLString(x));
   
 Prop keyVal2prop((KeyVal)`<Id x>: <Expr e>`) = <"<x>", obj2dbObj(e)>;
   
-Prop keyVal2prop((KeyVal)`@id: <UUID u>`) = <"_id", \value("<u>"[1..])>;
+Prop keyVal2prop((KeyVal)`@id: <UUID u>`) = <"_id", mUuid(uuid2str(u))>;
 
 bool isKeyValAttr((KeyVal)`<Id x>: <Expr _>`, str e, Schema s) 
   = isKeyValAttr(e, "<x>", s) != [];

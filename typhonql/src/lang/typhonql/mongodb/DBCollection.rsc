@@ -67,7 +67,7 @@ str pp(<str f, DBObject v>) = "\"<f>\": <pp(v)>";
 default str pp(DBObject v) { throw "Unsupported DBObject json value `<v>`"; }
   
 str strEscape(str s)
-  = escape(s, ("\n": "\\n", "\t": "\\n", "\r": "\\r", "\\": "\\\\", "\"": "\\\"" ));  
+  = escape(s, ("\n": "\\n", "\t": "\\t", "\r": "\\r", "\\": "\\\\", "\"": "\\\"" ));  
     
 // I'm skipping all readpreference, DBEncode, Object and *Options things  
 

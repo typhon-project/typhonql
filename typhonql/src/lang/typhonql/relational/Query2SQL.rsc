@@ -31,6 +31,7 @@ import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
 
 import lang::typhonql::util::Log;
+import lang::typhonql::util::Strings;
 
 import IO;
 import ValueIO;
@@ -341,7 +342,7 @@ SQLExpr expr2sql((Expr)`<Int i>`, Ctx ctx, Log log = noLog) = lit(integer(toInt(
 
 SQLExpr expr2sql((Expr)`<Real r>`, Ctx ctx, Log log = noLog) = lit(decimal(toReal("<r>")));
 
-SQLExpr expr2sql((Expr)`<Str s>`, Ctx ctx, Log log = noLog) = lit(text("<s>"[1..-1]));
+SQLExpr expr2sql((Expr)`<Str s>`, Ctx ctx, Log log = noLog) = lit(text(unescapeQLString(s)));
 
 SQLExpr expr2sql((Expr)`<DateAndTime d>`, Ctx ctx, Log log = noLog) = lit(dateTime(readTextValueString(#datetime, "<d>")));
 

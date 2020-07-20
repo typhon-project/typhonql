@@ -69,8 +69,10 @@ public class ConnectionData {
 		}
 		return false;
 	}
-	
-	
-	
+
+	@Override
+	public String toString() {
+		return "ConnectionData [host=" + host + ", port=" + port + ", user=" + user + ", password=" + password + "]";
+	}
 
 }

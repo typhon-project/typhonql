@@ -165,7 +165,20 @@ str pp(column(str c, ColumnType t, list[ColumnConstraint] cos))
 
 // Value
 
-str pp(text(str x)) = "\'<escape(x, ("\'": "\'\'"))>\'";
+map[str, str] escapes = (
+    "\'": "\\\'",
+    "\"": "\\\"",
+    "\b": "\\b",
+    "\n": "\\n",
+    "\r": "\\r",
+    "\t": "\\t",
+    "\a26": "\\z",
+    "\\": "\\\\",
+    "%": "\\%",
+    "_": "\\_"
+);
+
+str pp(text(str x)) = "\'" + escape(x, escapes) + "\'";
 
 str pp(decimal(real x)) = "<x>";
 

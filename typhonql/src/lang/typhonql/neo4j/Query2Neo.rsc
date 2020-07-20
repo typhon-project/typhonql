@@ -14,6 +14,7 @@ import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
 
 import lang::typhonql::util::Log;
+import lang::typhonql::util::Strings;
 
 import IO;
 import ValueIO;
@@ -342,7 +343,7 @@ NeoExpr expr2neo((Expr)`<Int i>`, Ctx ctx, Log log = noLog) = nLit(nInteger(toIn
 
 NeoExpr expr2neo((Expr)`<Real r>`, Ctx ctx, Log log = noLog) = nLit(nDecimal(toReal("<r>")));
 
-NeoExpr expr2neo((Expr)`<Str s>`, Ctx ctx, Log log = noLog) = nLit(nText("<s>"[1..-1]));
+NeoExpr expr2neo((Expr)`<Str s>`, Ctx ctx, Log log = noLog) = nLit(nText(unescapeQLString(s)));
 
 NeoExpr expr2neo((Expr)`<DateAndTime d>`, Ctx ctx, Log log = noLog) = nLit(nDateTime(readTextValueString(#datetime, "<d>")));
 

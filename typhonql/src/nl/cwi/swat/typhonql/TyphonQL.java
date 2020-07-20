@@ -70,7 +70,7 @@ public class TyphonQL {
 	}
 	
 	public IString readHttpModel(ISourceLocation path, IString user, IString password) {
-		URI uri = buildUri(path.getURI(), "/api/models/ml");
+		URI uri = buildUri(path.getURI(), "/api/model/ml");
 		String json = doGet(uri, user.getValue(), password.getValue());
 		try {
 			JsonNode array = new ObjectMapper(new JsonFactory()).readTree(json);

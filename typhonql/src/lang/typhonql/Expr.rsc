@@ -121,7 +121,12 @@ lexical UUIDPart = [\-a-zA-Z0-9]+ !>> [\-a-zA-Z0-9];
 lexical BlobPointer = @category="Identifier" "#blob:" UUIDPart part;
 
 // todo: escaping etc.
-lexical Str = [\"] ![\"]* [\"];
+lexical Str = [\"] StrChar* contents [\"];
+
+lexical StrChar
+	= escaped: "\\" [\" \\ b f n r t] 
+	| rest: ![\" \\]+ !>> ![\" \\]
+	;
 
 lexical Int
   = [1-9][0-9]* !>> [0-9]

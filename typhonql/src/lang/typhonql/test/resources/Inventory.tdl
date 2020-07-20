@@ -1,0 +1,6 @@
+database Inventory : MariaDB {
+	credentials {
+		username = root ;
+		password = XeNnEybEFjSe5aLy ;
+	}
+}
