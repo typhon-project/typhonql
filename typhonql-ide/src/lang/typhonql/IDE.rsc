@@ -316,7 +316,8 @@ void setupIDE(bool isDevMode = false) {
     popup(menu("TyphonQL", actions)),
     annotator(Tree (Tree inp) {
         return checkQL(inp, currentCheckerSchema(inp));
-    })
+    }),
+    treeProperties(hasQuickFixes = false)
   }); 
   
   
