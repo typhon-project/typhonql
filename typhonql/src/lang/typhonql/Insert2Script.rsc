@@ -488,7 +488,7 @@ void compileRefBinding(
     return obj;
   });
   
-  ctx.addSteps(neoReplaceEnd(other, to, from, toRole, NeoExpr::lit(NeoValue::text(uuid2str(ref))), ctx.neoMe, ctx.myParams, ctx.schema));
+  ctx.addSteps(neoReplaceEnd(other, to, from, toRole, NeoExpr::nLit(NeoValue::nText(uuid2str(ref))), ctx.neoMe, ctx.myParams, ctx.schema));
 }
 
 void compileRefBinding(

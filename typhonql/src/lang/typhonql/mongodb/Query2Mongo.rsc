@@ -27,6 +27,7 @@ import lang::typhonql::mongodb::DBCollection;
 import lang::typhonql::util::Strings;
 
 import List;
+import ValueIO;
 import IO;
 import String;
 
@@ -79,7 +80,7 @@ Request unjoinWheres(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}
     }
   }
   
-  for ((Binding)`<EId e> <VId x>` <- bs) { // skipping dynamic ones
+  for ((Binding)`<EId _> <VId x>` <- bs) { // skipping dynamic ones
     // everywhere x occurs, and a  `E #join x` exists, replace x with E (but not in rhs of #join itself)
     //println("Trying to unjoin <e> <x>");
     req = top-down-break visit (req) {
@@ -295,58 +296,6 @@ tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding
   return <result, params>;
 }
 
-void smokeQuery2Mongo() {
-  s = schema({
-    <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
-    <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
-    <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
-    <"Comment", zero_many(), "replies", "owner", \zero_many(), "Comment", true>
-  }, {
-    <"Person", "name", "String">,
-    <"Person", "age", "int">,
-    <"Review", "text", "String">,
-    <"Comment", "contents", "String">,
-    <"Reply", "reply", "String">
-  },
-  placement = {
-    <<sql(), "Inventory">, "Person">,
-    <<mongodb(), "Reviews">, "Review">,
-    <<mongodb(), "Reviews">, "Comment">
-  });
-  
-  str pp(find(DBObject query, DBObject projection))
-    = "find(<pp(query)>, <pp(projection)>)";  	
-  
-  
-  println("\n\n#####");
-  Request q = (Request)`from Person p, Review r select r.text where p.name == "Pablo", p.reviews == r`;
-  println("QUERY = <q>");  
-  order = orderPlaces(q, s);
-  for (Place p <- order, p.db == mongodb()) {
-    println("\n\t#### Translation of <restrict(q, p, order, s)>");
-    result = select2mongo(restrict(q, p, order, s), s, p); 
-    iprintln(result);
-    for (str coll <- result[0]) {
-      println("db.<coll>.<pp(result[0][coll])>");
-    }
-  }
-  
-  
-  println("\n\n#####");
-  q = (Request)`from Comment c select c.contents where c.contents == "Pablo"`;  
-  println("QUERY = <q>");  
-  order = orderPlaces(q, s);
-  for (Place p <- order, p.db == mongodb()) {
-    println("\n\t#### Translation of <restrict(q, p, order, s)>");
-    result = select2mongo(restrict(q, p, order, s), s, p); 
-    iprintln(result);
-    for (str coll <- result[0]) {
-      println("db.<coll>.<pp(result[0][coll])>");
-    }
-  }
-   
-}
-
 
 tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> #join <Expr rhs>`, Ctx ctx)
   = expr2pattern((Expr)`<Expr lhs> == <Expr rhs>`, ctx);
@@ -378,17 +327,6 @@ tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> in <Expr rhs>`, Ctx ctx) {
                 <"$geometry", expr2obj(other, ctx)>
             ])>
         ])>>; 
-  
-  //  if ((Expr)`<Polygon _>` := rhs && <str ent, str path, rhs> := split(lhs, rhs, ctx)) {
-    //    return <ent, <path, object([
-    //        <"$geoWithin", object([
-    //            <"$geometry", expr2obj(rhs, ctx)>
-    //        ])>
-    //    ])>>;
-    //}
-    //else {
-    //    throw "MongoDB only supports a literal polygon on the right side of in, <rhs> not supported";
-    //}
 }
   
 tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> & <Expr rhs>`, Ctx ctx) {

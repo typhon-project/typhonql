@@ -6,6 +6,7 @@ import lang::typhonml::Util;
 import lang::typhonql::util::Strings;
 
 import String;
+import ValueIO;
 
 str neoTyphonId(str entity) = graphPropertyName("@id", entity);
 str nodeName(str entity) = "<entity>";

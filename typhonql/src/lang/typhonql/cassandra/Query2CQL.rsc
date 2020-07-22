@@ -105,7 +105,7 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
            addResult(cSelector(expr2cql(x), as="<y>.<ent>.@id"));
            for (<ent, str a, str _> <- s.attrs) {
              Id f = [Id]a;
-             addResult(cSelector(expr2sql((Expr)`<VId y>.<Id f>`), as="<y>.<ent>.<f>"));
+             addResult(cSelector(expr2cql((Expr)`<VId y>.<Id f>`), as="<y>.<ent>.<f>"));
            }
          }
        }
@@ -203,7 +203,7 @@ CQLExpr expr2cql((Expr)`?`) = cBindMarker();
 
 CQLExpr expr2cql((Expr)`??<Id x>`) = cBindMarker(name="<x>");
 
-CQLExpr expr2cql((Expr)`<Int i>`) = cTerm(cInteger(integer(toInt("<i>"))));
+CQLExpr expr2cql((Expr)`<Int i>`) = cTerm(cInteger(toInt("<i>")));
 
 CQLExpr expr2cql((Expr)`<Real r>`) = cTerm(cFloat(toReal("<r>")));
 
@@ -228,7 +228,7 @@ CQLExpr expr2cql((Expr)`null`) = cTerm(cNull());
 
 CQLExpr expr2cql((Expr)`+<Expr e>`) = expr2cql(e);
 
-CQLExpr expr2cql((Expr)`-<Expr e>`) = cUminus(expr2cql(e));
+CQLExpr expr2cql((Expr)`-<Expr e>`) = cUMinus(expr2cql(e));
 
 //CQLExpr expr2cql((Expr)`!<Expr e>`) = not(expr2cql(e));
 
@@ -239,7 +239,7 @@ CQLExpr expr2cql((Expr)`<Expr lhs> / <Expr rhs>`)
   = cDiv(expr2cql(lhs), expr2cql(rhs));
 
 CQLExpr expr2cql((Expr)`<Expr lhs> + <Expr rhs>`) 
-  = cAdd(expr2cql(lhs), expr2cql(rhs));
+  = cPlus(expr2cql(lhs), expr2cql(rhs));
 
 CQLExpr expr2cql((Expr)`<Expr lhs> - <Expr rhs>`) 
   = cMinus(expr2cql(lhs), expr2cql(rhs));

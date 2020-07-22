@@ -38,7 +38,7 @@ str pp(create(str t, list[Column] cs, list[TableConstraint] cos))
     '  <intercalate(",\n", [ pp(c) | Column c <- cs ] + [ pp(c) | TableConstraint c <- cos ])>
     ');";
 
-str pp(rename(str t, str newName))
+str pp(renameTable(str t, str newName))
   = "rename table <q(t)> to <q(newName)>;";
 
 str pp(\insert(str t, list[str] cs, list[SQLExpr] vs))

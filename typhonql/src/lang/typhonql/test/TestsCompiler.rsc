@@ -228,8 +228,7 @@ actual: <["i.shelf","i.product"],[
 
 void testLoneVars(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i`);
-  rs = <rs<0>, {*rs<1>}>;
-  p.assertEquals("all features from item retrieved", rs, <["i.picture", "i.shelf", "i.product"]
+  p.assertEquals("all features from item retrieved", <rs<0>, {*rs<1>}>, <["i.picture", "i.shelf", "i.product"]
     , {
         [base64("aa"), 1, U("tv")],
         [base64("bb"), 1, U("tv")],
@@ -775,7 +774,7 @@ Schema fetchSchema() {
 	return executer().fetchSchema();
 }
 
-Schema printSchema() {
+void printSchema() {
 	executer().printSchema();
 }
 
