@@ -35,6 +35,9 @@ import org.rascalmpl.interpreter.types.FunctionType;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.api.core.config.DriverOption;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
@@ -59,6 +62,11 @@ public class CassandraOperations  implements Operations, AutoCloseable {
 			.removalListener((KeyedConnection key, CqlSession connection, RemovalCause cause) -> connection.close())
 			.build()
 			;
+	static {
+        DriverConfigLoader.programmaticBuilder()
+            .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, Duration.ofSeconds(3))
+            .build();
+	}
 
 	private final Map<String, ConnectionData> connectionInfo;
 
