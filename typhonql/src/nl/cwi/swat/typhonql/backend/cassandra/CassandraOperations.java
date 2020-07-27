@@ -65,8 +65,7 @@ public class CassandraOperations  implements Operations, AutoCloseable {
 	static {
         DriverConfigLoader.programmaticBuilder()
             .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, Duration.ofSeconds(3))
-            .build()
-            .reload();
+            .build();
 	}
 
 	private final Map<String, ConnectionData> connectionInfo;
