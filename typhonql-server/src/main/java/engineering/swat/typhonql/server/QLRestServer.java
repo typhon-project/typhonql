@@ -167,6 +167,7 @@ public class QLRestServer {
 		public String query;
 		public String command;
 		public String[] parameterNames;
+		public String[] parameterTypes;
 		public String[][] boundRows;
 	    @JsonDeserialize(using = Base64Deserializer.class)
 		public Map<String, InputStream> blobs;
@@ -198,6 +199,9 @@ public class QLRestServer {
 					+ ((command != null && !command.isEmpty()) ? ("command: " + command + "\n") : "")
 					+ ((parameterNames != null && parameterNames.length > 0)
 							? ("parameterNames: " + Arrays.toString(parameterNames) + "\n")
+							: "")
+					+ ((parameterTypes != null && parameterTypes.length > 0)
+							? ("parameterTypes: " + Arrays.toString(parameterTypes) + "\n")
 							: "")
 					+ ((boundRows != null) ? ("boundRows: " + boundRows.length + "\n") : "") 
 					+ ((blobs != null) ? "blobs: " + blobs.keySet() + "\n" : "")
@@ -262,12 +266,15 @@ public class QLRestServer {
 
 	private static JsonSerializableResult handlePreparedCommand(XMIPolystoreConnection engine, RestArguments args,
 			HttpServletRequest r) throws IOException {
-		if (args.parameterNames == null || args.parameterNames.length == 0 || args.boundRows == null
+		if (args.parameterNames == null || args.parameterNames.length == 0 || args.parameterTypes == null || args.parameterTypes.length == 0 || args.boundRows == null
 				|| args.boundRows.length == 0) {
 			throw new IOException("Missing arguments to the command");
 		}
+		if (args.parameterNames.length != args.parameterTypes.length) {
+			throw new IOException("Mismatch between length of parameter names and parameter types");
+		}
 		CommandResult[] result = engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.command,
-				args.parameterNames, args.boundRows);
+				args.parameterNames, args.parameterTypes, args.boundRows);
 		return target -> {
 			target.write('[');
 			boolean first = true;
