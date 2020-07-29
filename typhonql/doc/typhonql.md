@@ -40,7 +40,7 @@ TyphonQL supports the following literal (constant) expressions:
 - Dates:  `$2020-03-31$`
 - Date and time values:  `$2020-03-31T18:08:28.477+00:00$`
 - Geographical points: `#point(23.4 343.34)`
-- Polygons: `#polygon((23.4 343.34), (2.0 0.0))`;
+- Polygons: `#polygon((0.1 1.0, 2.0 0.0, 0.1 1.0))`;
 - Null (indicating absence of a reference or value): `null`
 - Blob-pointers: `#blob:2ed99a8e-5259-4efd-8cb4-66748d52e8a1`
 
