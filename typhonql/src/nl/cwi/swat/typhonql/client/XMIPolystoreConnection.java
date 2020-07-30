@@ -45,6 +45,8 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.rascalmpl.interpreter.Evaluator;
@@ -232,32 +234,50 @@ public class XMIPolystoreConnection {
         );
 	}
 	
+
+	private static Map<String, String> ESCAPES;
+	
+	static {
+		ESCAPES = new HashMap<>();
+		ESCAPES.put("\n", "\\n");
+		ESCAPES.put("\r", "\\r");
+		ESCAPES.put("\f", "\\f");
+		ESCAPES.put("\t", "\\t");
+		ESCAPES.put("\b", "\\b");
+		ESCAPES.put("\"", "\\\"");
+		ESCAPES.put("\\", "\\\\");
+	}
+
+	private static Pattern SPECIAL_CHARS = Pattern.compile("[\"\\\\\\n\\t\\r\\b]");
+	private static String escapeQL(String s) {
+		Matcher specials = SPECIAL_CHARS.matcher(s);
+		if (!specials.find()) {
+			return s;
+		}
+		StringBuffer result = new StringBuffer(s.length() * 2);
+		do {
+			specials.appendReplacement(result, Matcher.quoteReplacement(ESCAPES.get(specials.group())));
+		} while(specials.find());
+		return specials.appendTail(result).toString();
+	}
 	
 	private static final Map<String, Function<String, IValue>> qlRascalValueMappers;
 	static {
+		final IString QUOTE = VF.string('"');
+		final IString DOLLAR = VF.string('$');
+		final IString POUND = VF.string('#');
 		qlRascalValueMappers = new HashMap<>();
-		qlRascalValueMappers.put("int", VF::integer);
-		qlRascalValueMappers.put("bigint", VF::integer);
-		qlRascalValueMappers.put("float", VF::real);
-		qlRascalValueMappers.put("string", VF::string);
-		qlRascalValueMappers.put("bool", s -> VF.bool(s.equalsIgnoreCase("true")));
+		qlRascalValueMappers.put("int", VF::string);
+		qlRascalValueMappers.put("bigint", VF::string);
+		qlRascalValueMappers.put("float", VF::string);
+		qlRascalValueMappers.put("string", s -> QUOTE.concat(VF.string(s)).concat(QUOTE));
+		qlRascalValueMappers.put("bool", VF::string);
 		qlRascalValueMappers.put("text", VF::string);
-		qlRascalValueMappers.put("date", s -> {
-			LocalDate d = LocalDate.parse(s);
-			return VF.date(d.getYear(), d.getMonth().getValue(), d.getDayOfMonth());
-		});
-		qlRascalValueMappers.put("datetime", s -> {
-			long epoch;
-			if (s.contains("+")) {
-				epoch = OffsetDateTime.parse(s, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toEpochSecond();
-			}
-			else {
-				epoch = LocalDateTime.parse(s, DateTimeFormatter.ISO_LOCAL_DATE_TIME).atZone(ZoneId.systemDefault()).toEpochSecond();
-			}
-			return VF.datetime(epoch);
-		});
-		qlRascalValueMappers.put("point", s -> VF.string("#" + s));
-		qlRascalValueMappers.put("polygon", s -> VF.string("#" + s));
+		qlRascalValueMappers.put("date", s -> DOLLAR.concat(VF.string(s)).concat(DOLLAR));
+		qlRascalValueMappers.put("datetime", s -> DOLLAR.concat(VF.string(s)).concat(DOLLAR));
+		qlRascalValueMappers.put("point", s -> POUND.concat(VF.string(s.toLowerCase())));
+		qlRascalValueMappers.put("polygon", s -> POUND.concat(VF.string(s.toLowerCase())));
+		qlRascalValueMappers.put("uuid", s -> POUND.concat(VF.string(s.toLowerCase())));
 	}
 	
 	private static IList buildBoundRowValues(String[] columnTypes, String[][] matrix) {
