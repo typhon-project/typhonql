@@ -20,6 +20,7 @@ import IO;
 import ValueIO;
 import String;
 import List;
+import util::Maybe;
 
 /*
 
@@ -254,7 +255,7 @@ NeoExpr expr2neo(e:(Expr)`<VId x>.@id`, Ctx ctx, Log log = noLog) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
     str token = "<x>_<ctx.vars()>";
     ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "@id"));
-    return nPlaceholder(name=token);
+    return NeoExpr::nPlaceholder(name=token);
   }
   str entity = ctx.env["<x>"];
   return nProperty("<x>", neoTyphonId(entity));
@@ -405,6 +406,9 @@ NeoExpr expr2neo((Expr)`<Expr lhs> \< <Expr rhs>`, Ctx ctx, Log log = noLog)
 
 NeoExpr expr2neo((Expr)`<Expr lhs> like <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = nLike(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  
+NeoExpr expr2neo((Expr)`<Expr lhs> <Reaching r> <Expr rhs>`, Ctx ctx, Log log = noLog) 
+  = reachingExpr2neo(r, lhs, rhs, ctx, log = log);
 
 NeoExpr expr2neo((Expr)`<Expr lhs> && <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = nAnd(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
@@ -427,7 +431,24 @@ NeoExpr expr2neo((Expr)`distance(<Expr from>, <Expr to>)`, Ctx ctx, Log log = no
 default NeoExpr expr2neo(Expr e, Ctx _) { throw "Unsupported expression: <e>"; }
 
 
+NeoExpr reachingExpr2neo((Reaching) `-[ <Expr edge> ]-\>`, Expr lhs, Expr rhs, Ctx ctx, Log log = noLog) 
+   = nReaching(getEdgeType(edge, ctx, log=log), Maybe::nothing(), Maybe::nothing(), expr2neo(lhs, ctx, log=log), expr2neo(rhs, ctx, log=log));
 
+NeoExpr reachingExpr2neo((Reaching) `-[ <Expr edge>, <Expr lower> .. ]-\>`, Expr lhs, Expr rhs, Ctx ctx, Log log = noLog) 
+  = nReaching(getEdgeType(edge, ctx, log=log), lower, Maybe::nothing(), expr2neo(lhs, ctx, log=log), expr2neo(rhs, ctx, log=log));
+
+NeoExpr reachingExpr2neo((Reaching) `-[ <Expr edge>, .. <Expr upper>]-\>`, Expr lhs, Expr rhs, Ctx ctx, Log log = noLog) 
+  = nReaching(getEdgeType(edge, ctx, log=log), Maybe::nothing(), upper, expr2neo(lhs, ctx, log=log), expr2neo(rhs, ctx, log=log));
+
+NeoExpr reachingExpr2neo((Reaching) `-[ <Expr edge>, <Expr lower> .. <Expr upper>]-\>`, Expr lhs, Expr rhs, Ctx ctx, Log log = noLog) 
+  = nReaching(getEdgeType(edge, ctx, log=log), lower, upper, expr2neo(lhs, ctx, log=log), expr2neo(rhs, ctx, log=log));
+
+
+str getEdgeType((Expr) `<VId x>`, Ctx ctx, Log log = noLog) = ctx.env["<x>"];
+
+default str getEdgeType(Expr, Ctx ctx, Log log = noLog)  {
+	throw "Edge expression must be a variable";
+} 
 /*
 
 
