@@ -34,6 +34,8 @@
     <relations name="inventory" type="//@entities.3" cardinality="zero_many" isContainment="true"/>
     <relations name="category" type="//@entities.2" cardinality="one"/>
     <relations name="wish" type="//@entities.8" cardinality="one" opposite="//@entities.8/@relations.1" isContainment="true"/>
+    <relations name="concordanceFrom" type="//@entities.7" cardinality="one" opposite="//@entities.7/@relations.0" isContainment="true"/>
+    <relations name="concordanceTo" type="//@entities.7" cardinality="one" opposite="//@entities.7/@relations.1" isContainment="true"/>
   </entities>
   <entities name="Category">
     <attributes xsi:type="typhonml:Attribute" name="id">

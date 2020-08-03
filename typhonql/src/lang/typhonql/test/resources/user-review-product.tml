@@ -26,6 +26,8 @@ entity Product {
 	inventory :-> Item[0..*]
 	category -> Category[1]
 	wish :-> Wish."Wish.product"[1]
+	concordanceFrom :-> Concordance."Concordance.source"[1]
+	concordanceTo :-> Concordance."Concordance.target"[1]
 }
 entity Category {
 	id: string[32]
