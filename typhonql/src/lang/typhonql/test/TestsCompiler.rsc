@@ -76,7 +76,7 @@ void setup(PolystoreInstance p, bool doTest) {
 
 	  rs = p.runQuery((Request)`from User u select u.photoURL, u.avatarURL, u.name`);
 	  p.assertResultEquals("multiple keyvals retrieved", rs, <["user__Stuff_kv_0.photoURL", "user__Stuff_kv_0.avatarURL", "u.name"],
-	    [["moustache", {}, "Pablo"], ["beard", {}, "Davy"]]>);
+	    [["moustache", "blocky", "Pablo"], ["beard", "blockyBeard", "Davy"]]>);
 	  
 	}
 	
