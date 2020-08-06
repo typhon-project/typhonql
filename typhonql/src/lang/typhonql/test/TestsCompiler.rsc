@@ -685,7 +685,7 @@ void testEscapedStrings(PolystoreInstance p) {
     p.assertResultEquals("escaped chars in strings on mariadb", rs, <["t.name"], [["Es\tcaped\""]]>);
 
     rs = p.runQuery((Request)`from User u select u.name, u.photoURL where u == #escp3`);
-    p.assertResultEquals("escaped chars in strings on cassandra", rs, <["u.name", "u.photoURL"], [["Es\tcaped\"", "Es\tcaped\""]]>);
+    p.assertResultEquals("escaped chars in strings on cassandra", rs, <["u.name", "user__Stuff_kv_0.photoURL"], [["Es\tcaped\"", "Es\tcaped\""]]>);
 }
 
 
