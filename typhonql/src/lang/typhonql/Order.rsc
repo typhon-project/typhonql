@@ -143,6 +143,12 @@ set[DBPath] dbPaths(Expr e, map[str, str] env, Schema s) {
        paths += {navigate(env["<x>"], [], s)};
     case (Expr)`<VId x>.@id` :
        paths += {navigate(env["<x>"], [], s)};
+    case (Expr)`<VId x> -[<VId edge> <ReachingBound? _>]-\> <VId y>`: {
+       <from, to> = getOneFrom({<from,to> | <dbName, graphSpec(es)> <- s.pragmas, <entity, from, to> <- es, entity == env["<edge>"]});
+     
+       paths += {navigate(env["<edge>"], [ "<from>"], s)};
+       paths += {navigate(env["<edge>"], [ "<to>" ], s)};
+    }
   }
   return paths;
 }
