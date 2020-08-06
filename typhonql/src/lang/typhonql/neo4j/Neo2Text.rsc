@@ -109,17 +109,17 @@ str neopp(nNotIn(NeoExpr arg, list[NeoValue] vals))
 str neopp(nIn(NeoExpr arg, list[NeoValue] vals)) 
   = "(<neopp(arg)>) in (<intercalate(", ", [ neopp(v) | NeoValue v <- vals])>)";
     
-str neopp(nReaching(str edge, Maybe::just(lower), Maybe::nothing(), NeoExpr lhs, NeoExpr rhs))
- = "(<neopp(lhs)>)-[:<edge>*<neopp(lower)>..]-\> (<neopp(rhs)>)";
+str neopp(nReaching(str edge, Maybe::just(lower), Maybe::nothing(), str lhs, str rhs))
+ = "(<lhs>)-[:<edge>*<neopp(lower)>..]-\> (<rhs>)";
 
-str neopp(nReaching(str edge, Maybe::nothing(), Maybe::just(upper), NeoExpr lhs, NeoExpr rhs))
- = "(<neopp(lhs)>)-[:<edge>*..<neopp(upper)>]-\> (<neopp(rhs)>)";
+str neopp(nReaching(str edge, Maybe::nothing(), Maybe::just(upper), str lhs, str rhs))
+ = "(<lhs>)-[:<edge>*..<neopp(upper)>]-\> (<rhs>)";
 
-str neopp(nReaching(str edge, Maybe::just(lower), Maybe::just(upper), NeoExpr lhs, NeoExpr rhs))
- = "(<neopp(lhs)>)-[:<edge>*<neopp(lower)>..<neopp(upper)>]-\> (<neopp(rhs)>)";
+str neopp(nReaching(str edge, Maybe::just(lower), Maybe::just(upper), str lhs, str rhs))
+ = "(<lhs>)-[:<edge>*<neopp(lower)>..<neopp(upper)>]-\> (<rhs>)";
 
-str neopp(nReaching(str edge, Maybe::nothing(), Maybe::nothing(), NeoExpr lhs, NeoExpr rhs))
- = "(<neopp(lhs)>)-[:<edge>*]-\> (<neopp(rhs)>)";
+str neopp(nReaching(str edge, Maybe::nothing(), Maybe::nothing(), str lhs, str rhs))
+ = "(<lhs>)-[:<edge>*]-\> (<rhs>)";
 
 
 str neopp(nFun(str name, vals)) = "<name>(<intercalate(", ", [neopp(v) | v <- vals])>)";

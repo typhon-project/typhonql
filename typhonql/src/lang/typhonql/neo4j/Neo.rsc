@@ -63,7 +63,7 @@ data NeoExpr
   | nNotIn(NeoExpr arg, list[NeoValue] vals)
   | nIn(NeoExpr arg, list[NeoValue] vals)
   | nFun(str name, list[NeoExpr] args)
-  | nReaching(str edgeType, Maybe[NeoExpr] lower, Maybe[NeoExpr] upper, NeoExpr lhs, NeoExpr rhs)
+  | nReaching(str edgeType, Maybe[NeoExpr] lower, Maybe[NeoExpr] upper, str from, str to)
   ;
 
 data NeoClause

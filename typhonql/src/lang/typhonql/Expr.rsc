@@ -61,7 +61,7 @@ syntax Expr
     | non-assoc gt: Expr lhs "\>" Expr rhs
     | non-assoc \in: Expr lhs "in" Expr rhs
     | non-assoc like: Expr lhs "like" Expr rhs
-    | non-assoc reaching: Expr lhs Reaching reaching Expr rhs
+    | non-assoc reaching: VId lhs Reaching reaching VId rhs
   )
   > left intersect: Expr lhs "&" Expr rhs
   > left and: Expr lhs "&&" Expr rhs
@@ -69,7 +69,7 @@ syntax Expr
   ;
   
   
-syntax Reaching = "-[" Expr edge ReachingBound? bound "]-\>";
+syntax Reaching = "-[" VId edge ReachingBound? bound "]-\>";
 
 syntax ReachingBound 
 	= lowerUpper: "," Expr lower ".." Expr upper
