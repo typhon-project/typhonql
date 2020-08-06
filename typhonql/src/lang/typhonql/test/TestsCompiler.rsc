@@ -420,7 +420,11 @@ void testInsertSQLNeo(PolystoreInstance p) {
 	                      '   , location: #point(2.0 3.0))}`);
 	                      	                      
   rs = p.runQuery((Request)`from Wish w select w.user where w.@id == #wish1`);
-  p.assertResultEquals("testInsertSQLNeoNeoFromEnd", rs, <["w.user"], [[U("tijs")]]>);
+  p.assertResultEquals("testInsertSQLNeoFromEnd", rs, <["w.user"], [[U("tijs")]]>);
+  rs = p.runQuery((Request)`from Product p, Wish w select w.user where w.product == p, p == #laptop`);
+  p.assertResultEquals("testInsertSQLNeoFromEndForProductId", rs, <["w.user"], [[U("tijs")]]>);
+  
+  
   
 }
 
@@ -443,7 +447,7 @@ void testDeleteSQLNeoCascade(PolystoreInstance p) {
   p.assertResultEquals("testDeleteSQLNeoCascadeToEnd", rs, <["p.@id", "p.wish"], []>);
   rs = p.runQuery((Request)`from User u select u.@id, u.wish where u.@id == #pablo`);
   p.assertResultEquals("testDeleteSQLNeoCascadeFromEnd", rs, <["u.@id", "u.wish"], [[U("pablo"), {}]]>);
-  
+    
 }
 
 void testUpdateSingleRefSQLNeo(PolystoreInstance p) {
@@ -454,6 +458,18 @@ void testUpdateSingleRefSQLNeo(PolystoreInstance p) {
   p.assertResultEquals("testUpdateRefSQLNeoTo", rs, <["p.@id", "p.wish"], [[ U("radio"), U("wish1")]]>);
   rs = p.runQuery((Request)`from Product p select p.@id, p.wish where p.@id == #tv`);
   p.assertResultEquals("testUpdateRefSQLNeoFormerTo", rs, <["p.@id", "p.wish"], [[ U("radio"), {}]]>);
+}
+
+void testNeoReachability(PolystoreInstance p) {
+  p.runUpdate((Request)`insert Product { @id: #laptop, name: "MacBook", availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-03-03$, price: 4000, description: "expensive laptop"}`);
+  p.runUpdate((Request)`insert Product {@id: #pc, name: "PC", description: "PC", productionDate:  $2020-04-14$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)), price: 250}`);
+  p.runUpdate((Request)`insert Concordance { @id: #concordance1, source: #laptop, target: #pc, weight: 5}`);
+  //from Product p, Wish w select w.user where w.product == p, p == #laptop
+  Request r = (Request)`from Product p1, Product p2, Concordance c select p2.@id, c.@id where p1 == #laptop, p1 -[c]-\>p2`;
+  //Request r = (Request)`from Product p1, Product p2, Concordance c select p1.@id, c.@id where p1.@id == #laptop, c.source == p1`;
+  rs = p.runQuery(r);
+  p.assertResultEquals("testNeoReachability", rs, <["p2.@id", "c.@id"], [[ U("pc"), U("concordance1")]]>);
+  
 }
 
 void testUpdateAttrNeo(PolystoreInstance p) {
@@ -841,7 +857,8 @@ void runNeoTests(Log log = NO_LOG()) {
 	  testDeleteSQLNeoCascade,
 	  testUpdateSingleRefSQLNeo,
 	  testUpdateAttrNeo,
-	  testInsertNeo
+	  testInsertNeo,
+	  testNeoReachability
 	];
 	runTests(tests, log = log);
 }
