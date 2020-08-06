@@ -78,6 +78,16 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
   void addParam(str x, Param field) {
     params[x] = field;
   }
+  
+  map[Param, str] placeholders = ();
+  str getParam(str prefix, Param field) {
+    if (field notin placeholders) {
+      str name = "<prefix>_<vars()>";
+      placeholders[field] = name;
+      addParam(name, field);
+    } 
+    return placeholders[field];
+  }
 
   Env env = (); 
   set[str] dyns = {};
@@ -152,8 +162,7 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
 
   Expr rewriteDynIfNeeded(e:(Expr)`<VId x>.@id`) {
     if ("<x>" in dyns, str ent := env["<x>"], <Place p, ent> <- s.placement) {
-      str token = "<x>_<vars()>";
-      addParam(token, field(p.name, "<x>", env["<x>"], "@id"));
+      str token = getParam("<x>", field(p.name, "<x>", env["<x>"], "@id"));
       return [Expr]"??<token>";
     }
     return e;
@@ -162,8 +171,7 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
   // todo: refactor this and above.
   Expr rewriteDynIfNeeded(e:(Expr)`<VId x>.<Id f>`) {
     if ("<x>" in dyns, str ent := env["<x>"], <Place p, ent> <- s.placement) {
-      str token = "<x>_<vars()>";
-      addParam(token, field(p.name, "<x>", env["<x>"], "@id"));
+      str token = getParam("<x>", field(p.name, "<x>", env["<x>"], "@id"));
       return [Expr]"??<token>";
     }
     return e;
