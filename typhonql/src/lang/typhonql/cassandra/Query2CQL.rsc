@@ -59,7 +59,7 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
   CQLStat q = cSelect([], "", [], allowFiltering=true);
   
   void addWhere(CQLExpr e) {
-     println("ADDING where clause: <pp(e)>");
+     //println("ADDING where clause: <pp(e)>");
     q.wheres += [e];
   }
   
