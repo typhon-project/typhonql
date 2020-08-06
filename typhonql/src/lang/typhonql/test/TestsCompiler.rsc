@@ -189,6 +189,18 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
   setup(p, true);
 }
 
+void testMultiVarOccurencesMapToSamePlaceholder(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from User u, Review r select u.name where u.name == "Pablo",
+                      ' u.reviews == r.@id, r.content == u.name, r.content == u.name`);
+                      
+  p.assertResultEquals("no exception thrown", rs, <["u.name"], []>);
+
+  rs = p.runQuery((Request)`from User u, Review r select r.content, u.name where r.content == "something",
+                      ' r.user == u.@id, u.name == r.content, u.name == r.content`);
+                      
+  p.assertResultEquals("no exception thrown", rs, <["r.content", "u.name"], []>);
+
+}
 
 void testKeyValueFeatures(PolystoreInstance p) {
 
