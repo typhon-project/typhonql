@@ -43,6 +43,11 @@ import util::Maybe;
 // then we don't have to swap arguments if maintaining the inverse at outside sql db.
 
 
+list[Step] updateIntoJunctionSingleContainment(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, SQLExpr trg, Bindings params) {
+  return removeFromJunctionByKid(dbName, from, fromRole, to, toRole, trg, params)
+    + insertIntoJunction(dbName, from, fromRole, to, toRole, src, [trg], params);
+}
+
 list[Step] updateIntoJunctionSingle(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, SQLExpr trg, Bindings params) {
   return removeFromJunction(dbName, from, fromRole, to, toRole, src, params)
     + insertIntoJunction(dbName, from, fromRole, to, toRole, src, [trg], params);
@@ -92,6 +97,14 @@ list[Step] removeFromJunction(str dbName, str from, str fromRole, str to, str to
            sql(executeStatement(dbName, 
              pp(delete(tbl,
                [ where([equ(column(tbl, junctionFkName(from, fromRole)), src)]) ])))), params) ];
+}
+
+list[Step] removeFromJunctionByKid(str dbName, str from, str fromRole, str to, str toRole, SQLExpr trg, Bindings params) {
+  str tbl = junctionTableName(from, fromRole, to, toRole);
+  return  [ step(dbName, 
+           sql(executeStatement(dbName, 
+             pp(delete(tbl,
+               [ where([equ(column(tbl, junctionFkName(to, toRole)), trg)]) ])))), params) ];
 }
 
 list[Step] removeFromJunction(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, list[SQLExpr] trgs, Bindings params) {

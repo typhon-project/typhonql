@@ -365,7 +365,15 @@ void compileRefSet(
     upd.props +=[ <"$set", object([<fromRole, mUuid(uuid2str(ref))>])> ];
     return upd;
   });
-  ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(sUuid(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
+  
+  // if the oppposite is a containment, we need to delete by kid: the original
+  // owner pointer should be removed
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    ctx.addSteps(updateIntoJunctionSingleContainment(other, to, toRole, from, fromRole, lit(sUuid(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
+  }
+  else {
+    ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, lit(sUuid(uuid2str(ref))), ctx.sqlMe, ctx.myParams));
+  }
 }
 
 // sql/same sql xref

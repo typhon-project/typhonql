@@ -817,7 +817,9 @@ void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	  , testUpdateManyContainSQLtoExternal
 	  , testUpdateManyContainSQLtoExternalRemove
 	  , testUpdateManyContainSQLtoExternalSet
-	  , testUpdateManyContainSQLtoExternalSetToEmpty	  
+	  , testUpdateManyContainSQLtoExternalSetToEmpty
+	  
+	  , testUpdateSingleRefSQLMongo
 	  
 	  , testSQLDateEquals
 	  
