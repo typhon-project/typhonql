@@ -144,6 +144,6 @@ Value evalExpr((Expr)`<UUID u>`) = sUuid("<u.part>");
 
 Value evalExpr((Expr)`#blob:<UUIDPart prt>`) = blobPointer("<prt>");
 
-Value evalExpr((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
+Value evalExpr((Expr)`<PlaceHolder p>`) = Value::placeholder(name="<p>"[2..]);
 
 default Value evalExpr(Expr ex) { throw "missing case for <ex>"; }
