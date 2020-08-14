@@ -688,6 +688,63 @@ void testEscapedStrings(PolystoreInstance p) {
     p.assertResultEquals("escaped chars in strings on cassandra", rs, <["u.name", "u.photoURL"], [["Es\tcaped\"", "Es\tcaped\""]]>);
 }
 
+void testPreparedUpdatesSimpleSQL(PolystoreInstance p) {
+	p.runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description, availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-01-01$, price: 2000 }`,
+						  ["name", "description"],
+						  ["string", "string"],
+						  [
+						   ["Guitar", "Tanglewood"],
+				           ["Violin", "Stradivarius"]]);
+	rs = p.runQuery((Request) `from Product p select p.name, p.description`);		    
+	p.assertResultEquals("prepared insert statement on sql (simple)", rs,   
+		<["p.name","p.description"],
+		[["Guitar","Tanglewood"],["Violin","Stradivarius"],["Radio","Loud"],["TV","Flat"]]>);
+}
+
+void testPreparedUpdatesSimpleSQLWithRefs(PolystoreInstance p) {
+	p.runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description, availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-01-01$, price: 2000, reviews: ??review }`,
+						  ["name", "description", "review"],
+						  ["string", "string", "uuid"],
+						  [
+						   ["Guitar", "Tanglewood", "rev1"],
+				           ["Violin", "Stradivarius", "rev2"]]);
+	rs = p.runQuery((Request) `from Product p select p.name, p.description, p.review`);		    
+	p.assertResultEquals("prepared insert statement on sql (simple)", rs,   
+		<["p.name","p.description","p.review"],
+		[["Guitar","Tanglewood"],["Violin","Stradivarius"],["Radio","Loud"],["TV","Flat"]]>);
+}
+
+void testPreparedUpdatesSimpleMongo(PolystoreInstance p) {
+	p.runPreparedUpdate((Request) `insert Review { content: ??content, location: #point(2.0 3.0) }`,
+						  ["content"],
+						  ["string"],
+						  [
+						   ["Awful TV"],
+				           ["Excellent TV"]]);
+	rs = p.runQuery((Request) `from Review r select r.content`);		    
+	p.assertResultEquals("prepared insert statement on mongo (simple)", rs,   
+		<["r.content"],
+		[["Good TV"],
+		 [""],
+		 ["***"],
+		 ["Awful TV"],
+		 ["Excellent TV"]]>);
+}
+
+void testPreparedUpdatesSimpleMongoWithRefs(PolystoreInstance p) {
+	p.runPreparedUpdate((Request) `insert Review { content: ??content, user: ??user, product: ??product, location: #point(2.0 3.0) }`,
+						  ["content", "user", "product"],
+						  ["string", "uuid", "uuid"],
+						  [
+						   ["Awful TV", U("tv"), U("pablo") ],
+				           ["Excellent TV", U("tv"), U("davy") ]]);
+	rs = p.runQuery((Request) `from Review r select r.content, r.user, r.product where r.product = #tv`);		    
+	p.assertResultEquals("prepared insert statement on mongo with references (simple)", rs,   
+		<["r.content","r.user","r.product"],
+		[["Good TV", U("pablo"), U("tv")],
+		 ["Awful TV", U("pablo"), U("tv")],
+		 ["Excellent TV", U("davy"), U("tv")]]>);
+}
 
 void test1(PolystoreInstance p) {
 	rs = p.runQuery((Request) `from Product p select p.name`);
