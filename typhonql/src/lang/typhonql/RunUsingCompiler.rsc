@@ -115,6 +115,25 @@ value runGetEntity(str entity, str uuid, Schema sch, Session session, Log log = 
 	return session.getJavaResult();
 }
 
+Where enrichWhere(str var, w:(Where) `where {Expr ","}+ clauses`) =
+	visit (w) {
+		case (Expr) `<VId x>` => [Expr] "<var>.<x>"
+	};
+
+value listEntities(str entity, str whereClause, str limit, str sortBy, Schema sch, Session session, Log log = noLog) {
+	list[str] attributes = [att | <entity, att, _> <- sch.attrs];
+	Request r = parseRequest("from <entity> e select
+	                      ' <intercalate(", ", ["e.<a>" | a <- attributes])> 
+	                      '<isEmpty(whereClause)?"where <whereClause>":"">
+	                      '<isEmpty(sortBy)?"order <sortBy>":"">");	
+	r = visit (r) {
+		case Where w => enrichWhere("e", w) 
+	};	                      
+	                      
+	runScriptForQuery(r, sch, session, log = log);
+	return session.getJavaResult();
+}
+
 ResultTable runQuery(Request r, Schema sch, Session session, Log log = noLog) {
 	runScriptForQuery(r, sch, session, log = log);
 	return session.getResult();

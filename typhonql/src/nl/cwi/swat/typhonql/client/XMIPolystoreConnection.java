@@ -185,6 +185,20 @@ public class XMIPolystoreConnection {
         );
 	}
 	
+	public ResultTable executeListEntities(String xmiModel, List<DatabaseInfo> connections, String entity, String whereClause, String limit, String sortBy) {
+		return sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> 
+            (ResultTable) evaluator.call("listEntities", 
+                "lang::typhonql::RunUsingCompiler",
+                Collections.emptyMap(),
+                VF.string(entity), 
+                VF.string(whereClause!=null?whereClause:""),
+                VF.string(limit!=null?limit:""),
+                VF.string(sortBy!=null?sortBy:""),
+                VF.string(xmiModel),
+                session.getTuple())
+        );
+	}
+	
 	public void executeDDLUpdate(String xmiModel, List<DatabaseInfo> connections, String update) {
 		sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> 
             evaluator.call("runDDL", 

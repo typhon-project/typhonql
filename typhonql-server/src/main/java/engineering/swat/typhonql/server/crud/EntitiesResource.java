@@ -28,6 +28,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -47,11 +48,10 @@ public class EntitiesResource extends TyphonDALResource {
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	public List<Map<String, Object>> getEntites(@PathParam("entityName") String entityName) throws IOException {
+	public List<Map<String, Object>> getEntites(@PathParam("entityName") String entityName, @QueryParam("where") String whereClause, @QueryParam("limit") String limit, @QueryParam("sortBy") String sortBy) throws IOException {
 		logger.trace("Getting all entities of type: {}", entityName);
 		QLRestServer.RestArguments args = getRestArguments();
-		ResultTable result = getEngine().executeQuery(args.xmi, args.databaseInfo,
-				"from " + entityName + " e select e");
+		ResultTable result = getEngine().executeListEntities(args.xmi, args.databaseInfo, entityName, whereClause ,limit, sortBy);
 		return result.getValues().stream().map(vs -> { 
 					Map<String, Object> map = new HashMap<>();
 					map.put("@id", vs.get(0)); 
