@@ -34,10 +34,10 @@ public abstract class QueryExecutor {
 	private List<Consumer<List<Record>>> script;
 	private Map<String, Binding> bindings;
 	private Map<Binding, String> inverseBindings;
-	private Map<String, UUID> uuids;
+	private Map<String, List<UUID>> uuids;
 	private List<Path> signature;
 
-	public QueryExecutor(ResultStore store, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, Map<String, Binding> bindings, List<Path> signature) {
+	public QueryExecutor(ResultStore store, List<Consumer<List<Record>>> script, Map<String, List<UUID>> uuids, Map<String, Binding> bindings, List<Path> signature) {
 		this.store = store;
 		this.script = script;
 		this.bindings = bindings;
