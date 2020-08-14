@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -17,6 +18,7 @@ import org.wololo.jts2geojson.GeoJSONWriter;
 
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Engine;
+import nl.cwi.swat.typhonql.backend.MultipleBindings;
 import nl.cwi.swat.typhonql.backend.QueryExecutor;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultIterator;
@@ -34,8 +36,8 @@ public class Neo4JEngine extends Engine {
 		this.driver = driver;
 	}
 	
-	public void executeUpdate(String query, Map<String, Binding> bindings) {
-		new UpdateExecutor(query, store, updates, uuids, bindings) {
+	public void executeUpdate(String query, Map<String, Binding> bindings, Optional<MultipleBindings> mBindings) {
+		new UpdateExecutor(query, store, updates, uuids, bindings, mBindings) {
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
 				Map<String, Object> pars = toNeo4JObjects(values);

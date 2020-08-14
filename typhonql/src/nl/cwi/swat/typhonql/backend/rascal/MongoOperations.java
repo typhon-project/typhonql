@@ -152,11 +152,10 @@ public class MongoOperations implements Operations, AutoCloseable {
 			String query = ((IString) args[2]).getValue();
 			String update = ((IString) args[3]).getValue();
 			IMap bindings = (IMap) args[4];
-
-			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
-
+			IConstructor mBindings = (IConstructor) args[5];
+			
 			engine.apply(dbName).executeFindAndUpdateOne(dbName, collection, query, update,
-					bindingsMap);
+					rascalToJavaBindings(bindings), rascaltoJavaMultipleBindings(mBindings));
 
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
@@ -170,10 +169,10 @@ public class MongoOperations implements Operations, AutoCloseable {
 			String query = ((IString) args[2]).getValue();
 			String update = ((IString) args[3]).getValue();
 			IMap bindings = (IMap) args[4];
-
-			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
-
-			engine.apply(dbName).executeFindAndUpdateMany(dbName, collection, query, update, bindingsMap);
+			IConstructor mBindings = (IConstructor) args[5];
+			
+			engine.apply(dbName).executeFindAndUpdateMany(dbName, collection, query, update,
+					rascalToJavaBindings(bindings), rascaltoJavaMultipleBindings(mBindings));
 
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
@@ -186,10 +185,10 @@ public class MongoOperations implements Operations, AutoCloseable {
 			String collection = ((IString) args[1]).getValue();
 			String query = ((IString) args[2]).getValue();
 			IMap bindings = (IMap) args[3];
+			IConstructor mBindings = (IConstructor) args[4];
 
-			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
-
-			engine.apply(dbName).executeDeleteOne(dbName, collection, query, bindingsMap);
+			engine.apply(dbName).executeDeleteOne(dbName, collection, query,
+					rascalToJavaBindings(bindings), rascaltoJavaMultipleBindings(mBindings));
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
@@ -201,10 +200,10 @@ public class MongoOperations implements Operations, AutoCloseable {
 			String collection = ((IString) args[1]).getValue();
 			String query = ((IString) args[2]).getValue();
 			IMap bindings = (IMap) args[3];
+			IConstructor mBindings = (IConstructor) args[4];
 
-			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
-
-			engine.apply(dbName).executeDeleteMany(dbName, collection, query, bindingsMap);
+			engine.apply(dbName).executeDeleteMany(dbName, collection, query,
+					rascalToJavaBindings(bindings), rascaltoJavaMultipleBindings(mBindings));
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}

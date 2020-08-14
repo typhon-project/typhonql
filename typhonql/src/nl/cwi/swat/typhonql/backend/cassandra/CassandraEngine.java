@@ -19,6 +19,7 @@ package nl.cwi.swat.typhonql.backend.cassandra;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -30,6 +31,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Engine;
+import nl.cwi.swat.typhonql.backend.MultipleBindings;
 import nl.cwi.swat.typhonql.backend.QueryExecutor;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultIterator;
@@ -54,8 +56,8 @@ public class CassandraEngine extends Engine {
 	
 
 	
-	public void executeUpdate(String query, Map<String, Binding> bindings, Supplier<CqlSession> connection) {
-		new UpdateExecutor(query, store, updates, uuids, bindings) {
+	public void executeUpdate(String query, Map<String, Binding> bindings, Supplier<CqlSession> connection, Optional<MultipleBindings> mBindings) {
+		new UpdateExecutor(query, store, updates, uuids, bindings, mBindings) {
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
 				connection.get().execute(compileQuery(query, values));

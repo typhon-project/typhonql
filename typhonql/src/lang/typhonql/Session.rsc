@@ -64,23 +64,23 @@ alias SQLOperations = tuple[
 
 alias CassandraOperations = tuple[
 	void (str resultId, str dbName, str query, Bindings bindings, list[Path] paths) executeQuery,
-	void (str dbName, str query, Bindings bindings) executeStatement,
+	void (str dbName, str query, Bindings bindings, MultipleBindings mBindings) executeStatement,
 	void (str dbName, str query, Bindings bindings) executeGlobalStatement
 ];
 
 alias Neo4JOperations = tuple[
 	void (str resultId, str dbName, str query, Bindings bindings, list[Path] paths) executeMatch,
-	void (str dbName, str query, Bindings bindings) executeUpdate
+	void (str dbName, str query, Bindings bindings, MultipleBindings mBindings) executeUpdate
 ];
 
 alias MongoOperations = tuple[
 	void (str resultId, str dbName, str collection, str query, Bindings bindings, list[Path] paths) find,
 	void (str resultId, str dbName, str collection, str query, str projection, Bindings bindings, list[Path] paths) findWithProjection,
 	void (str dbName, str coll, str query, Bindings bindings, MultipleBindings mBindings) insertOne,
-	void (str dbName, str coll, str query, str update, Bindings bindings) findAndUpdateOne,
-	void (str dbName, str coll, str query, str update, Bindings bindings) findAndUpdateMany,
-	void (str dbName, str coll, str query, Bindings bindings) deleteOne,
-	void (str dbName, str coll, str query, Bindings bindings) deleteMany,
+	void (str dbName, str coll, str query, str update, Bindings bindings, MultipleBindings mBindings) findAndUpdateOne,
+	void (str dbName, str coll, str query, str update, Bindings bindings, MultipleBindings mBindings) findAndUpdateMany,
+	void (str dbName, str coll, str query, Bindings bindings, MultipleBindings mBindings) deleteOne,
+	void (str dbName, str coll, str query, Bindings bindings, MultipleBindings mBindings) deleteMany,
 	void (str dbName, str coll) createCollection,
     void (str dbName, str coll, str keys) createIndex,
 	void (str dbName, str coll, str newName) renameCollection,

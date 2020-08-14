@@ -9,6 +9,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.checkerframework.checker.units.qual.m;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -18,6 +19,7 @@ import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
 
+import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
@@ -87,10 +89,9 @@ public class Neo4JOperations implements Operations, AutoCloseable {
 			String dbName = ((IString) args[0]).getValue();
 			String query = ((IString) args[1]).getValue();
 			IMap bindings = (IMap) args[2];
+			IConstructor mBindings = (IConstructor) args[3];
 
-			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
-			
-			getEngine.apply(dbName).executeUpdate(query, bindingsMap);
+			getEngine.apply(dbName).executeUpdate(query, rascalToJavaBindings(bindings), rascaltoJavaMultipleBindings(mBindings));
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}

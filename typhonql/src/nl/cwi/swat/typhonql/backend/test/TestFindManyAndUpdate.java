@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -63,7 +64,7 @@ public class TestFindManyAndUpdate {
 		e1.executeFindAndUpdateMany("Reviews","Review",
 				"{}",
 				"{\"$pull\": {\"product\": {\"$in\": [${param_750}]}}}",
-				map);
+				map, Optional.empty());
 		
 		Runner.executeUpdates(script, updates);
 	

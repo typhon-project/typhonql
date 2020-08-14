@@ -180,19 +180,7 @@ public class MongoDBEngine extends Engine {
 		return Document.parse(resultQuery);
 	}
 	
-	private void scheduleUpdate(String collectionName, String doc, Map<String, Binding> bindings, BiConsumer<MongoCollection<Document>, Document> operation) {
-		new UpdateExecutor(doc, store, updates, uuids, bindings) {
-			
-			@Override
-			protected void performUpdate(Map<String, Object> values) {
-				MongoCollection<Document> coll = db.getCollection(collectionName);
-				Document parsedQuery = resolveQuery(store, () -> getGridFS(), doc, values);
-				operation.accept(coll, parsedQuery);
-			}
-		}.executeUpdate();
-	}
-	
-	private void scheduleUpdateWithMBindings(String collectionName, String doc, Map<String, Binding> bindings, Optional<MultipleBindings> mBindings, BiConsumer<MongoCollection<Document>, Document> operation) {
+	private void scheduleUpdate(String collectionName, String doc, Map<String, Binding> bindings, Optional<MultipleBindings> mBindings, BiConsumer<MongoCollection<Document>, Document> operation) {
 		new UpdateExecutor(doc, store, updates, uuids, bindings, mBindings) {
 			
 			@Override
@@ -210,8 +198,8 @@ public class MongoDBEngine extends Engine {
         void accept(T t, U u, V v);
 
     }
-	private void executeFilteredUpdate(String collectionName, String filter, String doc, Map<String, Binding> bindings, TriConsumer<MongoCollection<Document>, Document, Document> operation) {
-		new UpdateExecutor(doc+" / "+filter, store, updates, uuids, bindings) {
+	private void executeFilteredUpdate(String collectionName, String filter, String doc, Map<String, Binding> bindings, Optional<MultipleBindings> mBindings, TriConsumer<MongoCollection<Document>, Document, Document> operation) {
+		new UpdateExecutor(doc+" / "+filter, store, updates, uuids, bindings, mBindings) {
 			
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
@@ -233,23 +221,23 @@ public class MongoDBEngine extends Engine {
 	}
 
 	public void executeInsertOne(String dbName, String collectionName, String doc, Map<String, Binding> bindings, Optional<MultipleBindings> mBindings) {
-		scheduleUpdateWithMBindings(collectionName, doc, bindings, mBindings, MongoCollection<Document>::insertOne);
+		scheduleUpdate(collectionName, doc, bindings, mBindings, MongoCollection<Document>::insertOne);
 	}
 	
-	public void executeFindAndUpdateOne(String dbName, String collectionName, String query, String update, Map<String, Binding> bindings) {
-		executeFilteredUpdate(collectionName, query, update, bindings, MongoCollection<Document>::findOneAndUpdate);
+	public void executeFindAndUpdateOne(String dbName, String collectionName, String query, String update, Map<String, Binding> bindings, Optional<MultipleBindings> mBindings) {
+		executeFilteredUpdate(collectionName, query, update, bindings, mBindings, MongoCollection<Document>::findOneAndUpdate);
 	}
 	
-	public void executeFindAndUpdateMany(String dbName, String collectionName, String query, String update, Map<String, Binding> bindings) {
-		executeFilteredUpdate(collectionName, query, update, bindings, MongoCollection<Document>::updateMany);
+	public void executeFindAndUpdateMany(String dbName, String collectionName, String query, String update, Map<String, Binding> bindings, Optional<MultipleBindings> mBindings) {
+		executeFilteredUpdate(collectionName, query, update, bindings, mBindings, MongoCollection<Document>::updateMany);
 	}
 	
-	public void executeDeleteOne(String dbName, String collectionName, String query, Map<String, Binding> bindings) {
-		scheduleUpdate(collectionName, query, bindings, MongoCollection<Document>::deleteOne);
+	public void executeDeleteOne(String dbName, String collectionName, String query, Map<String, Binding> bindings, Optional<MultipleBindings> mBindings) {
+		scheduleUpdate(collectionName, query, bindings, mBindings, MongoCollection<Document>::deleteOne);
 	}
 	
-	public void executeDeleteMany(String dbName, String collectionName, String query, Map<String, Binding> bindings) {
-		scheduleUpdate(collectionName, query, bindings, MongoCollection<Document>::deleteMany);
+	public void executeDeleteMany(String dbName, String collectionName, String query, Map<String, Binding> bindings, Optional<MultipleBindings> mBindings) {
+		scheduleUpdate(collectionName, query, bindings, mBindings, MongoCollection<Document>::deleteMany);
 	}
 	
 	public void executeCreateCollection(String dbName, String collectionName) {

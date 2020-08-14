@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -51,7 +52,7 @@ public class TestDDLMongo {
 		e1.executeFindAndUpdateMany("Reviews","Biography",
 				"",
 				"{$set: { \"rating\" : null}}",
-				Collections.EMPTY_MAP);
+				Collections.EMPTY_MAP, Optional.empty());
 
 		Runner.executeUpdates(script, updates);
 	}

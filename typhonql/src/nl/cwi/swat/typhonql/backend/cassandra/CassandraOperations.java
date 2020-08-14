@@ -42,6 +42,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 
+import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
@@ -151,8 +152,10 @@ public class CassandraOperations  implements Operations, AutoCloseable {
         String dbName = ((IString) args[0]).getValue();
         String query = ((IString) args[1]).getValue();
         IMap bindings = (IMap) args[2];
+        IConstructor mBindings = (IConstructor) args[3];
 
-        engine.executeUpdate(query, rascalToJavaBindings(bindings), () -> getConnection(dbName, global));
+        engine.executeUpdate(query, rascalToJavaBindings(bindings), () -> getConnection(dbName, global),
+        		rascaltoJavaMultipleBindings(mBindings));
         return ResultFactory.nothing();
 	}
 
