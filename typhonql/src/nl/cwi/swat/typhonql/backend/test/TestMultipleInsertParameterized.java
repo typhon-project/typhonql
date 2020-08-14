@@ -32,13 +32,14 @@ import java.util.function.Consumer;
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Field;
 import nl.cwi.swat.typhonql.backend.GeneratedIdentifier;
+import nl.cwi.swat.typhonql.backend.MultipleBindings;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.Runner;
 import nl.cwi.swat.typhonql.backend.mariadb.MariaDBEngine;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
-public class TestMultipleInsert {
+public class TestMultipleInsertParameterized {
 
 	public static void main(String[] args) throws SQLException {
 		
@@ -60,12 +61,16 @@ public class TestMultipleInsert {
 		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "XeNnEybEFjSe5aLy");
 		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, () -> conn1);
 		LinkedHashMap<String, Binding> map0 = new LinkedHashMap<String, Binding>();
-		UUID uuid = UUID.randomUUID();
 		List<UUID> lst1 = new ArrayList<UUID>();
-		lst1.add(uuid);
+		lst1.add(UUID.randomUUID());
+		lst1.add(UUID.randomUUID());
 		uuids.put("param_611", lst1);
 		map0.put("param_611", new GeneratedIdentifier("param_611"));
-		e1.executeUpdate("insert into `Product` (`Product.name`, `Product.description`, `Product.availabilityRegion`, `Product.productionDate`, `Product.price`, `Product.@id`) values ('IPhone', 'Apple', PolyFromText('POLYGON((1.0 1.0))', 4326), '2020-01-01', 2000, ${param_611});", map0, Optional.empty());
+		MultipleBindings mbs = new MultipleBindings(Arrays.asList("name", "description"), Arrays.asList("string", "string"), 
+				Arrays.asList(Arrays.asList("Guitar", "Tanglewood"), Arrays.asList("Violin", "Stradivarius")));
+				
+		e1.executeUpdate("insert into `Product` (`Product.name`, `Product.description`, `Product.availabilityRegion`, `Product.productionDate`, `Product.price`, `Product.@id`) values (${name}, ${description}, PolyFromText('POLYGON((1.0 1.0))', 4326), '2020-01-01', 2000, ${param_611});", map0, 
+				Optional.of(mbs));
 		
 		Runner.executeUpdates(script, updates);
 

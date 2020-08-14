@@ -35,7 +35,7 @@ public interface BackendTestCommon {
 			throw new RuntimeException("MariaDB driver not found", e);
 		}
 		Connection conn = DriverManager
-				.getConnection(getMariaDBConnectionString("localhost", 3306, "Inventory", "root", "example"));
+				.getConnection(getMariaDBConnectionString("localhost", 3306, "Inventory", user, password));
 		return conn;
 	}
 

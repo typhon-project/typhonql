@@ -29,18 +29,22 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import com.mongodb.client.MongoDatabase;
+
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Field;
 import nl.cwi.swat.typhonql.backend.GeneratedIdentifier;
+import nl.cwi.swat.typhonql.backend.MultipleBindings;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.Runner;
 import nl.cwi.swat.typhonql.backend.mariadb.MariaDBEngine;
+import nl.cwi.swat.typhonql.backend.mongodb.MongoDBEngine;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
-public class TestMultipleInsert {
+public class TestMultipleInsertParameterizedMongo{
 
-	public static void main(String[] args) throws SQLException {
+	public static void main(String[] args) {
 		
 		//script([newId("param_611"),
 		//    step("Inventory",sql(executeStatement("Inventory","insert into `Product` (`Product.name`, `Product.description`, `Product.@id`) \nvalues (\'IPhone\', \'Apple\', ${param_611});")),
@@ -57,15 +61,21 @@ public class TestMultipleInsert {
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();
 		
-		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "XeNnEybEFjSe5aLy");
-		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, () -> conn1);
+		MongoDatabase conn1 = BackendTestCommon.getMongoDatabase("localhost", 27018, "Reviews", "admin", "admin");
+		MongoDBEngine e1 = new MongoDBEngine(store, script, updates, uuids, conn1);
 		LinkedHashMap<String, Binding> map0 = new LinkedHashMap<String, Binding>();
-		UUID uuid = UUID.randomUUID();
 		List<UUID> lst1 = new ArrayList<UUID>();
-		lst1.add(uuid);
+		lst1.add(UUID.randomUUID());
+		lst1.add(UUID.randomUUID());
 		uuids.put("param_611", lst1);
 		map0.put("param_611", new GeneratedIdentifier("param_611"));
-		e1.executeUpdate("insert into `Product` (`Product.name`, `Product.description`, `Product.availabilityRegion`, `Product.productionDate`, `Product.price`, `Product.@id`) values ('IPhone', 'Apple', PolyFromText('POLYGON((1.0 1.0))', 4326), '2020-01-01', 2000, ${param_611});", map0, Optional.empty());
+		MultipleBindings mbs = new MultipleBindings(Arrays.asList("content", "user", "product"),
+				Arrays.asList("string"), 
+				Arrays.asList(Arrays.asList("Excellent TV"),
+							  Arrays.asList("Awful TV")));
+				
+		e1.executeInsertOne("Reviews", "Review", "{\"content\": ${content}, \"location\": {\"type\": \"Point\", \"coordinates\": [2.0, 3.0]}, \"_id\": ${param_59}}", 
+				map0, Optional.of(mbs));
 		
 		Runner.executeUpdates(script, updates);
 

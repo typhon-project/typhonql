@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -42,7 +43,7 @@ public class TestDelete {
 		
 		ResultStore store = new ResultStore(Collections.emptyMap());
 		
-		Map<String, UUID> uuids = new HashMap<>();
+		Map<String, List<UUID>> uuids = new HashMap<>();
 		
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();
@@ -55,7 +56,7 @@ public class TestDelete {
 		
 		LinkedHashMap<String, Binding> map1 = new LinkedHashMap<String, Binding>();
 		map1.put("param_56", new Field("Inventory", "t", "Tag", "@id"));
-		e1.executeUpdate("delete from `Tag` where (`Tag`.`Tag.@id`) = (${param_56});",map1);
+		e1.executeUpdate("delete from `Tag` where (`Tag`.`Tag.@id`) = (${param_56});",map1, Optional.empty());
 		
 		Runner.executeUpdates(script, updates);
 	

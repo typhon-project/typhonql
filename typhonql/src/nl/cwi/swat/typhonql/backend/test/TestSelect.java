@@ -46,7 +46,7 @@ public class TestSelect {
 		
 		ResultStore store = new ResultStore(Collections.emptyMap());
 		
-		Map<String, UUID> uuids = new HashMap<>();
+		Map<String, List<UUID>> uuids = new HashMap<>();
 		
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();
