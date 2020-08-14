@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.function.Function;
 
@@ -46,6 +47,7 @@ import io.usethesource.vallang.type.Type;
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Field;
 import nl.cwi.swat.typhonql.backend.GeneratedIdentifier;
+import nl.cwi.swat.typhonql.backend.MultipleBindings;
 
 public interface Operations {
 	// no support for kw params yet 
@@ -125,5 +127,33 @@ public interface Operations {
 			result.add(new Path(dbName.getValue(), var.getValue(), entityType.getValue(), pathList.toArray(new String[0])));
 		}
 		return result;
+	}
+	
+	default Optional<MultipleBindings> rascaltoJavaMultipleBindings(IConstructor cons) {
+		if (cons.getName().contentEquals("bindings")) {
+			IList rVarNames = (IList) cons.get(0);
+			IList rVarTypes = (IList) cons.get(1);
+			IList rValues = (IList) cons.get(2);
+			List<String> varNames = toJavaStringList(rVarNames);
+			List<String> varTypes = toJavaStringList(rVarTypes);
+			List<List<String>> values = new ArrayList<List<String>>();
+			Iterator<IValue> iter = rValues.iterator();
+			while (iter.hasNext()) {
+				IList row = (IList) iter.next();
+				values.add(toJavaStringList(row));
+			}
+			return Optional.of(new MultipleBindings(varNames, varTypes, values));
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	default List<String> toJavaStringList(IList rVarNames) {
+		Iterator<IValue> iter = rVarNames.iterator();
+		List<String> r = new ArrayList<String>();
+		while (iter.hasNext()) 
+			r.add(((IString) iter.next()).getValue());
+		return r;
+				
 	}
 }
