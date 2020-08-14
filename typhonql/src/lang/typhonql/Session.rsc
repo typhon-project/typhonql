@@ -30,7 +30,7 @@ alias Session = tuple[
 	void (list[Path path] paths) readAndStore,
 	void () finish,
 	void () done,
-	str (str) newId,
+	str (str, int) newId,
 	SQLOperations sql,
    	MongoOperations mongo,
    	CassandraOperations cassandra,
@@ -52,9 +52,13 @@ data Param
 
 alias Bindings = map[str, Param];
 
+data MultipleBindings
+	= noBindings() 
+	| bindings(list[str] varNames, list[str] varTypes, list[list[str]] values);
+
 alias SQLOperations = tuple[
 	void (str resultId, str dbName, str query, Bindings bindings, list[Path] paths) executeQuery,
-	void (str dbName, str query, Bindings bindings) executeStatement,
+	void (str dbName, str query, Bindings bindings, MultipleBindings mBindings) executeStatement,
 	void (str dbName, str query, Bindings bindings) executeGlobalStatement
 ];
 
@@ -72,7 +76,7 @@ alias Neo4JOperations = tuple[
 alias MongoOperations = tuple[
 	void (str resultId, str dbName, str collection, str query, Bindings bindings, list[Path] paths) find,
 	void (str resultId, str dbName, str collection, str query, str projection, Bindings bindings, list[Path] paths) findWithProjection,
-	void (str dbName, str coll, str query, Bindings bindings) insertOne,
+	void (str dbName, str coll, str query, Bindings bindings, MultipleBindings mBindings) insertOne,
 	void (str dbName, str coll, str query, str update, Bindings bindings) findAndUpdateOne,
 	void (str dbName, str coll, str query, str update, Bindings bindings) findAndUpdateMany,
 	void (str dbName, str coll, str query, Bindings bindings) deleteOne,

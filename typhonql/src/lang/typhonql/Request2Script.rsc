@@ -67,7 +67,7 @@ bool hitsBackend((Request)`<Query q>`, Place p, Schema s)
   = ( false | it || (<p, "<b.entity>"> in s.placement) | Binding b <- q.bindings );
 
 
-Script request2script(Request r, Schema s, Log log = noLog) {
+Script request2script(Request r, Schema s, Log log = noLog, int insertTimes = 1) {
   log("REQ: <r>");
 
   r = eliminateCustomDataTypes(injectProperUUIDs(r), s);
@@ -100,7 +100,7 @@ Script request2script(Request r, Schema s, Log log = noLog) {
 	  return delete2script(r, s);
 
     case (Request)`insert <EId e> { <{KeyVal ","}* kvs> }`:
-       return insert2script(r, s); 
+       return insert2script(r, s times = insertTimes); 
     
     default: 
       //throw "Unsupported request: `<r>`";

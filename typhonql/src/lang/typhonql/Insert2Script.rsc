@@ -81,7 +81,7 @@ Then insert the rest.
 
 */
 
-Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s) {
+Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s, int times = 1) {
   str entity = "<e>";
   Place p = placeOf(entity, s);
   str myId = newParam();
@@ -140,7 +140,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
     updateStep(idx, step(p.name, neo(executeNeoUpdate(p.name, neopp(theCreate))), myParams));
   }
 
-  addSteps([ newId(myId) | !hasId(kvs) ]);
+  addSteps([ newId(myId, times) | !hasId(kvs) ]);
   
   // initialize
   updateSQLInsert(SQLStat(SQLStat ins) { return ins; });

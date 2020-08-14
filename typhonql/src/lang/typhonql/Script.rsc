@@ -32,7 +32,7 @@ data Step
   = step(str result, Call call, Bindings bindings, list[Path] signature = [])
   | read(list[Path] path)
   | finish()
-  | newId(str var)
+  | newId(str var, int times)
   ;
   
 
@@ -86,8 +86,12 @@ str runScriptAndClose(Script scr, Session session, Schema schema) {
 	session.done();
 	return result;
 }
-  
+
 str runScript(Script scr, Session session, Schema schema) {
+	return runScript(scr, noBindings(), session, schema);
+}
+  
+str runScript(Script scr, MultipleBindings mBindings, Session session, Schema schema) {
   str result = "";
   for (Step s <- scr.steps) {
     switch (s) {
@@ -104,11 +108,11 @@ str runScript(Script scr, Session session, Schema schema) {
       case step(str r, sql(executeQuery(str db, str q)), Bindings ps):
         session.sql.executeQuery(r, db, q, ps, s.signature);
         
-      case step(str r, sql(executeStatement(str db, str st)), Bindings ps):
-        session.sql.executeStatement(db, st, ps);
+      case s:step(str r, sql(executeStatement(str db, str st)), Bindings ps):
+        session.sql.executeStatement(db, st, ps, mBindings);
       
       case step(str r, sql(executeGlobalStatement(str db, str st)), Bindings ps):
-        session.sql.executeGlobalStatement(db, st, ps);  
+        session.sql.executeGlobalStatement(db, st, ps, mBindings);  
 
       case step(str r, mongo(find(str db, str coll, str json)), Bindings ps):
         session.mongo.find(r, db, coll, json, ps, s.signature);
@@ -117,7 +121,7 @@ str runScript(Script scr, Session session, Schema schema) {
         session.mongo.findWithProjection(r, db, coll, json, proj, ps, s.signature);  
         
       case step(str r, mongo(insertOne(str db, str coll, str doc)), Bindings ps):
-        session.mongo.insertOne(db, coll, doc, ps); 
+        session.mongo.insertOne(db, coll, doc, ps, mBindings); 
         
       case step(str r, mongo(findAndUpdateOne(str db, str coll, str query, str update)), Bindings ps):
         session.mongo.findAndUpdateOne(db, coll, query, update, ps);   
@@ -152,8 +156,8 @@ str runScript(Script scr, Session session, Schema schema) {
       case step(str r, neo(executeNeoUpdate(str db, str q)), Bindings ps):
         session.neo.executeUpdate(db, q, ps);
       
-      case newId(str var): {
-        result = session.newId(var);
+      case newId(str var, int times): {
+        session.newId(var, times);
       }
           
       case read(list[Path path] paths): {
