@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -36,6 +37,7 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 
+import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
@@ -45,6 +47,7 @@ import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Closables;
+import nl.cwi.swat.typhonql.backend.MultipleBindings;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.mongodb.MongoDBEngine;
@@ -130,10 +133,12 @@ public class MongoOperations implements Operations, AutoCloseable {
 			String collection = ((IString) args[1]).getValue();
 			String doc = ((IString) args[2]).getValue();
 			IMap bindings = (IMap) args[3];
+			IConstructor mBindings = (IConstructor) args[4];
 
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
+			Optional<MultipleBindings> mBindingsOptional = rascaltoJavaMultipleBindings(mBindings);
 
-			engine.apply(dbName).executeInsertOne(dbName, collection, doc, bindingsMap);
+			engine.apply(dbName).executeInsertOne(dbName, collection, doc, bindingsMap, mBindingsOptional);
 
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
@@ -277,7 +282,7 @@ public class MongoOperations implements Operations, AutoCloseable {
 	}
 	
 	public ITuple newMongoOperations(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
-			TyphonSessionState state, Map<String, UUID> uuids, IEvaluatorContext ctx, IValueFactory vf) {
+			TyphonSessionState state, Map<String, List<UUID>> uuids, IEvaluatorContext ctx, IValueFactory vf) {
 
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("MongoOperations"));
 		while (aliasedTuple.isAliased()) {

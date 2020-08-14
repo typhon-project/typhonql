@@ -94,7 +94,7 @@ public class CassandraOperations  implements Operations, AutoCloseable {
 	}
 
 	public IValue buildOperations(ResultStore store, List<Consumer<List<Record>>> script,
-			List<Runnable> updates, TyphonSessionState state, Map<String, UUID> uuids,
+			List<Runnable> updates, TyphonSessionState state, Map<String, List<UUID>> uuids,
 			IEvaluatorContext ctx, IValueFactory vf) {
 
 		Type aliasedTuple = unalias(Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("CassandraOperations")));

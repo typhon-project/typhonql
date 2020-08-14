@@ -28,14 +28,14 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 public class Neo4JEngine extends Engine {
 	private final Driver driver;
 
-	public Neo4JEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, UUID> uuids,
+	public Neo4JEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, List<UUID>> uuids,
 			Driver driver) {
 		super(store, script, updates, uuids);
 		this.driver = driver;
 	}
 	
 	public void executeUpdate(String query, Map<String, Binding> bindings) {
-		new UpdateExecutor(store, updates, uuids, bindings) {
+		new UpdateExecutor(query, store, updates, uuids, bindings) {
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
 				Map<String, Object> pars = toNeo4JObjects(values);
@@ -90,5 +90,4 @@ public class Neo4JEngine extends Engine {
 		else
 			throw new RuntimeException("Query executor does not know how to serialize object of type " +obj.getClass());
 	}
-
 }

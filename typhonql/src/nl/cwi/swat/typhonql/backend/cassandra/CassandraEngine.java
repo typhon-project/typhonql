@@ -39,7 +39,7 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class CassandraEngine extends Engine {
 
-	public CassandraEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, UUID> uuids) {
+	public CassandraEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, List<UUID>> uuids) {
 		super(store, script, updates, uuids);
 	}
 
@@ -55,7 +55,7 @@ public class CassandraEngine extends Engine {
 
 	
 	public void executeUpdate(String query, Map<String, Binding> bindings, Supplier<CqlSession> connection) {
-		new UpdateExecutor(store, updates, uuids, bindings) {
+		new UpdateExecutor(query, store, updates, uuids, bindings) {
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
 				connection.get().execute(compileQuery(query, values));
@@ -90,4 +90,5 @@ public class CassandraEngine extends Engine {
 		// other java values are just fine as they are
 		return value;
 	}
+
 }

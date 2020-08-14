@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -32,6 +33,8 @@ import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.Result;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
+
+import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
@@ -42,6 +45,7 @@ import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Closables;
+import nl.cwi.swat.typhonql.backend.MultipleBindings;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.mariadb.MariaDBEngine;
@@ -116,14 +120,15 @@ public class MariaDBOperations implements Operations, AutoCloseable {
         String dbName = ((IString) args[0]).getValue();
         String query = ((IString) args[1]).getValue();
         IMap bindings = (IMap) args[2];
+        IConstructor mBindings = (IConstructor) args[3];
 
-        getEngine.apply(dbName, !global).executeUpdate(query, rascalToJavaBindings(bindings));
+        getEngine.apply(dbName, !global).executeUpdate(query, rascalToJavaBindings(bindings), rascaltoJavaMultipleBindings(mBindings));
         return ResultFactory.makeResult(TF.voidType(), null, ctx);
 	}
 
 
 	public ITuple newSQLOperations(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, 
-			TyphonSessionState state, Map<String, UUID> uuids, IEvaluatorContext ctx, IValueFactory vf) {
+			TyphonSessionState state, Map<String, List<UUID>> uuids, IEvaluatorContext ctx, IValueFactory vf) {
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("SQLOperations"));
 		while (aliasedTuple.isAliased()) {
 			aliasedTuple = aliasedTuple.getAliased();

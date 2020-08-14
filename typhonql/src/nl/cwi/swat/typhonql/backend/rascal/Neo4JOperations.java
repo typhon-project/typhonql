@@ -96,7 +96,7 @@ public class Neo4JOperations implements Operations, AutoCloseable {
 	}
 	
 	public ITuple newNeo4JOperations(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, 
-			TyphonSessionState state, Map<String, UUID> uuids, IEvaluatorContext ctx, IValueFactory vf) {
+			TyphonSessionState state, Map<String, List<UUID>> uuids, IEvaluatorContext ctx, IValueFactory vf) {
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("Neo4JOperations"));
 		while (aliasedTuple.isAliased()) {
 			aliasedTuple = aliasedTuple.getAliased();

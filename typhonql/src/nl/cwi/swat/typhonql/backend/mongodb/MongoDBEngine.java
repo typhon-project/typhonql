@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -33,6 +34,7 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.apache.commons.text.StringSubstitutor;
 import org.bson.Document;
 import org.locationtech.jts.geom.Geometry;
@@ -40,7 +42,6 @@ import org.wololo.jts2geojson.GeoJSONWriter;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.mongodb.BasicDBObject;
 import com.mongodb.MongoGridFSException;
 import com.mongodb.MongoNamespace;
 import com.mongodb.client.FindIterable;
@@ -53,6 +54,7 @@ import com.mongodb.client.gridfs.GridFSDownloadStream;
 import lang.typhonql.util.MakeUUID;
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Engine;
+import nl.cwi.swat.typhonql.backend.MultipleBindings;
 import nl.cwi.swat.typhonql.backend.QueryExecutor;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultIterator;
@@ -71,7 +73,7 @@ public class MongoDBEngine extends Engine {
 		return gridBucket;
 	}
 
-	public MongoDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, UUID> uuids,
+	public MongoDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, List<UUID>> uuids,
 			MongoDatabase db) {
 		super(store, script, updates, uuids);
 		this.db = db;
@@ -179,7 +181,19 @@ public class MongoDBEngine extends Engine {
 	}
 	
 	private void scheduleUpdate(String collectionName, String doc, Map<String, Binding> bindings, BiConsumer<MongoCollection<Document>, Document> operation) {
-		new UpdateExecutor(store, updates, uuids, bindings) {
+		new UpdateExecutor(doc, store, updates, uuids, bindings) {
+			
+			@Override
+			protected void performUpdate(Map<String, Object> values) {
+				MongoCollection<Document> coll = db.getCollection(collectionName);
+				Document parsedQuery = resolveQuery(store, () -> getGridFS(), doc, values);
+				operation.accept(coll, parsedQuery);
+			}
+		}.executeUpdate();
+	}
+	
+	private void scheduleUpdateWithMBindings(String collectionName, String doc, Map<String, Binding> bindings, Optional<MultipleBindings> mBindings, BiConsumer<MongoCollection<Document>, Document> operation) {
+		new UpdateExecutor(doc, store, updates, uuids, bindings, mBindings) {
 			
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
@@ -197,7 +211,7 @@ public class MongoDBEngine extends Engine {
 
     }
 	private void executeFilteredUpdate(String collectionName, String filter, String doc, Map<String, Binding> bindings, TriConsumer<MongoCollection<Document>, Document, Document> operation) {
-		new UpdateExecutor(store, updates, uuids, bindings) {
+		new UpdateExecutor(doc+" / "+filter, store, updates, uuids, bindings) {
 			
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
@@ -210,7 +224,7 @@ public class MongoDBEngine extends Engine {
 	}
 	
 	private void scheduleGlobalUpdate(Consumer<MongoDatabase> operation) {
-		new UpdateExecutor(store, updates, uuids, Collections.emptyMap()) {
+		new UpdateExecutor("", store, updates, uuids, Collections.emptyMap()) {
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
 				operation.accept(db);
@@ -218,8 +232,8 @@ public class MongoDBEngine extends Engine {
 		}.executeUpdate();
 	}
 
-	public void executeInsertOne(String dbName, String collectionName, String doc, Map<String, Binding> bindings) {
-		scheduleUpdate(collectionName, doc, bindings, MongoCollection<Document>::insertOne);
+	public void executeInsertOne(String dbName, String collectionName, String doc, Map<String, Binding> bindings, Optional<MultipleBindings> mBindings) {
+		scheduleUpdateWithMBindings(collectionName, doc, bindings, mBindings, MongoCollection<Document>::insertOne);
 	}
 	
 	public void executeFindAndUpdateOne(String dbName, String collectionName, String query, String update, Map<String, Binding> bindings) {
@@ -257,6 +271,5 @@ public class MongoDBEngine extends Engine {
 	public void executeCreateIndex(String collectionName, String keys) {
 		scheduleGlobalUpdate(d -> d.getCollection(collectionName).createIndex(Document.parse(keys)));
 	}
-
 
 }

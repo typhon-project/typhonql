@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -36,6 +37,7 @@ import org.locationtech.jts.io.WKBWriter;
 import lang.typhonql.util.MakeUUID;
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Engine;
+import nl.cwi.swat.typhonql.backend.MultipleBindings;
 import nl.cwi.swat.typhonql.backend.QueryExecutor;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultIterator;
@@ -47,7 +49,8 @@ public class MariaDBEngine extends Engine {
 
 	private final Supplier<Connection> connection;
 
-	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, UUID> uuids, Supplier<Connection> sqlConnection) {
+	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
+			Map<String, List<UUID>> uuids, Supplier<Connection> sqlConnection) {
 		super(store, script, updates, uuids);
 		this.connection = sqlConnection;
 	}
@@ -56,51 +59,50 @@ public class MariaDBEngine extends Engine {
 		Matcher m = QL_PARAMS.matcher(query);
 		StringBuffer result = new StringBuffer(query.length());
 		while (m.find()) {
-            m.appendReplacement(result, "?");
+			m.appendReplacement(result, "?");
 			String param = m.group(1);
-            if (param.startsWith("blob-")) {
-            	param = param.substring("blob-".length());
-            	blobs.add(param);
-            }
-            vars.add(param);
+			if (param.startsWith("blob-")) {
+				param = param.substring("blob-".length());
+				blobs.add(param);
+			}
+			vars.add(param);
 		}
 		m.appendTail(result);
 		String jdbcQuery = result.toString();
-        return connection.get().prepareStatement(jdbcQuery);
+		return connection.get().prepareStatement(jdbcQuery);
 	}
 
-    private PreparedStatement prepareAndBind(String query, Map<String, Object> values)
-            throws SQLException {
-        List<String> vars = new ArrayList<>();
-        Set<String> blobs = new HashSet<>();
-        PreparedStatement stm = prepareQuery(query, vars, blobs);
-        int i = 1;
-        for (String varName : vars) {
-            Object value = values.get(varName);
-            if (value == null && blobs.contains(varName)) {
-                stm.setBlob(i, store.getBlob(varName));
-            }
-            else if (value instanceof Geometry) {
-                stm.setBytes(i, new WKBWriter().write((Geometry) value));
-            }
-            else if (value instanceof UUID) {
-            	stm.setBytes(i, MakeUUID.uuidToBytes((UUID)value));
-            }
-            else {
-                // TODO: what to do with NULL?
-                // other classes jdbc can take care of itself
-                stm.setObject(i, value);
-            }
-            i++;
-        }
-        return stm;
-    }
+	private PreparedStatement prepareAndBind(String query, Map<String, Object> values) throws SQLException {
+		List<String> vars = new ArrayList<>();
+		Set<String> blobs = new HashSet<>();
+		PreparedStatement stm = prepareQuery(query, vars, blobs);
+		bindInPreparedStatement(stm, values, vars, blobs);
+		return stm;
+	}
 
+	private void bindInPreparedStatement(PreparedStatement stm, Map<String, Object> values, List<String> vars,
+			Set<String> blobs) throws SQLException {
+		int i = 1;
+		for (String varName : vars) {
+			Object value = values.get(varName);
+			if (value == null && blobs.contains(varName)) {
+				stm.setBlob(i, store.getBlob(varName));
+			} else if (value instanceof Geometry) {
+				stm.setBytes(i, new WKBWriter().write((Geometry) value));
+			} else if (value instanceof UUID) {
+				stm.setBytes(i, MakeUUID.uuidToBytes((UUID) value));
+			} else {
+				// TODO: what to do with NULL?
+				// other classes jdbc can take care of itself
+				stm.setObject(i, value);
+			}
+			i++;
+		}
+	}
+	
 	public void executeSelect(String resultId, String query, List<Path> signature) {
 		executeSelect(resultId, query, new HashMap<String, Binding>(), signature);
 	}
-
-
 
 	public void executeSelect(String resultId, String query, Map<String, Binding> bindings, List<Path> signature) {
 		new QueryExecutor(store, script, uuids, bindings, signature) {
@@ -116,18 +118,21 @@ public class MariaDBEngine extends Engine {
 		}.executeSelect(resultId);
 	}
 
+	public void executeUpdate(String query, Map<String, Binding> bindings, Optional<MultipleBindings> mBindings) {
+		new UpdateExecutor(query, store, updates, uuids, bindings, mBindings) {
 
-	public void executeUpdate(String query, Map<String, Binding> bindings) {
-		new UpdateExecutor(store, updates, uuids, bindings) {
+			@Override
+			protected void performUpdate(Map<String, Object> values) {
+				try {
+					PreparedStatement stm = prepareAndBind(query, values);
+					stm.executeUpdate();
+				} catch (SQLException e1) {
+					throw new RuntimeException(e1);
+				}
 
-            @Override
-            protected void performUpdate(Map<String, Object> values) {
-                try {
-					prepareAndBind(query, values).executeUpdate();
-                } catch (SQLException e1) {
-                    throw new RuntimeException(e1);
-                }
-            }
+			}
+
 		}.executeUpdate();
 	}
+	
 }
