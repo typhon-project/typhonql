@@ -84,6 +84,34 @@ CommandResult runUpdate(Request r, Schema s, Session session, Log log = noLog) {
     throw "Statement should have been provided";
 }
 
+CommandResult runPreparedUpdate(Request r, list[str] varNames, list[str] varTypes,
+	list[list[str]] values, Schema s, Session session, Log log = noLog) {
+	if ((Request) `<Statement stmt>` := r) {
+		// TODO This is needed because we do not have an explicit way to distinguish
+		// DDL updates from DML updates. Perhaps we should consider it
+  		if (!isDDL(stmt)) {
+            startScript = getNanoTime();
+  			scr = request2script(r, s, log = log, insertTimes = size(values));
+			log("[runUpdate] Script: <scr>");
+            endScript = getNanoTime();
+            mBindings = bindings(varNames, varTypes, values);
+			res = runScript(scr, mBindings, session, s);
+            endExecute = getNanoTime();
+            if (bench) {
+                println("BENCH: request, <endScript - startScript>, <endExecute - endScript>");
+            }
+			if (res != "")
+				return <-1, ("uuid" : res)>;
+			else
+				return <-1, ()>;
+  		}
+  		else {
+  			throw "DDL operations cannot be paramerized";
+  		}
+  	}
+    throw "Statement should have been provided";
+}
+
 void runScriptForQuery(Request r, Schema sch, Session session, Log log = noLog) {
 	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
         startScript = getNanoTime();
