@@ -85,9 +85,9 @@
         </repository>
 
         <repository>
-            <id>rascalmpl-libs</id>
+            <id>typepal</id>
             <layout>p2</layout>
-            <url>https://update.rascal-mpl.org/libs/</url>
+            <url>https://update.rascal-mpl.org/typepal/</url>
         </repository>
 
         <repository>
