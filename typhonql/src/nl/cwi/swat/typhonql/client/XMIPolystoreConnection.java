@@ -262,7 +262,7 @@ public class XMIPolystoreConnection {
 		ESCAPES.put("\\", "\\\\");
 	}
 
-	private static Pattern SPECIAL_CHARS = Pattern.compile("[\"\\\\\\n\\t\\r\\b]");
+	private static Pattern SPECIAL_CHARS = Pattern.compile("[\"\\\\\\n\\t\\r\\x08]");
 	private static String escapeQL(String s) {
 		Matcher specials = SPECIAL_CHARS.matcher(s);
 		if (!specials.find()) {
