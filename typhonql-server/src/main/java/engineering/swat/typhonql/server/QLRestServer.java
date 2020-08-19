@@ -71,6 +71,7 @@ import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.JsonSerializableResult;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
+import nl.cwi.swat.typhonql.client.resulttable.QLSerialization;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class QLRestServer {
@@ -123,7 +124,7 @@ public class QLRestServer {
 
 		context.setAttribute(QUERY_ENGINE, engine);
 		
-		ObjectMapper crudMapper = new ObjectMapper();
+		ObjectMapper crudMapper = QLSerialization.mapper;
 
 		SimpleModule module = new SimpleModule();
 		// adding our custom serializer and deserializer
