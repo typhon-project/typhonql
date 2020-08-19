@@ -115,7 +115,7 @@ value runGetEntity(str entity, str uuid, Schema sch, Session session, Log log = 
 	return session.getJavaResult();
 }
 
-Where enrichWhere(str var, w:(Where) `where {Expr ","}+ clauses`) =
+Where enrichWhere(str var, w:(Where) `where <{Expr ","}+ clauses>`) =
 	visit (w) {
 		case (Expr) `<VId x>` => [Expr] "<var>.<x>"
 	};
@@ -124,8 +124,8 @@ value listEntities(str entity, str whereClause, str limit, str sortBy, Schema sc
 	list[str] attributes = [att | <entity, att, _> <- sch.attrs];
 	Request r = parseRequest("from <entity> e select
 	                      ' <intercalate(", ", ["e.<a>" | a <- attributes])> 
-	                      '<isEmpty(whereClause)?"where <whereClause>":"">
-	                      '<isEmpty(sortBy)?"order <sortBy>":"">");	
+	                      '<!isEmpty(whereClause)?"where <whereClause>":"">
+	                      '<!isEmpty(sortBy)?"order <sortBy>":"">");	
 	r = visit (r) {
 		case Where w => enrichWhere("e", w) 
 	};	                      
@@ -214,6 +214,12 @@ value runGetEntity(str entity, str uuid, str xmiString, Session session, Log log
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   return runGetEntity(entity, uuid, s, session, log = log);
+}
+
+value listEntities(str entity, str whereClause, str limit, str sortBy, str xmiString, Session session, Log log = noLog) {
+  Model m = xmiString2Model(xmiString);
+  Schema s = model2schema(m);
+  return listEntities(entity, whereClause, limit, sortBy, s, session, log = log);
 }
 
 list[CommandResult] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, Session session, Log log = noLog) {
