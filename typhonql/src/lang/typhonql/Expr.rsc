@@ -77,11 +77,11 @@ keyword Primitives
   
 
 syntax Point
-  = singlePoint: "#point" "(" XY ")"
+  = singlePoint: "#point" "(" XY coordinate ")"
   ;
 
 syntax XY
-  = coordinate: Real Real;
+  = coordinate: Real x Real y;
 
 syntax Polygon
   = shape: "#polygon" "(" {Segment ","}* segments ")" 

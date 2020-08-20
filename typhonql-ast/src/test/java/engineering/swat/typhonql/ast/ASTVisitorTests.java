@@ -99,7 +99,9 @@ public class ASTVisitorTests {
 	private Request parseAST() throws ASTConversionException {
 		return TyphonQLASTParser.parseTyphonQLRequest(("insert Order { "
 				+ "totalAmount: 32, "
-				+ "products: [#someProductRef]"
+				+ "products: [#someProductRef],"
+				+ "position: #point(1.0 2.0),"
+				+ "area: #polygon((1.0 1.0, 1.0 2.0, 2.0 2.0, 1.0 1.0))"
 				+ "}").toCharArray());
 	}
 
