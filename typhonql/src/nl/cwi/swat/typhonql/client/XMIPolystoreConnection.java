@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
@@ -228,7 +229,7 @@ public class XMIPolystoreConnection {
 		for (String column : columnNames) {
 			columnsWriter.append(VF.string(column));
 		}
-        return sessionCall(connections, blobMap, externalArguments, (session, evaluator) -> 
+        return sessionCall(connections, blobMap, Optional.of(externalArguments), (session, evaluator) -> 
         	evaluator.call("runUpdate", 
                     "lang::typhonql::RunUsingCompiler",
                     Collections.emptyMap(),
@@ -350,10 +351,10 @@ public class XMIPolystoreConnection {
 	}
 
 	private <R> R sessionCall(List<DatabaseInfo> connections, Map<String, InputStream> blobs, BiFunction<SessionWrapper, Evaluator, R> exec) {
-		return sessionCall(connections, blobs, new ExternalArguments(), exec);
+		return sessionCall(connections, blobs, Optional.empty(), exec);
 	}
 	
-	private <R> R sessionCall(List<DatabaseInfo> connections, Map<String, InputStream> blobs, ExternalArguments externalArguments, BiFunction<SessionWrapper, Evaluator, R> exec) {
+	private <R> R sessionCall(List<DatabaseInfo> connections, Map<String, InputStream> blobs, Optional<ExternalArguments> externalArguments, BiFunction<SessionWrapper, Evaluator, R> exec) {
 		return evaluators.useAndReturn(evaluator -> {
 			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, Collections.emptyMap(), externalArguments, evaluator)) {
 				synchronized (evaluator) {

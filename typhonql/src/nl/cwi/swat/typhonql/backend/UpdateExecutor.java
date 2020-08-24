@@ -37,23 +37,23 @@ public abstract class UpdateExecutor {
 	}
 	
 	public void executeUpdate() {
-		executeUpdate(new HashMap<>(), -1);
+		executeUpdate(new HashMap<>());
 	}
 	
-	public void executeUpdate(int argumentsPointer) {
-		executeUpdate(new HashMap<>(), argumentsPointer);
-	}
-	
-	private void executeUpdate(Map<String, Object> values, int argumentsPointer) {
-		updates.add(() -> {  executeUpdateOperation(values, argumentsPointer); });
+	private void executeUpdate(Map<String, Object> values) {
+		updates.add(() -> {  executeUpdateOperation(values); });
 	}
 
 	protected abstract void performUpdate(Map<String, Object> values);
 	
-	private void executeUpdateOperation(Map<String, Object> values, int argumentsPointer) {
+	private void executeUpdateOperation(Map<String, Object> values) {
 		if (values.size() == bindings.size()) {
-			if (argumentsPointer != -1) {
-				values.putAll(store.getExternalArguments(argumentsPointer));
+			if (store.hasExternalArguments()) {
+				if (store.hasMoreExternalArguments()) {
+					values.putAll(store.getCurrentExternalArgumentsRow());
+				}
+				else
+					throw new RuntimeException("Exhausted external arguments");
 			}
 			performUpdate(values); 
 		}
@@ -73,13 +73,13 @@ public abstract class UpdateExecutor {
 					results.nextResult();
 					Object value = (field.getAttribute().equals("@id"))? results.getCurrentId(field.getLabel(), field.getType()) : results.getCurrentField(field.getLabel(), field.getType(), field.getAttribute());
 					values.put(var, value);
-					executeUpdateOperation(values, argumentsPointer);
+					executeUpdateOperation(values);
 				}
 			}
 			else {
 				GeneratedIdentifier id = (GeneratedIdentifier) binding;
 				values.put(var, uuids.get(id.getName()));
-				executeUpdateOperation(values, argumentsPointer);
+				executeUpdateOperation(values);
 			}
 			
 		}

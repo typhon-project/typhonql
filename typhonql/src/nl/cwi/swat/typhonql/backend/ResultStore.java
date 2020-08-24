@@ -17,23 +17,17 @@
 package nl.cwi.swat.typhonql.backend;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
-import nl.cwi.swat.typhonql.backend.rascal.Path;
-import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
+import java.util.Optional;
 
 public class ResultStore {
 
 	private final Map<String, ResultIterator> store;
 	private final Map<String, InputStream> blobMap;
-	private final ExternalArguments externalArguments;
+	private final Optional<ExternalArguments> externalArguments;
 
-	public ResultStore(Map<String, InputStream> blobMap, ExternalArguments externalArguments) {
+	public ResultStore(Map<String, InputStream> blobMap, Optional<ExternalArguments> externalArguments) {
 		store = new HashMap<String, ResultIterator>();
 		this.blobMap = blobMap;
 		this.externalArguments = externalArguments;
@@ -60,12 +54,23 @@ public class ResultStore {
 		return blobMap.get(key);
 	}
 	
-	public Map<String, Object> getExternalArguments(int index) {
-		return externalArguments.getMapForRow(index);
+	public Map<String, Object> getCurrentExternalArgumentsRow() {
+		assert(externalArguments.isPresent());
+		return externalArguments.get().getCurrentRow();
 	}
 
-	public int getExternalArgumentsSize() {
-		return externalArguments.getValues().length;
+	public boolean hasMoreExternalArguments() {
+		assert(externalArguments.isPresent());
+		return externalArguments.get().hasNextRow();
+	}
+
+	public boolean hasExternalArguments() {
+		return externalArguments.isPresent();
+	}
+	
+	public void nextExternalArguments() {
+		assert(externalArguments.isPresent());
+		externalArguments.get().next();
 	}
 
 }

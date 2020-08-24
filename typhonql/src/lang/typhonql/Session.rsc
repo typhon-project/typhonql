@@ -31,7 +31,9 @@ alias Session = tuple[
 	void () finish,
 	void () done,
 	str (str) newId,
-	int () getExternalArgumentsSize,
+	bool () hasAnyExternalArguments,
+	bool () hasMoreExternalArguments,
+	void () nextExternalArguments,
 	SQLOperations sql,
    	MongoOperations mongo,
    	CassandraOperations cassandra,
@@ -54,9 +56,9 @@ data Param
 alias Bindings = map[str, Param];
 
 alias SQLOperations = tuple[
-	void (str resultId, str dbName, str query, Bindings bindings, list[Path] paths, int argumentsPointer) executeQuery,
-	void (str dbName, str query, Bindings bindings, int argumentsPointer) executeStatement,
-	void (str dbName, str query, Bindings bindings, int argumentsPointer) executeGlobalStatement
+	void (str resultId, str dbName, str query, Bindings bindings, list[Path] paths) executeQuery,
+	void (str dbName, str query, Bindings bindings) executeStatement,
+	void (str dbName, str query, Bindings bindings) executeGlobalStatement
 ];
 
 alias CassandraOperations = tuple[
