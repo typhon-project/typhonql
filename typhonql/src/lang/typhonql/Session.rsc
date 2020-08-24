@@ -31,6 +31,7 @@ alias Session = tuple[
 	void () finish,
 	void () done,
 	str (str) newId,
+	int () getExternalArgumentsSize,
 	SQLOperations sql,
    	MongoOperations mongo,
    	CassandraOperations cassandra,
@@ -53,9 +54,9 @@ data Param
 alias Bindings = map[str, Param];
 
 alias SQLOperations = tuple[
-	void (str resultId, str dbName, str query, Bindings bindings, list[Path] paths) executeQuery,
-	void (str dbName, str query, Bindings bindings) executeStatement,
-	void (str dbName, str query, Bindings bindings) executeGlobalStatement
+	void (str resultId, str dbName, str query, Bindings bindings, list[Path] paths, int argumentsPointer) executeQuery,
+	void (str dbName, str query, Bindings bindings, int argumentsPointer) executeStatement,
+	void (str dbName, str query, Bindings bindings, int argumentsPointer) executeGlobalStatement
 ];
 
 alias CassandraOperations = tuple[
@@ -96,6 +97,10 @@ data Connection
 @javaClass{nl.cwi.swat.typhonql.backend.rascal.TyphonSession}
 java Session newSession(map[str, Connection] config, map[str uuid, str contents] blobMap = ());
 
+@reflect
+@javaClass{nl.cwi.swat.typhonql.backend.rascal.TyphonSession}
+java Session newSessionWithArguments(map[str, Connection] config, 
+	list[str] columnNames, list[str] columnTypes, list[list[str]] values, map[str uuid, str contents] blobMap = ());
 
 private int _nameCounter = 0;
 

@@ -79,15 +79,23 @@ EntityModels schema2entityModels(Schema s)
   = { <e, { <a, t> | <e, str a, str t> <- s.attrs }
           , { <r, e2> | <e, _, str r, _, _, str e2, _> <- s.rels } >
            | str e <- entities(s) };
-  
+           
+list[str] runScript(Script scr, Session session, Schema schema) {
+	argumenstSize = session.getExternalArgumentsSize();
+	if (argumenstSize == 0) {
+		return [runScriptAux(scr, session, schema, -1)];
+	}
+	else {
+		rs = [];
+		for (i <- [0..argumenstSize]) {
+			rs += runScriptAux(scr, session, schema, i);
+		}
+		return rs;
+	}
+}  
+         
 
-str runScriptAndClose(Script scr, Session session, Schema schema) {
-	str result = runScript(scr, session, schema);
-	session.done();
-	return result;
-}
-  
-str runScript(Script scr, Session session, Schema schema) {
+str runScriptAux(Script scr, Session session, Schema schema, argumentsPointer) {
   str result = "";
   for (Step s <- scr.steps) {
     switch (s) {
@@ -102,13 +110,13 @@ str runScript(Script scr, Session session, Schema schema) {
     
     
       case step(str r, sql(executeQuery(str db, str q)), Bindings ps):
-        session.sql.executeQuery(r, db, q, ps, s.signature);
+        session.sql.executeQuery(r, db, q, ps, s.signature, argumentsPointer);
         
       case step(str r, sql(executeStatement(str db, str st)), Bindings ps):
-        session.sql.executeStatement(db, st, ps);
+        session.sql.executeStatement(db, st, ps, argumentsPointer);
       
       case step(str r, sql(executeGlobalStatement(str db, str st)), Bindings ps):
-        session.sql.executeGlobalStatement(db, st, ps);  
+        session.sql.executeGlobalStatement(db, st, ps, argumentsPointer);  
 
       case step(str r, mongo(find(str db, str coll, str json)), Bindings ps):
         session.mongo.find(r, db, coll, json, ps, s.signature);
