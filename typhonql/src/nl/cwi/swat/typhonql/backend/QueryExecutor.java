@@ -50,17 +50,21 @@ public abstract class QueryExecutor {
 	}
 	
 	public void executeSelect(String resultId) {
+		executeSelect(resultId, -1);
+	}
+	
+	public void executeSelect(String resultId, int argumentsPointer) {
 		int nxt = script.size() + 1;
 	    script.add((List<Record> rows) -> {
 	    	if (rows.size() <= 1) {
-               ResultIterator iter = executeSelect( rows.size() == 0 ? Collections.emptyMap(): bind(rows.get(0)));
+               ResultIterator iter = executeSelect( rows.size() == 0 ? new HashMap<>(): bind(rows.get(0)), argumentsPointer);
                storeResults(resultId, iter);
                processResults(script.get(nxt), rows, iter);
 	    	}
 	    	else {
                 List<ResultIterator> results = new ArrayList<>(rows.size());
                 for (Record record : rows) {
-                   ResultIterator iter = executeSelect(bind(record));
+                   ResultIterator iter = executeSelect(bind(record), argumentsPointer);
                    results.add(iter);
                    processResults(script.get(nxt), rows, iter);
                 }
@@ -108,15 +112,14 @@ public abstract class QueryExecutor {
 		map.putAll(r.getObjects());
 		return new Record(map);
 	}
-
-	public void executeSelect(String resultId, String query) {
-		executeSelect(resultId, query);
-	}
 	
 	protected abstract ResultIterator performSelect(Map<String, Object> values);
 	
-	private ResultIterator executeSelect(Map<String, Object> values) {
+	private ResultIterator executeSelect(Map<String, Object> values, int argumentsPointer) {
 		if (values.size() == bindings.size()) {
+			if (argumentsPointer != -1) {
+				values.putAll(store.getExternalArguments(argumentsPointer));
+			}
 			return performSelect(values); 
 		}
 		else {
@@ -131,14 +134,14 @@ public abstract class QueryExecutor {
 					results.nextResult();
 					Object value = (field.getAttribute().equals("@id"))? results.getCurrentId(field.getLabel(), field.getType()) : results.getCurrentField(field.getLabel(), field.getType(), field.getAttribute());
 					values.put(var, value);
-					lst.add(executeSelect(values));
+					lst.add(executeSelect(values, argumentsPointer));
 				}
 				return new AggregatedResultIterator(lst);
 			}
 			else {
 				GeneratedIdentifier id = (GeneratedIdentifier) binding;
 				values.put(id.getName(), uuids.get(id.getName()));
-				return executeSelect(values);
+				return executeSelect(values, argumentsPointer);
 			}
 			
 		}

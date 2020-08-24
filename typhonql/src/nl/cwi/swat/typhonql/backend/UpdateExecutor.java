@@ -21,16 +21,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
-import org.rascalmpl.values.ValueFactoryFactory;
-
 public abstract class UpdateExecutor {
+	
 	
 	private ResultStore store;
 	private List<Runnable> updates;
 	private Map<String, Binding> bindings;
 	private Map<String, UUID> uuids;
-
+	
 	public UpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, UUID> uuids, Map<String, Binding> bindings) {
 		this.store = store;
 		this.updates = updates;
@@ -39,17 +37,24 @@ public abstract class UpdateExecutor {
 	}
 	
 	public void executeUpdate() {
-		executeUpdate(new HashMap<>());
+		executeUpdate(new HashMap<>(), -1);
 	}
 	
-	private void executeUpdate(Map<String, Object> values) {
-		updates.add(() -> {  executeUpdateOperation(values); });
+	public void executeUpdate(int argumentsPointer) {
+		executeUpdate(new HashMap<>(), argumentsPointer);
+	}
+	
+	private void executeUpdate(Map<String, Object> values, int argumentsPointer) {
+		updates.add(() -> {  executeUpdateOperation(values, argumentsPointer); });
 	}
 
 	protected abstract void performUpdate(Map<String, Object> values);
 	
-	private void executeUpdateOperation(Map<String, Object> values) {
+	private void executeUpdateOperation(Map<String, Object> values, int argumentsPointer) {
 		if (values.size() == bindings.size()) {
+			if (argumentsPointer != -1) {
+				values.putAll(store.getExternalArguments(argumentsPointer));
+			}
 			performUpdate(values); 
 		}
 		else {
@@ -68,13 +73,13 @@ public abstract class UpdateExecutor {
 					results.nextResult();
 					Object value = (field.getAttribute().equals("@id"))? results.getCurrentId(field.getLabel(), field.getType()) : results.getCurrentField(field.getLabel(), field.getType(), field.getAttribute());
 					values.put(var, value);
-					executeUpdateOperation(values);
+					executeUpdateOperation(values, argumentsPointer);
 				}
 			}
 			else {
 				GeneratedIdentifier id = (GeneratedIdentifier) binding;
 				values.put(var, uuids.get(id.getName()));
-				executeUpdateOperation(values);
+				executeUpdateOperation(values, argumentsPointer);
 			}
 			
 		}
