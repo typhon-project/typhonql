@@ -27,13 +27,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,13 +34,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.rascalmpl.interpreter.Evaluator;
 import org.rascalmpl.interpreter.control_exceptions.Throw;
@@ -56,7 +48,6 @@ import org.rascalmpl.interpreter.env.ModuleEnvironment;
 import org.rascalmpl.interpreter.load.StandardLibraryContributor;
 import org.rascalmpl.interpreter.staticErrors.StaticError;
 import org.rascalmpl.interpreter.utils.RascalManifest;
-import org.rascalmpl.library.Prelude;
 import org.rascalmpl.library.util.PathConfig;
 import org.rascalmpl.uri.URIResolverRegistry;
 import org.rascalmpl.uri.URIUtil;
@@ -71,6 +62,7 @@ import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.io.StandardTextWriter;
+import nl.cwi.swat.typhonql.backend.ExternalArguments;
 import nl.cwi.swat.typhonql.backend.rascal.SessionWrapper;
 import nl.cwi.swat.typhonql.backend.rascal.TyphonSession;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
@@ -230,24 +222,25 @@ public class XMIPolystoreConnection {
 	
 
 	private IValue evaluatePreparedStatementQuery(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String preparedStatement, String[] columnNames, String[] columnTypes, String[][] matrix) {
-		IList rows = buildBoundRowValues(columnTypes, matrix);
+		ExternalArguments externalArguments = buildExternalArguments(columnNames, columnTypes, matrix);
 
 		IListWriter columnsWriter = VF.listWriter();
 		for (String column : columnNames) {
 			columnsWriter.append(VF.string(column));
 		}
-        return sessionCall(connections, blobMap, (session, evaluator) -> 
-        	evaluator.call("runPrepared", 
+        return sessionCall(connections, blobMap, externalArguments, (session, evaluator) -> 
+        	evaluator.call("runUpdate", 
                     "lang::typhonql::RunUsingCompiler",
                     Collections.emptyMap(),
                     VF.string(preparedStatement),
-                    columnsWriter.done(),
-                    rows,
                     VF.string(xmiModel),
                     session.getTuple())
         );
 	}
 	
+
+
+
 
 	private static Map<String, String> ESCAPES;
 	
@@ -315,6 +308,35 @@ public class XMIPolystoreConnection {
 		}
 		return result.done();
 	}
+	
+	private static final Map<String, Function<String, Object>> qlValueMappers;
+	static {
+		qlValueMappers = new HashMap<>();
+		qlValueMappers.put("int",Integer::parseInt);
+		qlValueMappers.put("string", s -> s);
+		qlValueMappers.put("bool", Boolean::valueOf);
+		qlValueMappers.put("text", s -> s);
+		qlValueMappers.put("uuid", UUID::fromString);
+	}
+	
+	
+	public static ExternalArguments buildExternalArguments(String[] columnNames, String[] columnTypes, String[][] matrix) {
+		Object[][] values = new Object[matrix.length][];
+		for (int i =0; i < matrix.length; i++) {
+			String[] row = matrix[i];
+			Object[] vs = new Object[row.length];
+			for (int j=0; j < row.length; j++) {
+				Function<String, Object> mapper = qlValueMappers.get(columnTypes[j]);
+				if (mapper == null) {
+					throw new RuntimeException("Unknown type: " + columnTypes[j] 
+							+ " not in: " + qlValueMappers.keySet());
+				}
+				vs[j] = mapper.apply(row[j]);
+			}
+			values[i] = vs; 
+		}
+		return new ExternalArguments(columnNames, values);
+	}
 
 
 	public void resetDatabases(String xmiModel, List<DatabaseInfo> connections) {
@@ -328,8 +350,12 @@ public class XMIPolystoreConnection {
 	}
 
 	private <R> R sessionCall(List<DatabaseInfo> connections, Map<String, InputStream> blobs, BiFunction<SessionWrapper, Evaluator, R> exec) {
+		return sessionCall(connections, blobs, new ExternalArguments(), exec);
+	}
+	
+	private <R> R sessionCall(List<DatabaseInfo> connections, Map<String, InputStream> blobs, ExternalArguments externalArguments, BiFunction<SessionWrapper, Evaluator, R> exec) {
 		return evaluators.useAndReturn(evaluator -> {
-			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, Collections.emptyMap(), evaluator)) {
+			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, Collections.emptyMap(), externalArguments, evaluator)) {
 				synchronized (evaluator) {
 					return exec.apply(session, evaluator);
 				}

@@ -31,10 +31,12 @@ public class ResultStore {
 
 	private final Map<String, ResultIterator> store;
 	private final Map<String, InputStream> blobMap;
+	private final ExternalArguments externalArguments;
 
-	public ResultStore(Map<String, InputStream> blobMap) {
+	public ResultStore(Map<String, InputStream> blobMap, ExternalArguments externalArguments) {
 		store = new HashMap<String, ResultIterator>();
 		this.blobMap = blobMap;
+		this.externalArguments = externalArguments;
 	}
 
 	@Override
@@ -56,6 +58,14 @@ public class ResultStore {
 	
 	public InputStream getBlob(String key) {
 		return blobMap.get(key);
+	}
+	
+	public Map<String, Object> getExternalArguments(int index) {
+		return externalArguments.getMapForRow(index);
+	}
+
+	public int getExternalArgumentsSize() {
+		return externalArguments.getValues().length;
 	}
 
 }
