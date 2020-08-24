@@ -365,6 +365,8 @@ SQLExpr expr2sql((Expr)`#polygon(<{Segment ","}* segments>)`, Ctx ctx, Log log =
 
 SQLExpr expr2sql((Expr)`false`, Ctx ctx, Log log = noLog) = lit(boolean(false));
 
+SQLExpr expr2sql((Expr)`??<Id name>`, Ctx ctx, Log log = noLog) = SQLExpr::placeholder(name = "<name>");
+
 SQLExpr expr2sql((Expr)`<UUID u>`, Ctx ctx, Log log = noLog) = lit(sUuid("<u.part>"));
 
 SQLExpr expr2sql((Expr)`<BlobPointer bp>`, Ctx ctx, Log log = noLog) = lit(blobPointer("<bp.part>"));
