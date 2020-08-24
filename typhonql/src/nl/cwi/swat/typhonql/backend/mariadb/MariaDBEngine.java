@@ -96,13 +96,13 @@ public class MariaDBEngine extends Engine {
         return stm;
     }
 
-	public void executeSelect(String resultId, String query, List<Path> signature) {
-		executeSelect(resultId, query, new HashMap<String, Binding>(), signature);
+	public void executeSelect(String resultId, String query, List<Path> signature, int argumentsPointer) {
+		executeSelect(resultId, query, new HashMap<String, Binding>(), signature, argumentsPointer);
 	}
 
 
 
-	public void executeSelect(String resultId, String query, Map<String, Binding> bindings, List<Path> signature) {
+	public void executeSelect(String resultId, String query, Map<String, Binding> bindings, List<Path> signature, int argumentsPointer) {
 		new QueryExecutor(store, script, uuids, bindings, signature) {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
@@ -113,11 +113,11 @@ public class MariaDBEngine extends Engine {
 				}
 			}
 
-		}.executeSelect(resultId);
+		}.executeSelect(resultId, argumentsPointer);
 	}
 
 
-	public void executeUpdate(String query, Map<String, Binding> bindings) {
+	public void executeUpdate(String query, Map<String, Binding> bindings, int argumentsPointer) {
 		new UpdateExecutor(store, updates, uuids, bindings) {
 
             @Override
@@ -128,6 +128,6 @@ public class MariaDBEngine extends Engine {
                     throw new RuntimeException(e1);
                 }
             }
-		}.executeUpdate();
+		}.executeUpdate(argumentsPointer);
 	}
 }

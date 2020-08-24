@@ -22,16 +22,18 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.Result;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
+
+import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
@@ -92,11 +94,12 @@ public class MariaDBOperations implements Operations, AutoCloseable {
 			String query = ((IString) args[2]).getValue();
 			IMap bindings = (IMap) args[3];
 			IList signatureList = (IList) args[4];
+			IInteger argumentsPointer = (IInteger) args[5];
 
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 			List<Path> signature = rascalToJavaSignature(signatureList);
 
-			getEngine.apply(dbName, true).executeSelect(resultId, query, bindingsMap, signature);
+			getEngine.apply(dbName, true).executeSelect(resultId, query, bindingsMap, signature, argumentsPointer.intValue());
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
@@ -116,8 +119,9 @@ public class MariaDBOperations implements Operations, AutoCloseable {
         String dbName = ((IString) args[0]).getValue();
         String query = ((IString) args[1]).getValue();
         IMap bindings = (IMap) args[2];
+        IInteger argumentsPointer = (IInteger) args[3];
 
-        getEngine.apply(dbName, !global).executeUpdate(query, rascalToJavaBindings(bindings));
+        getEngine.apply(dbName, !global).executeUpdate(query, rascalToJavaBindings(bindings), argumentsPointer.intValue());
         return ResultFactory.makeResult(TF.voidType(), null, ctx);
 	}
 
