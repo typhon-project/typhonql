@@ -24,6 +24,9 @@ import String;
 import IO;
 import ValueIO;
 
+SQLExpr pointer2sql(pointerUuid(str name)) = SQLExpr::lit(sUuid(name));
+SQLExpr pointer2sql(pointerPlaceholder(str name)) = SQLExpr::placeholder(name = name);
+
 str tableName(str entity) = "<entity>";
 
 str columnName(str attr, str entity) = "<entity>.<attr>";

@@ -49,11 +49,7 @@ public abstract class UpdateExecutor {
 	private void executeUpdateOperation(Map<String, Object> values) {
 		if (values.size() == bindings.size()) {
 			if (store.hasExternalArguments()) {
-				if (store.hasMoreExternalArguments()) {
-					values.putAll(store.getCurrentExternalArgumentsRow());
-				}
-				else
-					throw new RuntimeException("Exhausted external arguments");
+				values.putAll(store.getCurrentExternalArgumentsRow());
 			}
 			performUpdate(values); 
 		}
