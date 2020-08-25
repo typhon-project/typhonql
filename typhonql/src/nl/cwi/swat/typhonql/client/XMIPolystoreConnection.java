@@ -389,13 +389,9 @@ public class XMIPolystoreConnection {
 	
 	public CommandResult[] executePreparedUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> fileMap, String preparedStatement, String[] columnNames, String[] columnTypes, String[][] values) {
 		IValue v = evaluatePreparedStatementQuery(xmiModel, connections, fileMap, preparedStatement, columnNames, columnTypes, values);
-		Iterator<IValue> iter0 = ((IList) v).iterator();
-		List<CommandResult> results = new ArrayList<CommandResult>();
-		while (iter0.hasNext()) {
-			IValue val = iter0.next();
-			results.add(CommandResult.fromIValue(val));		
-		}
-		return results.toArray(new CommandResult[0]);
+		
+		// TODO fix this workaround
+		return new CommandResult[] { CommandResult.fromIValue(v) };
 	}
 	
 	public static void main(String[] args) throws IOException, URISyntaxException {
