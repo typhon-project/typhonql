@@ -54,9 +54,6 @@ bool hasId(list[KeyVal] kvs) = any((KeyVal)`@id: <Expr _>` <- kvs);
 str evalId({KeyVal ","}* kvs) = "<e>"[1..]
   when (KeyVal)`@id: <UUID e>` <- kvs;
 
-
-str uuid2str(UUID ref) = "<ref.part>";
-
 alias InsertContext = tuple[
   str entity,
   Bindings myParams,
@@ -195,18 +192,24 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   
     
   
-  for ((KeyVal)`<Id x>: <UUID ref>` <- kvs) {
-    str fromRole = "<x>"; 
-    if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
-      //println("COMPILING rel: <r>");
-      compileRefBinding(p, placeOf(to, s), entity, fromRole, r, ref, ctx);
+  for ((KeyVal)`<Id x>: <Expr ref>` <- kvs) {
+  	maybePointer = expr2pointer(ref);
+  	if (just(pointer) := maybePointer) {
+  		str fromRole = "<x>"; 
+    	if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
+      		//println("COMPILING rel: <r>");
+      	compileRefBinding(p, placeOf(to, s), entity, fromRole, r, pointer, ctx);
+    	}
     }
   }
-
+  
+  // TODO : refs can be expressions
   for ((KeyVal)`<Id x>: [<{UUID ","}* refs>]` <- kvs) {
     str fromRole = "<x>"; 
+    //list[Pointer] pointers = [expr2pointer(r) | Expr r <- refs, (Expr) `<UUID _>`:= r, (Expr) `<Placeholder _>` := r];
+    list[Pointer] pointers = [pointerUuid("<u>") | UUID u <- refs];
     if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
-      compileRefBindingMany(p, placeOf(to, s), entity, fromRole, r, refs, ctx);
+      compileRefBindingMany(p, placeOf(to, s), entity, fromRole, r, pointers, ctx);
     }
   }
   theScript.steps += [finish()];
@@ -262,12 +265,12 @@ void compileAttrs(<neo4j(), str dbName>, list[KeyVal] kvs, InsertContext ctx) {
 void compileRefBinding(
   <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
   Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>,
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {
   // update ref's foreign key to point to sqlMe
   str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
   SQLStat theUpdate = update(tableName(to), [\set(fk, ctx.sqlMe)],
-    [where([equ(column(tableName(to), typhonId(to)), lit(sUuid(uuid2str(ref))))])]);
+    [where([equ(column(tableName(to), typhonId(to)), pointer2sql(ref))])]);
                 
   ctx.addSteps([step(dbName, sql(executeStatement(dbName, pp(theUpdate))), ctx.myParams)]);
 
@@ -276,21 +279,21 @@ void compileRefBinding(
 void compileRefBinding(
   <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole,
   Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>,
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {
 
   // insert entry in junction table between from and to on the current place.
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(sUuid(uuid2str(ref)))], ctx.myParams));
-  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(sUuid(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [pointer2sql(ref)], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, pointer2sql(ref), [ctx.sqlMe], ctx.myParams));
 }   
 void compileRefBinding(
   <DB::sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
   Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>,
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {
   // insert entry in junction table between from and to on the current place.
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(sUuid(uuid2str(ref)))], ctx.myParams));
-  ctx.addSteps(insertObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [pointer2sql(ref)], ctx.myParams));
+  ctx.addSteps(insertObjectPointer(other, to, toRole, toCard, pointer2mongo(ref), ctx.mongoMe, ctx.myParams));
 }
 
 //void compileRefBinding(
@@ -312,63 +315,63 @@ void compileRefBinding(
 void compileRefBinding(
   <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole,
   Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {      
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, parent, parentRole, lit(sUuid(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
-  ctx.addSteps(insertIntoJunction(other, parent, parentRole, from, fromRole, lit(sUuid(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, parent, parentRole, pointer2sql(ref), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(other, parent, parentRole, from, fromRole, pointer2sql(ref), [ctx.sqlMe], ctx.myParams));
 }
 
 
 void compileRefBinding(
   <DB::sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
   Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, parent, parentRole, lit(sUuid(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
-  ctx.addSteps(updateObjectPointer(other, parent, parentRole, parentCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, parent, parentRole, pointer2sql(ref), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(updateObjectPointer(other, parent, pointer2mongo(ref), ctx.mongoMe, ctx.myParams));
 }
 
 void compileRefBinding(
   <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole,
   Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {
   if (<to, toCard, toRole, fromRole, fromCard, from, true> in ctx.schema.rels) {
     // it's an inverse of containment
     str fk = fkName(to, from, fromRole == "" ? toRole : fromRole);
     ctx.updateSQLInsert(SQLStat(SQLStat theInsert) {
       theInsert.colNames += [ fk ];
-      theInsert.values += [ lit(sUuid(uuid2str(ref))) ];
+      theInsert.values += [ pointer2sql(ref) ];
       return theInsert;
     });
   }
   else {
-    ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(sUuid(uuid2str(ref)))], ctx.myParams));
+    ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [pointer2sql(ref)], ctx.myParams));
   }
 }
 
 void compileRefBinding(
   <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole,
   Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, false>,
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {
   //if (r notin trueCrossRefs(ctx.schema.rels)) {
   //  fail compileRefBinding;
   //}
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(sUuid(uuid2str(ref)))], ctx.myParams));
-  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(sUuid(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [pointer2sql(ref)], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, pointer2sql(ref), [ctx.sqlMe], ctx.myParams));
 }
 
 void compileRefBinding(
   <DB::sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
   Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, false>,
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {
   //if (r notin trueCrossRefs(ctx.schema.rels)) {
   //  fail compileRefBinding;
   //}
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(sUuid(uuid2str(ref)))], ctx.myParams));
-  ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [pointer2sql(ref)], ctx.myParams));
+  ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, pointer2mongo(ref), ctx.mongoMe, ctx.myParams));
 }
 
 /*
@@ -380,50 +383,50 @@ to update the inverse direction.
 void compileRefBinding(
   <mongodb(), str dbName>, <mongodb(), dbName>, str from, str fromRole,
   Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, false>, 
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, mUuid(uuid2str(ref))> ];
+    obj.props += [ <fromRole, pointer2mongo(ref)> ];
     return obj;
   });
-  ctx.addSteps(insertObjectPointer(dbName, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(insertObjectPointer(dbName, to, toRole, toCard, pointer2mongo(ref), ctx.mongoMe, ctx.myParams));
 }
 
 void compileRefBinding(
   <mongodb(), str dbName>, <mongodb(), str other:!dbName>, str from, str fromRole,
   Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, false>, 
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, mUuid(uuid2str(ref))> ];
+    obj.props += [ <fromRole, pointer2mongo(ref)> ];
     return obj;
   });
-  ctx.addSteps(insertObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  ctx.addSteps(insertObjectPointer(other, to, toRole, toCard, pointer2mongo(ref), ctx.mongoMe, ctx.myParams));
 }
 
 void compileRefBinding(
   <mongodb(), str dbName>, <DB::sql(), str other>, str from, str fromRole,
   Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, bool _>,
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, mUuid(uuid2str(ref))> ];
+    obj.props += [ <fromRole, pointer2mongo(ref)> ];
     return obj;
   });
-  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(sUuid(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, pointer2sql(ref), [ctx.sqlMe], ctx.myParams));
 }
 
 void compileRefBinding(
   <neo4j(), str _>, <neo4j(), _>, str from, str fromRole, 
   Rel r,
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {
   throw "Relations between two Neo4J edges are not possible";
 }
 
 void updateNeoUpdate(str dbName,
   str from, str fromRole, str to,
-  UUID ref, InsertContext ctx) {
+  Pointer ref, InsertContext ctx) {
     ctx.updateNeoInsert(NeoStat(NeoStat create) {
    	 if (isEmpty(create.updateMatch.val.patterns)) { 
      	create.updateMatch.val.patterns += [ 
@@ -431,7 +434,7 @@ void updateNeoUpdate(str dbName,
      			nNodePattern(fromRole, [to], []), 
      			[])];
      	create.updateMatch.val.clauses += 
-     		[ nWhere([nEqu(nProperty(fromRole, "<to>.@id"), nLit(nText("<ref>"[1..])))])];
+     		[ nWhere([nEqu(nProperty(fromRole, "<to>.@id"), pointer2neo(ref))])];
  		create.updateClause.pattern.nodePattern =  nNodePattern(fromRole, [], []);
  		create.updateClause.pattern.rels[0].var = "r";
  		create.updateClause.pattern.rels[0].label = ctx.entity;    			
@@ -441,7 +444,7 @@ void updateNeoUpdate(str dbName,
      			nNodePattern(fromRole, [to], []), 
      			[])];
      	create.updateMatch.val.clauses[0].exprs += 
-     		[nEqu(nProperty(fromRole, "<to>.@id"), nLit(nText("<ref>"[1..])))];
+     		[nEqu(nProperty(fromRole, "<to>.@id"), pointer2neo(ref))];
      	create.updateClause.pattern.rels[0].nodePattern.var = fromRole;
         	
      }
@@ -455,23 +458,23 @@ void updateNeoUpdate(str dbName,
 void compileRefBinding(
   <neo4j(), str dbName>, <mongodb(), str other>, str from, str fromRole, 
   Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, bool _>,
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {// to mongo
    	updateNeoUpdate(dbName, from, fromRole, to, ref, ctx);
    	//if (r notin trueCrossRefs(ctx.schema.rels)) {
   	//  fail compileRefBinding;
   	//}
-  	ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  	ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, pointer2mongo(ref), ctx.mongoMe, ctx.myParams));
 }
 
 void compileRefBinding(
   <neo4j(), str dbName>, <DB::sql(), str other>, str from, str fromRole, 
   Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, bool _>,
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {	
   // to sql
   updateNeoUpdate(dbName, from, fromRole, to, ref, ctx);
-  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, lit(sUuid(uuid2str(ref))), [ctx.sqlMe], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, pointer2sql(ref), [ctx.sqlMe], ctx.myParams));
    
 }
 
@@ -479,32 +482,32 @@ void compileRefBinding(
 void compileRefBinding(
   <mongodb(), str dbName>, <neo4j(), str other>, str from, str fromRole,
   Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>,
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {
   // TODO
   // from mongo 
   ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, mUuid(uuid2str(ref))> ];
+    obj.props += [ <fromRole, pointer2mongo(ref)> ];
     return obj;
   });
   
-  ctx.addSteps(neoReplaceEnd(other, to, from, toRole, NeoExpr::nLit(NeoValue::nText(uuid2str(ref))), ctx.neoMe, ctx.myParams, ctx.schema));
+  ctx.addSteps(neoReplaceEnd(other, to, from, toRole, pointer2neo(ref), ctx.neoMe, ctx.myParams, ctx.schema));
 }
 
 void compileRefBinding(
   <DB::sql(), str dbName>, <neo4j(), str other>, str from, str fromRole,
   Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>,
-  UUID ref, InsertContext ctx
+  Pointer ref, InsertContext ctx
 ) {
   // TODO
   // from sql
   //if (r notin trueCrossRefs(ctx.schema.rels)) {
   //  fail compileRefBinding;
   //}
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(sUuid(uuid2str(ref)))], ctx.myParams));
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [pointer2sql(ref)], ctx.myParams));
   //ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
   
-  ctx.addSteps(neoReplaceEnd(other, to, from, toRole, nLit(nText(uuid2str(ref))), ctx.neoMe, ctx.myParams, ctx.schema));
+  ctx.addSteps(neoReplaceEnd(other, to, from, toRole, pointer2neo(ref), ctx.neoMe, ctx.myParams, ctx.schema));
 
 }
 
@@ -513,11 +516,11 @@ void compileRefBinding(
 void compileRefBindingMany(
  <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole,
  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
- {UUID ","}* refs, InsertContext ctx
+ list[Pointer] refs, InsertContext ctx
 ) {
   str fk = fkName(from, to, toRole == "" ? fromRole : toRole);
   SQLStat theUpdate = update(tableName(to), [\set(fk, ctx.sqlMe)],
-     [where([\in(column(tableName(to), typhonId(to)), [ evalExpr((Expr)`<UUID ref>`) | UUID ref <- refs])])]);
+     [where([\in(column(tableName(to), typhonId(to)), [ pointer2sql(ref) | Pointer ref <- refs])])]);
                 
   ctx.addSteps([step(dbName, sql(executeStatement(dbName, pp(theUpdate))), ctx.myParams)]);
 }
@@ -525,27 +528,27 @@ void compileRefBindingMany(
 void compileRefBindingMany(
  <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole,
  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
- {UUID ","}* refs, InsertContext ctx
+ list[Pointer] refs, InsertContext ctx
 ) {
   // insert entry in junction table between from and to on the current place.
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams));
-  ctx.addSteps([ *insertIntoJunction(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), [ctx.sqlMe], ctx.myParams) | UUID ref <- refs ]);
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [pointer2sql(ref) | Pointer ref <- refs ], ctx.myParams));
+  ctx.addSteps([ *insertIntoJunction(other, to, toRole, from, fromRole, pointer2sql(ref), [ctx.sqlMe], ctx.myParams) | Pointer ref <- refs ]);
 }
 
 void compileRefBindingMany(
  <DB::sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
- {UUID ","}* refs, InsertContext ctx
+ list[Pointer] refs, InsertContext ctx
 ) {
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams));
-  ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams) 
-                | UUID ref <- refs ]);
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [pointer2sql(ref) | Pointer ref <- refs ], ctx.myParams));
+  ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, pointer2mongo(ref), ctx.mongoMe, ctx.myParams) 
+                | Pointer ref <- refs ]);
 } 
 
 void compileRefBindingMany(
  <DB::sql(), str dbName>, _, str from, str fromRole,
  Rel r:<str parent, Cardinality parentCard, str parentRole, fromRole, _, from, true>,
- {UUID ","}* refs, InsertContext ctx
+ list[Pointer] refs, InsertContext ctx
 ) {
   throw "Cannot have multiple parents <refs> for inserted object <ctx.sqlMe>";
 }
@@ -554,73 +557,73 @@ void compileRefBindingMany(
 void compileRefBindingMany(
  <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole,
  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
- {UUID ","}* refs, InsertContext ctx
+ list[Pointer] refs, InsertContext ctx
 ) {
   // save the cross ref
   ctx.addSteps([ *insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, 
-    [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams) ]);
+    [ pointer2sql(ref) | Pointer ref <- refs ], ctx.myParams) ]);
 }
 
 void compileRefBindingMany(
  <DB::sql(), str dbName>, <DB::sql(), str other:!dbName>, str from, str fromRole,
  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
- {UUID ","}* refs, InsertContext ctx
+ list[Pointer] refs, InsertContext ctx
 ) {
   ctx.addSteps([ *insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, 
-    [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams) ]);
+    [ pointer2sql(ref) | Pointer ref <- refs ], ctx.myParams) ]);
     
-  ctx.addSteps([*insertIntoJunction(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), [ctx.sqlMe], ctx.myParams)
-                  | UUID ref <- refs ]);
+  ctx.addSteps([*insertIntoJunction(other, to, toRole, from, fromRole, pointer2sql(ref), [ctx.sqlMe], ctx.myParams)
+                  | Pointer ref <- refs ]);
 }
 
 void compileRefBindingMany(
  <DB::sql(), str dbName>, <mongodb(), str other>, str from, str fromRole,
  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
- {UUID ","}* refs, InsertContext ctx
+ list[Pointer] refs, InsertContext ctx
 ) {
   ctx.addSteps([ *insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, 
-    [ lit(evalExpr((Expr)`<UUID ref>`)) | UUID ref <- refs ], ctx.myParams) ]);
-  ctx.addSteps([*insertObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams)
-                 | UUID ref <- refs]);
+    [ pointer2sql(ref) | Pointer ref <- refs ], ctx.myParams) ]);
+  ctx.addSteps([*insertObjectPointer(other, to, toRole, toCard, pointer2mongo(ref), ctx.mongoMe, ctx.myParams)
+                 | Pointer ref <- refs]);
 }
 
 void compileRefBindingMany(
  <mongodb(), str dbName>, <mongodb(), dbName>, str from, str fromRole,
  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
- {UUID ","}* refs, InsertContext ctx
+ list[Pointer] refs, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, array([ mUuid(uuid2str(ref)) | UUID ref <- refs ]) > ];
+    obj.props += [ <fromRole, array([ pointer2mongo(ref) | Pointer ref <- refs ]) > ];
     return obj;
   });
-  ctx.addSteps([ *insertObjectPointer(dbName, to, toRole, toCard, mUuid(uuid2str(ref)), ctx.mongoMe, ctx.myParams)
-                | UUID ref <- refs ]);
+  ctx.addSteps([ *insertObjectPointer(dbName, to, toRole, toCard, pointer2mongo(ref), ctx.mongoMe, ctx.myParams)
+                | Pointer ref <- refs ]);
 }
 
 void compileRefBindingMany(
  <mongodb(), str dbName>, <mongodb(), str other:!dbName>, str from, str fromRole,
  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
- {UUID ","}* refs, InsertContext ctx
+ list[Pointer] refs, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, array([ mUuid(uuid2str(ref)) | UUID ref <- refs ]) > ];
+    obj.props += [ <fromRole, array([ pointer2mongo(ref) | Pointer ref <- refs ]) > ];
     return obj;
   });
-  ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, mUuid(uuid2str(ref)) , ctx.mongoMe, ctx.myParams)
-                | UUID ref <- refs ]);
+  ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, pointer2mongo(ref) , ctx.mongoMe, ctx.myParams)
+                | Pointer ref <- refs ]);
 }
 
 void compileRefBindingMany(
  <mongodb(), str dbName>, <DB::sql(), str other>, str from, str fromRole,
  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>,
- {UUID ","}* refs, InsertContext ctx
+ list[Pointer] refs, InsertContext ctx
 ) {
   ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, array([ mUuid(uuid2str(ref)) | UUID ref <- refs ]) > ];
+    obj.props += [ <fromRole, array([ pointer2mongo(ref) | Pointer ref <- refs ]) > ];
     return obj;
   });
-  ctx.addSteps([ *insertIntoJunction(other, to, toRole, from, fromRole, lit(evalExpr((Expr)`<UUID ref>`)), 
-    [ctx.sqlMe], ctx.myParams) | UUID ref <- refs ]);
+  ctx.addSteps([ *insertIntoJunction(other, to, toRole, from, fromRole, pointer2sql(ref), 
+    [ctx.sqlMe], ctx.myParams) | Pointer ref <- refs ]);
 }
 
 DBObject obj2dbObj((Expr)`<EId e> {<{KeyVal ","}* kvs>}`)
