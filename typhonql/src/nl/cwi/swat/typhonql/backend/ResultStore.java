@@ -27,6 +27,13 @@ public class ResultStore {
 	private final Map<String, ResultIterator> store;
 	private final Map<String, InputStream> blobMap;
 	private final Optional<ExternalArguments> externalArguments;
+	
+	public ResultStore(Map<String, InputStream> blobMap) {
+		store = new HashMap<String, ResultIterator>();
+		this.blobMap = blobMap;
+		this.externalArguments = Optional.empty();
+	}
+
 
 	public ResultStore(Map<String, InputStream> blobMap, Optional<ExternalArguments> externalArguments) {
 		store = new HashMap<String, ResultIterator>();
