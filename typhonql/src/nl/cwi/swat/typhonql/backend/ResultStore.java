@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 public class ResultStore {
 
@@ -55,13 +56,19 @@ public class ResultStore {
 	}
 	
 	public Map<String, Object> getCurrentExternalArgumentsRow() {
-		assert(externalArguments.isPresent());
-		return externalArguments.get().getCurrentRow();
+		return ensureExternalArguments(args -> args.getCurrentRow());
 	}
 
 	public boolean hasMoreExternalArguments() {
-		assert(externalArguments.isPresent());
-		return externalArguments.get().hasNextRow();
+		return ensureExternalArguments(args -> args.hasNextRow());
+	}
+
+	private <T> T ensureExternalArguments(Function<ExternalArguments,T> f) {
+		if (externalArguments.isPresent()) {
+			return f.apply(externalArguments.get());
+		}
+		else
+			throw new RuntimeException("No external arguments have been provided");
 	}
 
 	public boolean hasExternalArguments() {
