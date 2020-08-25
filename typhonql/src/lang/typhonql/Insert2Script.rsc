@@ -204,10 +204,10 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   }
   
   // TODO : refs can be expressions
-  for ((KeyVal)`<Id x>: [<{UUID ","}* refs>]` <- kvs) {
+  for ((KeyVal)`<Id x>: [<{PlaceHolderOrUUID ","}* refs>]` <- kvs) {
     str fromRole = "<x>"; 
     //list[Pointer] pointers = [expr2pointer(r) | Expr r <- refs, (Expr) `<UUID _>`:= r, (Expr) `<Placeholder _>` := r];
-    list[Pointer] pointers = [pointerUuid("<u>") | UUID u <- refs];
+    list[Pointer] pointers = refs2pointers([r | r <- refs]);
     if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
       compileRefBindingMany(p, placeOf(to, s), entity, fromRole, r, pointers, ctx);
     }
