@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -53,12 +54,13 @@ import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.Type;
 import io.usethesource.vallang.type.TypeFactory;
-import io.usethesource.vallang.type.TypeStore;
+import nl.cwi.swat.typhonql.backend.ExternalArguments;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.Runner;
 import nl.cwi.swat.typhonql.backend.cassandra.CassandraOperations;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
+import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class TyphonSession implements Operations {
@@ -68,12 +70,41 @@ public class TyphonSession implements Operations {
 	public TyphonSession(IValueFactory vf) {
 		this.vf = vf;
 	}
-
-	public ITuple newSession(IMap connections, IMap fileMap, IEvaluatorContext ctx) {
-		return newSessionWrapper(connections, fileMap, ctx).getTuple();
+	
+	private String[] toStringArray(IList varNames) {
+		Iterator<IValue> iter = varNames.iterator();
+		List<String> ss = new ArrayList<String>();
+		while (iter.hasNext()) {
+			ss.add(((IString)iter.next()).getValue());
+		}
+		return ss.toArray(new String[0]);
 	}
 	
-	public SessionWrapper newSessionWrapper(IMap connections, IMap blobMap, IEvaluatorContext ctx) {
+	private String[][] toStringMatrix(IList values) {
+		Iterator<IValue> iter = values.iterator();
+		List<Object[]> ss = new ArrayList<Object[]>();
+		while (iter.hasNext()) {
+			ss.add(toStringArray((IList) iter.next()));
+		}
+		return ss.toArray(new String[0][]);
+	}
+
+	public ITuple newSession(IMap connections, IMap fileMap, IEvaluatorContext ctx) {
+		return newSessionWrapper(connections, fileMap, Optional.empty(), ctx).getTuple();
+	}
+	
+	public ITuple newSessionWithArguments(IMap connections, IList columnNames, IList columnTypes,
+			IList values, IMap fileMap, IEvaluatorContext ctx) {
+		ExternalArguments externalArguments =
+				XMIPolystoreConnection.buildExternalArguments(
+						toStringArray(columnNames),
+						toStringArray(columnTypes),
+						toStringMatrix(values));
+		return newSessionWrapper(connections, fileMap, Optional.of(externalArguments), ctx).getTuple();
+	}
+	
+	public SessionWrapper newSessionWrapper(IMap connections, IMap blobMap, Optional<ExternalArguments> externalArguments,
+			IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
@@ -113,10 +144,10 @@ public class TyphonSession implements Operations {
 			String value = ((IString)cur.getValue()).getValue();
 			actualBlobMap.put(key, new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8)));
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, actualBlobMap, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, actualBlobMap, externalArguments, ctx);
 	}
 
-	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, Map<String, InputStream> blobMap, IEvaluatorContext ctx) {
+	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, Map<String, InputStream> blobMap, Optional<ExternalArguments> externalArguments, IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
@@ -139,12 +170,13 @@ public class TyphonSession implements Operations {
 				throw new RuntimeException("Missing type: " + db.getDbms());
 			}
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, blobMap, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, blobMap, externalArguments, ctx);
 	}
 
 	private SessionWrapper newSessionWrapper(Map<String, ConnectionData> mariaDbConnections,
 			Map<String, ConnectionData> mongoConnections, Map<String, ConnectionData> cassandraConnections, 
-			Map<String, ConnectionData> neoConnections, Map<String, InputStream> blobMap, IEvaluatorContext ctx) {
+			Map<String, ConnectionData> neoConnections, Map<String, InputStream> blobMap, 
+			Optional<ExternalArguments> externalArguments, IEvaluatorContext ctx) {
 		// checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function
 		// type ourself
@@ -155,7 +187,6 @@ public class TyphonSession implements Operations {
 		if (aliasModule == null) {
 			throw new IllegalArgumentException("Missing my own module");
 		}
-		TypeStore ts = aliasModule.getStore();
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("Session"));
 		while (aliasedTuple.isAliased()) {
 			aliasedTuple = aliasedTuple.getAliased();
@@ -168,9 +199,12 @@ public class TyphonSession implements Operations {
 		FunctionType doneType = (FunctionType) aliasedTuple.getFieldType("finish");
 		FunctionType closeType = (FunctionType) aliasedTuple.getFieldType("done");
 		FunctionType newIdType = (FunctionType) aliasedTuple.getFieldType("newId");
+		FunctionType hasAnyExternalArgumentsType = (FunctionType) aliasedTuple.getFieldType("hasAnyExternalArguments");
+		FunctionType hasMoreExternalArgumentsType = (FunctionType) aliasedTuple.getFieldType("hasMoreExternalArguments");
+		FunctionType nextExternalArgumentsType = (FunctionType) aliasedTuple.getFieldType("nextExternalArguments");
 
 		// construct the session tuple
-		ResultStore store = new ResultStore(blobMap);
+		ResultStore store = new ResultStore(blobMap, externalArguments);
 		Map<String, UUID> uuids = new HashMap<>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();
@@ -192,11 +226,36 @@ public class TyphonSession implements Operations {
 				makeFinish(script, updates, state, doneType, ctx),
 				makeClose(store, state, closeType, ctx),
 				makeNewId(uuids, state, newIdType, ctx),
+				makeHasAnyExternalArguments(store, state, hasAnyExternalArgumentsType, ctx),
+				makeHasMoreExternalArguments(store, state, hasMoreExternalArgumentsType, ctx),
+				makeNextExternalArguments(store, state, nextExternalArgumentsType, ctx),
 				mariaDBOperations.newSQLOperations(store, script, updates, state, uuids, ctx, vf),
 				mongoOperations.newMongoOperations(store, script, updates, state, uuids, ctx, vf),
 				cassandra.buildOperations(store, script, updates, state, uuids, ctx, vf),
 				neo.newNeo4JOperations(store, script, updates, state, uuids, ctx, vf)
 				), state);
+	}
+
+	private IValue makeHasAnyExternalArguments(ResultStore store, TyphonSessionState state, FunctionType hasAnyExternalArgumentsType,
+			IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, hasAnyExternalArgumentsType, args -> {
+			return ResultFactory.makeResult(TF.boolType(), vf.bool(store.hasExternalArguments()), ctx);
+		});
+	}
+	
+	private IValue makeHasMoreExternalArguments(ResultStore store, TyphonSessionState state, FunctionType hasMoreExternalArgumentsType,
+			IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, hasMoreExternalArgumentsType, args -> {
+			return ResultFactory.makeResult(TF.boolType(), vf.bool(store.hasMoreExternalArguments()), ctx);
+		});
+	}
+	
+	private IValue makeNextExternalArguments(ResultStore store, TyphonSessionState state, FunctionType nextExternalArgumentsType,
+			IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, nextExternalArgumentsType, args -> {
+			store.nextExternalArguments();
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
+		});
 	}
 
 	private IValue makeNewId(Map<String, UUID> uuids, TyphonSessionState state, FunctionType newIdType,

@@ -42,6 +42,24 @@ import util::Maybe;
 // TODO: if junction tables are symmetric, i.e. normalized name order in junctionTableName
 // then we don't have to swap arguments if maintaining the inverse at outside sql db.
 
+data Pointer
+	= pointerUuid(str name)
+	| pointerPlaceholder(str name);
+	
+
+Maybe[Pointer] expr2pointer((Expr) `<UUID uuid>`) = Maybe::just(uuid2pointer(uuid));
+Maybe[Pointer] expr2pointer((Expr) `<PlaceHolder ph>`) = Maybe::just(placeholder2pointer(ph));
+default Maybe[Pointer] expr2pointer(Expr _) = Maybe::nothing();
+
+Pointer uuid2pointer(UUID uuid) = pointerUuid("<uuid.part>");
+Pointer placeholder2pointer(PlaceHolder ph) = pointerPlaceholder("<ph.name>");
+
+str uuid2str(UUID ref) = "<ref.part>";
+
+list[Pointer] refs2pointers(list[PlaceHolderOrUUID] refs) =
+	[uuid2pointer(uuid) |(PlaceHolderOrUUID) `<UUID uuid>` <- refs]
+	+ [placeholder2pointer(ph) |(PlaceHolderOrUUID) `<PlaceHolder ph>` <- refs];
+	
 
 list[Step] updateIntoJunctionSingleContainment(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, SQLExpr trg, Bindings params) {
   return removeFromJunctionByKid(dbName, from, fromRole, to, toRole, trg, params)

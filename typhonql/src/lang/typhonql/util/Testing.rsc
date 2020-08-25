@@ -62,7 +62,7 @@ alias PolystoreInstance =
 		CommandResult(Request req, Schema s) runUpdateForSchema,
 		CommandResult(Request req) runDDL,
 		CommandResult(Request req, Schema s) runDDLForSchema,
-		list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs)
+		list[CommandResult](Request req, list[str] columnNames, list[str] columnTypes, list[list[str]] vs)
 			runPreparedUpdate,
 		Schema() fetchSchema,
 		void() printSchema,
@@ -173,13 +173,13 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		ses.done();
 		return result;
 	};
-	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) 
-		myRunPreparedUpdate = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
+	list[CommandResult](Request req, list[str] columnNames, list[str] columnTypes, list[list[str]] vs) 
+		myRunPreparedUpdate = list[CommandResult](Request req, list[str] columnNames, list[str] columnTypes, list[list[str]] vs) {
         checkRequest(req);
-	    ses = newSession(connections); 
-		result = runPreparedUpdateInTest(req, columnNames, vs, sch, ses, log);
+	    ses = newSessionWithArguments(connections, columnNames, columnTypes, vs); 
+		result = runUpdateInTest(req, sch, ses, log);
 		ses.done();
-		return result;
+		return [result];
 	};
 	Schema() myFetchSchema = Schema() {
 		return fetchSchema(conn);
@@ -265,10 +265,6 @@ CommandResult runDDLInTest(Request req, Schema s, Session session, Log log) {
 
 CommandResult runUpdateInTest(Request req, Schema s, Session session, Log log) {
 	return runUpdate(req, s, session, log = log);
-}
-
-list[CommandResult] runPreparedUpdateInTest(Request req, list[str] columnNames, list[list[str]] vs, Schema s, Session session, Log log) {
-	return runPrepared(req, columnNames, vs, s, session, log = log);
 }
 
 ResultTable runQueryInTest(Request req, Schema s, Session session, Log log) {

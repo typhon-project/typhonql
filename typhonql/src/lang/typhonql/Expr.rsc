@@ -37,7 +37,7 @@ syntax Expr
   | obj: Obj objValue // for use in insert and allow nesting of objects
   | custom: Custom customValue // for use in insert and allow nesting of custom data types
   //| lst: "[" {Obj ","}* entries "]" 
-  | refLst: "[" {UUID ","}* refs "]" // plus to not make amb with empy lst 
+  | refLst: "[" {PlaceHolderOrUUID ","}* refs "]" // plus to not make amb with empy lst 
   | null: "null"
   | pos: "+" Expr arg
   | neg: "-" Expr arg
@@ -112,6 +112,8 @@ syntax KeyVal
   // needed for insert/update from workingset so that uuids can be used as identities
   | storedKey: "@id" ":" Expr value 
   ;
+
+lexical PlaceHolderOrUUID = PlaceHolder ph | UUID uuid;
 
 lexical PlaceHolder = "??" Id name;
 

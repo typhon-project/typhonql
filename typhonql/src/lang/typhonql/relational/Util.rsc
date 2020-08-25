@@ -24,6 +24,9 @@ import String;
 import IO;
 import ValueIO;
 
+SQLExpr pointer2sql(pointerUuid(str name)) = SQLExpr::lit(sUuid(name));
+SQLExpr pointer2sql(pointerPlaceholder(str name)) = SQLExpr::placeholder(name = name);
+
 str tableName(str entity) = "<entity>";
 
 str columnName(str attr, str entity) = "<entity>.<attr>";
@@ -144,6 +147,6 @@ Value evalExpr((Expr)`<UUID u>`) = sUuid("<u.part>");
 
 Value evalExpr((Expr)`#blob:<UUIDPart prt>`) = blobPointer("<prt>");
 
-Value evalExpr((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
+Value evalExpr((Expr)`<PlaceHolder p>`) = Value::placeholder(name="<p>"[2..]);
 
 default Value evalExpr(Expr ex) { throw "missing case for <ex>"; }
