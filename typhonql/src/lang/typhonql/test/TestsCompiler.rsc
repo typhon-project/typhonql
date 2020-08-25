@@ -821,9 +821,10 @@ void test9(PolystoreInstance p) {
 void test10(PolystoreInstance p) {
 	p.runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description, availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-01-01$, price: 2000 }`,
 						  ["name", "description"],
+						  ["string", "string"],
 						  [
-						   ["\"IPhone\"", "\"Apple\""],
-				           ["\"Samsung S10\"", "\"Samsung\""]]);
+						   ["IPhone", "Apple"],
+				           ["Samsung S10", "Samsung"]]);
 	rs = p.runQuery((Request) `from Product p select p.name, p.description`);		    
 	p.assertResultEquals("prepared insert statement on sql", rs,   
 		<["p.name","p.description"],
