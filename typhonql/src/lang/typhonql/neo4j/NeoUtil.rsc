@@ -13,7 +13,7 @@ str nodeName(str entity) = "<entity>";
 str graphPropertyName(str attr, str entity) = "<entity>.<attr>";
 
 NeoExpr pointer2neo(pointerUuid(str name)) = nLit(nText(name));
-NeoExpr pointer2neo(pointerPlaceholder(str name)){ throw "Not yet implemented"; }
+NeoExpr pointer2neo(pointerPlaceholder(str name)) = nPlaceholder(name = name);
 
 list[str] propertyName((KeyVal)`<Id x>: <EId customType> (<{KeyVal ","}* keyVals>)`, str entity) = [graphPropertyName("<x>", entity, "<customType>", "<y>") | (KeyVal)`<Id y>: <Expr e>` <- keyVals];
 
