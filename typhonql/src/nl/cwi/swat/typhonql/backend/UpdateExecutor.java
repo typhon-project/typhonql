@@ -21,16 +21,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
-import org.rascalmpl.values.ValueFactoryFactory;
-
 public abstract class UpdateExecutor {
+	
 	
 	private ResultStore store;
 	private List<Runnable> updates;
 	private Map<String, Binding> bindings;
 	private Map<String, UUID> uuids;
-
+	
 	public UpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, UUID> uuids, Map<String, Binding> bindings) {
 		this.store = store;
 		this.updates = updates;
@@ -50,6 +48,9 @@ public abstract class UpdateExecutor {
 	
 	private void executeUpdateOperation(Map<String, Object> values) {
 		if (values.size() == bindings.size()) {
+			if (store.hasExternalArguments()) {
+				values.putAll(store.getCurrentExternalArgumentsRow());
+			}
 			performUpdate(values); 
 		}
 		else {

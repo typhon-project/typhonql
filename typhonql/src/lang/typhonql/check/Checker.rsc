@@ -273,7 +273,8 @@ void collect(current:(Expr)`<EId typ> ( <{KeyVal ","}* params>)`, Collector c) {
 //    c.fact(current, atypeList([voidType()]));
 //}
 
-void collect(current:(Expr)`[<{UUID ","}* refs>]`, Collector c) {
+// TODO how to type this?
+void collect(current:(Expr)`[<{PlaceHolderOrUUID ","}* refs>]`, Collector c) {
     c.fact(current, atypeList([uuidType()]));
 }
 
