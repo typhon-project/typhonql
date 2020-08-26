@@ -11,7 +11,7 @@ import io.usethesource.vallang.IExternalValue;
 import io.usethesource.vallang.type.Type;
 import nl.cwi.swat.typhonql.client.JsonSerializableResult;
 
-public class StreamingResultTable implements JsonSerializableResult, IExternalValue {
+public class StreamingResultTable implements JsonSerializableResult {
 
 	private final List<String> columnNames;
 	private final Stream<Object[]> values;

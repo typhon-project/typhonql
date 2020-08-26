@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -32,6 +33,7 @@ import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
+import io.usethesource.vallang.type.Type;
 
 public class CommandResult implements JsonSerializableResult {
 	private static final ObjectMapper mapper = new ObjectMapper()
@@ -75,4 +77,15 @@ public class CommandResult implements JsonSerializableResult {
 		return new CommandResult(((IInteger) n).intValue(), map);
 	}
 
+	@Override
+	@JsonIgnore
+	public Type getType() {
+		return TF.externalType(TF.valueType());
+	}
+	
+	@Override
+	@JsonIgnore
+	public boolean isAnnotatable() {
+        return false;
+    }
 }

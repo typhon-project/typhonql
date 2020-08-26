@@ -151,9 +151,9 @@ public class XMIPolystoreConnection {
 	}
 	
 	
-	public ResultTable executeQuery(String xmiModel, List<DatabaseInfo> connections, String query) {
+	public JsonSerializableResult executeQuery(String xmiModel, List<DatabaseInfo> connections, String query) {
 		return sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> 
-            (ResultTable) evaluator.call("runQueryAndGetJava", 
+            (JsonSerializableResult) evaluator.call("runQueryAndGetJava", 
                 "lang::typhonql::RunUsingCompiler",
                 Collections.emptyMap(),
                 VF.string(query), 
