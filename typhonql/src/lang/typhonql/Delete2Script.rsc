@@ -230,14 +230,6 @@ void deleteKids(
 
 
 void deleteKids(
-  <mongodb(), str dbName>, <mongodb(), str other:!dbName>,
-  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
-  DeleteContext ctx
-) {
-  ctx.addSteps(cascadeViaInverseNeo(other, to, toRole, from, ctx.neoMe, ctx.myParams));
-}
-
-void deleteKids(
   <mongodb(), str dbName>, <sql(), str other>,
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
   DeleteContext ctx
@@ -247,21 +239,38 @@ void deleteKids(
   ctx.addSteps(cascadeViaJunction(other, to, toRole, from, fromRole, ctx.sqlMe, ctx.myParams));  
 }
 
+tuple[str,str] getFromTo(str entity, Schema s) {
+	if  (<dbName, graphSpec({ _*, <entity, from, to> , _*})> <- s.pragmas)
+		return <from, to>;
+	else
+		throw "Not from/to relations declared"; 
+}
+
+str getOppositeEnd(str entity, str r, Schema s) {
+	<from, to> = getFromTo(entity);
+	return (from==r)?to:from;
+}
+
+
 void deleteKids(
   <sql(), str dbName>, <neo4j(), str other>,
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
   DeleteContext ctx
 ) {
   ctx.addSteps(removeFromJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, ctx.myParams));
-  //ctx.addSteps(cascadeViaInverseNeo(other, to, toRole, from, ctx.neoMe, ctx.myParams, ctx.schema));
+  
+  ctx.addSteps(cascadeViaInverseNeo(other, to, toRole, from, ctx.neoMe, ctx.myParams, ctx.schema));
   // TODO this is hacky. Besides, what happens if neoMe is a placeholder?
-  str reference = "";
+  
+  /*str reference = "";
   if (nLit(nText(txt)) := ctx.neoMe) {
   	reference = "#<txt>";
 	Request removeEdge = [Request] "delete <to> edge where edge.<toRole> == <reference>";
   	Script scr = delete2script(removeEdge, ctx.schema);
   	ctx.addSteps(scr.steps);
-  }
+  }*/
+  
+  
   //deleteObject(<neo4j(), other>, ctx);
   //deleteReferenceInNeo(to, ctx.neoMe, ctx.myParams, ctx.schema);
 }
@@ -294,6 +303,7 @@ void deleteKids(
   DeleteContext ctx
 ) {
   str reference = "";
+  // TODO this is hacky. Besides, what happens if neoMe is a placeholder?
   if (nLit(nText(txt)) := ctx.neoMe) {
   	reference = "#<txt>";
 	Request removeEdge = [Request] "delete <to> edge where edge.<toRole> == <reference>";
@@ -384,6 +394,21 @@ void breakInboundPointers(
   DeleteContext ctx
 ) {
   ctx.addSteps(removeFromJunction(other, from, fromRole, deleted, toRole, ctx.sqlMe, ctx.myParams));
+}
+
+void breakInboundPointers(
+  del:<neo4j(), str dbName>, incoming:<mongodb(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str deleted, bool contain>, 
+  DeleteContext ctx
+) {
+
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    ;
+    // it has been deleted via deleteKids
+  }
+  else {
+    ctx.addSteps(removeAllObjectPointers(other, from, fromRole, fromCard, ctx.mongoMe, ctx.myParams));
+  }
 }
 
 void breakInboundPointers(
@@ -484,6 +509,17 @@ void breakOutboundPointers(
   // but not for the inverse on sql
   ctx.addSteps(removeFromJunction(other, from, fromRole, to, toRole, ctx.sqlMe, ctx.myParams));
 } 
+
+void breakOutboundPointers(
+  del:<neo4j(), str dbName>, <mongodb(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
+  DeleteContext ctx
+) {
+  // automatic because of foreign keys from junction table to from on this db
+  
+  // but not for the inverse on other:
+   ctx.addSteps(removeAllObjectPointers(other, to, toRole, toCard, ctx.mongoMe, ctx.myParams));
+}
 
  
   
