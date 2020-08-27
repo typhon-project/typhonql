@@ -55,7 +55,8 @@ void runDDL(Request r, Schema s, Session session, Log log = noLog) {
   	}
 }
 
-CommandResult runUpdate(Request r, Schema s, Session session, Log log = noLog) {
+list[str] runUpdate(Request r, Schema s, Session session, Log log = noLog,
+	int argumentsSize = -1) {
 	if ((Request) `<Statement stmt>` := r) {
 		// TODO This is needed because we do not have an explicit way to distinguish
 		// DDL updates from DML updates. Perhaps we should consider it
@@ -64,21 +65,19 @@ CommandResult runUpdate(Request r, Schema s, Session session, Log log = noLog) {
   			scr = request2script(r, s, log = log);
 			log("[runUpdate] Script: <scr>");
             endScript = getNanoTime();
-			res = runScript(scr, session, s);
+			list[str] res = runScript(scr, session, s);
+			
             endExecute = getNanoTime();
             if (bench) {
                 println("BENCH: request, <endScript - startScript>, <endExecute - endScript>");
             }
-			if (res != "")
-				return <-1, ("uuid" : res)>;
-			else
-				return <-1, ()>;
+			return res;
   		}
   		else {
   			scr = request2script(r, s, log = log);
 			log("[runUpdate-DDL] Script: <scr>");
-			res = runScript(scr, session, s);
-			return <-1, ()>;
+			list[str] res = runScript(scr, session, s);
+			return res;
   		}
   	}
     throw "Statement should have been provided";
@@ -115,28 +114,33 @@ value runGetEntity(str entity, str uuid, Schema sch, Session session, Log log = 
 	return session.getJavaResult();
 }
 
+Where enrichWhere(str var, w:(Where) `where <{Expr ","}+ clauses>`) =
+	visit (w) {
+		case (Expr) `<VId x>` => [Expr] "<var>.<x>"
+	};
+
+value listEntities(str entity, str whereClause, str limit, str sortBy, Schema sch, Session session, Log log = noLog) {
+	list[str] attributes = [att | <entity, att, _> <- sch.attrs];
+	Request r = parseRequest("from <entity> e select
+	                      ' <intercalate(", ", ["e.<a>" | a <- attributes])> 
+	                      '<!isEmpty(whereClause)?"where <whereClause>":"">
+	                      '<!isEmpty(sortBy)?"order <sortBy>":"">");	
+	r = visit (r) {
+		case Where w => enrichWhere("e", w) 
+	};	                      
+	                      
+	runScriptForQuery(r, sch, session, log = log);
+	return session.getJavaResult();
+}
+
 ResultTable runQuery(Request r, Schema sch, Session session, Log log = noLog) {
 	runScriptForQuery(r, sch, session, log = log);
 	return session.getResult();
 }
 
-list[CommandResult] runPrepared(Request req, list[str] columnNames, list[list[str]] values, Schema s, Session session, Log log = noLog) {
-  lrel[int, map[str, str]] rs = [];
-  int numberOfVars = size(columnNames);
-  for (list[str] vs <- values) {
-  	map[str, str] labeled = (() | it + (columnNames[i] : vs[i]) | i <-[0 .. numberOfVars]);
-  	int i = 0;
-  	Request req_ = visit(req) {
-  		case (Expr) `<PlaceHolder ph>`: {
-  			valStr = labeled["<ph.name>"];
-  			e = [Expr] valStr; 
-  			insert e;
-  		}
-  	};
-  	<n, uuids> = runUpdate(req_, s, session, log = log);
-  	rs += <n, uuids>;
-  }
-  return rs;
+list[str] runPrepared(Request req, int argumentsSize, Schema s, Session session, Log log = noLog) {
+  cr = runUpdate(req, s, session, log = log, argumentsSize = argumentsSize);
+  return [cr];
 }
 
 void runSchema(Schema sch, Session session, Log log = noLog) {
@@ -150,12 +154,12 @@ void runSchema(Schema sch, Session session, Log log = noLog) {
     }
 }
 
-CommandResult runUpdate(str src, str xmiString, map[str, Connection] connections, Log log = noLog) {
+list[str] runUpdate(str src, str xmiString, map[str, Connection] connections, Log log = noLog) {
   Session session = newSession(connections, log = log);
   return runUpdate(src, xmiString, session, log = log);
 }
 
-CommandResult runUpdate(str src, str xmiString, Session session, Log log = noLog) {
+list[str] runUpdate(str src, str xmiString, Session session, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   Request req = parseRequest(src);
@@ -197,10 +201,16 @@ value runGetEntity(str entity, str uuid, str xmiString, Session session, Log log
   return runGetEntity(entity, uuid, s, session, log = log);
 }
 
-list[CommandResult] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, Session session, Log log = noLog) {
- 	Model m = xmiString2Model(xmiString);
-  	Schema s = model2schema(m);	
-	return runPrepared(parseRequest(src), columnNames, values, s, session, log = log);
+value listEntities(str entity, str whereClause, str limit, str sortBy, str xmiString, Session session, Log log = noLog) {
+  Model m = xmiString2Model(xmiString);
+  Schema s = model2schema(m);
+  return listEntities(entity, whereClause, limit, sortBy, s, session, log = log);
+}
+
+list[str] runPrepared(str src, list[str] columnNames, list[str] columnTypes,
+	list[list[str]] values, str xmiString, map[str, Connection] connections, Log log = noLog) {
+ 	Session session = newSessionWithArguments(connections, columnNames, columnTypes, values, log = log);
+ 	return runPrepared(src, argumentsSize, xmiString, session, log = log);
 }
 
 Request parseRequest(str src) {
@@ -209,11 +219,6 @@ Request parseRequest(str src) {
     } catch parseError(loc of): {
         throw "Error parsing:\n<src>\nposition: <of.begin> -- <of.end>";
     }
-}
-
-list[CommandResult] runPrepared(str src, list[str] columnNames, list[list[str]] values, str xmiString, map[str, Connection] connections, Log log = noLog) {
- 	Session session = newSession(connections, log = log);
- 	return runPrepared(src, columnNames, values, xmiString, session, log = log);
 }
 
 void runDDL(str src,  str xmiString, Session session, Log log = noLog) {

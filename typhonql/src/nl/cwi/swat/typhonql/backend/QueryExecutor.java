@@ -53,7 +53,7 @@ public abstract class QueryExecutor {
 		int nxt = script.size() + 1;
 	    script.add((List<Record> rows) -> {
 	    	if (rows.size() <= 1) {
-               ResultIterator iter = executeSelect( rows.size() == 0 ? Collections.emptyMap(): bind(rows.get(0)));
+               ResultIterator iter = executeSelect( rows.size() == 0 ? new HashMap<>(): bind(rows.get(0)));
                storeResults(resultId, iter);
                processResults(script.get(nxt), rows, iter);
 	    	}
@@ -108,15 +108,14 @@ public abstract class QueryExecutor {
 		map.putAll(r.getObjects());
 		return new Record(map);
 	}
-
-	public void executeSelect(String resultId, String query) {
-		executeSelect(resultId, query);
-	}
 	
 	protected abstract ResultIterator performSelect(Map<String, Object> values);
 	
 	private ResultIterator executeSelect(Map<String, Object> values) {
 		if (values.size() == bindings.size()) {
+			if (store.hasExternalArguments()) {
+				values.putAll(store.getCurrentExternalArgumentsRow());
+			}
 			return performSelect(values); 
 		}
 		else {

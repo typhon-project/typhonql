@@ -59,7 +59,7 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
   CQLStat q = cSelect([], "", [], allowFiltering=true);
   
   void addWhere(CQLExpr e) {
-    // println("ADDING where clause: <pp(e)>");
+     //println("ADDING where clause: <pp(e)>");
     q.wheres += [e];
   }
   
@@ -77,6 +77,16 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
   Bindings params = ();
   void addParam(str x, Param field) {
     params[x] = field;
+  }
+  
+  map[Param, str] placeholders = ();
+  str getParam(str prefix, Param field) {
+    if (field notin placeholders) {
+      str name = "<prefix>_<vars()>";
+      placeholders[field] = name;
+      addParam(name, field);
+    } 
+    return placeholders[field];
   }
 
   Env env = (); 
@@ -125,7 +135,7 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
          
          // always add the @id
          if (str ent := env["<y>"], <p, ent> <- s.placement) {
-           addResult(cSelector(expr2cql(x), as="<y>.<ent>.@id"));
+           addResult(cSelector(expr2cql((Expr)`<VId y>.@id`), as="<y>.<ent>.@id"));
          }
       }
     }
@@ -152,8 +162,7 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
 
   Expr rewriteDynIfNeeded(e:(Expr)`<VId x>.@id`) {
     if ("<x>" in dyns, str ent := env["<x>"], <Place p, ent> <- s.placement) {
-      str token = "<x>_<vars()>";
-      addParam(token, field(p.name, "<x>", env["<x>"], "@id"));
+      str token = getParam("<x>", field(p.name, "<x>", env["<x>"], "@id"));
       return [Expr]"??<token>";
     }
     return e;
@@ -162,8 +171,7 @@ tuple[CQLStat, Bindings] select2cql((Query)`from <{Binding ","}+ bs> select <{Re
   // todo: refactor this and above.
   Expr rewriteDynIfNeeded(e:(Expr)`<VId x>.<Id f>`) {
     if ("<x>" in dyns, str ent := env["<x>"], <Place p, ent> <- s.placement) {
-      str token = "<x>_<vars()>";
-      addParam(token, field(p.name, "<x>", env["<x>"], "@id"));
+      str token = getParam("<x>", field(p.name, "<x>", env["<x>"], "@id"));
       return [Expr]"??<token>";
     }
     return e;

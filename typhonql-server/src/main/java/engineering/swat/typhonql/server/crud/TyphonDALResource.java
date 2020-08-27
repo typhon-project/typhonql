@@ -40,7 +40,8 @@ public abstract class TyphonDALResource {
 	}
 
 	protected QLRestServer.RestArguments getRestArguments() throws IOException {
-		String s = headers.getRequestHeader("QL-RestArguments").get(0);
-		return QLRestServer.RestArguments.parse(new StringReader(s));			
+		String xmi = headers.getRequestHeader("QL-XMI").get(0);
+		String dbInfo = headers.getRequestHeader("QL-DatabaseInfo").get(0);
+		return QLRestServer.RestArguments.parse(null, xmi, dbInfo);			
 	}
 }

@@ -34,6 +34,9 @@ data DBObject
   | null()
   ;
   
+DBObject pointer2mongo(pointerUuid(str name)) = mUuid(name);
+DBObject pointer2mongo(pointerPlaceholder(str name))= DBObject::placeholder(name = name);
+  
   
 str pp(object(list[Prop] ps)) = "{<intercalate(", ", [ pp(p) | Prop p <- ps ])>}";
 

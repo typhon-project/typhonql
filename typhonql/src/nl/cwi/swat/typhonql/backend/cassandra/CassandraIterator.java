@@ -82,7 +82,7 @@ public class CassandraIterator implements ResultIterator {
 
 	@Override
 	public UUID getCurrentId(String label, String type) {
-		return UUID.fromString(current.getString(columnName(label, type, "@id")));
+		return current.getUuid(columnName(label, type, "@id"));
 	}
 
 	@Override

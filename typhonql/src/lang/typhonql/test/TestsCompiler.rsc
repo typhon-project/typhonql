@@ -76,7 +76,7 @@ void setup(PolystoreInstance p, bool doTest) {
 
 	  rs = p.runQuery((Request)`from User u select u.photoURL, u.avatarURL, u.name`);
 	  p.assertResultEquals("multiple keyvals retrieved", rs, <["user__Stuff_kv_0.photoURL", "user__Stuff_kv_0.avatarURL", "u.name"],
-	    [["moustache", {}, "Pablo"], ["beard", {}, "Davy"]]>);
+	    [["moustache", "blocky", "Pablo"], ["beard", "blockyBeard", "Davy"]]>);
 	  
 	}
 	
@@ -189,6 +189,18 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
   setup(p, true);
 }
 
+void testMultiVarOccurencesMapToSamePlaceholder(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from User u, Review r select u.name where u.name == "Pablo",
+                      ' u.reviews == r.@id, r.content == u.name, r.content == u.name`);
+                      
+  p.assertResultEquals("no exception thrown", rs, <["u.name"], []>);
+
+  rs = p.runQuery((Request)`from User u, Review r select r.content, u.name where r.content == "something",
+                      ' r.user == u.@id, u.name == r.content, u.name == r.content`);
+                      
+  p.assertResultEquals("no exception thrown", rs, <["r.content", "u.name"], []>);
+
+}
 
 void testKeyValueFeatures(PolystoreInstance p) {
 
@@ -689,7 +701,88 @@ void testEscapedStrings(PolystoreInstance p) {
     p.assertResultEquals("escaped chars in strings on mariadb", rs, <["t.name"], [["Es\tcaped\""]]>);
 
     rs = p.runQuery((Request)`from User u select u.name, u.photoURL where u == #escp3`);
-    p.assertResultEquals("escaped chars in strings on cassandra", rs, <["u.name", "u.photoURL"], [["Es\tcaped\"", "Es\tcaped\""]]>);
+    p.assertResultEquals("escaped chars in strings on cassandra", rs, <["u.name", "user__Stuff_kv_0.photoURL"], [["Es\tcaped\"", "Es\tcaped\""]]>);
+}
+
+void testPreparedUpdatesSimpleSQL(PolystoreInstance p) {
+	p.runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description, availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-01-01$, price: 2000 }`,
+						  ["name", "description"],
+						  ["string", "string"],
+						  [
+						   ["Guitar", "Tanglewood"],
+				           ["Violin", "Stradivarius"]]);
+	rs = p.runQuery((Request) `from Product p select p.name, p.description`);		    
+	p.assertResultEquals("prepared insert statement on sql (simple)", rs,   
+		<["p.name","p.description"],
+		[["Guitar","Tanglewood"],["Violin","Stradivarius"],["Radio","Loud"],["TV","Flat"]]>);
+}
+
+void testPreparedUpdatesSimpleSQLUpdate(PolystoreInstance p) {
+	p.runPreparedUpdate((Request) `update Product p where p.@id == ??id set { name: ??name, description: ??description }`,
+						  ["id", "name", "description"],
+						  ["uuid", "string", "string"],
+						  [
+						   [U("tv"), "TELEVISION", "SONY"],
+				           [U("radio"), "RADIO", "SAMSUNG"]]);
+	rs = p.runQuery((Request) `from Product p select p.name, p.description`);		    
+	p.assertResultEquals("prepared insert statement on sql (simple)", rs,   
+		<["p.name","p.description"],
+		[["RADIO","SAMSUNG"],["TELEVISION","SONY"]]>);
+}
+
+void testPreparedUpdatesSimpleSQLWithRefs(PolystoreInstance p) {
+	p.runPreparedUpdate((Request) `insert User { name: ??name, location: #point(2.0 3.0), 
+	                      '   photoURL: "generic",
+	                      '   avatarURL: "blocky",
+	                      '   biography: ??bio,
+	                      '   address: "x",
+	                      '   billing: address( street: ??street, city: "Ams"
+	                      '   , zipcode: zip(nums: "1234", letters: "ab")
+	                      '   , location: #point(2.0 3.0))}`,
+						  ["name", "bio", "street"],
+						  ["string", "uuid", "string"],
+						  [
+						   ["Tijs", U("bio1"), "First"],
+				           ["Paul", U("bio1"), "Second"]]);
+				           
+    // This query does not work (Cassandra field condition)		           
+	//rs = p.runQuery((Request) `from User u select u.name, u.biography where u.photoURL == "generic"`);
+	rs = p.runQuery((Request) `from User u select u.name, u.biography where u.address == "x"`);		    
+	p.assertResultEquals("prepared insert statement on sql (simple)", rs,   
+		<["u.name", "u.biography"],
+		[["Tijs",U("bio1")],["Paul",U("bio1")]]>);
+}
+
+void testPreparedUpdatesSimpleMongo(PolystoreInstance p) {
+	p.runPreparedUpdate((Request) `insert Review { content: ??content, location: #point(2.0 3.0) }`,
+						  ["content"],
+						  ["string"],
+						  [
+						   ["Awful TV"],
+				           ["Excellent TV"]]);
+	rs = p.runQuery((Request) `from Review r select r.content`);		    
+	p.assertResultEquals("prepared insert statement on mongo (simple)", rs,   
+		<["r.content"],
+		[["Good TV"],
+		 [""],
+		 ["***"],
+		 ["Awful TV"],
+		 ["Excellent TV"]]>);
+}
+
+void testPreparedUpdatesSimpleMongoWithRefs(PolystoreInstance p) {
+	p.runPreparedUpdate((Request) `insert Review { content: ??content, user: ??user, product: ??product, location: #point(2.0 3.0) }`,
+						  ["content", "user", "product"],
+						  ["string", "uuid", "uuid"],
+						  [
+						   ["Awful TV", U("tv"), U("pablo") ],
+				           ["Excellent TV", U("tv"), U("davy") ]]);
+	rs = p.runQuery((Request) `from Review r select r.content, r.user, r.product where r.product = #tv`);		    
+	p.assertResultEquals("prepared insert statement on mongo with references (simple)", rs,   
+		<["r.content","r.user","r.product"],
+		[["Good TV", U("pablo"), U("tv")],
+		 ["Awful TV", U("pablo"), U("tv")],
+		 ["Excellent TV", U("davy"), U("tv")]]>);
 }
 
 
@@ -744,9 +837,10 @@ void test9(PolystoreInstance p) {
 void test10(PolystoreInstance p) {
 	p.runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description, availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-01-01$, price: 2000 }`,
 						  ["name", "description"],
+						  ["string", "string"],
 						  [
-						   ["\"IPhone\"", "\"Apple\""],
-				           ["\"Samsung S10\"", "\"Samsung\""]]);
+						   ["IPhone", "Apple"],
+				           ["Samsung S10", "Samsung"]]);
 	rs = p.runQuery((Request) `from Product p select p.name, p.description`);		    
 	p.assertResultEquals("prepared insert statement on sql", rs,   
 		<["p.name","p.description"],
@@ -768,9 +862,9 @@ void test12(PolystoreInstance p) {
 }
 
 void test13(PolystoreInstance p) {
-	<_, names> = p.runUpdate((Request) `insert User { name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0), address: "a", avatarURL: "b", photoURL: "c" }`);
-	p.assertEquals("one insert is one object inserted", size(names), 1);
-	uuid = names["uuid"];
+	res = p.runUpdate((Request) `insert User { name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0), address: "a", avatarURL: "b", photoURL: "c" }`);
+	p.assertEquals("one insert is one object inserted", size(res), 1);
+	uuid =res[0];
 	rs = p.runQuery([Request] "from User u select u.@id where u.@id == #<uuid>");
 	p.assertResultEquals("generated id is in the result", rs, <["u.@id"],[["<uuid>"]]>);
 }
@@ -821,7 +915,9 @@ void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	  , testUpdateManyContainSQLtoExternal
 	  , testUpdateManyContainSQLtoExternalRemove
 	  , testUpdateManyContainSQLtoExternalSet
-	  , testUpdateManyContainSQLtoExternalSetToEmpty	  
+	  , testUpdateManyContainSQLtoExternalSetToEmpty
+	  
+	  , testUpdateSingleRefSQLMongo
 	  
 	  , testSQLDateEquals
 	  

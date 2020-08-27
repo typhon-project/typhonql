@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 public class QLSerialization {
 
-	static final ObjectMapper mapper;
+	public static final ObjectMapper mapper;
 
 	static {
 		SimpleModule customSerializers = new SimpleModule();

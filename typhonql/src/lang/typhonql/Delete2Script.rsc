@@ -44,6 +44,7 @@ import lang::typhonql::cassandra::CQL;
 import lang::typhonql::cassandra::CQL2Text; 
 import lang::typhonql::cassandra::Query2CQL;
 import lang::typhonql::cassandra::Schema2CQL;
+import lang::typhonql::cassandra::CQLUtil;
 
 import lang::typhonql::neo4j::Neo;
 import lang::typhonql::neo4j::Neo2Text;
@@ -85,9 +86,16 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   }
   
   if ((Where)`where <VId _>.@id == <UUID mySelf>` := (Where)`where <{Expr ","}+ ws>`) {
-    sqlMe = lit(evalExpr((Expr)`<UUID mySelf>`));
-    mongoMe = mUuid(uuid2str(mySelf));
-	neoMe = nLit(evalNeoExpr((Expr)`<UUID mySelf>`));
+    sqlMe = pointer2sql(uuid2pointer(mySelf));
+    mongoMe = pointer2mongo(uuid2pointer(mySelf));
+	neoMe = pointer2neo(uuid2pointer(mySelf));
+	cqlMe = pointer2cql(uuid2pointer(mySelf));
+    myParams = ();
+  } else if ((Where)`where <VId _>.@id == <PlaceHolder mySelf>` := (Where)`where <{Expr ","}+ ws>`) {
+    sqlMe = pointer2sql(placeholder2pointer(mySelf));
+    mongoMe = pointer2mongo(placeholder2pointer(mySelf));
+	neoMe = pointer2neo(placeholder2pointer(mySelf));
+	cqlMe = pointer2cql(placeholder2pointer(mySelf));
     myParams = ();
   }
   else {

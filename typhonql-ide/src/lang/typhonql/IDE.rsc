@@ -310,6 +310,13 @@ void setupIDE(bool isDevMode = false) {
       
   }
   */
+  list[CompletionProposal] completer(&T<:Tree input, str prefix, int requestOffset) {
+      if (treeFound(Tree req) := findRequest(input, |ignored:///|[offset=requestOffset][length=1])) {
+        return autoComplete(req, currentCheckerSchema(input), prefix);
+      }
+      return autoCompleteKeywords(prefix);
+  }
+  
   
   registerContributions(TYPHONQL, {
     outliner(scriptOutliner),
@@ -317,11 +324,49 @@ void setupIDE(bool isDevMode = false) {
     annotator(Tree (Tree inp) {
         return checkQL(inp, currentCheckerSchema(inp));
     }),
+    // [a-z A-Z][a-z A-Z 0-9 _]
+    proposer(completer, "._$#@" + chars("a", "z") + chars("A", "Z") + chars("0", "9")),
     treeProperties(hasQuickFixes = false)
   }); 
   
   
 }
+
+str chars(str from, str to) 
+    = stringChars([c | c <- [chars(from)[0]..chars(to)[0]]]);
+
+set[str] KEYWORDS = {"select", "from", "where", "insert", "delete", "update", "set", "#polygon", "#point", "#blob", "#join", "true", "false"};
+
+list[CompletionProposal] autoCompleteKeywords(str prefix) {
+    result = [];
+    for (k <- KEYWORDS, startsWith(k, toLowerCase(prefix))) {
+        result += sourceProposal(k);
+    }
+    return result;
+}
+
+list[CompletionProposal] autoComplete(Tree input, CheckerMLSchema sc, str prefix) {
+    result = autoCompleteKeywords(prefix);
+    
+    if ([str base, str field] := split(".", prefix + " ")) {
+        field = trim(field);
+        if (startsWith("@id", field)) {
+            result += sourceProposal("<base>.@id");
+        }
+        else if (/(Binding)`<EId entity> <VId var>` := input, "<var>" == base) {
+            for (f <- sc[entityType("<entity>")], startsWith(f, field)) {
+                result += sourceProposal("<base>.<f>");
+            }
+        }
+    }
+    else if (prefix != "") {
+        for (tp <- sc, startsWith(tp.name, prefix)) {
+            result += sourceProposal(tp.name);
+        }
+    }
+    return result;
+}
+
 
 node scriptOutliner(start[Script] script) {
    sections = [];
