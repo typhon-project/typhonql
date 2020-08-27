@@ -168,11 +168,11 @@ bool relationIsFromEdge(str dbName, str edge, str relation, Schema s) {
 }
 
 list[Step] cascadeViaInverseNeo(str dbName, str edge, str role, str \node, NeoExpr parent, Bindings params, Schema s) {
-  NodePattern n1 = nNodePattern("__n1", [], []);
-  NodePattern n2 = nNodePattern("__n2", [], []);
+  NeoNodePattern n1 = nNodePattern("__n1", [], []);
+  NeoNodePattern n2 = nNodePattern("__n2", [], []);
   
   bool fromEdge = relationIsFromEdge(dbName, edge, role, s); 
-  Property prop = nProperty(graphPropertyName("@id", \node), parent);
+  NeoProperty prop = nProperty(graphPropertyName("@id", \node), parent);
   
   if (fromEdge)
   	n1.properties += [prop];
@@ -183,7 +183,7 @@ list[Step] cascadeViaInverseNeo(str dbName, str edge, str role, str \node, NeoEx
   	Maybe::just(nMatch([nPattern(n1, 
  			[nRelationshipPattern(nDoubleArrow(), "__r1", edge, [  ], n2)])], [])), 
  		nDelete([nVariable("__r1")]),
- 		[nLit(boolean(true))]);
+ 		[nLit(nBoolean(true))]);
  		
   return [step(dbName, neo(executeNeoUpdate(dbName, neopp(stat))), params)];
 }
