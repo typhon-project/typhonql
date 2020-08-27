@@ -37,7 +37,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import engineering.swat.typhonql.server.QLRestServer;
-import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 @Path("/{entityName}/{uuid}")
@@ -67,7 +66,7 @@ public class EntityResource extends TyphonDALResource {
 	public Response deleteEntity(@PathParam("entityName") String entityName, @PathParam("uuid") String uuid) throws IOException {
 		String query = "delete " + entityName + " e where e.@id == #" +uuid;
 		QLRestServer.RestArguments args = getRestArguments();
-		CommandResult cr = getEngine().executeUpdate(args.xmi, args.databaseInfo, args.blobs, query);
+		String[] res = getEngine().executeUpdate(args.xmi, args.databaseInfo, args.blobs, query);
 		return Response.ok().build();
 	}
 	
@@ -77,7 +76,7 @@ public class EntityResource extends TyphonDALResource {
 		String query = "update " + entityName + " e where e.@id == #" + uuid + " set { "
 				+ concatenateFields(delta) + "}";
 		QLRestServer.RestArguments args = getRestArguments();
-		CommandResult cr = getEngine().executeUpdate(args.xmi, args.databaseInfo, args.blobs, query);
+		String[] res = getEngine().executeUpdate(args.xmi, args.databaseInfo, args.blobs, query);
 		return Response.ok().build();
 	}
 	

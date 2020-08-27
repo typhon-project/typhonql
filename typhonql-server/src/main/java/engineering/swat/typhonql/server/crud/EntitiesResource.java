@@ -18,8 +18,6 @@ package engineering.swat.typhonql.server.crud;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -35,10 +33,7 @@ import javax.ws.rs.core.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
 import engineering.swat.typhonql.server.QLRestServer;
-import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 @Path("/{entityName}")
@@ -62,8 +57,8 @@ public class EntitiesResource extends TyphonDALResource {
 		String query = "insert " + entityName + " { " + concatenateFields(entity.getFields()) + "}";
  		try {
  			QLRestServer.RestArguments args = getRestArguments();
-			CommandResult cr = getEngine().executeUpdate(args.xmi, args.databaseInfo, args.blobs, query);
-			return Response.created(URI.create("/" + entityName + "/" + cr.getCreatedUuids().values().iterator().next())).build();
+			String[] uuids = getEngine().executeUpdate(args.xmi, args.databaseInfo, args.blobs, query);
+			return Response.created(URI.create("/" + entityName + "/" + uuids[0])).build();
 		} catch (RuntimeException e) {
 			return Response.serverError().build();
 		}

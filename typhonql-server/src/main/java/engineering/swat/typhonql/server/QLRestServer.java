@@ -35,7 +35,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Handler;
@@ -67,7 +66,6 @@ import engineering.swat.typhonql.server.crud.EntityDeltaFields;
 import engineering.swat.typhonql.server.crud.EntityDeltaFieldsDeserializer;
 import engineering.swat.typhonql.server.crud.EntityFields;
 import engineering.swat.typhonql.server.crud.EntityFieldsDeserializer;
-import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.JsonSerializableResult;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
@@ -266,13 +264,16 @@ public class QLRestServer {
 		return engine.executeQuery(args.xmi, args.databaseInfo, args.query);
 	}
 
-	private static CommandResult handleCommand(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
+	private static JsonSerializableResult handleCommand(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
 			throws IOException {
 		if (isEmpty(args.command)) {
 			throw new IOException("Missing command in post body");
 		}
 		logger.trace("Running command: {}", args);
-		return engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.command);
+		String[] result = engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.command);
+		return target -> {
+			mapper.writeValue(target, result);
+		};
 	}
 
 	private static JsonSerializableResult handlePreparedCommand(XMIPolystoreConnection engine, RestArguments args,
@@ -284,19 +285,10 @@ public class QLRestServer {
 		if (args.parameterNames.length != args.parameterTypes.length) {
 			throw new IOException("Mismatch between length of parameter names and parameter types");
 		}
-		CommandResult[] result = engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.command,
+		String[] result = engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.command,
 				args.parameterNames, args.parameterTypes, args.boundRows);
 		return target -> {
-			target.write('[');
-			boolean first = true;
-			for (CommandResult r1 : result) {
-				if (!first) {
-					target.write(',');
-				}
-				r1.serializeJSON(target);
-				first = false;
-			}
-			target.write(']');
+			mapper.writeValue(target, result);
 		};
 	}
 

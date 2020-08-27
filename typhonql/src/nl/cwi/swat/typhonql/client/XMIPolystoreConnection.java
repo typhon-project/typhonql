@@ -204,9 +204,9 @@ public class XMIPolystoreConnection {
 		
 	}
 	
-	public CommandResult executeUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String query) {
+	public String[] executeUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String query) {
 		IValue val = evaluateUpdate(xmiModel, connections, blobMap, query);
-		return CommandResult.fromIValue(val);
+		return toStringArray(val);
 	}
 	
 	
@@ -387,11 +387,18 @@ public class XMIPolystoreConnection {
 		return URIResolverRegistry.getInstance().exists(URIUtil.getChildLocation(root, RascalManifest.META_INF_RASCAL_MF));
 	}
 	
-	public CommandResult[] executePreparedUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> fileMap, String preparedStatement, String[] columnNames, String[] columnTypes, String[][] values) {
+	public String[] executePreparedUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> fileMap, String preparedStatement, String[] columnNames, String[] columnTypes, String[][] values) {
 		IValue v = evaluatePreparedStatementQuery(xmiModel, connections, fileMap, preparedStatement, columnNames, columnTypes, values);
-		
-		// TODO fix this workaround
-		return new CommandResult[] { CommandResult.fromIValue(v) };
+		return toStringArray(v);
+	}
+	
+	public String[] toStringArray(IValue v) {
+		Iterator<IValue> iter = ((IList) v).iterator();
+		List<String> r = new ArrayList<String>();
+		while (iter.hasNext())
+			r.add(((IString) iter.next()).getValue());
+			
+		return r.toArray(new String[0]);
 	}
 	
 	public static void main(String[] args) throws IOException, URISyntaxException {

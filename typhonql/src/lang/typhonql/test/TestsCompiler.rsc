@@ -846,9 +846,9 @@ void test12(PolystoreInstance p) {
 }
 
 void test13(PolystoreInstance p) {
-	<_, names> = p.runUpdate((Request) `insert User { name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0), address: "a", avatarURL: "b", photoURL: "c" }`);
-	p.assertEquals("one insert is one object inserted", size(names), 1);
-	uuid = names["uuid"];
+	res = p.runUpdate((Request) `insert User { name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0), address: "a", avatarURL: "b", photoURL: "c" }`);
+	p.assertEquals("one insert is one object inserted", size(res), 1);
+	uuid =res[0];
 	rs = p.runQuery([Request] "from User u select u.@id where u.@id == #<uuid>");
 	p.assertResultEquals("generated id is in the result", rs, <["u.@id"],[["<uuid>"]]>);
 }

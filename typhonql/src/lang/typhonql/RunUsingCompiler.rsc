@@ -55,7 +55,7 @@ void runDDL(Request r, Schema s, Session session, Log log = noLog) {
   	}
 }
 
-CommandResult runUpdate(Request r, Schema s, Session session, Log log = noLog,
+list[str] runUpdate(Request r, Schema s, Session session, Log log = noLog,
 	int argumentsSize = -1) {
 	if ((Request) `<Statement stmt>` := r) {
 		// TODO This is needed because we do not have an explicit way to distinguish
@@ -65,24 +65,19 @@ CommandResult runUpdate(Request r, Schema s, Session session, Log log = noLog,
   			scr = request2script(r, s, log = log);
 			log("[runUpdate] Script: <scr>");
             endScript = getNanoTime();
-			res = runScript(scr, session, s);
+			list[str] res = runScript(scr, session, s);
 			
             endExecute = getNanoTime();
             if (bench) {
                 println("BENCH: request, <endScript - startScript>, <endExecute - endScript>");
             }
-			if (res != [] && size(res) >0 && res[0] !="") {
-				return <-1, ("uuid" : res[0])>;
-			}
-			else {
-				return <-1, ()>;
-			}
+			return res;
   		}
   		else {
   			scr = request2script(r, s, log = log);
 			log("[runUpdate-DDL] Script: <scr>");
-			res = runScript(scr, session, s);
-			return <-1, ()>;
+			list[str] res = runScript(scr, session, s);
+			return res;
   		}
   	}
     throw "Statement should have been provided";
@@ -143,7 +138,7 @@ ResultTable runQuery(Request r, Schema sch, Session session, Log log = noLog) {
 	return session.getResult();
 }
 
-list[CommandResult] runPrepared(Request req, int argumentsSize, Schema s, Session session, Log log = noLog) {
+list[str] runPrepared(Request req, int argumentsSize, Schema s, Session session, Log log = noLog) {
   cr = runUpdate(req, s, session, log = log, argumentsSize = argumentsSize);
   return [cr];
 }
@@ -159,12 +154,12 @@ void runSchema(Schema sch, Session session, Log log = noLog) {
     }
 }
 
-CommandResult runUpdate(str src, str xmiString, map[str, Connection] connections, Log log = noLog) {
+list[str] runUpdate(str src, str xmiString, map[str, Connection] connections, Log log = noLog) {
   Session session = newSession(connections, log = log);
   return runUpdate(src, xmiString, session, log = log);
 }
 
-CommandResult runUpdate(str src, str xmiString, Session session, Log log = noLog) {
+list[str] runUpdate(str src, str xmiString, Session session, Log log = noLog) {
   Model m = xmiString2Model(xmiString);
   Schema s = model2schema(m);
   Request req = parseRequest(src);
@@ -212,7 +207,7 @@ value listEntities(str entity, str whereClause, str limit, str sortBy, str xmiSt
   return listEntities(entity, whereClause, limit, sortBy, s, session, log = log);
 }
 
-list[CommandResult] runPrepared(str src, list[str] columnNames, list[str] columnTypes,
+list[str] runPrepared(str src, list[str] columnNames, list[str] columnTypes,
 	list[list[str]] values, str xmiString, map[str, Connection] connections, Log log = noLog) {
  	Session session = newSessionWithArguments(connections, columnNames, columnTypes, values, log = log);
  	return runPrepared(src, argumentsSize, xmiString, session, log = log);
