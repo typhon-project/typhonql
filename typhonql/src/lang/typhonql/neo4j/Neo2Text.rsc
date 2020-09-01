@@ -154,14 +154,14 @@ str neopp(nInteger(int x)) = "<x>";
 
 str neopp(nBoolean(bool b)) = "<b>";
 
-str neopp(nDateTime(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
+str neopp(nDateTime(datetime d)) = "localdatetime(\'<replaceFirst(printDate(d, "YYYY-MM-dd HH:mm:ss"), " ", "T")>\')";
 
-str neopp(nDate(datetime d)) = "\'<printDate(d, "YYYY-MM-dd")>\'";
+str neopp(nDate(datetime d)) = "date(\'<printDate(d, "YYYY-MM-dd")>\')";
 
-str neopp(nPoint(real x, real y)) = "PointFromText(\'POINT(<x> <y>)\', 4326)";
+str neopp(nPoint(real x, real y)) = "point({ x: <x>, y: <y>})";
 
 str neopp(nPolygon(list[lrel[real, real]] segs)) 
-  = "PolyFromText(\'POLYGON(<intercalate(", ", [ seg2str(s) | s <- segs ])>)\', 4326)";
+  = "[<intercalate(",", ["[<intercalate("," ,["[<a>,<b>]" |<a,b> <- seg])>]" | lrel[real, real] seg <- segs])>]";
 
 str seg2str(lrel[real,real] seg)  
   = "(<intercalate(", ", [ "<x> <y>" | <real x, real y> <- seg ])>)";
