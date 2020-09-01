@@ -27,6 +27,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -314,10 +316,16 @@ public class XMIPolystoreConnection {
 	static {
 		qlValueMappers = new HashMap<>();
 		qlValueMappers.put("int",Integer::parseInt);
+		//qlValueMappers.put("bigint",Integer::parseInt);
+		qlValueMappers.put("float",Float::parseFloat);
 		qlValueMappers.put("string", s -> s);
 		qlValueMappers.put("bool", Boolean::valueOf);
 		qlValueMappers.put("text", s -> s);
 		qlValueMappers.put("uuid", UUID::fromString);
+		qlValueMappers.put("date", s -> LocalDate.parse(s));
+		qlValueMappers.put("datetime", s -> LocalDateTime.parse(s));
+		//qlValueMappers.put("point", s -> POUND.concat(VF.string(s.toLowerCase())));
+		//qlValueMappers.put("polygon", s -> POUND.concat(VF.string(s.toLowerCase())));
 	}
 	
 	
