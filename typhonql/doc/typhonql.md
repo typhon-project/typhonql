@@ -110,6 +110,23 @@ overlap:
 
 *note*: on mongodb backends distance is limited to the where query and only in presence of a comparision operator. 
 
+### Graph expressions
+If two entities are related to each other through an entity stored in a graph database, it is possible to use the reachability expression:
+
+`entity1 -[edgeEntity, lower..upper]-> entity2`
+
+- `entity1` and `entity2` are the ids of entities that can be stored in any backend
+- `edgeEntity` is the id of the entity stored as an edge in a graph database
+- `lower` and `upper` are expressions that represents the bounds for the _number of hops_ one wants to execute from `entity1`. By ommiting one or both of them, we get different semantics explained through the following examples.
+
+Example 1:  `person1 -[friendOf, 2..3]-> person2` -> Find friends of `person1` using at least 2 jumps and at most 3 jumps. Notice that this expression will ignore the direct friends of `person1`.
+
+Example 2:  `person1 -[friendOf, 1..]-> person2` -> Find friends of `person1` using at least 1 jump, without constraining how many jumps can be used.
+
+Example 3:  `person1 -[friendOf, ..3]-> person2` -> Find friends of `person1` using at most 3 jumps. By default the lower limit would be 1.
+
+Example 4:  `person1 -[friendOf]-> person2` -> Find friends of `person1` using at least 1 jumps and without constraining the number of jumps. This expression computes the transitive closure of `friendOf` for the set `{ person1 }`.
+
 
 ### Blobs
 

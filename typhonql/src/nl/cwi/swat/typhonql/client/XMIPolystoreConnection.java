@@ -27,6 +27,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -204,9 +206,9 @@ public class XMIPolystoreConnection {
 		
 	}
 	
-	public CommandResult executeUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String query) {
+	public String[] executeUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String query) {
 		IValue val = evaluateUpdate(xmiModel, connections, blobMap, query);
-		return CommandResult.fromIValue(val);
+		return toStringArray(val);
 	}
 	
 	
@@ -314,10 +316,16 @@ public class XMIPolystoreConnection {
 	static {
 		qlValueMappers = new HashMap<>();
 		qlValueMappers.put("int",Integer::parseInt);
+		//qlValueMappers.put("bigint",Integer::parseInt);
+		qlValueMappers.put("float",Float::parseFloat);
 		qlValueMappers.put("string", s -> s);
 		qlValueMappers.put("bool", Boolean::valueOf);
 		qlValueMappers.put("text", s -> s);
 		qlValueMappers.put("uuid", UUID::fromString);
+		qlValueMappers.put("date", s -> LocalDate.parse(s));
+		qlValueMappers.put("datetime", s -> LocalDateTime.parse(s));
+		//qlValueMappers.put("point", s -> POUND.concat(VF.string(s.toLowerCase())));
+		//qlValueMappers.put("polygon", s -> POUND.concat(VF.string(s.toLowerCase())));
 	}
 	
 	
@@ -387,10 +395,17 @@ public class XMIPolystoreConnection {
 		return URIResolverRegistry.getInstance().exists(URIUtil.getChildLocation(root, RascalManifest.META_INF_RASCAL_MF));
 	}
 	
-	public CommandResult[] executePreparedUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> fileMap, String preparedStatement, String[] columnNames, String[] columnTypes, String[][] values) {
+	public String[] executePreparedUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> fileMap, String preparedStatement, String[] columnNames, String[] columnTypes, String[][] values) {
 		IValue v = evaluatePreparedStatementQuery(xmiModel, connections, fileMap, preparedStatement, columnNames, columnTypes, values);
-		
-		// TODO fix this workaround
-		return new CommandResult[] { CommandResult.fromIValue(v) };
+		return toStringArray(v);
+	}
+	
+	public String[] toStringArray(IValue v) {
+		Iterator<IValue> iter = ((IList) v).iterator();
+		List<String> r = new ArrayList<String>();
+		while (iter.hasNext())
+			r.add(((IString) iter.next()).getValue());
+			
+		return r.toArray(new String[0]);
 	}
 }

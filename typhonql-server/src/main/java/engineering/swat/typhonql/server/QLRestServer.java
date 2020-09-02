@@ -36,7 +36,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Handler;
@@ -69,7 +68,6 @@ import engineering.swat.typhonql.server.crud.EntityDeltaFieldsDeserializer;
 import engineering.swat.typhonql.server.crud.EntityFields;
 import engineering.swat.typhonql.server.crud.EntityFieldsDeserializer;
 import io.usethesource.vallang.type.Type;
-import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.JsonSerializableResult;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
@@ -285,7 +283,21 @@ public class QLRestServer {
 			throw new IOException("Missing command in post body");
 		}
 		logger.trace("Running command: {}", args);
-		return engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.command);
+		return stringArray(engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.command));
+	}
+	
+	private static JsonSerializableResult stringArray(String[] result) {
+		return new JsonSerializableResult() {
+			@Override
+			public Type getType() {
+				return null;
+			}
+
+			@Override
+			public void serializeJSON(OutputStream target) throws IOException {
+				mapper.writeValue(target, result);
+			}
+		};
 	}
 
 	private static JsonSerializableResult handlePreparedCommand(XMIPolystoreConnection engine, RestArguments args,
@@ -297,28 +309,8 @@ public class QLRestServer {
 		if (args.parameterNames.length != args.parameterTypes.length) {
 			throw new IOException("Mismatch between length of parameter names and parameter types");
 		}
-		CommandResult[] result = engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.command,
-				args.parameterNames, args.parameterTypes, args.boundRows);
-		return new JsonSerializableResult() {
-			@Override
-			public Type getType() {
-				return null;
-			}
-
-			@Override
-			public void serializeJSON(OutputStream target) throws IOException {
-				target.write('[');
-				boolean first = true;
-				for (CommandResult r1 : result) {
-					if (!first) {
-						target.write(',');
-					}
-					r1.serializeJSON(target);
-					first = false;
-				}
-				target.write(']');
-			}
-		};
+		return stringArray(engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.command,
+				args.parameterNames, args.parameterTypes, args.boundRows));
 	}
 
 	@FunctionalInterface

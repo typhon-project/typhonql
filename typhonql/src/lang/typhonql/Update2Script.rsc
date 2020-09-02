@@ -445,7 +445,14 @@ void compileRefSet(
     return upd;
   });
   */
-  ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, pointer2sql(ref), ctx.sqlMe, ctx.myParams));
+  
+  if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
+    ctx.addSteps(updateIntoJunctionSingleContainment(other, to, toRole, from, fromRole, pointer2sql(ref), ctx.sqlMe, ctx.myParams));
+  }
+  else {
+    ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, pointer2sql(ref), ctx.sqlMe, ctx.myParams));
+  }
+  //ctx.addSteps(updateIntoJunctionSingle(other, to, toRole, from, fromRole, pointer2sql(ref), ctx.sqlMe, ctx.myParams));
 }
 
 // neo/sql containment or xref

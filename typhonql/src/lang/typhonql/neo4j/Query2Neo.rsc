@@ -20,6 +20,7 @@ import IO;
 import ValueIO;
 import String;
 import List;
+import util::Maybe;
 
 /*
 
@@ -66,7 +67,7 @@ alias Ctx
       Schema schema,
       Env env,
       set[str] dyns,
-      int() vars,
+      int(str) vars,
       Place place
    ];
 
@@ -89,14 +90,14 @@ Steps to compile to SQL
 - translate where clauses to sql where clause, possibly using junction tables, skip #done/#needed/#delayed
 
 
-*/
+*/ 
 tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`
   , Schema s, Place p, Log log = noLog) {
 
   NeoStat q = 
   	nMatchQuery(
   		[nMatch(
-  			[nPattern(nNodePattern("__n1", [], []), [nRelationshipPattern(nDoubleArrow(), "",  "", [], nNodePattern("__n2", [], []))])], [nWhere([])])], 
+  			[], [nWhere([])])], 
   		[]);
   
   void addWhere(NeoExpr e) {
@@ -108,6 +109,24 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
     // println("ADDING table: <pp(as)>");
     q.matches[0].patterns += [nPattern(nNodePattern(var, [label], []), [])];
   }
+  
+   void addFrom2(str varName, str label) {
+    // println("ADDING table: <pp(as)>");
+    q.matches[0].patterns += 
+    	[nPattern(
+    		nNodePattern("<varName>$from", [label], []),
+	     	[nRelationshipPattern(nDoubleArrow(), varName,  label, [], nNodePattern("<varName>$to", [], []))]
+	     	)];
+  }
+  
+  void addEdge(str varName, str label) {
+  	q.matches[0].patterns += 
+    	[nPattern(
+    		nNodePattern("<varName>$from", [], []),
+	     	[nRelationshipPattern(nDoubleArrow(), varName,  label, [], nNodePattern("<varName>$to", [], []))]
+	     	)];
+  }
+  
   
   void addRelation(str var, str label) {
    q.matches[0].patterns[0].rels[0].var = var;
@@ -130,8 +149,21 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
   }
   
   int _vars = -1;
-  int vars() {
-    return _vars += 1;
+  
+  map[tuple[str, str], int] usedVars = (); 
+  
+  int vars(str name) {
+  	return vars(name, "");
+  }
+  
+  int vars(str name, str field) {
+    if (<name, field> in usedVars)
+  		return usedVars[<name, field>];
+  	else {
+    	_vars += 1;
+    	usedVars += (<name, field> : _vars);
+    	return _vars;
+    }
   }
 
   Bindings params = ();
@@ -211,7 +243,7 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
   // results require tables for joining.
   for ((Binding)`<EId e> <VId x>` <- bs) {
     // skipping #dynamic / #ignored
-    addRelation("<x>", "<e>");
+    addEdge("<x>", "<e>");
   }
 
   for ((Result)`<Expr e>` <- rs) {
@@ -252,9 +284,9 @@ NeoExpr expr2neo(e:(Expr)`<VId x>`, Ctx ctx, Log log = noLog)
 
 NeoExpr expr2neo(e:(Expr)`<VId x>.@id`, Ctx ctx, Log log = noLog) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
-    str token = "<x>_<ctx.vars()>";
+    str token = "<x>_<ctx.vars("<x>", "")>";
     ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "@id"));
-    return nPlaceholder(name=token);
+    return NeoExpr::nPlaceholder(name=token);
   }
   str entity = ctx.env["<x>"];
   return nProperty("<x>", neoTyphonId(entity));
@@ -267,14 +299,15 @@ NeoExpr expr2neo(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
   str role = "<f>"; 
 
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
-    str token = "<x>_<f>_<ctx.vars()>";
+    str token = "<x>_<f>_<ctx.vars("<x>", "<f>")>";
     ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "<f>"));
     return nPlaceholder(name=token);
   }
 
   // TODO translate to neo
   if (<entity, _, role, str toRole, _, str to, true> <- ctx.schema.rels, placeOf(to, ctx.schema) == ctx.place) {
-    log("########### local containment <entity> -<role>/<toRole>-\> <to>");
+    ;
+    /*log("########### local containment <entity> -<role>/<toRole>-\> <to>");
     str tbl1 = "<x>";
     str tbl2 = varForTarget(f, ctx.vars()); // introduce a new table alias
     ctx.addLeftOuterJoin(tbl1,
@@ -283,27 +316,33 @@ NeoExpr expr2neo(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
        
     // the value is of this expression is the id column of the child table
     // provided that its parent is the table representing x 
-    return column(tbl2, typhonId(to));
+    return column(tbl2, typhonId(to));*/
   }
   else if (<str parent, _, str parentRole, role, _, entity, true> <- ctx.schema.rels, placeOf(parent, ctx.schema) == ctx.place) {
-    log("########### local (reverse) containment <parent> -<parentRole>/<role>-\> <entity>");
-    str tbl1 = "<x>";
-    return column(tbl1, fkName(parent, entity, role));
+    ;
+    //log("########### local (reverse) containment <parent> -<parentRole>/<role>-\> <entity>");
+    //str tbl1 = "<x>";
+    //return column(tbl1, fkName(parent, entity, role));
   }
   else if (<entity, _, role, str toRole, _, str to, _> <- ctx.schema.rels) {
   	log("######### xref, or external containment: <entity> -<role>/<toRole>-\> <to> (`<e>`)  ");
-  	node1 = "<x>";
-    node2 = "<f>";
+  	//node1 = "<x>";
+    //node2 = "<f>";
 	
-	int n = ctx.vars();
-	str var = "v<n>";
-	if (isFrom(entity, role, ctx.place, ctx.schema)) {
+	//int n = ctx.vars("<f>", "");
+	//str var = "<f>_<n>"
+	/*if (isFrom(entity, role, ctx.place, ctx.schema)) {
+		ctx.addSource(var, to);
+	} else if (isTo(entity, role, ctx.place, ctx.schema)) {
+		ctx.addTarget(var, to);
+	}
+	/*if (isFrom(entity, role, ctx.place, ctx.schema)) {
 		ctx.addSource(var, to);
 	} else if (isTo(entity, role, ctx.place, ctx.schema)) {
 		ctx.addTarget(var, to);
 	} else {
 		ctx.addFrom(var, to);
-	}
+	}*/
 	//ctx.addWhere(equ(property(node1, nodeName(entity,node2)), property(var, nodeName(to, "@id"))));
 	//ctx.addWhere(equ(property(node1, node2), property("X", node2)));
 
@@ -312,7 +351,12 @@ NeoExpr expr2neo(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
   	//  equ(column(tbl2, junctionFkName(entity, role)), column(tbl1, typhonId(entity))));
   	
   	// return the column of the target
-  	return nProperty(var, nodeName(to, "@id"));
+  	if (isFrom(entity, role, ctx.place, ctx.schema)) {
+		return nProperty("<x>$from", nodeName("<to>", "@id"));
+	} else if (isTo(entity, role, ctx.place, ctx.schema)) {
+		return nProperty("<x>$to", nodeName("<to>", "@id"));
+	}
+  	//
   }
   else if (<entity, role, str atype> <- ctx.schema.attrs) { 
     log("# an attribute <entity>.<role>");
@@ -405,6 +449,15 @@ NeoExpr expr2neo((Expr)`<Expr lhs> \< <Expr rhs>`, Ctx ctx, Log log = noLog)
 
 NeoExpr expr2neo((Expr)`<Expr lhs> like <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = nLike(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
+  
+NeoExpr expr2neo((Expr)`<VId lhs> <Reaching r> <VId rhs>`, Ctx ctx, Log log = noLog) {
+  ctx.addFrom("<lhs>", ctx.env["<lhs>"]);
+  ctx.addFrom("<rhs>", ctx.env["<rhs>"]);
+  ctx.addWhere(nEqu(nVariable("<r.edge>$from"),nVariable("<lhs>")));
+  ctx.addWhere(nEqu(nVariable("<r.edge>$to"),nVariable("<rhs>")));
+  
+  return reachingExpr2neo(r, lhs, rhs, ctx, log = log);
+}
 
 NeoExpr expr2neo((Expr)`<Expr lhs> && <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = nAnd(expr2neo(lhs, ctx), expr2neo(rhs, ctx));
@@ -426,7 +479,86 @@ NeoExpr expr2neo((Expr)`distance(<Expr from>, <Expr to>)`, Ctx ctx, Log log = no
 
 default NeoExpr expr2neo(Expr e, Ctx _) { throw "Unsupported expression: <e>"; }
 
+/*
+NeoExpr expr2neo(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
+  log("TRANSLATING: <e>");
+  str entity = ctx.env["<x>"];
+  str role = "<f>"; 
 
+  if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
+    str token = "<x>_<f>_<ctx.vars("<x>", "f")>";
+    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "<f>"));
+    return nPlaceholder(name=token);
+  }
+
+  // TODO translate to neo
+  if (<entity, _, role, str toRole, _, str to, true> <- ctx.schema.rels, placeOf(to, ctx.schema) == ctx.place) {
+    ;
+    //log("########### local containment <entity> -<role>/<toRole>-\> <to>");
+    //str tbl1 = "<x>";
+    //str tbl2 = varForTarget(f, ctx.vars()); // introduce a new table alias
+    //ctx.addLeftOuterJoin(tbl1,
+    //   as(tableName(to), tbl2),
+    //   equ(column(tbl2, fkName(entity, to, toRole)), column(tbl1, typhonId(entity))));
+       
+    // the value is of this expression is the id column of the child table
+    // provided that its parent is the table representing x 
+    //return column(tbl2, typhonId(to));
+  }
+  else if (<str parent, _, str parentRole, role, _, entity, true> <- ctx.schema.rels, placeOf(parent, ctx.schema) == ctx.place) {
+    log("########### local (reverse) containment <parent> -<parentRole>/<role>-\> <entity>");
+    str tbl1 = "<x>";
+    return column(tbl1, fkName(parent, entity, role));
+  }
+  else if (<entity, _, role, str toRole, _, str to, _> <- ctx.schema.rels) {
+  	log("######### xref, or external containment: <entity> -<role>/<toRole>-\> <to> (`<e>`)  ");
+  	node1 = "<x>";
+    node2 = "<f>";
+	
+	int n = ctx.vars("<f>", "");
+	str var = "<f>_<n>";
+	//if (isFrom(entity, role, ctx.place, ctx.schema)) {
+	//	ctx.addSource(var, to);
+	//} else if (isTo(entity, role, ctx.place, ctx.schema)) {
+	//	ctx.addTarget(var, to);
+	//} else {
+	//	ctx.addFrom(var, to);
+	//}
+	//ctx.addWhere(equ(property(node1, nodeName(entity,node2)), property(var, nodeName(to, "@id"))));
+	//ctx.addWhere(equ(property(node1, node2), property("X", node2)));
+
+    //ctx.addLeftOuterJoin(tbl1,  	
+  	//  as(junctionTableName(entity, role, to, toRole), tbl2),
+  	//  equ(column(tbl2, junctionFkName(entity, role)), column(tbl1, typhonId(entity))));
+  	
+  	// return the column of the target
+  	return nProperty(var, nodeName(to, "@id"));
+  }
+  else if (<entity, role, str atype> <- ctx.schema.attrs) { 
+    log("# an attribute <entity>.<role>");
+    normalAccess = nProperty("<x>", nodeName(entity, role));
+    if (atype in {"point", "polygon"}) {
+        return fun("ST_AsWKB", [normalAccess]);
+    }
+    return normalAccess;
+  }
+  else {
+    throw "Unsupported navigation <entity> <x>.<role>";
+  }
+  
+  */
+
+NeoExpr reachingExpr2neo((Reaching) `-[ <VId edge> ]-\>`, VId lhs, VId rhs, Ctx ctx, Log log = noLog) 
+  = nReaching(ctx.env["<edge>"], Maybe::nothing(), Maybe::nothing(), "<lhs>", "<rhs>");
+
+NeoExpr reachingExpr2neo((Reaching) `-[ <Expr edge>, <Expr lower> .. ]-\>`, VId lhs, VId rhs, Ctx ctx, Log log = noLog) 
+  = nReaching(ctx.env["<edge>"], lower, Maybe::nothing(), expr2neo(lhs, ctx, log=log), expr2neo(rhs, ctx, log=log));
+
+NeoExpr reachingExpr2neo((Reaching) `-[ <Expr edge>, .. <Expr upper>]-\>`, VId lhs, VId rhs, Ctx ctx, Log log = noLog) 
+  = nReaching(ctx.env["<edge>"], Maybe::nothing(), upper, expr2neo(lhs, ctx, log=log), expr2neo(rhs, ctx, log=log));
+
+NeoExpr reachingExpr2neo((Reaching) `-[ <Expr edge>, <Expr lower> .. <Expr upper>]-\>`, VId lhs, VId rhs, Ctx ctx, Log log = noLog) 
+  = nReaching(ctx.env["<edge>"], lower, upper, expr2neo(lhs, ctx, log=log), expr2neo(rhs, ctx, log=log));
 
 /*
 

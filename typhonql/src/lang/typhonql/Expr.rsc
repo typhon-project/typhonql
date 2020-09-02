@@ -61,12 +61,22 @@ syntax Expr
     | non-assoc gt: Expr lhs "\>" Expr rhs
     | non-assoc \in: Expr lhs "in" Expr rhs
     | non-assoc like: Expr lhs "like" Expr rhs
+    | non-assoc reaching: VId lhs Reaching reaching VId rhs
   )
   > left intersect: Expr lhs "&" Expr rhs
   > left and: Expr lhs "&&" Expr rhs
   > left or: Expr lhs "||" Expr rhs
   ;
   
+  
+syntax Reaching = "-[" VId edge ReachingBound? bound "]-\>";
+
+syntax ReachingBound 
+	= lowerUpper: "," Expr lower ".." Expr upper
+	| lower: "," Expr lower ".."
+	| upper: "," ".." Expr upper
+	| exact: "," Expr bound
+	;
 
 // Entity Ids  
 lexical EId = Id entityName \ Primitives;

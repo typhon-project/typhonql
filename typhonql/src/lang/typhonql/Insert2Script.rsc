@@ -416,14 +416,6 @@ void compileRefBinding(
   ctx.addSteps(insertIntoJunction(other, to, toRole, from, fromRole, pointer2sql(ref), [ctx.sqlMe], ctx.myParams));
 }
 
-void compileRefBinding(
-  <neo4j(), str _>, <neo4j(), _>, str from, str fromRole, 
-  Rel r,
-  Pointer ref, InsertContext ctx
-) {
-  throw "Relations between two Neo4J edges are not possible";
-}
-
 void updateNeoUpdate(str dbName,
   str from, str fromRole, str to,
   Pointer ref, InsertContext ctx) {
@@ -478,39 +470,13 @@ void compileRefBinding(
    
 }
 
-
 void compileRefBinding(
-  <mongodb(), str dbName>, <neo4j(), str other>, str from, str fromRole,
-  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>,
+  <neo4j(), str _>, <neo4j(), _>, str from, str fromRole, 
+  Rel r,
   Pointer ref, InsertContext ctx
 ) {
-  // TODO
-  // from mongo 
-  ctx.updateMongoInsert(DBObject(DBObject obj) {
-    obj.props += [ <fromRole, pointer2mongo(ref)> ];
-    return obj;
-  });
-  
-  ctx.addSteps(neoReplaceEnd(other, to, from, toRole, pointer2neo(ref), ctx.neoMe, ctx.myParams, ctx.schema));
+  throw "Relations between two Neo4J edges are not possible";
 }
-
-void compileRefBinding(
-  <DB::sql(), str dbName>, <neo4j(), str other>, str from, str fromRole,
-  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>,
-  Pointer ref, InsertContext ctx
-) {
-  // TODO
-  // from sql
-  //if (r notin trueCrossRefs(ctx.schema.rels)) {
-  //  fail compileRefBinding;
-  //}
-  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [pointer2sql(ref)], ctx.myParams));
-  //ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
-  
-  ctx.addSteps(neoReplaceEnd(other, to, from, toRole, pointer2neo(ref), ctx.neoMe, ctx.myParams, ctx.schema));
-
-}
-
 
 
 void compileRefBindingMany(
@@ -624,6 +590,46 @@ void compileRefBindingMany(
   });
   ctx.addSteps([ *insertIntoJunction(other, to, toRole, from, fromRole, pointer2sql(ref), 
     [ctx.sqlMe], ctx.myParams) | Pointer ref <- refs ]);
+}
+
+void compileRefBindingMany(
+  <DB::sql(), str dbName>, <neo4j(), str other>, str from, str fromRole,
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>,
+  list[Pointer] refs, InsertContext ctx
+) {
+  // TODO
+  // from sql
+  //if (r notin trueCrossRefs(ctx.schema.rels)) {
+  //  fail compileRefBinding;
+  //}
+  ctx.addSteps(insertIntoJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, [pointer2sql(ref) | Pointer ref <- refs], ctx.myParams));
+  //ctx.addSteps(updateObjectPointer(other, to, toRole, toCard, \value(uuid2str(ref)), ctx.mongoMe, ctx.myParams));
+  
+  ctx.addSteps([*neoReplaceEnd(other, to, from, toRole, pointer2neo(ref), ctx.neoMe, ctx.myParams, ctx.schema)| Pointer ref <- refs]);
+
+}
+
+void compileRefBindingMany(
+  <mongodb(), str dbName>, <neo4j(), str other>, str from, str fromRole,
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>,
+  list[Pointer] refs, InsertContext ctx
+) {
+  // TODO
+  // from mongo 
+  ctx.updateMongoInsert(DBObject(DBObject obj) {
+    obj.props += [ <fromRole, array([ pointer2mongo(ref) | Pointer ref <- refs ]) > ];
+    return obj;
+  });
+  
+  ctx.addSteps([*neoReplaceEnd(other, to, from, toRole, pointer2neo(ref), ctx.neoMe, ctx.myParams, ctx.schema)| Pointer ref <- refs]);
+}
+
+void compileRefBindingMany(
+  <neo4j(), str _>, <neo4j(), _>, str from, str fromRole, 
+  Rel r,
+  list[Pointer] ref, InsertContext ctx
+) {
+  throw "Relations between two Neo4J edges are not possible";
 }
 
 DBObject obj2dbObj((Expr)`<EId e> {<{KeyVal ","}* kvs>}`)
