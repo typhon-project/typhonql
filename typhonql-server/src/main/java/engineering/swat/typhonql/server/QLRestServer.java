@@ -19,6 +19,7 @@ package engineering.swat.typhonql.server;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -67,6 +68,7 @@ import engineering.swat.typhonql.server.crud.EntityDeltaFields;
 import engineering.swat.typhonql.server.crud.EntityDeltaFieldsDeserializer;
 import engineering.swat.typhonql.server.crud.EntityFields;
 import engineering.swat.typhonql.server.crud.EntityFieldsDeserializer;
+import io.usethesource.vallang.type.Type;
 import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.JsonSerializableResult;
@@ -157,7 +159,18 @@ public class QLRestServer {
 	}
 
 	private static final byte[] RESULT_OK_MESSAGE = "{\"result\":\"ok\"}".getBytes(StandardCharsets.UTF_8);
-	private static JsonSerializableResult RESULT_OK = t -> t.write(RESULT_OK_MESSAGE);
+	private static JsonSerializableResult RESULT_OK = new JsonSerializableResult() {
+		
+		@Override
+		public Type getType() {
+			return null;
+		}
+		
+		@Override
+		public void serializeJSON(OutputStream target) throws IOException {
+			target.write(RESULT_OK_MESSAGE);
+		}
+	};
 
 	public static class RestArguments {
 		// should always be there
@@ -257,7 +270,7 @@ public class QLRestServer {
 		return RESULT_OK;
 	}
 
-	private static ResultTable handleNewQuery(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
+	private static JsonSerializableResult handleNewQuery(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
 			throws IOException {
 		if (isEmpty(args.query)) {
 			throw new IOException("Missing query parameter in post body");
@@ -266,7 +279,7 @@ public class QLRestServer {
 		return engine.executeQuery(args.xmi, args.databaseInfo, args.query);
 	}
 
-	private static CommandResult handleCommand(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
+	private static JsonSerializableResult handleCommand(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
 			throws IOException {
 		if (isEmpty(args.command)) {
 			throw new IOException("Missing command in post body");
@@ -286,17 +299,25 @@ public class QLRestServer {
 		}
 		CommandResult[] result = engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.command,
 				args.parameterNames, args.parameterTypes, args.boundRows);
-		return target -> {
-			target.write('[');
-			boolean first = true;
-			for (CommandResult r1 : result) {
-				if (!first) {
-					target.write(',');
-				}
-				r1.serializeJSON(target);
-				first = false;
+		return new JsonSerializableResult() {
+			@Override
+			public Type getType() {
+				return null;
 			}
-			target.write(']');
+
+			@Override
+			public void serializeJSON(OutputStream target) throws IOException {
+				target.write('[');
+				boolean first = true;
+				for (CommandResult r1 : result) {
+					if (!first) {
+						target.write(',');
+					}
+					r1.serializeJSON(target);
+					first = false;
+				}
+				target.write(']');
+			}
 		};
 	}
 
