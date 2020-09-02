@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.env.ModuleEnvironment;
@@ -40,6 +41,7 @@ import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 
+import com.datastax.oss.protocol.internal.response.result.ColumnSpec;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -384,7 +386,8 @@ public class TyphonSession implements Operations {
 			TyphonSessionState state, Map<String, UUID> uuids, IEvaluatorContext ctx, FunctionType javaCall) {
 		return makeFunction(ctx, state, javaCall, args -> {
 			List<Path> paths = compilePaths((IList)args[2]);
-			JavaOperation.compileAndAggregate(store, state, script, updates, uuids, ((IString)args[0]).getValue(), ((IString)args[1]).getValue(), paths);
+			List<String> columnNames = ((IList)args[3]).stream().map(v -> ((IString)v).getValue()).collect(Collectors.toList());
+			JavaOperation.compileAndAggregate(store, state, script, updates, uuids, ((IString)args[0]).getValue(), ((IString)args[1]).getValue(), paths, columnNames);
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}

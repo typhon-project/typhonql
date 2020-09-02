@@ -28,7 +28,7 @@ alias Session = tuple[
 	ResultTable () getResult,
 	value () getJavaResult,
 	void (list[Path path] paths) readAndStore,
-   	void (str className, str classContents, list[Path path] paths) javaReadAndStore, 
+   	void (str className, str classContents, list[Path path] paths, list[str] finalColumnNames) javaReadAndStore, 
 	void () finish,
 	void () done,
 	str (str) newId,

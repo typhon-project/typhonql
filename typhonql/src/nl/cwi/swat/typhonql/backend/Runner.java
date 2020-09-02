@@ -53,8 +53,7 @@ public class Runner {
 	
 	private static final ExecutorService WORKERS = Executors.newCachedThreadPool();
 	
-	public static StreamingResultTable computeResultStream(List<Consumer<List<Record>>> script, List<Path> paths, BiFunction<List<Field>, Stream<Record>,  Stream<Object[]>> applyOperations) {
-		List<String> columnNames = buildColumnNames(paths);
+	public static StreamingResultTable computeResultStream(List<Consumer<List<Record>>> script, List<Path> paths, List<String> columnNames, BiFunction<List<Field>, Stream<Record>,  Stream<Object[]>> applyOperations) {
         List<Field> fields = paths.stream().map(p -> toField(p)).collect(Collectors.toList());
 		return new StreamingResultTable(columnNames, applyOperations.apply(fields, StreamSupport.stream(() -> {
 			BlockingDeque<Record> incomingRecords = new LinkedBlockingDeque<>(); 

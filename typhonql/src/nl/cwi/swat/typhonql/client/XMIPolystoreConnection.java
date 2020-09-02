@@ -393,32 +393,4 @@ public class XMIPolystoreConnection {
 		// TODO fix this workaround
 		return new CommandResult[] { CommandResult.fromIValue(v) };
 	}
-	
-	public static void main(String[] args) throws IOException, URISyntaxException {
-
-//		public DatabaseInfo(String host, int port, String dbName, String dbms, String user,
-//				String password) {
-//			
-//		}
-		DatabaseInfo[] infos = new DatabaseInfo[] {
-				new DatabaseInfo("localhost", 27017, "Reviews","mongodb",  "",
-						"admin", "admin"),
-				new DatabaseInfo("localhost", 3306, "Inventory", "mariadb", "",
-						"root", "example") };
-		
-		if (args == null || args.length != 1 && args[0] == null) {
-			System.out.println("Provide XMI file name");
-			System.exit(-1);
-		}
-			
-		String fileName = args[0];
-		
-		String xmiString = String.join("\n", Files.readAllLines(Paths.get(new URI(fileName))));
-
-		XMIPolystoreConnection conn = new XMIPolystoreConnection();
-		ResultTable iv = conn.executeQuery(xmiString, Arrays.asList(infos), "from Product p select p");
-		System.out.println(iv);
-
-	}
-
 }
