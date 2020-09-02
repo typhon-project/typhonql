@@ -85,7 +85,7 @@ alias MongoOperations = tuple[
     void (str dbName, str coll, str keys) createIndex,
 	void (str dbName, str coll, str newName) renameCollection,
 	void (str dbName, str coll) dropCollection,
-	void (str dbName, str coll) dropDatabase
+	void (str dbName) dropDatabase
 ];
 
 data Connection

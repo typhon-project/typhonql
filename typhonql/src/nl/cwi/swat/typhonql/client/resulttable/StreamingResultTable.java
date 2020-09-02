@@ -7,7 +7,6 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import io.usethesource.vallang.IExternalValue;
 import io.usethesource.vallang.type.Type;
 import nl.cwi.swat.typhonql.client.JsonSerializableResult;
 
