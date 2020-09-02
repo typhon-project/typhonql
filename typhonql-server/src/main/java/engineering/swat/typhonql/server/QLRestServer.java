@@ -172,15 +172,25 @@ public class QLRestServer {
 		public String[][] boundRows;
 	    @JsonDeserialize(using = Base64Deserializer.class)
 		public Map<String, InputStream> blobs;
+	    
+	    private RestArguments() {}
 
 		public static RestArguments parse(HttpServletRequest r) throws IOException {
-			return parse(r.getReader());
+			return parse(r.getReader(), r.getHeader("QL-XMI"), r.getHeader("QL-DatabaseInfo"));
 		}
 
-		public static RestArguments parse(Reader r) throws IOException {
+		public static RestArguments parse(Reader r, String xmi, String databaseInfo) throws IOException {
 			try {
-				RestArguments result = mapper.readValue(r, new TypeReference<RestArguments>() {
-				});
+				RestArguments result;
+				if (r != null) {
+                    result = mapper.readValue(r, new TypeReference<RestArguments>() {
+                    });
+				}
+				else {
+					result = new RestArguments();
+				}
+				result.xmi = xmi;
+				result.databaseInfo = mapper.readValue(databaseInfo, new TypeReference<List<DatabaseInfo>>() {});
 				logger.trace("Received arguments: {}", result);
 				if (isEmpty(result.xmi)) {
 					throw new IOException("Missing xmi field");

@@ -47,7 +47,7 @@ public class ASTVisitorTests {
 			
 			@Override
 			public String visitExprRefLst(RefLst x) {
-				for (UUID obj : x.getRefs()) {
+				for (PlaceHolderOrUUID obj : x.getRefs()) {
 					return obj.getString();
 				}
 				return null;
