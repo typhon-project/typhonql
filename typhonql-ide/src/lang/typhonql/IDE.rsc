@@ -354,13 +354,13 @@ list[CompletionProposal] autoComplete(Tree input, CheckerMLSchema sc, str prefix
             result += sourceProposal("<base>.@id");
         }
         else if (/(Binding)`<EId entity> <VId var>` := input, "<var>" == base) {
-            for (f <- sc[entityType("<entity>")], startsWith(f, field)) {
+            for (f <- sc.fields[entityType("<entity>")], startsWith(f, field)) {
                 result += sourceProposal("<base>.<f>");
             }
         }
     }
     else if (prefix != "") {
-        for (tp <- sc, startsWith(tp.name, prefix)) {
+        for (tp <- sc.fields, startsWith(tp.name, prefix)) {
             result += sourceProposal(tp.name);
         }
     }
