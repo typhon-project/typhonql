@@ -164,7 +164,6 @@ public class QLRestServer {
 
 		// depends on the command which one is filled in or not
 		public String query;
-		public String command;
 		public String[] parameterNames;
 		public String[] parameterTypes;
 		public String[][] boundRows;
@@ -205,7 +204,6 @@ public class QLRestServer {
 		@Override
 		public String toString() {
 			return "{\n" + ((query != null && !query.isEmpty()) ? ("query: " + query + "\n") : "")
-					+ ((command != null && !command.isEmpty()) ? ("command: " + command + "\n") : "")
 					+ ((parameterNames != null && parameterNames.length > 0)
 							? ("parameterNames: " + Arrays.toString(parameterNames) + "\n")
 							: "")
@@ -241,11 +239,11 @@ public class QLRestServer {
 
 	private static JsonSerializableResult handleDDLCommand(XMIPolystoreConnection engine, RestArguments args,
 			HttpServletRequest r) throws IOException {
-		if (isEmpty(args.command)) {
-			throw new IOException("Missing command field in post body");
+		if (isEmpty(args.query)) {
+			throw new IOException("Missing query field in post body");
 		}
 		logger.trace("Running DDL command: {}", args);
-		engine.executeDDLUpdate(args.xmi, args.databaseInfo, args.command);
+		engine.executeDDLUpdate(args.xmi, args.databaseInfo, args.query);
 		return RESULT_OK;
 	}
 
@@ -266,11 +264,11 @@ public class QLRestServer {
 
 	private static JsonSerializableResult handleCommand(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
 			throws IOException {
-		if (isEmpty(args.command)) {
+		if (isEmpty(args.query)) {
 			throw new IOException("Missing command in post body");
 		}
 		logger.trace("Running command: {}", args);
-		String[] result = engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.command);
+		String[] result = engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.query);
 		return target -> {
 			mapper.writeValue(target, result);
 		};
@@ -285,7 +283,7 @@ public class QLRestServer {
 		if (args.parameterNames.length != args.parameterTypes.length) {
 			throw new IOException("Mismatch between length of parameter names and parameter types");
 		}
-		String[] result = engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.command,
+		String[] result = engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.query,
 				args.parameterNames, args.parameterTypes, args.boundRows);
 		return target -> {
 			mapper.writeValue(target, result);
