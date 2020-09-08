@@ -110,7 +110,11 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
     // first, find all id's of e things that need to be updated
     Request req = (Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ ws>`;
     // NB: no partitioning, compile locally.
-    addSteps(compileQuery(req, p, s));
+    initialParamKeys = {};
+    for ((Expr) `<PlaceHolder ph>` <- ws) {
+    	initialParamKeys += "<ph.name>";
+    }
+    addSteps(compileQuery(req, p, s, (mp:myParams[mp] | mp <-myParams, mp in initialParamKeys)));
     statIndex = size(theScript.steps);
   }
   
