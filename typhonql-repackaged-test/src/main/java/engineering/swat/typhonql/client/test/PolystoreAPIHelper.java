@@ -48,7 +48,7 @@ public class PolystoreAPIHelper {
 	}
 	
 	public static String readHttpModel(URI path, String user, String password) {
-		URI uri = buildUri(path, "/api/models/ml");
+		URI uri = buildUri(path, "/api/model/ml");
 		String json = doGet(uri, user, password);
 		BsonArray array = BsonArray.parse(json);
 		String contents = array.get(0).asDocument().getString("contents").getValue();
