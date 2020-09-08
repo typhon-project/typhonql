@@ -87,7 +87,7 @@ str neopp(nNamed(NeoExpr e, str as)) = "<neopp(e)> as <q(as)>";
 str neopp(nVariable(name)) = name;
 str neopp(nLit(NeoValue val)) = neopp(val);
 str neopp(nMapLit(map[str, NeoExpr] exprs)) = "{ <intercalate(", ", ["<q(k)> : <neopp(exprs[k])>"| k <- exprs])> }";
-str neopp(nPlaceholder(name = str name)) =  name == "" ? "?" : "$<name>";
+str neopp(nPlaceholder(name = str name)) = "$<name>";
 str neopp(nNot(NeoExpr arg)) = "not (<neopp(arg)>)";
 str neopp(nNeg(NeoExpr arg)) = "-(<neopp(arg)>)"; 
 str neopp(nPos(NeoExpr arg)) = "+(<neopp(arg)>)";
