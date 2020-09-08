@@ -37,7 +37,7 @@ syntax Expr
   | obj: Obj objValue // for use in insert and allow nesting of objects
   | custom: Custom customValue // for use in insert and allow nesting of custom data types
   //| lst: "[" {Obj ","}* entries "]" 
-  | refLst: "[" {UUID ","}* refs "]" // plus to not make amb with empy lst 
+  | refLst: "[" {PlaceHolderOrUUID ","}* refs "]" // plus to not make amb with empy lst 
   | null: "null"
   | pos: "+" Expr arg
   | neg: "-" Expr arg
@@ -61,12 +61,22 @@ syntax Expr
     | non-assoc gt: Expr lhs "\>" Expr rhs
     | non-assoc \in: Expr lhs "in" Expr rhs
     | non-assoc like: Expr lhs "like" Expr rhs
+    | non-assoc reaching: VId lhsI Reaching reaching VId rhsI
   )
   > left intersect: Expr lhs "&" Expr rhs
   > left and: Expr lhs "&&" Expr rhs
   > left or: Expr lhs "||" Expr rhs
   ;
   
+  
+syntax Reaching = reach: "-[" VId edge ReachingBound? bound "]-\>";
+
+syntax ReachingBound 
+	= lowerUpper: "," Expr lower ".." Expr upper
+	| lower: "," Expr lower ".."
+	| upper: "," ".." Expr upper
+	| exact: "," Expr bound
+	;
 
 // Entity Ids  
 lexical EId = Id entityName \ Primitives;
@@ -112,6 +122,8 @@ syntax KeyVal
   // needed for insert/update from workingset so that uuids can be used as identities
   | storedKey: "@id" ":" Expr value 
   ;
+
+lexical PlaceHolderOrUUID = PlaceHolder ph | UUID uuid;
 
 lexical PlaceHolder = "??" Id name;
 

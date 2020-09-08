@@ -57,12 +57,12 @@ alias PolystoreInstance =
 		void() closeSession,
 		ResultTable(Request req) runQuery,
 		ResultTable(Request req, Schema s) runQueryForSchema,
-		CommandResult(Request req) runUpdate,
-		CommandResult(Request req, map[str,str] blobMap) runUpdateWithBlobs,
-		CommandResult(Request req, Schema s) runUpdateForSchema,
-		CommandResult(Request req) runDDL,
-		CommandResult(Request req, Schema s) runDDLForSchema,
-		list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs)
+		list[str](Request req) runUpdate,
+		list[str](Request req, map[str,str] blobMap) runUpdateWithBlobs,
+		list[str](Request req, Schema s) runUpdateForSchema,
+		list[str](Request req) runDDL,
+		list[str](Request req, Schema s) runDDLForSchema,
+		list[str](Request req, list[str] columnNames, list[str] columnTypes, list[list[str]] vs)
 			runPreparedUpdate,
 		Schema() fetchSchema,
 		void() printSchema,
@@ -137,7 +137,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		ses.done();
 		return result;
 	};
-	CommandResult(Request req) myRunUpdate = CommandResult(Request req) {
+	list[str](Request req) myRunUpdate = list[str](Request req) {
         checkRequest(req);
 		ses = newSession(connections);
 		result = runUpdateInTest(req, sch, ses, log);
@@ -145,39 +145,39 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		return result;
 	};
 
-	myRunUpdateBlobs = CommandResult(Request req, map[str,str] blobMap) {
+	myRunUpdateBlobs = list[str](Request req, map[str,str] blobMap) {
         checkRequest(req);
 		ses = newSession(connections, blobMap = blobMap);
 		result = runUpdateInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
-	CommandResult(Request req, Schema s) myRunUpdateForSchema = CommandResult(Request req, Schema s) {
+	list[str](Request req, Schema s) myRunUpdateForSchema = list[str](Request req, Schema s) {
         checkRequest(req, schm = s);
 		ses = newSession(connections, log = log);
 		result = runUpdateInTest(req, s, ses, log);
 		ses.done();
 		return result;
 	};
-	CommandResult(Request req) myRunDDL = CommandResult(Request req) {
+	list[str](Request req) myRunDDL = list[str](Request req) {
         checkRequest(req);
 		ses = newSession(connections);
 		result = runDDLInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
-	CommandResult(Request req, Schema s) myRunDDLForSchema = CommandResult(Request req, Schema s) {
+	list[str](Request req, Schema s) myRunDDLForSchema = list[str](Request req, Schema s) {
         checkRequest(req);
 		ses = newSession(connections);
 		result = runDDLInTest(req, s, ses, log);
 		ses.done();
 		return result;
 	};
-	list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) 
-		myRunPreparedUpdate = list[CommandResult](Request req, list[str] columnNames, list[list[str]] vs) {
+	list[str](Request req, list[str] columnNames, list[str] columnTypes, list[list[str]] vs) 
+		myRunPreparedUpdate = list[str](Request req, list[str] columnNames, list[str] columnTypes, list[list[str]] vs) {
         checkRequest(req);
-	    ses = newSession(connections); 
-		result = runPreparedUpdateInTest(req, columnNames, vs, sch, ses, log);
+	    ses = newSessionWithArguments(connections, columnNames, columnTypes, vs); 
+		result = runUpdateInTest(req, sch, ses, log);
 		ses.done();
 		return result;
 	};
@@ -258,17 +258,13 @@ Schema fetchSchema(Conn c) {
 Schema fetchNonNormalizedModel(Conn c)
     = loadSchemaFromXMI(readHttpModel(|http://<c.host>:<c.port>|, c.user, c.password), normalize = false);
 
-CommandResult runDDLInTest(Request req, Schema s, Session session, Log log) {
+list[str] runDDLInTest(Request req, Schema s, Session session, Log log) {
 	runDDL(req, s, session, log = log);
 	return <-1, ()>;
 }
 
-CommandResult runUpdateInTest(Request req, Schema s, Session session, Log log) {
+list[str] runUpdateInTest(Request req, Schema s, Session session, Log log) {
 	return runUpdate(req, s, session, log = log);
-}
-
-list[CommandResult] runPreparedUpdateInTest(Request req, list[str] columnNames, list[list[str]] vs, Schema s, Session session, Log log) {
-	return runPrepared(req, columnNames, vs, s, session, log = log);
 }
 
 ResultTable runQueryInTest(Request req, Schema s, Session session, Log log) {

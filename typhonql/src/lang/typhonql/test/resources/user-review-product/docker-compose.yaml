@@ -46,9 +46,8 @@ services:
       - ./models/:/docker-entrypoint-initdb.d
   typhon-polystore-service:
     image: clms/typhon-polystore-api:latest
-    ports:
-      - target: 8080
-        published: 8080
+    ports: 
+      - "127.0.0.1:8080:8080"
     entrypoint:
       - wait-for-it
       - polystore-mongo:27017

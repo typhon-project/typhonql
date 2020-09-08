@@ -33,7 +33,9 @@
     <relations name="tags" type="//@entities.4" cardinality="zero_many"/>
     <relations name="inventory" type="//@entities.3" cardinality="zero_many" isContainment="true"/>
     <relations name="category" type="//@entities.2" cardinality="one"/>
-    <relations name="wish" type="//@entities.8" cardinality="one" opposite="//@entities.8/@relations.1" isContainment="true"/>
+    <relations name="wishes" type="//@entities.8" cardinality="zero_many" opposite="//@entities.8/@relations.1" isContainment="true"/>
+    <relations name="concordancesFrom" type="//@entities.7" cardinality="zero_many" opposite="//@entities.7/@relations.0" isContainment="true"/>
+    <relations name="concordancesTo" type="//@entities.7" cardinality="zero_many" opposite="//@entities.7/@relations.1" isContainment="true"/>
   </entities>
   <entities name="Category">
     <attributes xsi:type="typhonml:Attribute" name="id">
@@ -76,7 +78,7 @@
     </attributes>
     <relations name="biography" type="//@entities.6" opposite="//@entities.6/@relations.0" isContainment="true"/>
     <relations name="reviews" type="//@entities.0" cardinality="zero_many" opposite="//@entities.0/@relations.1"/>
-    <relations name="wish" type="//@entities.8" cardinality="one" opposite="//@entities.8/@relations.0" isContainment="true"/>
+    <relations name="wishes" type="//@entities.8" cardinality="zero_many" opposite="//@entities.8/@relations.0" isContainment="true"/>
   </entities>
   <entities name="Biography">
     <attributes xsi:type="typhonml:Attribute" name="content">

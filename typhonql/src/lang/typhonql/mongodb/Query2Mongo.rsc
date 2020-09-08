@@ -54,7 +54,7 @@ tuple[map[str, CollMethod], Bindings] compile2mongo(r:(Request)`<Query q>`, Sche
 
 
 alias Ctx = tuple[
-    void(str,Param) addParam,
+    str(str,Param) getParam,
     Schema schema,
     Env env,
     set[str] dyns,
@@ -240,6 +240,17 @@ tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding
     params[x] = field;
   }
   
+  map[Param, str] placeholders = ();
+  str getParam(str prefix, Param field) {
+    if (field notin placeholders) {
+      str name = "<prefix>_<vars()>";
+      placeholders[field] = name;
+      addParam(name, field);
+    } 
+    return placeholders[field];
+  }
+  
+  
   /*
   // the root entity is the entity that corresponds to a collection
   // in Mongo; there can only be one, all other non dynamic bindings should
@@ -261,7 +272,7 @@ tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding
    
   
   Ctx ctx = <
-    addParam,
+    getParam,
     s,
     env,
     dyns,
@@ -413,8 +424,7 @@ tuple[str ent, str path, Expr other] split(Expr lhs, Expr rhs, Ctx ctx) {
 
 DBObject expr2obj(e:(Expr)`<VId x>.<{Id "."}+ fs>`, Ctx ctx) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
-    str token = "<x>_<fs>_<ctx.vars()>";
-    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "<fs>"));
+    str token = ctx.getParam("<x>_<fs>", field(p.name, "<x>", ctx.env["<x>"], "<fs>"));
     return placeholder(name=token);
   }
   throw "Only dynamic parameters can be used as expressions in query docs, not <e>";
@@ -425,8 +435,7 @@ DBObject expr2obj(e:(Expr)`<VId x>`, Ctx ctx)
 
 DBObject expr2obj(e:(Expr)`<VId x>.@id`, Ctx ctx) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
-    str token = "<x>_@id_<ctx.vars()>";
-    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "@id"));
+    str token = ctx.getParam("<x>_@id", field(p.name, "<x>", ctx.env["<x>"], "@id"));
     return placeholder(name=token);
   }
   throw "Only dynamic parameters can be used as expressions in query docs, not <e>";

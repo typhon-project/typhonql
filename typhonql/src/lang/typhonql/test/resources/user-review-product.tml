@@ -25,7 +25,9 @@ entity Product {
 	tags -> Tag[0..*]
 	inventory :-> Item[0..*]
 	category -> Category[1]
-	wish :-> Wish."Wish.product"[1]
+	wishes :-> Wish."Wish.product"[0..*]
+	concordancesFrom :-> Concordance."Concordance.source"[0..*]
+	concordancesTo :-> Concordance."Concordance.target"[0..*]
 }
 entity Category {
 	id: string[32]
@@ -57,7 +59,7 @@ entity User {
 	avatarURL: string[256]
 	biography :-> Biography."Biography.user"[0..1]
 	reviews -> Review."Review.user"[0..*]
-	wish :-> Wish."Wish.user"[1]
+	wishes :-> Wish."Wish.user"[0..*]
 }
 entity Biography {
 	content : string[256]

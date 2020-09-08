@@ -79,15 +79,23 @@ EntityModels schema2entityModels(Schema s)
   = { <e, { <a, t> | <e, str a, str t> <- s.attrs }
           , { <r, e2> | <e, _, str r, _, _, str e2, _> <- s.rels } >
            | str e <- entities(s) };
-  
+           
+list[str] runScript(Script scr, Session session, Schema schema) {
+	if (!session.hasAnyExternalArguments()) {
+		return [runScriptAux(scr, session, schema)];
+	}
+	else {
+		rs = [];
+		while (session.hasMoreExternalArguments()) {
+			rs += runScriptAux(scr, session, schema);
+			session.nextExternalArguments();
+		}
+		return rs;
+	}
+}  
+         
 
-str runScriptAndClose(Script scr, Session session, Schema schema) {
-	str result = runScript(scr, session, schema);
-	session.done();
-	return result;
-}
-  
-str runScript(Script scr, Session session, Schema schema) {
+str runScriptAux(Script scr, Session session, Schema schema) {
   str result = "";
   for (Step s <- scr.steps) {
     switch (s) {
