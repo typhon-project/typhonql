@@ -83,7 +83,7 @@ bool qlSubType(voidType(), _) = true;
 default bool qlSubType(AType a, AType b) = false;
 
 alias CheckerMLSchema = tuple[map[AType entity, map[str field, tuple[AType typ, Cardinality card] tp] fields] fields, rel[AType from, AType to, AType via] graphEdges];
-data TypePalConfig(CheckerMLSchema mlSchema = ());
+data TypePalConfig(CheckerMLSchema mlSchema = <(), {}>);
 
 /***********
  *  Roles  *
