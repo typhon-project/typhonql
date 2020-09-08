@@ -38,7 +38,16 @@ entity Item {
 }
 entity Tag {
 	name: string[64]
+	synonymsFrom :-> Synonym."Synonym.source"[0..*]
+	synonymsTo :-> Synonym."Synonym.target"[0..*]
 }
+
+entity Synonym {
+	weight: int
+	source -> Tag[1]
+	target -> Tag[1]
+}
+
 entity User {
 	name : string[256]
 	address: string[256]
@@ -103,6 +112,10 @@ graphdb MoreStuff {
 		edge Concordance {
 			from source
 			to target
-		}	
+		},
+		edge Synonym {
+			from source
+			to target
+		}		
 	}
 }
