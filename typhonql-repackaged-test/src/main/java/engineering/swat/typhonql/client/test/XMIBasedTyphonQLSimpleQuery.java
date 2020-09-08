@@ -21,7 +21,6 @@ import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 
-import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
