@@ -67,7 +67,7 @@ alias Ctx
       Schema schema,
       Env env,
       set[str] dyns,
-      int(str) vars,
+      int() vars,
       Place place
    ];
 

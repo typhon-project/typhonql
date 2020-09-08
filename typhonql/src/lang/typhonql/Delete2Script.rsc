@@ -283,7 +283,7 @@ void deleteKids(
   ctx.addSteps(cascadeViaInverseNeo(other, to, toRole, from, ctx.neoMe, ctx.myParams, ctx.schema));
   
   Request removeEdge = [Request] "delete <to> edge where edge.<toRole> == <ctx.me>";
-  Script scr = delete2script(removeEdge, ctx.schema);
+  Script scr = delete2script(removeEdge, ctx.schema, initialParamerers = ctx.myParams);
   ctx.addSteps(scr.steps);
   
   //deleteObject(<neo4j(), other>, ctx);
@@ -318,7 +318,7 @@ void deleteKids(
   DeleteContext ctx
 ) {
   Request removeEdge = [Request] "delete <to> edge where edge.<toRole> == <ctx.me>";
-  Script scr = delete2script(removeEdge, ctx.schema);
+  Script scr = delete2script(removeEdge, ctx.schema, initialParamerers = ctx.nextStepParams);
   ctx.addSteps(scr.steps);
   //deleteObject(<neo4j(), other>, ctx);
   //deleteReferenceInNeo(to, ctx.neoMe, ctx.myParams, ctx.schema);
