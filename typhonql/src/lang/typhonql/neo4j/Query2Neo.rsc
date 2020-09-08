@@ -62,7 +62,7 @@ alias Ctx
       void(str, str) addTarget,
       //void(str, As, NeoExpr) addLeftOuterJoin,
       void(NeoExpr) addResult,
-      void(str, Param) addParam,
+      str(str, Param) getParam,
       Schema schema,
       Env env,
       set[str] dyns,
@@ -130,6 +130,23 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
   }
   
   int _vars = -1;
+  
+  map[tuple[str, str], int] usedVars = (); 
+  
+  /*int vars(str name) {
+  	return vars(name, "");
+  }
+  
+  int vars(str name, str field) {
+    if (<name, field> in usedVars)
+  		return usedVars[<name, field>];
+  	else {
+    	_vars += 1;
+    	usedVars += (<name, field> : _vars);
+    	return _vars;
+    }
+  }*/
+
   int vars() {
     return _vars += 1;
   }
@@ -137,6 +154,18 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
   Bindings params = ();
   void addParam(str x, Param field) {
     params[x] = field;
+  }
+  
+  map[Param, str] placeholders = ();
+  
+  str getParam(str prefix, Param field) {
+   
+    if (field notin placeholders) {
+      str name = "<prefix>_<vars()>";
+      placeholders[field] = name;
+      addParam(name, field);
+    } 
+    return placeholders[field];
   }
 
   Env env = (); 
@@ -161,7 +190,7 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
      addSource,
      addTarget,
      addResult,
-     addParam,
+     getParam,
      s,
      env,
      dyns,
@@ -252,9 +281,8 @@ NeoExpr expr2neo(e:(Expr)`<VId x>`, Ctx ctx, Log log = noLog)
 
 NeoExpr expr2neo(e:(Expr)`<VId x>.@id`, Ctx ctx, Log log = noLog) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
-    str token = "<x>_<ctx.vars()>";
-    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "@id"));
-    return nPlaceholder(name=token);
+    str token = ctx.getParam("<x>", field(p.name, "<x>", ctx.env["<x>"], "@id"));
+    return NeoExpr::nPlaceholder(name=token);
   }
   str entity = ctx.env["<x>"];
   return nProperty("<x>", neoTyphonId(entity));
@@ -267,9 +295,8 @@ NeoExpr expr2neo(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
   str role = "<f>"; 
 
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
-    str token = "<x>_<f>_<ctx.vars()>";
-    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "<f>"));
-    return nPlaceholder(name=token);
+    str token = ctx.getParam("<x>_<f>", field(p.name, "<x>", ctx.env["<x>"], "<f>"));
+    return NeoExpr::nPlaceholder(name=token);
   }
 
   // TODO translate to neo
@@ -337,7 +364,7 @@ bool isTo(str entity, str relName, Place p:<neo4j(), dbName>, Schema s) {
 	return  <dbName, graphSpec({ _*, <entity, _, relName> , _*})> <- s.pragmas;
 }
 
-NeoExpr expr2neo((Expr)`?`, Ctx ctx, Log log = noLog) = nPlaceholder();
+NeoExpr expr2neo((Expr)`<PlaceHolder ph>`, Ctx ctx, Log log = noLog) = NeoExpr::nPlaceholder(name = "<ph.name>");
 
 NeoExpr expr2neo((Expr)`<Int i>`, Ctx ctx, Log log = noLog) = nLit(nInteger(toInt("<i>")));
 

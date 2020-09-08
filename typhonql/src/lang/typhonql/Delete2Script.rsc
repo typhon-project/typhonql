@@ -52,11 +52,15 @@ import lang::typhonql::neo4j::NeoUtil;
 
 import IO;
 import List;
+import Map;
+import Set;
 import util::Maybe;
 
 alias DeleteContext = tuple[
   str entity,
   Bindings myParams,
+  Bindings nextStepParams,
+  Expr me,
   SQLExpr sqlMe,
   DBObject mongoMe,
   CQLExpr cqlMe,
@@ -65,7 +69,8 @@ alias DeleteContext = tuple[
   Schema schema
 ];
 
-Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, Schema s) {
+Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, Schema s,
+	Bindings initialParams = (), bool secondTime = false) {
   //s.rels = symmetricReduction(s.rels);
   
   str ent = "<e>";
@@ -73,11 +78,13 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
 
   Param toBeDeleted = field(p.name, "<x>", ent, "@id");
   str myId = newParam();
+  Expr me = [Expr] "??<myId>";
   SQLExpr sqlMe = lit(Value::placeholder(name=myId));
   DBObject mongoMe = DBObject::placeholder(name=myId);
   CQLExpr cqlMe = cBindMarker(name=myId);
   NeoExpr neoMe = NeoExpr::nPlaceholder(name=myId);
-  Bindings myParams = ( myId: toBeDeleted );
+  Bindings myParams = isEmpty(initialParams)?( myId: toBeDeleted ):initialParams;
+  Bindings nextStepParams = ();
   Script theScript = script([]);
   
   void addSteps(list[Step] steps) {
@@ -93,7 +100,10 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   else {
     // first, find all id's of e things that need to be updated
     Request req = (Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ ws>`;
-    addSteps(compileQuery(req, p, s));
+    querySteps = compileQuery(req, p, s, initialParams = initialParams);
+    addSteps(querySteps);
+    nextStepParams = (myId: field(p.name, "<x>", "<e>", "@id"));
+    myParams = () + nextStepParams;
   }
   
   
@@ -101,6 +111,8 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   DeleteContext ctx = <
     ent,
     myParams,
+    nextStepParams,
+    me,
     sqlMe,
     mongoMe,
     cqlMe,
@@ -117,13 +129,12 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   for (Rel r:<str ref, _, _, _, _, ent, _> <- s.rels) {
      // NB: r is not in the direction of p and placeOf(ref, s)
      //println("Deleting inbound: <ref> -\> <ent>");
-     
      breakInboundPointers(p, placeOf(ref, s), r, ctx);
   }
 
   for (Rel r:<ent, _, _, _, _, str to, false> <- s.rels) {
      //println("Outbound: <ent> -\> <to>");
-     breakOutboundPointers(p, placeOf(to, s), r, ctx);
+     breakOutboundPointers(p, placeOf(to, s), r, ctx, secondTime = secondTime);
   }
 
   
@@ -245,6 +256,18 @@ void deleteKids(
   // cascadeViaJunction deletes from "to" and from the (inverse) junction table modeling
   // this containment relation
   ctx.addSteps(cascadeViaJunction(other, to, toRole, from, fromRole, ctx.sqlMe, ctx.myParams));  
+}
+
+tuple[str,str] getFromTo(str entity, Schema s) {
+	if  (<dbName, graphSpec({ _*, <entity, from, to> , _*})> <- s.pragmas)
+		return <from, to>;
+	else
+		throw "Not from/to relations declared"; 
+}
+
+str getOppositeEnd(str entity, str r, Schema s) {
+	<from, to> = getFromTo(entity, s);
+	return (from==r)?to:from;
 }
 
 void deleteKids(
@@ -411,7 +434,7 @@ void breakInboundPointers(
  void breakOutboundPointers(
   del:<sql(), str dbName>, <sql(), dbName>,
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
-  DeleteContext ctx
+  DeleteContext ctx, bool secondTime = false
 ) {
   // automatic because of foreign keys from junction table to from
 }
@@ -420,7 +443,7 @@ void breakInboundPointers(
  void breakOutboundPointers(
   del:<sql(), str dbName>, <sql(), str other:!dbName>,
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
-  DeleteContext ctx
+  DeleteContext ctx, bool secondTime = false
 ) {
   // automatic because of foreign keys from junction table to from on this db
   
@@ -432,7 +455,7 @@ void breakInboundPointers(
 void breakOutboundPointers(
   del:<sql(), str dbName>, <mongodb(), str other>,
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
-  DeleteContext ctx
+  DeleteContext ctx, bool secondTime = false
 ) {
   // automatic because of foreign keys from junction table to from on this db
   
@@ -444,7 +467,7 @@ void breakOutboundPointers(
 void breakOutboundPointers(
   del:<mongodb(), str dbName>, <mongodb(), dbName>,
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
-  DeleteContext ctx
+  DeleteContext ctx, bool secondTime = false
 ) {
   // automatic because of deletion of object in the from db
   
@@ -455,7 +478,7 @@ void breakOutboundPointers(
 void breakOutboundPointers(
   del:<mongodb(), str dbName>, <mongodb(), str other:!dbName>,
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
-  DeleteContext ctx
+  DeleteContext ctx, bool secondTime = false
 ) {
   // automatic because of deletion of object in the from db
   
@@ -466,7 +489,7 @@ void breakOutboundPointers(
 void breakOutboundPointers(
   del:<mongodb(), str dbName>, <sql(), str other>,
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
-  DeleteContext ctx
+  DeleteContext ctx, bool secondTime = false
 ) {
   // automatic because of deletion of object in the from db
   
@@ -477,11 +500,12 @@ void breakOutboundPointers(
 void breakOutboundPointers(
   del:<neo4j(), str dbName>, <sql(), str other>,
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, false>, 
-  DeleteContext ctx
+  DeleteContext ctx, bool secondTime = false
 ) {
   // automatic because of deletion of object in the from db
   
   // but not for the inverse on sql
+  //if (!secondTime)
   ctx.addSteps(removeFromJunction(other, from, fromRole, to, toRole, ctx.sqlMe, ctx.myParams));
 } 
 
