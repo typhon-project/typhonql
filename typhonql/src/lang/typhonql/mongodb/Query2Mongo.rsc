@@ -432,8 +432,7 @@ DBObject expr2obj(e:(Expr)`<VId x>.@id`, Ctx ctx) {
   throw "Only dynamic parameters can be used as expressions in query docs, not <e>";
 }
 
-DBObject expr2obj((Expr)`?`, Ctx _) = placeholder();
-
+DBObject expr2obj((Expr)`<PlaceHolder ph>`, Ctx _) = DBObject::placeholder(name = "<ph.name>");
 DBObject expr2obj((Expr)`<UUID id>`, Ctx _) = mUuid("<id.part>");
 
 DBObject expr2obj((Expr)`<DateTime d>`, Ctx _) 

@@ -218,6 +218,8 @@ CQLExpr expr2cql((Expr)`<JustDate d>`)
 
 CQLExpr expr2cql((Expr)`<UUID u>`) = cTerm(cUUID("<u>"[1..]));
 
+CQLExpr expr2cql((Expr)`<PlaceHolder ph>`) = cBindMarker(name = "<ph.name>");
+
 CQLExpr expr2cql((Expr)`true`) = cTerm(cBoolean(true));
 
 CQLExpr expr2cql((Expr)`false`) = cTerm(cBoolean(false));
