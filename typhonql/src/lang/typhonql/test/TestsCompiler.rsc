@@ -129,6 +129,11 @@ void setup(PolystoreInstance p, bool doTest) {
 	p.runUpdate((Request) `insert Tag { @id: #kitchen, name: "kitchen" }`);
 	p.runUpdate((Request) `insert Tag { @id: #music, name: "music" }`);
 	p.runUpdate((Request) `insert Tag { @id: #social, name: "social" }`);
+	
+	p.runUpdate((Request) `insert Tag { @id: #friendly, name: "friendly" }`);
+	
+	p.runUpdate((Request) `insert Synonym { @id: #syn1, source: #social, target: #friendly, weight: 10 }`);
+	
 
     if (doTest) {
       rs = p.runQuery((Request)`from Tag t select t.@id, t.name`);
@@ -136,7 +141,8 @@ void setup(PolystoreInstance p, bool doTest) {
         [U("fun"), "fun"],
         [U("kitchen"), "kitchen"],
         [U("music"), "music"],
-        [U("social"), "social"]
+        [U("social"), "social"],
+        [U("friendly"), "friendly"]
       ]>);
     }
 
@@ -354,6 +360,23 @@ void testDeleteAllSQLBasic(PolystoreInstance p) {
   p.assertResultEquals("deleteAllSQLBasic", rs, <["t.@id"], []>);
 }
 
+void testDeleteAllWithCascadeSimple(PolystoreInstance p) {
+  p.runUpdate((Request)`delete Tag t where t.name == "friendly"`);
+  rs = p.runQuery((Request)`from Tag t select t.@id`);
+  p.assertResultEquals("testDeleteAllWithCascadeSimple", rs, <["t.@id"], 
+		[[U("fun")],
+        [U("kitchen")],
+        [U("music")],
+        [U("social")]]>);
+  rs = p.runQuery((Request)`from Synonym s select s.@id`);
+  p.assertResultEquals("deleting a synonym by cascade on tag deletes it", rs, <["s.@id"], []>);
+  rs = p.runQuery((Request)`from Tag t select t.synonymsFrom where t.@id == #social`);
+  p.assertResultEquals("deleting a synonym by cascade on tag deletes the synonyms of a tag 1", rs, <["t.synonymsFrom"], [[{}]]>);
+  rs = p.runQuery((Request)`from Tag t select t.synonymsTo where t.@id == #friendly`);
+  p.assertResultEquals("deleting a synonym by cascade on tag deletes the synonyms of a tag 2", rs, <["t.synonymsTo"], []>);
+  
+}
+
 void testDeleteAllWithCascade(PolystoreInstance p) {
   p.runUpdate((Request)`delete Product p where p.name == "Radio"`);
 
@@ -373,7 +396,7 @@ void testDeleteAllWithCascade(PolystoreInstance p) {
 
   rs = p.runQuery((Request)`from Tag t select t.@id`);
   p.assertResultEquals("deleting products does not delete tags", rs, <["t.@id"], 
-    [[U("fun")], [U("kitchen")], [U("music")], [U("social")]]>);
+    [[U("fun")], [U("kitchen")], [U("music")], [U("social")], [U("friendly")]]>);
 }
 
 
@@ -462,6 +485,7 @@ void testDeleteSQLNeoCascade(PolystoreInstance p) {
   p.assertResultEquals("testDeleteSQLNeoCascadeFromEnd", rs, <["u.@id", "u.wishes"], [[U("pablo"),  U("wish2")]]>);
     
 }
+
 
 void testUpdateSingleRefSQLNeo(PolystoreInstance p) {
   p.runUpdate((Request)`update Wish w where w.@id == #wish1 set {product: #radio}`);
@@ -617,6 +641,24 @@ void testGISonSQL(PolystoreInstance p) {
 
   rs = p.runQuery((Request)`from Product p select p.name where #point(2.0 3.0) & p.availabilityRegion`);
   p.assertResultEquals("testGISonSQLIntersectLiteral", rs, <["p.name"], [["TV"]]>);
+  
+
+}
+
+void testGISonNeo(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from Concordance c select c.@id where #point(2.0 3.0) in c.availabilityRegion`);
+  p.assertResultEquals("testGISonNeoLiteralPoint", rs, <["c.@id"], [[U("TV")]]>);
+  rs = p.runQuery((Request)`from Concordance c select c.@id where #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0)) in c.availabilityRegion`);
+  p.assertResultEquals("testGISonNeoLiteralPolygon", rs, <["c.@id"], [[U("TV")]]>);
+  rs = p.runQuery((Request)`from Concordance c select c.@id where c.location in #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0))`);
+  p.assertResultEquals("testGISonNeoLiteralPolygonRhs", rs, <["c.@id"], [[U("Pablo")]]>);
+
+  rs = p.runQuery((Request)`Concordance c select c.@id where c.location in c.availabilityRegion`);
+  p.assertResultEquals("testGISonNeoJoin", rs, <["c.@id"], [[U("Pablo")]]>);
+
+
+  rs = p.runQuery((Request)`from Concordance c select c.@id where #point(2.0 3.0) & c.availabilityRegion`);
+  p.assertResultEquals("testGISonNeoIntersectLiteral", rs, <["c.@id"], [["TV"]]>);
   
 
 }
