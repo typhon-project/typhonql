@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -70,7 +71,7 @@ public class MariaDBIterator implements ResultIterator {
 		columnMapperFuncs.put(Types.BINARY, (r, i) -> MakeUUID.uuidFromBytes(r.getBytes(i)));
 		columnMapperFuncs.put(ColumnType.LONGBLOB.getSqlType(), (r, i) -> blobOrGeo(r.getBinaryStream(i)));
 		columnMapperFuncs.put(ColumnType.DATE.getSqlType(), (r, i) -> r.getObject(i, LocalDate.class));
-		columnMapperFuncs.put(ColumnType.DATETIME.getSqlType(), (r, i) -> r.getObject(i, LocalDateTime.class));
+		columnMapperFuncs.put(ColumnType.DATETIME.getSqlType(), (r, i) -> r.getObject(i, LocalDateTime.class).atOffset(ZoneOffset.UTC));
 		columnMapperFuncs.put(ColumnType.DOUBLE.getSqlType(), (r, i) -> r.getDouble(i));
 		columnMapperFuncs.put(ColumnType.FLOAT.getSqlType(), (r, i) -> r.getDouble(i));
 		columnMapperFuncs.put(ColumnType.GEOMETRY.getSqlType(), (r, i) -> blobOrGeo(r.getBinaryStream(i)));

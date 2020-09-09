@@ -114,7 +114,7 @@ public class MongoDBIterator implements ResultIterator {
 			throw new RuntimeException("Unsupported document in result. Doc:" + geo);
 		}
 		else if (fromDB instanceof Date) {
-			return ((Date)fromDB).toInstant().atZone(ZoneId.of("UTC")).toLocalDateTime();
+			return ((Date)fromDB).toInstant().atZone(ZoneId.of("UTC")).toOffsetDateTime();
 		}
 		else if (fromDB instanceof String) {
 			String strValue = (String)fromDB;
