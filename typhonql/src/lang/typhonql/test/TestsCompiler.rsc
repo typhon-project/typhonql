@@ -132,6 +132,7 @@ void setup(PolystoreInstance p, bool doTest) {
 	
 	p.runUpdate((Request) `insert Tag { @id: #friendly, name: "friendly" }`);
 	
+
 	p.runUpdate((Request) `insert Synonym { @id: #syn1, source: #social, target: #friendly, weight: 10 }`);
 	
 
@@ -371,9 +372,9 @@ void testDeleteAllWithCascadeSimple(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Synonym s select s.@id`);
   p.assertResultEquals("deleting a synonym by cascade on tag deletes it", rs, <["s.@id"], []>);
   rs = p.runQuery((Request)`from Tag t select t.synonymsFrom where t.@id == #social`);
-  p.assertResultEquals("deleting a synonym by cascade on tag deletes the synonyms of a tag 1", rs, <["t.synonymsFrom"], [[{}]]>);
+  p.assertResultEquals("deleting a synonym by cascade on tag deletes the synonyms of tag 1", rs, <["t.synonymsFrom"], [[{}]]>);
   rs = p.runQuery((Request)`from Tag t select t.synonymsTo where t.@id == #friendly`);
-  p.assertResultEquals("deleting a synonym by cascade on tag deletes the synonyms of a tag 2", rs, <["t.synonymsTo"], []>);
+  p.assertResultEquals("deleting a synonym by cascade on tag deletes the synonyms of tag 2", rs, <["t.synonymsTo"], []>);
   
 }
 
@@ -397,6 +398,14 @@ void testDeleteAllWithCascade(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Tag t select t.@id`);
   p.assertResultEquals("deleting products does not delete tags", rs, <["t.@id"], 
     [[U("fun")], [U("kitchen")], [U("music")], [U("social")], [U("friendly")]]>);
+}
+
+void testDeleteAllWithCascadeSimplified(PolystoreInstance p) {
+  p.runUpdate((Request)`delete Product p where p.name == "Radio"`);
+
+  rs = p.runQuery((Request)`from Review r select r.@id where r.product == #tv`);
+  p.assertResultEquals("deleting products deletes reviews", rs, <["r.@id"], []>);
+
 }
 
 
