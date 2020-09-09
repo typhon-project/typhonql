@@ -381,7 +381,7 @@ bool isTo(str entity, str relName, Place p:<neo4j(), dbName>, Schema s) {
 	return  <dbName, graphSpec({ _*, <entity, _, relName> , _*})> <- s.pragmas;
 }
 
-NeoExpr expr2neo((Expr)`?`, Ctx ctx, Log log = noLog) = nPlaceholder();
+NeoExpr expr2neo((Expr)`<PlaceHolder ph>`, Ctx ctx, Log log = noLog) = NeoExpr::nPlaceholder(name = "<ph.name>");
 
 NeoExpr expr2neo((Expr)`<Int i>`, Ctx ctx, Log log = noLog) = nLit(nInteger(toInt("<i>")));
 
