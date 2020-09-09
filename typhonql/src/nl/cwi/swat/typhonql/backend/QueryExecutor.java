@@ -16,15 +16,18 @@
 
 package nl.cwi.swat.typhonql.backend;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
 
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
@@ -36,25 +39,36 @@ public abstract class QueryExecutor {
 	private Map<Binding, String> inverseBindings;
 	private Map<String, UUID> uuids;
 	private List<Path> signature;
+	private final Supplier<String> toString;
 
-	public QueryExecutor(ResultStore store, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, Map<String, Binding> bindings, List<Path> signature) {
+	public QueryExecutor(ResultStore store, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, Map<String, Binding> bindings, List<Path> signature, Supplier<String> toString) {
 		this.store = store;
 		this.script = script;
 		this.bindings = bindings;
 		this.uuids = uuids;
 		this.signature = signature;
+		this.toString = toString;
 		this.inverseBindings = new HashMap<Binding, String>();
 		for (Entry<String, Binding> e : bindings.entrySet()) {
 			inverseBindings.put(e.getValue(), e.getKey());
 		}
 	}
 	
+	@Override
+	public String toString() {
+		return toString.get();
+	}
+	
 	public void executeSelect(String resultId) {
 		int nxt = script.size() + 1;
 	    script.add((List<Record> rows) -> {
+	    	log("Executing select: " + resultId + " row count: " + rows.size() + "\n");
+	    	log("Query: " + toString() + "\n");
 	    	if (rows.size() <= 1) {
                ResultIterator iter = executeSelect( rows.size() == 0 ? new HashMap<>(): bind(rows.get(0)));
+	    		log("result" + iter + "\n");
                storeResults(resultId, iter);
+	    		log("now executing: " + script.get(nxt) + "\n");
                processResults(script.get(nxt), rows, iter);
 	    	}
 	    	else {
@@ -67,6 +81,7 @@ public abstract class QueryExecutor {
                 storeResults(resultId, new AggregatedResultIterator(results));
 	    	}
 	    });
+		log("Added: " + toString() + "as: " + System.identityHashCode(script.get(nxt - 1)) + "\n");
 	}
 
 	private void processResults(Consumer<List<Record>> consumer, List<Record> rows, ResultIterator iter) {
@@ -100,6 +115,13 @@ public abstract class QueryExecutor {
 		}
 		else
 			return Arrays.asList(r);
+	}
+	
+	private static void log(String msg) {
+		try {
+			ThreadSafeImpulseConsole.INSTANCE.getWriter().append(msg);
+		} catch (IOException e) {
+		}
 	}
 
 	private Record horizontalAdd(Record row, Record r) {

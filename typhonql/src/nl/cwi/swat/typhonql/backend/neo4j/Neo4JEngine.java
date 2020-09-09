@@ -35,7 +35,7 @@ public class Neo4JEngine extends Engine {
 	}
 	
 	public void executeUpdate(String query, Map<String, Binding> bindings) {
-		new UpdateExecutor(store, updates, uuids, bindings) {
+		new UpdateExecutor(store, updates, uuids, bindings, () -> "Neo4j update: " + query) {
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
 				Map<String, Object> pars = toNeo4JObjects(values);
@@ -48,7 +48,7 @@ public class Neo4JEngine extends Engine {
 	}
 
 	public void executeMatch(String resultId, String query, Map<String, Binding> bindings, List<Path> signature) {
-		new QueryExecutor(store, script, uuids, bindings, signature) {
+		new QueryExecutor(store, script, uuids, bindings, signature, () -> "Neo4J match: " + query) {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				Map<String, Object> pars = toNeo4JObjects(values);

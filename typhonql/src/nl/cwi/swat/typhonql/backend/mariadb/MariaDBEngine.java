@@ -103,7 +103,7 @@ public class MariaDBEngine extends Engine {
 
 
 	public void executeSelect(String resultId, String query, Map<String, Binding> bindings, List<Path> signature) {
-		new QueryExecutor(store, script, uuids, bindings, signature) {
+		new QueryExecutor(store, script, uuids, bindings, signature, () -> "Maria query: " + query) {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				try {
@@ -118,7 +118,7 @@ public class MariaDBEngine extends Engine {
 
 
 	public void executeUpdate(String query, Map<String, Binding> bindings) {
-		new UpdateExecutor(store, updates, uuids, bindings) {
+		new UpdateExecutor(store, updates, uuids, bindings, () -> "Maria update: " + query) {
 
             @Override
             protected void performUpdate(Map<String, Object> values) {

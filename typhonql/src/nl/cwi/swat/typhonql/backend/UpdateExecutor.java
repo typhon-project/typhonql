@@ -16,10 +16,14 @@
 
 package nl.cwi.swat.typhonql.backend;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
+
+import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
 
 public abstract class UpdateExecutor {
 	
@@ -28,12 +32,19 @@ public abstract class UpdateExecutor {
 	private List<Runnable> updates;
 	private Map<String, Binding> bindings;
 	private Map<String, UUID> uuids;
+	private final Supplier<String> toString;
 	
-	public UpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, UUID> uuids, Map<String, Binding> bindings) {
+	public UpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, UUID> uuids, Map<String, Binding> bindings, Supplier<String> toString) {
 		this.store = store;
 		this.updates = updates;
 		this.bindings = bindings;
 		this.uuids = uuids;
+		this.toString = toString;
+	}
+	
+	@Override
+	public String toString() {
+		return toString.get();
 	}
 	
 	public void executeUpdate() {
@@ -42,11 +53,20 @@ public abstract class UpdateExecutor {
 	
 	private void executeUpdate(Map<String, Object> values) {
 		updates.add(() -> {  executeUpdateOperation(values); });
+		log("Added: " + toString() + "as: " + System.identityHashCode(updates.get(updates.size() - 1)) + "\n");
+	}
+
+	private static void log(String msg) {
+		try {
+			ThreadSafeImpulseConsole.INSTANCE.getWriter().append(msg);
+		} catch (IOException e) {
+		}
 	}
 
 	protected abstract void performUpdate(Map<String, Object> values);
 	
 	private void executeUpdateOperation(Map<String, Object> values) {
+		log("Executing: " + toString() + "\n");
 		if (values.size() == bindings.size()) {
 			if (store.hasExternalArguments()) {
 				values.putAll(store.getCurrentExternalArgumentsRow());

@@ -44,7 +44,7 @@ public class CassandraEngine extends Engine {
 	}
 
 	public void executeSelect(String resultId, String query, Map<String, Binding> bindings, List<Path> signature, Supplier<CqlSession> connection) {
-		new QueryExecutor(store, script, uuids, bindings, signature) {
+		new QueryExecutor(store, script, uuids, bindings, signature, () -> "Cassandra query: " + query) {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				return new CassandraIterator(connection.get().execute(compileQuery(query, values)));
@@ -55,7 +55,7 @@ public class CassandraEngine extends Engine {
 
 	
 	public void executeUpdate(String query, Map<String, Binding> bindings, Supplier<CqlSession> connection) {
-		new UpdateExecutor(store, updates, uuids, bindings) {
+		new UpdateExecutor(store, updates, uuids, bindings, () -> "Cassandra update: " + query) {
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
 				connection.get().execute(compileQuery(query, values));
