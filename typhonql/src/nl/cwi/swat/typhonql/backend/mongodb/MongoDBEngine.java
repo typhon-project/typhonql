@@ -72,9 +72,8 @@ public class MongoDBEngine extends Engine {
 		return gridBucket;
 	}
 
-	public MongoDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, UUID> uuids,
-			MongoDatabase db) {
-		super(store, script, updates, uuids);
+	public MongoDBEngine(ResultStore store, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, MongoDatabase db) {
+		super(store, script, uuids);
 		this.db = db;
 	}
 
@@ -84,7 +83,7 @@ public class MongoDBEngine extends Engine {
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				return new MongoDBIterator(buildFind(collectionName, query, values), db);
 			}
-		}.executeSelect(resultId);
+		}.scheduleSelect(resultId);
 	}
 
 	public void executeFindWithProjection(String resultId, String collectionName, String query, String projection,
@@ -94,7 +93,7 @@ public class MongoDBEngine extends Engine {
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				return new MongoDBIterator(buildFind(collectionName, query, values).projection(Document.parse(projection)), db);
 			}
-		}.executeSelect(resultId);
+		}.scheduleSelect(resultId);
 	}
 
 	private FindIterable<Document> buildFind(String collectionName, String query, Map<String, Object> values) {
@@ -181,7 +180,7 @@ public class MongoDBEngine extends Engine {
 	
 	private void scheduleUpdate(String collectionName, String doc, Map<String, Binding> bindings, BiConsumer<MongoCollection<Document>, Document> operation) {
 		log("Scheduling mongo update: " + doc + "\n");
-		new UpdateExecutor(store, updates, uuids, bindings, () -> "Mongo update" + doc) {
+		new UpdateExecutor(store, script, uuids, bindings, () -> "Mongo update" + doc) {
 			
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
@@ -190,7 +189,7 @@ public class MongoDBEngine extends Engine {
 				log("Executing mongo update: " + parsedQuery + "\n");
 				operation.accept(coll, parsedQuery);
 			}
-		}.executeUpdate();
+		}.scheduleUpdate();
 	}
 	
 	private static void log(String msg) {
@@ -208,7 +207,7 @@ public class MongoDBEngine extends Engine {
     }
 	private void executeFilteredUpdate(String collectionName, String filter, String doc, Map<String, Binding> bindings, TriConsumer<MongoCollection<Document>, Document, Document> operation) {
 		log("Scheduling mongo filtered update: " + doc + "filter" + filter + "\n");
-		new UpdateExecutor(store, updates, uuids, bindings, () -> "Mongo: " + doc + " filter:" + filter) {
+		new UpdateExecutor(store, script, uuids, bindings, () -> "Mongo: " + doc + " filter:" + filter) {
 			
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
@@ -218,16 +217,16 @@ public class MongoDBEngine extends Engine {
 				log("Executing mongo filtered update: " + parsedQuery + "\n");
 				operation.accept(coll, parsedFilter, parsedQuery);
 			}
-		}.executeUpdate();
+		}.scheduleUpdate();
 	}
 	
 	private void scheduleGlobalUpdate(Consumer<MongoDatabase> operation) {
-		new UpdateExecutor(store, updates, uuids, Collections.emptyMap(), () -> "Global update: " + operation) {
+		new UpdateExecutor(store, script, uuids, Collections.emptyMap(), () -> "Global update: " + operation) {
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
 				operation.accept(db);
 			}
-		}.executeUpdate();
+		}.scheduleUpdate();
 	}
 
 	public void executeInsertOne(String dbName, String collectionName, String doc, Map<String, Binding> bindings) {

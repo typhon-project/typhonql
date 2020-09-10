@@ -16,27 +16,23 @@
 
 package nl.cwi.swat.typhonql.backend;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
-
 public abstract class UpdateExecutor {
-	
-	
-	private ResultStore store;
-	private List<Runnable> updates;
-	private Map<String, Binding> bindings;
-	private Map<String, UUID> uuids;
+	private final ResultStore store;
+	private final Map<String, Binding> bindings;
+	private final Map<String, UUID> uuids;
 	private final Supplier<String> toString;
+	private final List<Consumer<List<Record>>> script;
 	
-	public UpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, UUID> uuids, Map<String, Binding> bindings, Supplier<String> toString) {
+	public UpdateExecutor(ResultStore store, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, Map<String, Binding> bindings, Supplier<String> toString) {
 		this.store = store;
-		this.updates = updates;
+		this.script = script;
 		this.bindings = bindings;
 		this.uuids = uuids;
 		this.toString = toString;
@@ -47,26 +43,23 @@ public abstract class UpdateExecutor {
 		return toString.get();
 	}
 	
-	public void executeUpdate() {
-		executeUpdate(new HashMap<>());
+	public void scheduleUpdate() {
+		scheduleUpdate(new HashMap<>());
 	}
 	
-	private void executeUpdate(Map<String, Object> values) {
-		updates.add(() -> {  executeUpdateOperation(values); });
-		log("Added: " + toString() + "as: " + System.identityHashCode(updates.get(updates.size() - 1)) + "\n");
-	}
-
-	private static void log(String msg) {
-		try {
-			ThreadSafeImpulseConsole.INSTANCE.getWriter().append(msg);
-		} catch (IOException e) {
-		}
+	private void scheduleUpdate(Map<String, Object> values) {
+		int nxt = script.size() + 1;
+		script.add(lr -> {
+            executeUpdateOperation(values);
+            if (script.size() > nxt) {
+                script.get(nxt).accept(lr);
+            }
+		});
 	}
 
 	protected abstract void performUpdate(Map<String, Object> values);
 	
 	private void executeUpdateOperation(Map<String, Object> values) {
-		log("Executing: " + toString() + "\n");
 		if (values.size() == bindings.size()) {
 			if (store.hasExternalArguments()) {
 				values.putAll(store.getCurrentExternalArgumentsRow());

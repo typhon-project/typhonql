@@ -16,7 +16,6 @@
 
 package nl.cwi.swat.typhonql.backend;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,8 +25,6 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
 
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
@@ -59,29 +56,29 @@ public abstract class QueryExecutor {
 		return toString.get();
 	}
 	
-	public void executeSelect(String resultId) {
+	public void scheduleSelect(String resultId) {
 		int nxt = script.size() + 1;
 	    script.add((List<Record> rows) -> {
-	    	log("Executing select: " + resultId + " row count: " + rows.size() + "\n");
-	    	log("Query: " + toString() + "\n");
+	    	Consumer<List<Record>> nextStep = script.size() > nxt ? script.get(nxt) : null;
 	    	if (rows.size() <= 1) {
                ResultIterator iter = executeSelect( rows.size() == 0 ? new HashMap<>(): bind(rows.get(0)));
-	    		log("result" + iter + "\n");
                storeResults(resultId, iter);
-	    		log("now executing: " + script.get(nxt) + "\n");
-               processResults(script.get(nxt), rows, iter);
+               if (nextStep != null) {
+            	   processResults(nextStep, rows, iter);
+               }
 	    	}
 	    	else {
                 List<ResultIterator> results = new ArrayList<>(rows.size());
                 for (Record record : rows) {
                    ResultIterator iter = executeSelect(bind(record));
                    results.add(iter);
-                   processResults(script.get(nxt), rows, iter);
+                   if (nextStep != null) {
+                       processResults(nextStep, rows, iter);
+                   }
                 }
                 storeResults(resultId, new AggregatedResultIterator(results));
 	    	}
 	    });
-		log("Added: " + toString() + "as: " + System.identityHashCode(script.get(nxt - 1)) + "\n");
 	}
 
 	private void processResults(Consumer<List<Record>> consumer, List<Record> rows, ResultIterator iter) {
@@ -115,13 +112,6 @@ public abstract class QueryExecutor {
 		}
 		else
 			return Arrays.asList(r);
-	}
-	
-	private static void log(String msg) {
-		try {
-			ThreadSafeImpulseConsole.INSTANCE.getWriter().append(msg);
-		} catch (IOException e) {
-		}
 	}
 
 	private Record horizontalAdd(Record row, Record r) {

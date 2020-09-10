@@ -16,7 +16,6 @@
 
 package nl.cwi.swat.typhonql.backend;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -32,8 +31,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
-import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
 
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
@@ -102,29 +99,9 @@ public class Runner {
 			}, Spliterator.ORDERED | Spliterator.NONNULL);
 		}, 0, false));
 	}
-	private static void log(String msg) {
-		try {
-			ThreadSafeImpulseConsole.INSTANCE.getWriter().append(msg);
-		} catch (IOException e) {
-		}
-	}
 	
-	public static void executeUpdates(List<Consumer<List<Record>>> script, List<Runnable> updates) {
-		log("Executing: " + script.size() + script + "updates:" + updates.size() + "\n");
-		log("script:\n");
-		script.forEach(s -> log("\t" + System.identityHashCode(s) + "\n"));
-		log("updates:\n");
-		updates.forEach(u -> log("\t" + System.identityHashCode(u) + "\n"));
-		script.add((List<Record> row) -> {
-			log("Got to last step, executing updates, rows:" + row.size() + "\n");
-			for (Runnable updateBlock : updates) {
-				updateBlock.run();
-			}
-		});
-		log("Added: " + script.get(script.size() - 1) + " for finalizing\n");
+	public static void executeUpdates(List<Consumer<List<Record>>> script) {
 		script.get(0).accept(new ArrayList<Record>());
-		// Removes executed updates
-		updates.clear();
 	}
 
 	private static ResultTable toResultTable(List<Path> paths, List<List<Record>> result) {

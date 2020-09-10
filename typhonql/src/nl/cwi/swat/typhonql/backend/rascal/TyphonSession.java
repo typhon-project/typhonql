@@ -207,7 +207,6 @@ public class TyphonSession implements Operations {
 		ResultStore store = new ResultStore(blobMap, externalArguments);
 		Map<String, UUID> uuids = new HashMap<>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
-		List<Runnable> updates = new ArrayList<>();
 		TyphonSessionState state = new TyphonSessionState();
 
 		MariaDBOperations mariaDBOperations = new MariaDBOperations(mariaDbConnections);
@@ -223,16 +222,16 @@ public class TyphonSession implements Operations {
 		return new SessionWrapper(vf.tuple(makeGetResult(state, getResultType, ctx),
 				makeGetJavaResult(state, getJavaResultType, ctx),
 				makeReadAndStore(store, script, state, readAndStoreType, ctx),
-				makeFinish(script, updates, state, doneType, ctx),
+				makeFinish(script, state, doneType, ctx),
 				makeClose(store, state, closeType, ctx),
 				makeNewId(uuids, state, newIdType, ctx),
 				makeHasAnyExternalArguments(store, state, hasAnyExternalArgumentsType, ctx),
 				makeHasMoreExternalArguments(store, state, hasMoreExternalArgumentsType, ctx),
 				makeNextExternalArguments(store, state, nextExternalArgumentsType, ctx),
-				mariaDBOperations.newSQLOperations(store, script, updates, state, uuids, ctx, vf),
-				mongoOperations.newMongoOperations(store, script, updates, state, uuids, ctx, vf),
-				cassandra.buildOperations(store, script, updates, state, uuids, ctx, vf),
-				neo.newNeo4JOperations(store, script, updates, state, uuids, ctx, vf)
+				mariaDBOperations.newSQLOperations(store, script, state, uuids, ctx, vf),
+				mongoOperations.newMongoOperations(store, script, state, uuids, ctx, vf),
+				cassandra.buildOperations(store, script, state, uuids, ctx, vf),
+				neo.newNeo4JOperations(store, script, state, uuids, ctx, vf)
 				), state);
 	}
 
@@ -372,10 +371,10 @@ public class TyphonSession implements Operations {
 		});
 	}
 
-	private ICallableValue makeFinish(List<Consumer<List<Record>>> script, List<Runnable> updates, TyphonSessionState state,
+	private ICallableValue makeFinish(List<Consumer<List<Record>>> script, TyphonSessionState state,
 			FunctionType readAndStoreType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, readAndStoreType, args -> {
-			Runner.executeUpdates(script, updates);
+			Runner.executeUpdates(script);
 			script.clear();
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
