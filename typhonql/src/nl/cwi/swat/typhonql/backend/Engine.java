@@ -27,6 +27,7 @@ public abstract class Engine {
 	protected final Map<String, UUID> uuids;
 	protected final List<Consumer<List<Record>>> script;
 	protected static final Pattern QL_PARAMS = Pattern.compile("\\$\\{([\\w\\-]*?)\\}");
+	public static final Pattern BLOB_UUID = Pattern.compile("\"#blob:([a-zA-Z_\\-0-9]*?)\"");
 
 	public Engine(ResultStore store, List<Consumer<List<Record>>> script, Map<String, UUID> uuids) {
 		this.store = store;

@@ -31,7 +31,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.text.StringSubstitutor;
@@ -152,7 +151,6 @@ public class MongoDBEngine extends Engine {
 		}
 	}
 
-	private static final Pattern BLOB_UUID = Pattern.compile("\"#blob:([a-zA-Z_\\-0-9]*?)\"");
 	protected static Document resolveQuery(ResultStore store, Supplier<GridFSBucket> gridFs, String query, Map<String, Object> values) {
 		String resultQuery = new StringSubstitutor(serialize(values)).replace(query);
 		Matcher m = BLOB_UUID.matcher(resultQuery);

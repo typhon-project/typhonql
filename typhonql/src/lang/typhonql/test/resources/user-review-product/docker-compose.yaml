@@ -70,5 +70,5 @@ services:
       - target: 4200
         published: 4200
   typhonql-server:
-    image: swatengineering/typhonql-server
+    image: swatengineering/typhonql-server:dev
     restart: always

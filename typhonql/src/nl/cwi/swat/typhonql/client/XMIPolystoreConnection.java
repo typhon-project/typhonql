@@ -66,6 +66,7 @@ import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.io.StandardTextWriter;
+import nl.cwi.swat.typhonql.backend.Engine;
 import nl.cwi.swat.typhonql.backend.ExternalArguments;
 import nl.cwi.swat.typhonql.backend.rascal.SessionWrapper;
 import nl.cwi.swat.typhonql.backend.rascal.TyphonSession;
@@ -226,7 +227,7 @@ public class XMIPolystoreConnection {
 	
 
 	private IValue evaluatePreparedStatementQuery(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String preparedStatement, String[] columnNames, String[] columnTypes, String[][] matrix) {
-		ExternalArguments externalArguments = buildExternalArguments(columnNames, columnTypes, matrix);
+		ExternalArguments externalArguments = buildExternalArguments(columnNames, columnTypes, matrix, blobMap);
 
 		IListWriter columnsWriter = VF.listWriter();
 		for (String column : columnNames) {
@@ -338,15 +339,34 @@ public class XMIPolystoreConnection {
 		}
 	}
 	
+	private static  Function<String, Object> blobMapper(Map<String, InputStream> source) {
+		return s -> {
+			Matcher blobUuid = Engine.BLOB_UUID.matcher(s);
+			if (blobUuid.find()) {
+				String blobName = blobUuid.group(1);
+				InputStream result = source.get(blobName); 
+				if (result == null) {
+					throw new RuntimeException("Referenced blob: " + blobName + " is not supplied");
+				}
+				return result;
+			}
+			throw new RuntimeException("Invalid blob uuid: " + s);
+		};
+	}
 	
-	public static ExternalArguments buildExternalArguments(String[] columnNames, String[] columnTypes, String[][] matrix) {
+	
+	public static ExternalArguments buildExternalArguments(String[] columnNames, String[] columnTypes, String[][] matrix, Map<String, InputStream> blobs) {
 		@SuppressWarnings("unchecked")
 		Function<String, Object>[] mappers = new Function[columnTypes.length];
 		for (int m = 0; m < columnTypes.length; m++) {
             mappers[m] = qlValueMappers.get(columnTypes[m]);
             if (mappers[m] == null) {
-                throw new RuntimeException("Unknown type: " + columnTypes[m] 
-                        + " not in: " + qlValueMappers.keySet());
+            	if (columnTypes[m].equals("blob")) {
+            		mappers[m] = blobMapper(blobs);
+            	}
+            	else {
+                    throw new RuntimeException("Unknown type: " + columnTypes[m] + " not in: " + qlValueMappers.keySet());
+            	}
             }
 		}
 
