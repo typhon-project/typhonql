@@ -19,6 +19,8 @@ package nl.cwi.swat.typhonql.client;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public interface JsonSerializableResult {
+import io.usethesource.vallang.IExternalValue;
+
+public interface JsonSerializableResult extends IExternalValue {
 	void serializeJSON(OutputStream target) throws IOException;
 }

@@ -28,6 +28,7 @@ alias Session = tuple[
 	ResultTable () getResult,
 	value () getJavaResult,
 	void (list[Path path] paths) readAndStore,
+   	void (str className, str classContents, list[Path path] paths, list[str] finalColumnNames) javaReadAndStore, 
 	void () finish,
 	void () done,
 	str (str) newId,
@@ -81,7 +82,7 @@ alias MongoOperations = tuple[
     void (str dbName, str coll, str keys) createIndex,
 	void (str dbName, str coll, str newName) renameCollection,
 	void (str dbName, str coll) dropCollection,
-	void (str dbName, str coll) dropDatabase
+	void (str dbName) dropDatabase
 ];
 
 data Connection

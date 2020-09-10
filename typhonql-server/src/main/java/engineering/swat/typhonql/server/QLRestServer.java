@@ -19,6 +19,7 @@ package engineering.swat.typhonql.server;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -66,6 +67,7 @@ import engineering.swat.typhonql.server.crud.EntityDeltaFields;
 import engineering.swat.typhonql.server.crud.EntityDeltaFieldsDeserializer;
 import engineering.swat.typhonql.server.crud.EntityFields;
 import engineering.swat.typhonql.server.crud.EntityFieldsDeserializer;
+import io.usethesource.vallang.type.Type;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.JsonSerializableResult;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
@@ -155,7 +157,18 @@ public class QLRestServer {
 	}
 
 	private static final byte[] RESULT_OK_MESSAGE = "{\"result\":\"ok\"}".getBytes(StandardCharsets.UTF_8);
-	private static JsonSerializableResult RESULT_OK = t -> t.write(RESULT_OK_MESSAGE);
+	private static JsonSerializableResult RESULT_OK = new JsonSerializableResult() {
+		
+		@Override
+		public Type getType() {
+			return null;
+		}
+		
+		@Override
+		public void serializeJSON(OutputStream target) throws IOException {
+			target.write(RESULT_OK_MESSAGE);
+		}
+	};
 
 	public static class RestArguments {
 		// should always be there
@@ -253,7 +266,7 @@ public class QLRestServer {
 		return RESULT_OK;
 	}
 
-	private static ResultTable handleNewQuery(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
+	private static JsonSerializableResult handleNewQuery(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
 			throws IOException {
 		if (isEmpty(args.query)) {
 			throw new IOException("Missing query parameter in post body");
@@ -268,9 +281,20 @@ public class QLRestServer {
 			throw new IOException("Missing command in post body");
 		}
 		logger.trace("Running command: {}", args);
-		String[] result = engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.query);
-		return target -> {
-			mapper.writeValue(target, result);
+		return stringArray(engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.query));
+	}
+	
+	private static JsonSerializableResult stringArray(String[] result) {
+		return new JsonSerializableResult() {
+			@Override
+			public Type getType() {
+				return null;
+			}
+
+			@Override
+			public void serializeJSON(OutputStream target) throws IOException {
+				mapper.writeValue(target, result);
+			}
 		};
 	}
 
@@ -283,11 +307,8 @@ public class QLRestServer {
 		if (args.parameterNames.length != args.parameterTypes.length) {
 			throw new IOException("Mismatch between length of parameter names and parameter types");
 		}
-		String[] result = engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.query,
-				args.parameterNames, args.parameterTypes, args.boundRows);
-		return target -> {
-			mapper.writeValue(target, result);
-		};
+		return stringArray(engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.query,
+				args.parameterNames, args.parameterTypes, args.boundRows));
 	}
 
 	@FunctionalInterface
