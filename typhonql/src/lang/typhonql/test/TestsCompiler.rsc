@@ -1001,6 +1001,8 @@ void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	  , testInsertNeo
 	  , testNeoReachability
 	  , testUpdateAttrNeo
+	  , testDeleteAllSQLNeoWithCascade
+	  //, testDeleteAllSQLMongoNeoWithCascade
 	  
 	  , test1
 	  , test2
