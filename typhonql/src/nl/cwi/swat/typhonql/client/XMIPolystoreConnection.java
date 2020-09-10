@@ -340,17 +340,22 @@ public class XMIPolystoreConnection {
 	
 	
 	public static ExternalArguments buildExternalArguments(String[] columnNames, String[] columnTypes, String[][] matrix) {
+		@SuppressWarnings("unchecked")
+		Function<String, Object>[] mappers = new Function[columnTypes.length];
+		for (int m = 0; m < columnTypes.length; m++) {
+            mappers[m] = qlValueMappers.get(columnTypes[m]);
+            if (mappers[m] == null) {
+                throw new RuntimeException("Unknown type: " + columnTypes[m] 
+                        + " not in: " + qlValueMappers.keySet());
+            }
+		}
+
 		Object[][] values = new Object[matrix.length][];
 		for (int i =0; i < matrix.length; i++) {
 			String[] row = matrix[i];
 			Object[] vs = new Object[row.length];
 			for (int j=0; j < row.length; j++) {
-				Function<String, Object> mapper = qlValueMappers.get(columnTypes[j]);
-				if (mapper == null) {
-					throw new RuntimeException("Unknown type: " + columnTypes[j] 
-							+ " not in: " + qlValueMappers.keySet());
-				}
-				vs[j] = mapper.apply(row[j]);
+				vs[j] = mappers[j].apply(row[j]);
 			}
 			values[i] = vs; 
 		}
