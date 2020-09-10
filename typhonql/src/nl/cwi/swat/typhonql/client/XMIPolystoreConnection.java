@@ -23,14 +23,10 @@ import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.throwa
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,6 +40,11 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 import org.rascalmpl.interpreter.Evaluator;
 import org.rascalmpl.interpreter.control_exceptions.Throw;
 import org.rascalmpl.interpreter.env.GlobalEnvironment;
@@ -313,10 +314,11 @@ public class XMIPolystoreConnection {
 	}
 	
 	private static final Map<String, Function<String, Object>> qlValueMappers;
+	private static final GeometryFactory wsgFactory = new GeometryFactory(new PrecisionModel(), 4326);
 	static {
 		qlValueMappers = new HashMap<>();
 		qlValueMappers.put("int",Integer::parseInt);
-		//qlValueMappers.put("bigint",Integer::parseInt);
+		qlValueMappers.put("bigint",Long::parseLong);
 		qlValueMappers.put("float",Float::parseFloat);
 		qlValueMappers.put("string", s -> s);
 		qlValueMappers.put("bool", Boolean::valueOf);
@@ -324,8 +326,16 @@ public class XMIPolystoreConnection {
 		qlValueMappers.put("uuid", UUID::fromString);
 		qlValueMappers.put("date", s -> LocalDate.parse(s));
 		qlValueMappers.put("datetime", s -> LocalDateTime.parse(s));
-		//qlValueMappers.put("point", s -> POUND.concat(VF.string(s.toLowerCase())));
-		//qlValueMappers.put("polygon", s -> POUND.concat(VF.string(s.toLowerCase())));
+		qlValueMappers.put("point", XMIPolystoreConnection::readWKT);
+		qlValueMappers.put("polygon", XMIPolystoreConnection::readWKT);
+	}
+	
+	private static Geometry readWKT(String s) {
+		try {
+			return new WKTReader(wsgFactory).read(s);
+		} catch (ParseException e) {
+			throw new RuntimeException("Error parsing geometry", e);
+		}
 	}
 	
 	
