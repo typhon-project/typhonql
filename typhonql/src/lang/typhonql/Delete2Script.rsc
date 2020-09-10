@@ -283,7 +283,7 @@ void deleteKids(
   
   Request removeEdge = [Request] "delete <to> edge where edge.<toRole> == <ctx.me>";
   Script scr = delete2script(removeEdge, ctx.schema, initialParams = ctx.nextStepParams);
-  ctx.addSteps(scr.steps[..-1]);
+  ctx.addSteps(scr.steps);
   
   //deleteObject(<neo4j(), other>, ctx);
   //deleteReferenceInNeo(to, ctx.neoMe, ctx.myParams, ctx.schema);
