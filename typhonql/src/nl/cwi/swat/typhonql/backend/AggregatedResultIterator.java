@@ -21,7 +21,7 @@ import java.util.UUID;
 
 public class AggregatedResultIterator implements ResultIterator {
 	
-	private List<ResultIterator> results;
+	private final List<ResultIterator> results;
 	private int index = -1;
 
 	public AggregatedResultIterator(List<ResultIterator> lst) {
@@ -41,7 +41,7 @@ public class AggregatedResultIterator implements ResultIterator {
 	
 	@Override
 	public boolean hasNextResult() {
-		return hasNextResult(index);
+		return index < results.size() && hasNextResult(index);
 	}
 
 	private boolean hasNextResult(int i) {

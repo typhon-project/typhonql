@@ -33,14 +33,15 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.apache.commons.text.StringSubstitutor;
 import org.bson.Document;
 import org.locationtech.jts.geom.Geometry;
+import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
 import org.wololo.jts2geojson.GeoJSONWriter;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.mongodb.BasicDBObject;
 import com.mongodb.MongoGridFSException;
 import com.mongodb.MongoNamespace;
 import com.mongodb.client.FindIterable;
@@ -71,29 +72,28 @@ public class MongoDBEngine extends Engine {
 		return gridBucket;
 	}
 
-	public MongoDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, UUID> uuids,
-			MongoDatabase db) {
-		super(store, script, updates, uuids);
+	public MongoDBEngine(ResultStore store, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, MongoDatabase db) {
+		super(store, script, uuids);
 		this.db = db;
 	}
 
 	public void executeFind(String resultId, String collectionName, String query, Map<String, Binding> bindings, List<Path> signature) {
-		new QueryExecutor(store, script, uuids, bindings, signature) {
+		new QueryExecutor(store, script, uuids, bindings, signature, () -> "Mongo find: " + query) {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				return new MongoDBIterator(buildFind(collectionName, query, values), db);
 			}
-		}.executeSelect(resultId);
+		}.scheduleSelect(resultId);
 	}
 
 	public void executeFindWithProjection(String resultId, String collectionName, String query, String projection,
 			Map<String, Binding> bindings, List<Path> signature) {
-		new QueryExecutor(store, script, uuids, bindings, signature) {
+		new QueryExecutor(store, script, uuids, bindings, signature, () -> "Mongo projected find: " + query + " proj: " + projection) {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				return new MongoDBIterator(buildFind(collectionName, query, values).projection(Document.parse(projection)), db);
 			}
-		}.executeSelect(resultId);
+		}.scheduleSelect(resultId);
 	}
 
 	private FindIterable<Document> buildFind(String collectionName, String query, Map<String, Object> values) {
@@ -179,15 +179,24 @@ public class MongoDBEngine extends Engine {
 	}
 	
 	private void scheduleUpdate(String collectionName, String doc, Map<String, Binding> bindings, BiConsumer<MongoCollection<Document>, Document> operation) {
-		new UpdateExecutor(store, updates, uuids, bindings) {
+		log("Scheduling mongo update: " + doc + "\n");
+		new UpdateExecutor(store, script, uuids, bindings, () -> "Mongo update" + doc) {
 			
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
 				MongoCollection<Document> coll = db.getCollection(collectionName);
 				Document parsedQuery = resolveQuery(store, () -> getGridFS(), doc, values);
+				log("Executing mongo update: " + parsedQuery + "\n");
 				operation.accept(coll, parsedQuery);
 			}
-		}.executeUpdate();
+		}.scheduleUpdate();
+	}
+	
+	private static void log(String msg) {
+		try {
+			ThreadSafeImpulseConsole.INSTANCE.getWriter().append(msg);
+		} catch (IOException e) {
+		}
 	}
 
     @FunctionalInterface
@@ -197,25 +206,27 @@ public class MongoDBEngine extends Engine {
 
     }
 	private void executeFilteredUpdate(String collectionName, String filter, String doc, Map<String, Binding> bindings, TriConsumer<MongoCollection<Document>, Document, Document> operation) {
-		new UpdateExecutor(store, updates, uuids, bindings) {
+		log("Scheduling mongo filtered update: " + doc + "filter" + filter + "\n");
+		new UpdateExecutor(store, script, uuids, bindings, () -> "Mongo: " + doc + " filter:" + filter) {
 			
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
 				MongoCollection<Document> coll = db.getCollection(collectionName);
 				Document parsedFilter = resolveQuery(store, () -> getGridFS(), filter, values);
 				Document parsedQuery = resolveQuery(store, () -> getGridFS(),doc, values);
+				log("Executing mongo filtered update: " + parsedQuery + "\n");
 				operation.accept(coll, parsedFilter, parsedQuery);
 			}
-		}.executeUpdate();
+		}.scheduleUpdate();
 	}
 	
 	private void scheduleGlobalUpdate(Consumer<MongoDatabase> operation) {
-		new UpdateExecutor(store, updates, uuids, Collections.emptyMap()) {
+		new UpdateExecutor(store, script, uuids, Collections.emptyMap(), () -> "Global update: " + operation) {
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
 				operation.accept(db);
 			}
-		}.executeUpdate();
+		}.scheduleUpdate();
 	}
 
 	public void executeInsertOne(String dbName, String collectionName, String doc, Map<String, Binding> bindings) {

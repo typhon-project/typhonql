@@ -276,15 +276,15 @@ public class MongoOperations implements Operations, AutoCloseable {
 		return (FunctionType) source.getFieldType(name);
 	}
 	
-	public ITuple newMongoOperations(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates,
-			TyphonSessionState state, Map<String, UUID> uuids, IEvaluatorContext ctx, IValueFactory vf) {
+	public ITuple newMongoOperations(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state,
+			Map<String, UUID> uuids, IEvaluatorContext ctx, IValueFactory vf) {
 
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("MongoOperations"));
 		while (aliasedTuple.isAliased()) {
 			aliasedTuple = aliasedTuple.getAliased();
 		}
 
-		Function<String, MongoDBEngine> getEngine = dbName -> new MongoDBEngine(store, script, updates, uuids, getDatabase(dbName));
+		Function<String, MongoDBEngine> getEngine = dbName -> new MongoDBEngine(store, script, uuids, getDatabase(dbName));
 
 		return vf.tuple(makeFind(getEngine, state, func(aliasedTuple, "find"), ctx, vf),
 				makeFindWithProjection(getEngine, state, func(aliasedTuple, "findWithProjection"), ctx, vf),

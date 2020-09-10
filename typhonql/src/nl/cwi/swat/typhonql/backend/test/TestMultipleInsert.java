@@ -57,14 +57,14 @@ public class TestMultipleInsert {
 		List<Runnable> updates = new ArrayList<>();
 		
 		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
-		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, () -> conn1);
+		MariaDBEngine e1 = new MariaDBEngine(store, script, uuids, () -> conn1);
 		LinkedHashMap<String, Binding> map0 = new LinkedHashMap<String, Binding>();
 		UUID uuid = UUID.randomUUID();
 		uuids.put("param_611", uuid);
 		map0.put("param_611", new GeneratedIdentifier("param_611"));
 		e1.executeUpdate("insert into `Product` (`Product.name`, `Product.description`, `Product.@id`) \nvalues (\'IPhone\', \'Apple\', ${param_611});", map0);
 		
-		Runner.executeUpdates(script, updates);
+		Runner.executeUpdates(script);
 
 
 		UUID uuid2 = UUID.randomUUID();
@@ -74,7 +74,7 @@ public class TestMultipleInsert {
 		map1.put("param_612", new GeneratedIdentifier("param_612"));
 		
 		e1.executeUpdate("insert into `Product` (`Product.name`, `Product.description`, `Product.@id`) \nvalues (\'Samsung S10\', \'Samsung\', ${param_612});", map1);		
-		Runner.executeUpdates(script, updates);
+		Runner.executeUpdates(script);
 		
 		
 	
