@@ -117,7 +117,6 @@ public class QLRestServer {
 		context.addServlet(jsonPostHandler(engine, QLRestServer::handleNewQuery), "/query");
 		context.addServlet(jsonPostHandler(engine, QLRestServer::handleCommand), "/update");
 		context.addServlet(jsonPostHandler(engine, QLRestServer::handleDDLCommand), "/ddl");
-		context.addServlet(jsonPostHandler(engine, QLRestServer::handlePreparedCommand), "/preparedUpdate");
 		context.addServlet(jsonPostHandler(engine, QLRestServer::handleReset), "/reset");
 
 		// REST DAL
@@ -280,8 +279,21 @@ public class QLRestServer {
 		if (isEmpty(args.query)) {
 			throw new IOException("Missing command in post body");
 		}
-		logger.trace("Running command: {}", args);
-		return stringArray(engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.query));
+        logger.trace("Running command: {}", args);
+		if (args.parameterNames != null && args.parameterNames.length > 0) {
+			if (args.parameterTypes == null || args.parameterTypes.length == 0) {
+				throw new IOException("Missing parameterTypes to the command");
+			}
+            if (args.parameterNames.length != args.parameterTypes.length) {
+                throw new IOException("Mismatch between length of parameter names and parameter types");
+            }
+            return stringArray(engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.query,
+                    args.parameterNames, args.parameterTypes, args.boundRows));
+			
+		}
+		else {
+            return stringArray(engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.query));
+		}
 	}
 	
 	private static JsonSerializableResult stringArray(String[] result) {
@@ -296,19 +308,6 @@ public class QLRestServer {
 				mapper.writeValue(target, result);
 			}
 		};
-	}
-
-	private static JsonSerializableResult handlePreparedCommand(XMIPolystoreConnection engine, RestArguments args,
-			HttpServletRequest r) throws IOException {
-		if (args.parameterNames == null || args.parameterNames.length == 0 || args.parameterTypes == null || args.parameterTypes.length == 0 || args.boundRows == null
-				|| args.boundRows.length == 0) {
-			throw new IOException("Missing arguments to the command");
-		}
-		if (args.parameterNames.length != args.parameterTypes.length) {
-			throw new IOException("Mismatch between length of parameter names and parameter types");
-		}
-		return stringArray(engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.query,
-				args.parameterNames, args.parameterTypes, args.boundRows));
 	}
 
 	@FunctionalInterface
