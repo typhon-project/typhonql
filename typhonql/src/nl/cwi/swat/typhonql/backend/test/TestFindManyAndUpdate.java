@@ -47,15 +47,15 @@ public class TestFindManyAndUpdate {
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();
 		
-		MongoDatabase conn1 = BackendTestCommon.getMongoDatabase("localhost", 27018, "Reviews", "admin", "admin");
-		MongoDBEngine e1 = new MongoDBEngine(store, script, updates, uuids, conn1);
+		MongoDatabase conn1 = BackendTestCommon.getMongoDatabase("localhost", 27017, "Reviews", "admin", "LciPZmCUQjR1Jp1Y");
+		MongoDBEngine e1 = new MongoDBEngine(store, script, uuids, conn1);
 		
-		Connection conn2 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
-		MariaDBEngine e2 = new MariaDBEngine(store, script, updates, uuids, () -> conn2);
+		Connection conn2 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "XeNnEybEFjSe5aLy");
+		MariaDBEngine e2 = new MariaDBEngine(store, script, uuids, () -> conn2);
 		
 		Map<String, Binding> map = new HashMap<>();
 		
-		e2.executeSelect("Inventory", "select `p`.`Product.@id` as `p.Product.@id`, `p`.`Product.name` as `p.Product.name` from `Product` as `p`  where (`p`.`Product.name`) = (\\'Radio\\');;",
+		e2.executeSelect("Inventory", "select `p`.`Product.@id` as `p.Product.@id`, `p`.`Product.name` as `p.Product.name` from `Product` as `p`  where (`p`.`Product.name`) = (\'Radio\');;",
 				Arrays.asList(new Path("Inventory", "p", "Product", new String[] { "@id" })));
 		
 		
@@ -65,7 +65,7 @@ public class TestFindManyAndUpdate {
 				"{\"$pull\": {\"product\": {\"$in\": [${param_750}]}}}",
 				map);
 		
-		Runner.executeUpdates(script, updates);
+		Runner.executeUpdates(script);
 	
 	}
 }

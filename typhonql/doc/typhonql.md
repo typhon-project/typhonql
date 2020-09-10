@@ -110,6 +110,23 @@ overlap:
 
 *note*: on mongodb backends distance is limited to the where query and only in presence of a comparision operator. 
 
+### Graph expressions
+If two entities are related to each other through an entity stored in a graph database, it is possible to use the reachability expression:
+
+`entity1 -[edgeEntity, lower..upper]-> entity2`
+
+- `entity1` and `entity2` are the ids of entities that can be stored in any backend
+- `edgeEntity` is the id of the entity stored as an edge in a graph database
+- `lower` and `upper` are expressions that represents the bounds for the _number of hops_ one wants to execute from `entity1`. By ommiting one or both of them, we get different semantics explained through the following examples.
+
+Example 1:  `person1 -[friendOf, 2..3]-> person2` -> Find friends of `person1` using at least 2 jumps and at most 3 jumps. Notice that this expression will ignore the direct friends of `person1`.
+
+Example 2:  `person1 -[friendOf, 1..]-> person2` -> Find friends of `person1` using at least 1 jump, without constraining how many jumps can be used.
+
+Example 3:  `person1 -[friendOf, ..3]-> person2` -> Find friends of `person1` using at most 3 jumps. By default the lower limit would be 1.
+
+Example 4:  `person1 -[friendOf]-> person2` -> Find friends of `person1` using at least 1 jumps and without constraining the number of jumps. This expression computes the transitive closure of `friendOf` for the set `{ person1 }`.
+
 
 ### Blobs
 
@@ -433,11 +450,93 @@ update User u where u.@id == ??param
   set { cards +: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
 ``` 
 
-## Miscellaneous
- 
+## HTTP API
 
- 
- 
+To execute queries outside of the TyphonQL IDE, the Typhon Polystore offers an HTTP API. This section describes how to invoke it, we only describe the section of the Polystore API related to TyphonQL.
+
+### Reset Database
+
+In case you need to start from fresh: 
+
+`GET http://polystore-api/api/resetdatabases`
+
+### Select queries
+
+Post the query as a json object to: 
+
+`POST http://polystore-api/api/query`
+
+Body: 
+
+```json
+{
+  "query": "from User u select u"
+}
+```
+
+Note that you have to make sure to correctly encode is as a json string, any language with a json library will take care of this.
+
+### Insert/Update/Delete queries
+
+Post the command as a json object to:
+
+`POST http://polystore-api/api/update`
+
+Body:
+
+```json
+{
+  "query": "insert User { name : \"John\", age: 35 }"
+}
+```
+
+#### Inserting/updating blobs 
+If you want to insert a new blob, you have to send along the contents of the blob separately from the query.
 
 
+```json
+{
+  "query": "update User u where u.name==\"John\" set { image: #blob:ecbbb3c4-6c5f-4ef0-bce4-58b847a82222 }",
+  "blobs": {
+    "ecbbb3c4-6c5f-4ef0-bce4-58b847a82222": "eW91IGdldCBhIGNvb2tpZQ==" // base64 encode of the blob contents
+  }
+}
+```
 
+#### Parameterized queries
+
+For both ease of writing and performance, it's possible to generate send a single query, where placeholders will be replaced by a list of bindings. This makes it possible to send multiple queries in a single command.
+
+
+```json
+{
+  "query": "insert User { @id: ??id, name: ??uname, age: ??uage }",
+  "parameterNames": ["id", "uname", "uage"],
+  "parameterTypes": ["uuid", "string", "int"],
+  "boundValues": [
+    ["beefc0b2-0393-4b73-951c-7243ee849275", "John Smith", "20"],
+    ["52001d98-05f2-4832-b653-6077a4db05a7", "Smith John", "1"]
+  ]
+}
+```
+
+Some remarks about this api:
+
+- You have to give the names for the parameters, their typhon types, and then a 2d string array, with rows that are bound to the parameters, in the same order.
+- The syntax of the values is the same as the output of a query. You do not have to encode the values as QL literals (for example, a uuid doesn't have to be prefixed with `#`, and a string doesn't require double escaping).
+- Valid types are:
+  - `int`
+  - `bigint`
+  - `float`
+  - `string`
+  - `bool`
+  - `text`
+  - `uuid`
+  - `date`
+  - `datetime`
+  - `point`
+  - `polygon`
+  - `blob` (for these you _do_ have to use the ql literal: `#blob:uuid...`)
+- You can combine this with the blobs field.
+- Any json libary should be able to generate these objects
+- We encode numbers as string, since json only supports doubles

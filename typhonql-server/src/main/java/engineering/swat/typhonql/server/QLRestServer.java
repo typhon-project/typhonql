@@ -19,6 +19,7 @@ package engineering.swat.typhonql.server;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +36,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Handler;
@@ -67,10 +67,11 @@ import engineering.swat.typhonql.server.crud.EntityDeltaFields;
 import engineering.swat.typhonql.server.crud.EntityDeltaFieldsDeserializer;
 import engineering.swat.typhonql.server.crud.EntityFields;
 import engineering.swat.typhonql.server.crud.EntityFieldsDeserializer;
-import nl.cwi.swat.typhonql.client.CommandResult;
+import io.usethesource.vallang.type.Type;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.JsonSerializableResult;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
+import nl.cwi.swat.typhonql.client.resulttable.QLSerialization;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class QLRestServer {
@@ -116,14 +117,13 @@ public class QLRestServer {
 		context.addServlet(jsonPostHandler(engine, QLRestServer::handleNewQuery), "/query");
 		context.addServlet(jsonPostHandler(engine, QLRestServer::handleCommand), "/update");
 		context.addServlet(jsonPostHandler(engine, QLRestServer::handleDDLCommand), "/ddl");
-		context.addServlet(jsonPostHandler(engine, QLRestServer::handlePreparedCommand), "/preparedUpdate");
 		context.addServlet(jsonPostHandler(engine, QLRestServer::handleReset), "/reset");
 
 		// REST DAL
 
 		context.setAttribute(QUERY_ENGINE, engine);
 		
-		ObjectMapper crudMapper = new ObjectMapper();
+		ObjectMapper crudMapper = QLSerialization.mapper;
 
 		SimpleModule module = new SimpleModule();
 		// adding our custom serializer and deserializer
@@ -156,7 +156,18 @@ public class QLRestServer {
 	}
 
 	private static final byte[] RESULT_OK_MESSAGE = "{\"result\":\"ok\"}".getBytes(StandardCharsets.UTF_8);
-	private static JsonSerializableResult RESULT_OK = t -> t.write(RESULT_OK_MESSAGE);
+	private static JsonSerializableResult RESULT_OK = new JsonSerializableResult() {
+		
+		@Override
+		public Type getType() {
+			return null;
+		}
+		
+		@Override
+		public void serializeJSON(OutputStream target) throws IOException {
+			target.write(RESULT_OK_MESSAGE);
+		}
+	};
 
 	public static class RestArguments {
 		// should always be there
@@ -165,20 +176,30 @@ public class QLRestServer {
 
 		// depends on the command which one is filled in or not
 		public String query;
-		public String command;
 		public String[] parameterNames;
+		public String[] parameterTypes;
 		public String[][] boundRows;
 	    @JsonDeserialize(using = Base64Deserializer.class)
 		public Map<String, InputStream> blobs;
+	    
+	    private RestArguments() {}
 
 		public static RestArguments parse(HttpServletRequest r) throws IOException {
-			return parse(r.getReader());
+			return parse(r.getReader(), r.getHeader("QL-XMI"), r.getHeader("QL-DatabaseInfo"));
 		}
 
-		public static RestArguments parse(Reader r) throws IOException {
+		public static RestArguments parse(Reader r, String xmi, String databaseInfo) throws IOException {
 			try {
-				RestArguments result = mapper.readValue(r, new TypeReference<RestArguments>() {
-				});
+				RestArguments result;
+				if (r != null) {
+                    result = mapper.readValue(r, new TypeReference<RestArguments>() {
+                    });
+				}
+				else {
+					result = new RestArguments();
+				}
+				result.xmi = xmi;
+				result.databaseInfo = mapper.readValue(databaseInfo, new TypeReference<List<DatabaseInfo>>() {});
 				logger.trace("Received arguments: {}", result);
 				if (isEmpty(result.xmi)) {
 					throw new IOException("Missing xmi field");
@@ -195,9 +216,11 @@ public class QLRestServer {
 		@Override
 		public String toString() {
 			return "{\n" + ((query != null && !query.isEmpty()) ? ("query: " + query + "\n") : "")
-					+ ((command != null && !command.isEmpty()) ? ("command: " + command + "\n") : "")
 					+ ((parameterNames != null && parameterNames.length > 0)
 							? ("parameterNames: " + Arrays.toString(parameterNames) + "\n")
+							: "")
+					+ ((parameterTypes != null && parameterTypes.length > 0)
+							? ("parameterTypes: " + Arrays.toString(parameterTypes) + "\n")
 							: "")
 					+ ((boundRows != null) ? ("boundRows: " + boundRows.length + "\n") : "") 
 					+ ((blobs != null) ? "blobs: " + blobs.keySet() + "\n" : "")
@@ -228,11 +251,11 @@ public class QLRestServer {
 
 	private static JsonSerializableResult handleDDLCommand(XMIPolystoreConnection engine, RestArguments args,
 			HttpServletRequest r) throws IOException {
-		if (isEmpty(args.command)) {
-			throw new IOException("Missing command field in post body");
+		if (isEmpty(args.query)) {
+			throw new IOException("Missing query field in post body");
 		}
 		logger.trace("Running DDL command: {}", args);
-		engine.executeDDLUpdate(args.xmi, args.databaseInfo, args.command);
+		engine.executeDDLUpdate(args.xmi, args.databaseInfo, args.query);
 		return RESULT_OK;
 	}
 
@@ -242,7 +265,7 @@ public class QLRestServer {
 		return RESULT_OK;
 	}
 
-	private static ResultTable handleNewQuery(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
+	private static JsonSerializableResult handleNewQuery(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
 			throws IOException {
 		if (isEmpty(args.query)) {
 			throw new IOException("Missing query parameter in post body");
@@ -251,34 +274,39 @@ public class QLRestServer {
 		return engine.executeQuery(args.xmi, args.databaseInfo, args.query);
 	}
 
-	private static CommandResult handleCommand(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
+	private static JsonSerializableResult handleCommand(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
 			throws IOException {
-		if (isEmpty(args.command)) {
+		if (isEmpty(args.query)) {
 			throw new IOException("Missing command in post body");
 		}
-		logger.trace("Running command: {}", args);
-		return engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.command);
-	}
-
-	private static JsonSerializableResult handlePreparedCommand(XMIPolystoreConnection engine, RestArguments args,
-			HttpServletRequest r) throws IOException {
-		if (args.parameterNames == null || args.parameterNames.length == 0 || args.boundRows == null
-				|| args.boundRows.length == 0) {
-			throw new IOException("Missing arguments to the command");
-		}
-		CommandResult[] result = engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.command,
-				args.parameterNames, args.boundRows);
-		return target -> {
-			target.write('[');
-			boolean first = true;
-			for (CommandResult r1 : result) {
-				if (!first) {
-					target.write(',');
-				}
-				r1.serializeJSON(target);
-				first = false;
+        logger.trace("Running command: {}", args);
+		if (args.parameterNames != null && args.parameterNames.length > 0) {
+			if (args.parameterTypes == null || args.parameterTypes.length == 0) {
+				throw new IOException("Missing parameterTypes to the command");
 			}
-			target.write(']');
+            if (args.parameterNames.length != args.parameterTypes.length) {
+                throw new IOException("Mismatch between length of parameter names and parameter types");
+            }
+            return stringArray(engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.query,
+                    args.parameterNames, args.parameterTypes, args.boundRows));
+			
+		}
+		else {
+            return stringArray(engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.query));
+		}
+	}
+	
+	private static JsonSerializableResult stringArray(String[] result) {
+		return new JsonSerializableResult() {
+			@Override
+			public Type getType() {
+				return null;
+			}
+
+			@Override
+			public void serializeJSON(OutputStream target) throws IOException {
+				mapper.writeValue(target, result);
+			}
 		};
 	}
 

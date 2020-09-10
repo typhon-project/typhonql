@@ -22,16 +22,17 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.Result;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
+
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
@@ -92,7 +93,7 @@ public class MariaDBOperations implements Operations, AutoCloseable {
 			String query = ((IString) args[2]).getValue();
 			IMap bindings = (IMap) args[3];
 			IList signatureList = (IList) args[4];
-
+			
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 			List<Path> signature = rascalToJavaSignature(signatureList);
 
@@ -122,8 +123,8 @@ public class MariaDBOperations implements Operations, AutoCloseable {
 	}
 
 
-	public ITuple newSQLOperations(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, 
-			TyphonSessionState state, Map<String, UUID> uuids, IEvaluatorContext ctx, IValueFactory vf) {
+	public ITuple newSQLOperations(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, 
+			Map<String, UUID> uuids, IEvaluatorContext ctx, IValueFactory vf) {
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("SQLOperations"));
 		while (aliasedTuple.isAliased()) {
 			aliasedTuple = aliasedTuple.getAliased();
@@ -133,7 +134,7 @@ public class MariaDBOperations implements Operations, AutoCloseable {
 		FunctionType executeStatementType = (FunctionType) aliasedTuple.getFieldType("executeStatement");
 		FunctionType executeGlobalStatementType = (FunctionType) aliasedTuple.getFieldType("executeGlobalStatement");
 		
-		BiFunction<String, Boolean, MariaDBEngine> getEngine = (dbName, scoped) -> new MariaDBEngine(store, script, updates, uuids, () -> getConnection(dbName, scoped));
+		BiFunction<String, Boolean, MariaDBEngine> getEngine = (dbName, scoped) -> new MariaDBEngine(store, script, uuids, () -> getConnection(dbName, scoped));
 
 		return vf.tuple(makeExecuteQuery(getEngine, state, executeQueryType, ctx, vf),
 				makeExecuteStatement(getEngine, state, executeStatementType, ctx, vf),

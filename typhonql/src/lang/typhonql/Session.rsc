@@ -28,9 +28,13 @@ alias Session = tuple[
 	ResultTable () getResult,
 	value () getJavaResult,
 	void (list[Path path] paths) readAndStore,
+   	void (str className, str classContents, list[Path path] paths, list[str] finalColumnNames) javaReadAndStore, 
 	void () finish,
 	void () done,
 	str (str) newId,
+	bool () hasAnyExternalArguments,
+	bool () hasMoreExternalArguments,
+	void () nextExternalArguments,
 	SQLOperations sql,
    	MongoOperations mongo,
    	CassandraOperations cassandra,
@@ -39,9 +43,6 @@ alias Session = tuple[
 
 alias ResultTable
   = tuple[list[str] columnNames, list[list[value]] values];
-
-alias CommandResult
-  = tuple[int, map[str, str]];
 
 //alias Field = tuple[str resultSet, str label, str \type, str fieldName];
 
@@ -81,7 +82,7 @@ alias MongoOperations = tuple[
     void (str dbName, str coll, str keys) createIndex,
 	void (str dbName, str coll, str newName) renameCollection,
 	void (str dbName, str coll) dropCollection,
-	void (str dbName, str coll) dropDatabase
+	void (str dbName) dropDatabase
 ];
 
 data Connection
@@ -96,6 +97,10 @@ data Connection
 @javaClass{nl.cwi.swat.typhonql.backend.rascal.TyphonSession}
 java Session newSession(map[str, Connection] config, map[str uuid, str contents] blobMap = ());
 
+@reflect
+@javaClass{nl.cwi.swat.typhonql.backend.rascal.TyphonSession}
+java Session newSessionWithArguments(map[str, Connection] config, 
+	list[str] columnNames, list[str] columnTypes, list[list[str]] values, map[str uuid, str contents] blobMap = ());
 
 private int _nameCounter = 0;
 

@@ -29,7 +29,7 @@ import io.usethesource.vallang.type.Type;
 import nl.cwi.swat.typhonql.client.JsonSerializableResult;
 
 
-public class ResultTable implements JsonSerializableResult, IExternalValue {
+public class ResultTable implements JsonSerializableResult {
 
 
 				

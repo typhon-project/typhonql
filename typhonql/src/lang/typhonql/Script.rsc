@@ -31,6 +31,7 @@ data Step
   // executeQuery("x", "relational", "select p.name from Person as p", ())
   = step(str result, Call call, Bindings bindings, list[Path] signature = [])
   | read(list[Path] path)
+  | javaRead(str className, str javaContents, list[Path] path, list[str] finalColumnNames)
   | finish()
   | newId(str var)
   ;
@@ -79,15 +80,23 @@ EntityModels schema2entityModels(Schema s)
   = { <e, { <a, t> | <e, str a, str t> <- s.attrs }
           , { <r, e2> | <e, _, str r, _, _, str e2, _> <- s.rels } >
            | str e <- entities(s) };
-  
+           
+list[str] runScript(Script scr, Session session, Schema schema) {
+	if (!session.hasAnyExternalArguments()) {
+		return [runScriptAux(scr, session, schema)];
+	}
+	else {
+		rs = [];
+		while (session.hasMoreExternalArguments()) {
+			rs += runScriptAux(scr, session, schema);
+			session.nextExternalArguments();
+		}
+		return rs;
+	}
+}  
+         
 
-str runScriptAndClose(Script scr, Session session, Schema schema) {
-	str result = runScript(scr, session, schema);
-	session.done();
-	return result;
-}
-  
-str runScript(Script scr, Session session, Schema schema) {
+str runScriptAux(Script scr, Session session, Schema schema) {
   str result = "";
   for (Step s <- scr.steps) {
     switch (s) {
@@ -154,6 +163,10 @@ str runScript(Script scr, Session session, Schema schema) {
       
       case newId(str var): {
         result = session.newId(var);
+      }
+      
+      case javaRead(str className, str javaContents, list[Path] path, list[str] finalColumnNames): {
+        session.javaReadAndStore(className, javaContents, path, finalColumnNames);
       }
           
       case read(list[Path path] paths): {

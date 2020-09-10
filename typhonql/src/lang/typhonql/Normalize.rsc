@@ -235,6 +235,24 @@ Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result 
   return (Request)`<Query newQuery>`;
 }
 
+Request explicitJoinsInReachability(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
+   exprs = [];
+   Env env = queryEnv(bs);
+   visit (req) {
+    case (Expr)`<VId x> -[<VId edge> <ReachingBound? _>]-\> <VId y>`: {
+		<from, to> = getOneFrom({<from,to> | <dbName, graphSpec(es)> <- s.pragmas, <entity, from, to> <- es, entity == env["<edge>"]});
+		exprs += [[Expr] "<edge>.<from> == <x>"];
+		exprs += [[Expr] "<edge>.<to> == <y>"];
+	}
+   }
+   for (Expr w <- ws) {
+   	exprs += [w];
+   }
+   newReq = [Request] "from <bs> select <rs> where <intercalate(", ", exprs)>";
+   return newReq;
+   
+}
+
 Request expandNavigation(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
   Env env = queryEnv(bs);
   

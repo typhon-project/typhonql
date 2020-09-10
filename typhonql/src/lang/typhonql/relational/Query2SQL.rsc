@@ -77,7 +77,7 @@ alias Ctx
       void(As) addFrom,
       void(str, As, SQLExpr) addLeftOuterJoin,
       void(SQLExpr) addResult,
-      void(str, Param) addParam,
+      str(str, Param) getParam,
       Schema schema,
       Env env,
       set[str] dyns,
@@ -152,6 +152,17 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
   void addParam(str x, Param field) {
     params[x] = field;
   }
+  
+  
+  map[Param, str] placeholders = ();
+  str getParam(str prefix, Param field) {
+    if (field notin placeholders) {
+      str name = "<prefix>_<vars()>";
+      placeholders[field] = name;
+      addParam(name, field);
+    } 
+    return placeholders[field];
+  }
 
   Env env = (); 
   set[str] dyns = {};
@@ -174,7 +185,7 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
      addFrom,
      addLeftOuterJoin,
      addResult,
-     addParam,
+     getParam,
      s,
      env,
      dyns,
@@ -272,8 +283,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>`, Ctx ctx, Log log = noLog)
 
 SQLExpr expr2sql(e:(Expr)`<VId x>.@id`, Ctx ctx, Log log = noLog) {
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
-    str token = "<x>_<ctx.vars()>";
-    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "@id"));
+    str token = ctx.getParam("<x>", field(p.name, "<x>", ctx.env["<x>"], "@id"));
     return SQLExpr::placeholder(name=token);
   }
   str entity = ctx.env["<x>"];
@@ -287,8 +297,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
   str role = "<f>"; 
 
   if ("<x>" in ctx.dyns, str ent := ctx.env["<x>"], <Place p, ent> <- ctx.schema.placement) {
-    str token = "<x>_<f>_<ctx.vars()>";
-    ctx.addParam(token, field(p.name, "<x>", ctx.env["<x>"], "<f>"));
+    str token = ctx.getParam("<x>_<f>", field(p.name, "<x>", ctx.env["<x>"], "<f>"));
     return SQLExpr::placeholder(name=token);
   }
 
@@ -336,7 +345,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
 }  
   
 
-SQLExpr expr2sql((Expr)`?`, Ctx ctx, Log log = noLog) = placeholder();
+SQLExpr expr2sql((Expr)`<PlaceHolder ph>`, Ctx ctx, Log log = noLog) = SQLExpr::placeholder(name = "<ph.name>");
 
 SQLExpr expr2sql((Expr)`<Int i>`, Ctx ctx, Log log = noLog) = lit(integer(toInt("<i>")));
 
@@ -355,6 +364,8 @@ SQLExpr expr2sql((Expr)`#polygon(<{Segment ","}* segments>)`, Ctx ctx, Log log =
 
 
 SQLExpr expr2sql((Expr)`false`, Ctx ctx, Log log = noLog) = lit(boolean(false));
+
+SQLExpr expr2sql((Expr)`??<Id name>`, Ctx ctx, Log log = noLog) = SQLExpr::placeholder(name = "<name>");
 
 SQLExpr expr2sql((Expr)`<UUID u>`, Ctx ctx, Log log = noLog) = lit(sUuid("<u.part>"));
 

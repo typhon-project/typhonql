@@ -87,7 +87,7 @@ str neopp(nNamed(NeoExpr e, str as)) = "<neopp(e)> as <q(as)>";
 str neopp(nVariable(name)) = name;
 str neopp(nLit(NeoValue val)) = neopp(val);
 str neopp(nMapLit(map[str, NeoExpr] exprs)) = "{ <intercalate(", ", ["<q(k)> : <neopp(exprs[k])>"| k <- exprs])> }";
-str neopp(nPlaceholder(name = str name)) =  name == "" ? "?" : "$<name>";
+str neopp(nPlaceholder(name = str name)) = "$<name>";
 str neopp(nNot(NeoExpr arg)) = "not (<neopp(arg)>)";
 str neopp(nNeg(NeoExpr arg)) = "-(<neopp(arg)>)"; 
 str neopp(nPos(NeoExpr arg)) = "+(<neopp(arg)>)";
@@ -108,6 +108,19 @@ str neopp(nNotIn(NeoExpr arg, list[NeoValue] vals))
   = "(<neopp(arg)>) not in (<intercalate(", ", [ neopp(v) | NeoValue v <- vals])>)";
 str neopp(nIn(NeoExpr arg, list[NeoValue] vals)) 
   = "(<neopp(arg)>) in (<intercalate(", ", [ neopp(v) | NeoValue v <- vals])>)";
+    
+str neopp(nReaching(str edge, Maybe::just(lower), Maybe::nothing(), str lhs, str rhs))
+ = "(<lhs>)-[:<edge>*<neopp(lower)>..]-\> (<rhs>)";
+
+str neopp(nReaching(str edge, Maybe::nothing(), Maybe::just(upper), str lhs, str rhs))
+ = "(<lhs>)-[:<edge>*..<neopp(upper)>]-\> (<rhs>)";
+
+str neopp(nReaching(str edge, Maybe::just(lower), Maybe::just(upper), str lhs, str rhs))
+ = "(<lhs>)-[:<edge>*<neopp(lower)>..<neopp(upper)>]-\> (<rhs>)";
+
+str neopp(nReaching(str edge, Maybe::nothing(), Maybe::nothing(), str lhs, str rhs))
+ = "(<lhs>)-[:<edge>*]-\> (<rhs>)";
+
 
 str neopp(nFun(str name, vals)) = "<name>(<intercalate(", ", [neopp(v) | v <- vals])>)";
 
@@ -141,14 +154,14 @@ str neopp(nInteger(int x)) = "<x>";
 
 str neopp(nBoolean(bool b)) = "<b>";
 
-str neopp(nDateTime(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
+str neopp(nDateTime(datetime d)) = "localdatetime(\'<replaceFirst(printDate(d, "YYYY-MM-dd HH:mm:ss"), " ", "T")>\')";
 
-str neopp(nDate(datetime d)) = "\'<printDate(d, "YYYY-MM-dd")>\'";
+str neopp(nDate(datetime d)) = "date(\'<printDate(d, "YYYY-MM-dd")>\')";
 
-str neopp(nPoint(real x, real y)) = "PointFromText(\'POINT(<x> <y>)\', 4326)";
+str neopp(nPoint(real x, real y)) = "point({ x: <x>, y: <y>})";
 
 str neopp(nPolygon(list[lrel[real, real]] segs)) 
-  = "PolyFromText(\'POLYGON(<intercalate(", ", [ seg2str(s) | s <- segs ])>)\', 4326)";
+  = "[<intercalate(",", ["[<intercalate("," ,["[<a>,<b>]" |<a,b> <- seg])>]" | lrel[real, real] seg <- segs])>]";
 
 str seg2str(lrel[real,real] seg)  
   = "(<intercalate(", ", [ "<x> <y>" | <real x, real y> <- seg ])>)";

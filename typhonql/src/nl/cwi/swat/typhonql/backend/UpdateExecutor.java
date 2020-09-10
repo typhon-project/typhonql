@@ -20,36 +20,50 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
-import org.rascalmpl.values.ValueFactoryFactory;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public abstract class UpdateExecutor {
+	private final ResultStore store;
+	private final Map<String, Binding> bindings;
+	private final Map<String, UUID> uuids;
+	private final Supplier<String> toString;
+	private final List<Consumer<List<Record>>> script;
 	
-	private ResultStore store;
-	private List<Runnable> updates;
-	private Map<String, Binding> bindings;
-	private Map<String, UUID> uuids;
-
-	public UpdateExecutor(ResultStore store, List<Runnable> updates, Map<String, UUID> uuids, Map<String, Binding> bindings) {
+	public UpdateExecutor(ResultStore store, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, Map<String, Binding> bindings, Supplier<String> toString) {
 		this.store = store;
-		this.updates = updates;
+		this.script = script;
 		this.bindings = bindings;
 		this.uuids = uuids;
+		this.toString = toString;
 	}
 	
-	public void executeUpdate() {
-		executeUpdate(new HashMap<>());
+	@Override
+	public String toString() {
+		return toString.get();
 	}
 	
-	private void executeUpdate(Map<String, Object> values) {
-		updates.add(() -> {  executeUpdateOperation(values); });
+	public void scheduleUpdate() {
+		scheduleUpdate(new HashMap<>());
+	}
+	
+	private void scheduleUpdate(Map<String, Object> values) {
+		int nxt = script.size() + 1;
+		script.add(lr -> {
+            executeUpdateOperation(values);
+            if (script.size() > nxt) {
+                script.get(nxt).accept(lr);
+            }
+		});
 	}
 
 	protected abstract void performUpdate(Map<String, Object> values);
 	
 	private void executeUpdateOperation(Map<String, Object> values) {
 		if (values.size() == bindings.size()) {
+			if (store.hasExternalArguments()) {
+				values.putAll(store.getCurrentExternalArgumentsRow());
+			}
 			performUpdate(values); 
 		}
 		else {

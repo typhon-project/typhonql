@@ -23,20 +23,28 @@ import static org.rascalmpl.interpreter.utils.ReadEvalPrintDialogMessages.throwa
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 import org.rascalmpl.interpreter.Evaluator;
 import org.rascalmpl.interpreter.control_exceptions.Throw;
 import org.rascalmpl.interpreter.env.GlobalEnvironment;
@@ -58,7 +66,8 @@ import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.io.StandardTextWriter;
-import io.usethesource.vallang.type.TypeFactory;
+import nl.cwi.swat.typhonql.backend.Engine;
+import nl.cwi.swat.typhonql.backend.ExternalArguments;
 import nl.cwi.swat.typhonql.backend.rascal.SessionWrapper;
 import nl.cwi.swat.typhonql.backend.rascal.TyphonSession;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
@@ -139,9 +148,9 @@ public class XMIPolystoreConnection {
 	}
 	
 	
-	public ResultTable executeQuery(String xmiModel, List<DatabaseInfo> connections, String query) {
+	public JsonSerializableResult executeQuery(String xmiModel, List<DatabaseInfo> connections, String query) {
 		return sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> 
-            (ResultTable) evaluator.call("runQueryAndGetJava", 
+            (JsonSerializableResult) evaluator.call("runQueryAndGetJava", 
                 "lang::typhonql::RunUsingCompiler",
                 Collections.emptyMap(),
                 VF.string(query), 
@@ -173,6 +182,20 @@ public class XMIPolystoreConnection {
         );
 	}
 	
+	public ResultTable executeListEntities(String xmiModel, List<DatabaseInfo> connections, String entity, String whereClause, String limit, String sortBy) {
+		return sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> 
+            (ResultTable) evaluator.call("listEntities", 
+                "lang::typhonql::RunUsingCompiler",
+                Collections.emptyMap(),
+                VF.string(entity), 
+                VF.string(whereClause!=null?whereClause:""),
+                VF.string(limit!=null?limit:""),
+                VF.string(sortBy!=null?sortBy:""),
+                VF.string(xmiModel),
+                session.getTuple())
+        );
+	}
+	
 	public void executeDDLUpdate(String xmiModel, List<DatabaseInfo> connections, String update) {
 		sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> 
             evaluator.call("runDDL", 
@@ -185,9 +208,9 @@ public class XMIPolystoreConnection {
 		
 	}
 	
-	public CommandResult executeUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> fileMap, String query) {
-		IValue val = evaluateUpdate(xmiModel, connections, fileMap, query);
-		return CommandResult.fromIValue(val);
+	public String[] executeUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String query) {
+		IValue val = evaluateUpdate(xmiModel, connections, blobMap, query);
+		return toStringArray(val);
 	}
 	
 	
@@ -203,30 +226,163 @@ public class XMIPolystoreConnection {
 	}
 	
 
-	private IValue evaluatePreparedStatementQuery(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String preparedStatement, String[] columnNames, String[][] matrix) {
-		IListWriter lw = VF.listWriter();
-		for (String[] row : matrix) {
-			List<IString> vs = Arrays.asList(row).stream().map(
-					s -> VF.string(s)).collect(Collectors.toList());
-			IListWriter lw1 = VF.listWriter();
-			lw1.appendAll(vs);
-			lw.append(lw1.done());
-		}
+	private IValue evaluatePreparedStatementQuery(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String preparedStatement, String[] columnNames, String[] columnTypes, String[][] matrix) {
+		ExternalArguments externalArguments = buildExternalArguments(columnNames, columnTypes, matrix, blobMap);
+
 		IListWriter columnsWriter = VF.listWriter();
-		columnsWriter.appendAll(Arrays.asList(columnNames).stream().map(columnName -> VF.string(columnName)).collect(Collectors.toList()));
-        return sessionCall(connections, blobMap, (session, evaluator) -> 
-        	evaluator.call("runPrepared", 
+		for (String column : columnNames) {
+			columnsWriter.append(VF.string(column));
+		}
+        return sessionCall(connections, blobMap, Optional.of(externalArguments), (session, evaluator) -> 
+        	evaluator.call("runUpdate", 
                     "lang::typhonql::RunUsingCompiler",
                     Collections.emptyMap(),
                     VF.string(preparedStatement),
-                    columnsWriter.done(),
-                    lw.done(),
                     VF.string(xmiModel),
                     session.getTuple())
         );
 	}
 	
+
+
+
+
+	private static Map<String, String> ESCAPES;
 	
+	static {
+		ESCAPES = new HashMap<>();
+		ESCAPES.put("\n", "\\n");
+		ESCAPES.put("\r", "\\r");
+		ESCAPES.put("\f", "\\f");
+		ESCAPES.put("\t", "\\t");
+		ESCAPES.put("\b", "\\b");
+		ESCAPES.put("\"", "\\\"");
+		ESCAPES.put("\\", "\\\\");
+	}
+
+	private static Pattern SPECIAL_CHARS = Pattern.compile("[\"\\\\\\n\\t\\r\\x08]");
+	private static String escapeQL(String s) {
+		Matcher specials = SPECIAL_CHARS.matcher(s);
+		if (!specials.find()) {
+			return s;
+		}
+		StringBuffer result = new StringBuffer(s.length() * 2);
+		do {
+			specials.appendReplacement(result, Matcher.quoteReplacement(ESCAPES.get(specials.group())));
+		} while(specials.find());
+		return specials.appendTail(result).toString();
+	}
+	
+	private static final Map<String, Function<String, IValue>> qlRascalValueMappers;
+	static {
+		final IString QUOTE = VF.string('"');
+		final IString DOLLAR = VF.string('$');
+		final IString POUND = VF.string('#');
+		qlRascalValueMappers = new HashMap<>();
+		qlRascalValueMappers.put("int", VF::string);
+		qlRascalValueMappers.put("bigint", VF::string);
+		qlRascalValueMappers.put("float", VF::string);
+		qlRascalValueMappers.put("string", s -> QUOTE.concat(VF.string(s)).concat(QUOTE));
+		qlRascalValueMappers.put("bool", VF::string);
+		qlRascalValueMappers.put("text", VF::string);
+		qlRascalValueMappers.put("date", s -> DOLLAR.concat(VF.string(s)).concat(DOLLAR));
+		qlRascalValueMappers.put("datetime", s -> DOLLAR.concat(VF.string(s)).concat(DOLLAR));
+		qlRascalValueMappers.put("point", s -> POUND.concat(VF.string(s.toLowerCase())));
+		qlRascalValueMappers.put("polygon", s -> POUND.concat(VF.string(s.toLowerCase())));
+		qlRascalValueMappers.put("uuid", s -> POUND.concat(VF.string(s.toLowerCase())));
+	}
+	
+	private static IList buildBoundRowValues(String[] columnTypes, String[][] matrix) {
+		List<Function<String, IValue>> mappedColumns
+			= new ArrayList<>(columnTypes.length);
+		for (String ct : columnTypes) {
+			Function<String, IValue> mapper = qlRascalValueMappers.get(ct);
+			if (mapper == null) {
+				throw new RuntimeException("Unknown type: " + ct 
+						+ " not in: " + qlRascalValueMappers.keySet());
+			}
+			mappedColumns.add(mapper);
+		}
+		IListWriter result = VF.listWriter();
+		for (String[] row: matrix) {
+			IListWriter rowList = VF.listWriter();
+			for (int c = 0; c < row.length; c++) {
+				rowList.append(mappedColumns.get(c).apply(row[c]));
+			}
+			result.append(rowList.done());
+		}
+		return result.done();
+	}
+	
+	private static final Map<String, Function<String, Object>> qlValueMappers;
+	private static final GeometryFactory wsgFactory = new GeometryFactory(new PrecisionModel(), 4326);
+	static {
+		qlValueMappers = new HashMap<>();
+		qlValueMappers.put("int",Integer::parseInt);
+		qlValueMappers.put("bigint",Long::parseLong);
+		qlValueMappers.put("float",Float::parseFloat);
+		qlValueMappers.put("string", s -> s);
+		qlValueMappers.put("bool", Boolean::valueOf);
+		qlValueMappers.put("text", s -> s);
+		qlValueMappers.put("uuid", UUID::fromString);
+		qlValueMappers.put("date", s -> LocalDate.parse(s));
+		qlValueMappers.put("datetime", s -> LocalDateTime.parse(s));
+		qlValueMappers.put("point", XMIPolystoreConnection::readWKT);
+		qlValueMappers.put("polygon", XMIPolystoreConnection::readWKT);
+	}
+	
+	private static Geometry readWKT(String s) {
+		try {
+			return new WKTReader(wsgFactory).read(s);
+		} catch (ParseException e) {
+			throw new RuntimeException("Error parsing geometry", e);
+		}
+	}
+	
+	private static  Function<String, Object> blobMapper(Map<String, InputStream> source) {
+		return s -> {
+			Matcher blobUuid = Engine.BLOB_UUID.matcher(s);
+			if (blobUuid.find()) {
+				String blobName = blobUuid.group(1);
+				InputStream result = source.get(blobName); 
+				if (result == null) {
+					throw new RuntimeException("Referenced blob: " + blobName + " is not supplied");
+				}
+				return result;
+			}
+			throw new RuntimeException("Invalid blob uuid: " + s);
+		};
+	}
+	
+	
+	public static ExternalArguments buildExternalArguments(String[] columnNames, String[] columnTypes, String[][] matrix, Map<String, InputStream> blobs) {
+		@SuppressWarnings("unchecked")
+		Function<String, Object>[] mappers = new Function[columnTypes.length];
+		for (int m = 0; m < columnTypes.length; m++) {
+            mappers[m] = qlValueMappers.get(columnTypes[m]);
+            if (mappers[m] == null) {
+            	if (columnTypes[m].equals("blob")) {
+            		mappers[m] = blobMapper(blobs);
+            	}
+            	else {
+                    throw new RuntimeException("Unknown type: " + columnTypes[m] + " not in: " + qlValueMappers.keySet());
+            	}
+            }
+		}
+
+		Object[][] values = new Object[matrix.length][];
+		for (int i =0; i < matrix.length; i++) {
+			String[] row = matrix[i];
+			Object[] vs = new Object[row.length];
+			for (int j=0; j < row.length; j++) {
+				vs[j] = mappers[j].apply(row[j]);
+			}
+			values[i] = vs; 
+		}
+		return new ExternalArguments(columnNames, values);
+	}
+
+
 	public void resetDatabases(String xmiModel, List<DatabaseInfo> connections) {
         sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> 
             evaluator.call("runSchema", 
@@ -238,8 +394,12 @@ public class XMIPolystoreConnection {
 	}
 
 	private <R> R sessionCall(List<DatabaseInfo> connections, Map<String, InputStream> blobs, BiFunction<SessionWrapper, Evaluator, R> exec) {
+		return sessionCall(connections, blobs, Optional.empty(), exec);
+	}
+	
+	private <R> R sessionCall(List<DatabaseInfo> connections, Map<String, InputStream> blobs, Optional<ExternalArguments> externalArguments, BiFunction<SessionWrapper, Evaluator, R> exec) {
 		return evaluators.useAndReturn(evaluator -> {
-			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, Collections.emptyMap(), evaluator)) {
+			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, blobs, externalArguments, evaluator)) {
 				synchronized (evaluator) {
 					return exec.apply(session, evaluator);
 				}
@@ -270,42 +430,17 @@ public class XMIPolystoreConnection {
 		return URIResolverRegistry.getInstance().exists(URIUtil.getChildLocation(root, RascalManifest.META_INF_RASCAL_MF));
 	}
 	
-	public CommandResult[] executePreparedUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> fileMap, String preparedStatement, String[] columnNames, String[][] values) {
-		IValue v = evaluatePreparedStatementQuery(xmiModel, connections, fileMap, preparedStatement, columnNames, values);
-		Iterator<IValue> iter0 = ((IList) v).iterator();
-		List<CommandResult> results = new ArrayList<CommandResult>();
-		while (iter0.hasNext()) {
-			IValue val = iter0.next();
-			results.add(CommandResult.fromIValue(val));		
-		}
-		return results.toArray(new CommandResult[0]);
+	public String[] executePreparedUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> fileMap, String preparedStatement, String[] columnNames, String[] columnTypes, String[][] values) {
+		IValue v = evaluatePreparedStatementQuery(xmiModel, connections, fileMap, preparedStatement, columnNames, columnTypes, values);
+		return toStringArray(v);
 	}
 	
-	public static void main(String[] args) throws IOException, URISyntaxException {
-
-//		public DatabaseInfo(String host, int port, String dbName, String dbms, String user,
-//				String password) {
-//			
-//		}
-		DatabaseInfo[] infos = new DatabaseInfo[] {
-				new DatabaseInfo("localhost", 27017, "Reviews","mongodb",  "",
-						"admin", "admin"),
-				new DatabaseInfo("localhost", 3306, "Inventory", "mariadb", "",
-						"root", "example") };
-		
-		if (args == null || args.length != 1 && args[0] == null) {
-			System.out.println("Provide XMI file name");
-			System.exit(-1);
-		}
+	public String[] toStringArray(IValue v) {
+		Iterator<IValue> iter = ((IList) v).iterator();
+		List<String> r = new ArrayList<String>();
+		while (iter.hasNext())
+			r.add(((IString) iter.next()).getValue());
 			
-		String fileName = args[0];
-		
-		String xmiString = String.join("\n", Files.readAllLines(Paths.get(new URI(fileName))));
-
-		XMIPolystoreConnection conn = new XMIPolystoreConnection();
-		ResultTable iv = conn.executeQuery(xmiString, Arrays.asList(infos), "from Product p select p");
-		System.out.println(iv);
-
+		return r.toArray(new String[0]);
 	}
-
 }

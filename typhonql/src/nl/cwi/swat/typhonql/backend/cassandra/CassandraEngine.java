@@ -39,28 +39,28 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class CassandraEngine extends Engine {
 
-	public CassandraEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, UUID> uuids) {
-		super(store, script, updates, uuids);
+	public CassandraEngine(ResultStore store, List<Consumer<List<Record>>> script, Map<String, UUID> uuids) {
+		super(store, script, uuids);
 	}
 
 	public void executeSelect(String resultId, String query, Map<String, Binding> bindings, List<Path> signature, Supplier<CqlSession> connection) {
-		new QueryExecutor(store, script, uuids, bindings, signature) {
+		new QueryExecutor(store, script, uuids, bindings, signature, () -> "Cassandra query: " + query) {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				return new CassandraIterator(connection.get().execute(compileQuery(query, values)));
 			}
-		}.executeSelect(resultId);
+		}.scheduleSelect(resultId);
 	}
 	
 
 	
 	public void executeUpdate(String query, Map<String, Binding> bindings, Supplier<CqlSession> connection) {
-		new UpdateExecutor(store, updates, uuids, bindings) {
+		new UpdateExecutor(store, script, uuids, bindings, () -> "Cassandra update: " + query) {
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
 				connection.get().execute(compileQuery(query, values));
 			}
-		}.executeUpdate();
+		}.scheduleUpdate();
 	}
 
     private SimpleStatement compileQuery(String query, Map<String, Object> values) {
