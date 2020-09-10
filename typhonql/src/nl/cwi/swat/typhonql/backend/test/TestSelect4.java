@@ -46,7 +46,7 @@ public class TestSelect4 {
 		List<Runnable> updates = new ArrayList<>();
 		
 		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
-		MariaDBEngine e1 = new MariaDBEngine(store, script, updates, uuids, () -> conn1);
+		MariaDBEngine e1 = new MariaDBEngine(store, script, uuids, () -> conn1);
 		
 		e1.executeSelect("Inventory", "select `p`.`Product.name` as `p.Product.name`, `p`.`Product.@id` as `p.Product.@id` from `Product` as `p` where true;",
 				Arrays.asList(new Path("Inventory", "p", "Product", new String[] { "name" })));

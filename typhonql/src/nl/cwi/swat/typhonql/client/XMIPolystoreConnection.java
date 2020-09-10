@@ -364,7 +364,7 @@ public class XMIPolystoreConnection {
 	
 	private <R> R sessionCall(List<DatabaseInfo> connections, Map<String, InputStream> blobs, Optional<ExternalArguments> externalArguments, BiFunction<SessionWrapper, Evaluator, R> exec) {
 		return evaluators.useAndReturn(evaluator -> {
-			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, Collections.emptyMap(), externalArguments, evaluator)) {
+			try (SessionWrapper session = sessionBuilder.newSessionWrapper(connections, blobs, externalArguments, evaluator)) {
 				synchronized (evaluator) {
 					return exec.apply(session, evaluator);
 				}

@@ -18,7 +18,7 @@ import nl.cwi.swat.typhonql.backend.Runner;
 public class JavaOperation  {
 
 	public static void compileAndAggregate(ResultStore store, TyphonSessionState state,
-			List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, UUID> uuids, String className,
+			List<Consumer<List<Record>>> script, Map<String, UUID> uuids, String className,
 			String classBody, List<Path> paths, List<String> columnNames) {
 		List<String> commandline = Arrays.asList(new String[] {"-proc:none", "-cp", System.getProperty("java.class.path")});
 		JavaCompiler<JavaOperationImplementation> javaCompiler = new JavaCompiler<JavaOperationImplementation>(JavaOperation.class.getClassLoader(), null, commandline);

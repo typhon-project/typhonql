@@ -99,15 +99,8 @@ public class Runner {
 		}, 0, false)));
 	}
 	
-	public static void executeUpdates(List<Consumer<List<Record>>> script, List<Runnable> updates) {
-		script.add((List<Record> row) -> {
-			for (Runnable updateBlock : updates) {
-				updateBlock.run();
-			}
-		});
+	public static void executeUpdates(List<Consumer<List<Record>>> script) {
 		script.get(0).accept(new ArrayList<Record>());
-		// Removes executed updates
-		updates.clear();
 	}
 
 	private static ResultTable toResultTable(List<Path> paths, List<List<Record>> result) {

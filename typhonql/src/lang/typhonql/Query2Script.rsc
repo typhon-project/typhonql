@@ -89,10 +89,11 @@ list[Path] filterForBackend(list[Path] paths, Place p)
 Where getWhere((Query)`from <{Binding ","}+ _> select <{Result ","}+ _> <Where w>`)
   = w;
 
-list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s, Log log = noLog) {
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = ()) {
   //r = expandNavigation(addWhereIfAbsent(r), s);
   log("COMPILING2SQL: <r>");
   <sqlStat, params> = compile2sql(r, s, p);
+  params += initialParams;
   // hack
 
   if (sqlStat.exprs == []) {
@@ -104,9 +105,10 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s,
            +  where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];
 }
 
-list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s, Log log = noLog) {
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = ()) {
   log("COMPILING2Mongo: <r>");
   <methods, params> = compile2mongo(r, s, p);
+  params += initialParams;
   for (str coll <- methods) {
     // TODO: signal if multiple!
     return [step(dbName, mongo(find(dbName, coll, pp(methods[coll].query), pp(methods[coll].projection)))
@@ -117,10 +119,11 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schem
   return [];
 }
 
-list[Step] compileQuery(r:(Request)`<Query q>`, p:<cassandra(), str dbName>, Schema s, Log log = noLog) {
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<cassandra(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = ()) {
   log("COMPILING2CQL: <r>");
   
   <cqlStat, params> = compile2cql(r, s, p);
+  params += initialParams;
 
   
   if (cqlStat.selectClauses == []) {
@@ -132,9 +135,10 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<cassandra(), str dbName>, Sch
            +  where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];
 }
 
-list[Step] compileQuery(r:(Request)`<Query q>`, p:<neo4j(), str dbName>, Schema s, Log log = noLog) {
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<neo4j(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = ()) {
   log("COMPILING2neo4j: <r>");
   <neoStat, params> = compile2neo(r, s, p);
+  params += initialParams;
   // hack
 
   if (neoStat.matches[0].patterns == []) {

@@ -82,8 +82,8 @@ bool qlSubType(voidType(), _) = true;
 
 default bool qlSubType(AType a, AType b) = false;
 
-alias CheckerMLSchema = map[AType entity, map[str field, tuple[AType typ, Cardinality card] tp] fields];
-data TypePalConfig(CheckerMLSchema mlSchema = ());
+alias CheckerMLSchema = tuple[map[AType entity, map[str field, tuple[AType typ, Cardinality card] tp] fields] fields, rel[AType from, AType to, AType via] graphEdges];
+data TypePalConfig(CheckerMLSchema mlSchema = <(), {}>);
 
 /***********
  *  Roles  *
@@ -244,7 +244,7 @@ void requireValidCardinality(KeyVal current, Id key, EId entity, Solver s) {
 void collect(current:(Expr)`<EId typ> ( <{KeyVal ","}* params>)`, Collector c) {
     c.fact(current, typ);
     tp = userDefinedType("<typ>");
-    if (tp in c.getConfig().mlSchema) {
+    if (tp in c.getConfig().mlSchema.fields) {
         c.fact(typ, tp);
     }
     else {
@@ -393,6 +393,27 @@ void collect(current:(Expr)`<Expr lhs> like <Expr rhs>`, Collector c) {
     reportUnsupported(current, c);
 }
 
+void collect(current:(Expr)`<VId lhs> -[ <VId edge> <ReachingBound? bound> ]-\> <VId rhs>`, Collector c) {
+    c.fact(current, boolType());
+    requireEntityType(lhs, c);
+    requireEntityType(rhs, c);
+    requireEntityType(edge, c);
+    c.require("valid entities involved in graph expression", current, [lhs, edge, rhs], void (Solver s) {
+        from = s.getType(lhs);
+        to = s.getType(rhs);
+        via = s.getType(edge);
+        s.requireTrue(<from, to, via> in s.getConfig().mlSchema.graphEdges, error(current, "%t not defined as an edge between %t and %t", via, from, to));
+    });
+    collect(lhs, edge, rhs, c);
+}
+
+void requireEntityType(Tree t, Collector c) {
+    c.require("Should be an entity", t, [t], void (Solver s) {
+        s.requireTrue(entityType(_) := s.getType(t), error(t, "Expected entity type, but got: %t", t));
+    });
+}
+
+
 void collect(current:(Expr)`<Expr lhs> & <Expr rhs>`, Collector c) {
     c.fact(current, boolType());
     requirePointOrPolygon(c, current, lhs);
@@ -459,7 +480,7 @@ default AType calcInfix(_, _, _) {
 
 void collectEntityType(EId entityName, Collector c) {
     tp = entityType("<entityName>");
-    if (tp in c.getConfig().mlSchema) {
+    if (tp in c.getConfig().mlSchema.fields) {
         c.fact(entityName, tp);
     }
     else {
@@ -541,7 +562,7 @@ void collect(current:(Statement)`insert <{Obj ","}* objs>`, Collector c) {
 
 void requireAttributesSet(Tree current, Tree typ, {KeyVal ","}* args, Collector c) {
     keysSet = { key | (KeyVal)`<Id key> : <Expr _>` <- args };
-    sch = c.getConfig().mlSchema;
+    sch = c.getConfig().mlSchema.fields;
     c.require("Attributes set", current, [typ, *keysSet], void (Solver s) {
         attrs = sch[s.getType(typ)]?();
         required = { k | k <- attrs, <entityType(_), _> !:= attrs[k] };
@@ -630,7 +651,7 @@ void reportUnsupported(Tree current, Collector c) {
 }
 
 Cardinality getCardinality(EId context, Id fname, Solver s) {
-    mlSchema = s.getConfig().mlSchema;
+    mlSchema = s.getConfig().mlSchema.fields;
     utype = s.getType(context);
     if (utype in mlSchema) {
         if ("<fname>" in mlSchema[utype]) {
@@ -652,9 +673,9 @@ private TypePalConfig buildConfig(bool debug, CheckerMLSchema mlSchema)
         },
         getTypeInNamelessType = 
             AType(AType utype, Tree fname, loc scope, Solver s) {
-                if (utype in mlSchema) {
-                    if ("<fname>" in mlSchema[utype]) {
-                        return mlSchema[utype]["<fname>"].typ;
+                if (utype in mlSchema.fields) {
+                    if ("<fname>" in mlSchema.fields[utype]) {
+                        return mlSchema.fields[utype]["<fname>"].typ;
                     }
                 }
                 s.report(error(fname, "<fname> not defined for %t", utype));
@@ -681,8 +702,9 @@ default AType calcMLType(str tp) {
 
 
 
-CheckerMLSchema convertModel(Schema mlSchema) 
-    = ( entityType(tpn) : 
+
+CheckerMLSchema convertModel(Schema mlSchema) {
+    fields = ( entityType(tpn) : 
         (
           (fn : <(ftp in mlSchema.customs<from>) ? userDefinedType(ftp) : calcMLType(ftp), \one()> | <fn, ftp> <- mlSchema.attrs[tpn])
         + (fr : <entityType(to), fc> | <fc, fr, _, _, to, _> <- mlSchema.rels[tpn])
@@ -692,7 +714,16 @@ CheckerMLSchema convertModel(Schema mlSchema)
         (fn : <(ftp in mlSchema.customs<from>) ? userDefinedType(ftp) : calcMLType(ftp), \one()> | <fn, ftp> <- mlSchema.customs[tpn]) 
     | tpn <- mlSchema.customs<from>
     );
-
+    graphEdges = {
+        <
+            fields[entityType(ent)][frm]<0>,
+            fields[entityType(ent)][to]<0>,
+            entityType(ent)
+            >
+        | /graphSpec(edges) := mlSchema, <ent, frm, to> <- edges
+    };
+    return <fields, graphEdges>;
+}
 
 TModel checkQLTree(Tree t, CheckerMLSchema mlSchema, bool debug = false) {
     if (t has top) {
