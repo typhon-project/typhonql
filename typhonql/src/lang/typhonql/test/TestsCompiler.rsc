@@ -189,6 +189,24 @@ void setup(PolystoreInstance p, bool doTest) {
 	  rs = p.runQuery((Request)`from User u select u.wishes where u.@id == #pablo`);
 	  p.assertResultEquals("wish obtained from user", rs, <["u.wishes"], [[U("wish1")], [U("wish2")]]>);
 	}
+	
+	p.runUpdate((Request) `insert Word { @id: #outstanding, name: "outstanding" }`);
+	p.runUpdate((Request) `insert Evaluation { @id: #evaluation1, body: "This is outstanding!" }`);
+	p.runUpdate((Request) `insert Occurrence { @id: #occurrence1, times:10, word: #outstanding, evaluation: #evaluation1 }`);
+	
+	if (doTest) {
+	  rs = p.runQuery((Request)`from Occurrence o select o.@id`);
+	  p.assertResultEquals("occurrence was inserted", rs, <["o.@id"], [
+	    [U("occurrence1")]]>);
+	  
+	  rs = p.runQuery((Request)`from Product p select p.wishes where p.@id == #tv`);
+	  p.assertResultEquals("wish obtained from product", rs, <["p.wishes"], [[U("wish1")]]>);
+	  
+	  rs = p.runQuery((Request)`from User u select u.wishes where u.@id == #pablo`);
+	  p.assertResultEquals("wish obtained from user", rs, <["u.wishes"], [[U("wish1")], [U("wish2")]]>);
+	}
+	
+	
 }
 
 void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
@@ -353,18 +371,12 @@ void testBlobs(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Review r select r.screenshot where r.@id == #newReview`);
   p.assertResultEquals("Blob in Mongo", rs, <["r.screenshot"], [["dXU="]]>);
 }
-  
 
-void testDeleteAllSQLBasic(PolystoreInstance p) {
-  p.runUpdate((Request)`delete Tag t`);
-  rs = p.runQuery((Request)`from Tag t select t.@id`);
-  p.assertResultEquals("deleteAllSQLBasic", rs, <["t.@id"], []>);
-}
 
-void testDeleteAllWithCascadeSimple(PolystoreInstance p) {
+void testDeleteAllSQLNeoWithCascade(PolystoreInstance p) {
   p.runUpdate((Request)`delete Tag t where t.name == "friendly"`);
   rs = p.runQuery((Request)`from Tag t select t.@id`);
-  p.assertResultEquals("testDeleteAllWithCascadeSimple", rs, <["t.@id"], 
+  p.assertResultEquals("testDeleteAllSQLNeoCascade", rs, <["t.@id"], 
 		[[U("fun")],
         [U("kitchen")],
         [U("music")],
@@ -376,6 +388,17 @@ void testDeleteAllWithCascadeSimple(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Tag t select t.synonymsTo where t.@id == #friendly`);
   p.assertResultEquals("deleting a synonym by cascade on tag deletes the synonyms of tag 2", rs, <["t.synonymsTo"], []>);
   
+}
+
+void testDeleteAllSQLMongoNeoWithCascade(PolystoreInstance p) {
+  p.runUpdate((Request)`delete Word w where w.name == "outstanding"`);
+  rs = p.runQuery((Request)`from Word w select w.@id`);
+  p.assertResultEquals("testDeleteAllSQLMongoNeoWithCascade", rs, <["w.@id"], 
+		[]>);
+  rs = p.runQuery((Request)`from Occurrence o select o.@id`);
+  p.assertResultEquals("deleting a occurrence by cascade on word deletes it", rs, <["o.@id"], []>);
+  rs = p.runQuery((Request)`from Evaluation e select e.occurrences where t.@id == #evaluation1`);
+  p.assertResultEquals("deleting a occurrence by cascade on word deletes the evaluations of that occurrence", rs, <["e.occurrences"], []>);
 }
 
 void testDeleteAllWithCascade(PolystoreInstance p) {
@@ -399,15 +422,6 @@ void testDeleteAllWithCascade(PolystoreInstance p) {
   p.assertResultEquals("deleting products does not delete tags", rs, <["t.@id"], 
     [[U("fun")], [U("kitchen")], [U("music")], [U("social")], [U("friendly")]]>);
 }
-
-void testDeleteAllWithCascadeSimplified(PolystoreInstance p) {
-  p.runUpdate((Request)`delete Product p where p.name == "Radio"`);
-
-  rs = p.runQuery((Request)`from Review r select r.@id where r.product == #tv`);
-  p.assertResultEquals("deleting products deletes reviews", rs, <["r.@id"], []>);
-
-}
-
 
 void testDeleteKidsRemovesParentLinksSQLLocal(PolystoreInstance p) {
   p.runUpdate((Request)`delete Item i where i.product == #tv`);

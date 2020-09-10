@@ -50,6 +50,25 @@ entity Synonym {
 	target -> Tag[1]
 }
 
+entity Evaluation {
+	body: text
+	
+	occurrences :-> Occurrence."Occurrence.evaluation"[0..*]
+}
+
+entity Word {
+	name: string[256]	
+	occurrences :-> Occurrence."Occurrence.word"[0..*]
+}
+
+entity Occurrence {
+	times: int
+	word -> Word[1]
+	evaluation -> Evaluation[1]
+}
+
+
+
 entity User {
 	name : string[256]
 	address: string[256]
@@ -86,6 +105,7 @@ documentdb Reviews {
 		Review : Review
 		Biography : Biography
 		Category: Category
+		Evaluation: Evaluation
 	}
 }
 
@@ -102,6 +122,7 @@ relationaldb Inventory {
 		}
 		table { TagDB: Tag }
 		table { ItemDB: Item }
+		table { WordDB : Word }
 	}
 }
 
@@ -118,6 +139,10 @@ graphdb MoreStuff {
 		edge Synonym {
 			from source
 			to target
-		}		
+		},
+		edge Occurrence {
+			from word
+			to evaluation
+		}	
 	}
 }
