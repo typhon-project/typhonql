@@ -95,8 +95,8 @@ public class Neo4JOperations implements Operations, AutoCloseable {
 		});
 	}
 	
-	public ITuple newNeo4JOperations(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, 
-			TyphonSessionState state, Map<String, UUID> uuids, IEvaluatorContext ctx, IValueFactory vf) {
+	public ITuple newNeo4JOperations(ResultStore store, List<Consumer<List<Record>>> script, TyphonSessionState state, 
+			Map<String, UUID> uuids, IEvaluatorContext ctx, IValueFactory vf) {
 		Type aliasedTuple = Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("Neo4JOperations"));
 		while (aliasedTuple.isAliased()) {
 			aliasedTuple = aliasedTuple.getAliased();
@@ -107,7 +107,7 @@ public class Neo4JOperations implements Operations, AutoCloseable {
 		
 		Function<String, Neo4JEngine> getEngine = 
 				(dbName) ->
-					new Neo4JEngine(store, script, updates, uuids, getConnection(dbName, true));
+					new Neo4JEngine(store, script, uuids, getConnection(dbName, true));
 
 		return vf.tuple(makeExecuteMatch(getEngine, state, executeMatchType, ctx, vf),
 				makeExecuteUpdate(getEngine, state, executeUpdateType, ctx, vf));

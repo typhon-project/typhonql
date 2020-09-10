@@ -65,7 +65,7 @@ public class MariaDBIterator implements ResultIterator {
 	static {
 		columnMapperFuncs = new HashMap<>();
 		// TODO: consider not using class name but something else for this mapping (like SQL type)
-		columnMapperFuncs.put(ColumnType.BIGINT.getSqlType(), (r, i) -> r.getBigDecimal(i));
+		columnMapperFuncs.put(ColumnType.BIGINT.getSqlType(), (r, i) -> r.getLong(i));
 		columnMapperFuncs.put(ColumnType.BIT.getSqlType(), (r, i) -> r.getBoolean(i));
 		columnMapperFuncs.put(Types.BINARY, (r, i) -> MakeUUID.uuidFromBytes(r.getBytes(i)));
 		columnMapperFuncs.put(ColumnType.LONGBLOB.getSqlType(), (r, i) -> blobOrGeo(r.getBinaryStream(i)));
