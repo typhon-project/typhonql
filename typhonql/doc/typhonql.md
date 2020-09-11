@@ -450,11 +450,93 @@ update User u where u.@id == ??param
   set { cards +: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
 ``` 
 
-## Miscellaneous
- 
+## HTTP API
 
- 
- 
+To execute queries outside of the TyphonQL IDE, the Typhon Polystore offers an HTTP API. This section describes how to invoke it, we only describe the section of the Polystore API related to TyphonQL.
+
+### Reset Database
+
+In case you need to start from fresh: 
+
+`GET http://polystore-api/api/resetdatabases`
+
+### Select queries
+
+Post the query as a json object to: 
+
+`POST http://polystore-api/api/query`
+
+Body: 
+
+```json
+{
+  "query": "from User u select u"
+}
+```
+
+Note that you have to make sure to correctly encode is as a json string, any language with a json library will take care of this.
+
+### Insert/Update/Delete queries
+
+Post the command as a json object to:
+
+`POST http://polystore-api/api/update`
+
+Body:
+
+```json
+{
+  "query": "insert User { name : \"John\", age: 35 }"
+}
+```
+
+#### Inserting/updating blobs 
+If you want to insert a new blob, you have to send along the contents of the blob separately from the query.
 
 
+```json
+{
+  "query": "update User u where u.name==\"John\" set { image: #blob:ecbbb3c4-6c5f-4ef0-bce4-58b847a82222 }",
+  "blobs": {
+    "ecbbb3c4-6c5f-4ef0-bce4-58b847a82222": "eW91IGdldCBhIGNvb2tpZQ==" // base64 encode of the blob contents
+  }
+}
+```
 
+#### Parameterized queries
+
+For both ease of writing and performance, it's possible to generate send a single query, where placeholders will be replaced by a list of bindings. This makes it possible to send multiple queries in a single command.
+
+
+```json
+{
+  "query": "insert User { @id: ??id, name: ??uname, age: ??uage }",
+  "parameterNames": ["id", "uname", "uage"],
+  "parameterTypes": ["uuid", "string", "int"],
+  "boundValues": [
+    ["beefc0b2-0393-4b73-951c-7243ee849275", "John Smith", "20"],
+    ["52001d98-05f2-4832-b653-6077a4db05a7", "Smith John", "1"]
+  ]
+}
+```
+
+Some remarks about this api:
+
+- You have to give the names for the parameters, their typhon types, and then a 2d string array, with rows that are bound to the parameters, in the same order.
+- The syntax of the values is the same as the output of a query. You do not have to encode the values as QL literals (for example, a uuid doesn't have to be prefixed with `#`, and a string doesn't require double escaping).
+- Valid types are:
+  - `int`
+  - `bigint`
+  - `float`
+  - `string`
+  - `bool`
+  - `text`
+  - `uuid`
+  - `date`
+  - `datetime`
+  - `point`
+  - `polygon`
+  - `blob` (for these you _do_ have to use the ql literal: `#blob:uuid...`)
+- You can combine this with the blobs field.
+- Any json libary should be able to generate these objects
+- We encode numbers as string, since json only supports doubles

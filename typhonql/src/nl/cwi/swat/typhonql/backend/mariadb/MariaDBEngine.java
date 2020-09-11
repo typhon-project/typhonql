@@ -47,8 +47,8 @@ public class MariaDBEngine extends Engine {
 
 	private final Supplier<Connection> connection;
 
-	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, List<Runnable> updates, Map<String, UUID> uuids, Supplier<Connection> sqlConnection) {
-		super(store, script, updates, uuids);
+	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, Supplier<Connection> sqlConnection) {
+		super(store, script, uuids);
 		this.connection = sqlConnection;
 	}
 
@@ -103,7 +103,7 @@ public class MariaDBEngine extends Engine {
 
 
 	public void executeSelect(String resultId, String query, Map<String, Binding> bindings, List<Path> signature) {
-		new QueryExecutor(store, script, uuids, bindings, signature) {
+		new QueryExecutor(store, script, uuids, bindings, signature, () -> "Maria query: " + query) {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				try {
@@ -113,12 +113,12 @@ public class MariaDBEngine extends Engine {
 				}
 			}
 
-		}.executeSelect(resultId);
+		}.scheduleSelect(resultId);
 	}
 
 
 	public void executeUpdate(String query, Map<String, Binding> bindings) {
-		new UpdateExecutor(store, updates, uuids, bindings) {
+		new UpdateExecutor(store, script, uuids, bindings, () -> "Maria update: " + query) {
 
             @Override
             protected void performUpdate(Map<String, Object> values) {
@@ -128,6 +128,6 @@ public class MariaDBEngine extends Engine {
                     throw new RuntimeException(e1);
                 }
             }
-		}.executeUpdate();
+		}.scheduleUpdate();
 	}
 }

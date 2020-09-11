@@ -28,8 +28,12 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import nl.cwi.swat.typhonql.backend.rascal.Path;
@@ -49,66 +53,54 @@ public class Runner {
 	
 	private static final ExecutorService WORKERS = Executors.newCachedThreadPool();
 	
-	public static StreamingResultTable computeResultStream(List<Consumer<List<Record>>> script, List<Path> paths) {
-		List<String> columnNames = buildColumnNames(paths);
-		return new StreamingResultTable(columnNames, StreamSupport.stream(() -> {
-			BlockingDeque<Object[]> incomingRecords = new LinkedBlockingDeque<>(); 
+	public static StreamingResultTable computeResultStream(List<Consumer<List<Record>>> script, List<Path> paths, List<String> columnNames, BiFunction<List<Field>, Stream<Record>,  Stream<Object[]>> applyOperations) {
+        List<Field> fields = paths.stream().map(p -> toField(p)).collect(Collectors.toList());
+		return new StreamingResultTable(columnNames, applyOperations.apply(fields, StreamSupport.stream(() -> {
+			BlockingDeque<Record> incomingRecords = new LinkedBlockingDeque<>(); 
+			AtomicBoolean done = new AtomicBoolean(false);
 			
 			// once the stream has a terminal operator, we start the db operations
 			// on the background, so that we can have the iterator block until results are ready
 			WORKERS.execute(() -> {
 				try {
-					List<Field> fields = paths.stream().map(p -> toField(p)).collect(Collectors.toList());
-                    script.add(rows -> projectRaw(rows, fields, incomingRecords));
+                    script.add(incomingRecords::addAll);
+                    // start processing
                     script.get(0).accept(new ArrayList<Record>());
 				}
 				finally {
-					try {
-						incomingRecords.putLast(new Object[0]);
-					} catch (InterruptedException e) {
-					}
+					done.set(true);
 				}
 			});
 
-			return Spliterators.spliteratorUnknownSize(new Iterator<Object[]>() {
-				private volatile Object[] current = null;
+			return Spliterators.spliteratorUnknownSize(new Iterator<Record>() {
+				private volatile Record current = null;
 				@Override
 				public boolean hasNext() {
-					Object[] value = current;
-					if (value != null && value.length == 0) {
-						return false;
-					}
 					try {
-						return (current = incomingRecords.takeFirst()).length != 0;
+						do {
+							current = incomingRecords.poll(100, TimeUnit.MICROSECONDS);
+						} while (current == null && !done.get());
+						return current != null;
 					} catch (InterruptedException e) {
-						current = new Object[0];
 						return false;
 					}
 				}
 
 				@Override
-				public Object[] next() {
-					Object[] result = current;
-					if (result == null || result.length == 0) {
+				public Record next() {
+					Record result = current;
+					if (result == null) {
 						throw new NoSuchElementException();
-
 					}
 					return result;
 				}
 
 			}, Spliterator.ORDERED | Spliterator.NONNULL);
-		}, 0, false));
+		}, 0, false)));
 	}
 	
-	public static void executeUpdates(List<Consumer<List<Record>>> script, List<Runnable> updates) {
-		script.add((List<Record> row) -> {
-			for (Runnable updateBlock : updates) {
-				updateBlock.run();
-			}
-		});
+	public static void executeUpdates(List<Consumer<List<Record>>> script) {
 		script.get(0).accept(new ArrayList<Record>());
-		// Removes executed updates
-		updates.clear();
 	}
 
 	private static ResultTable toResultTable(List<Path> paths, List<List<Record>> result) {

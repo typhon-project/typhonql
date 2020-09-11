@@ -48,10 +48,10 @@ public class TestFindManyAndUpdate {
 		List<Runnable> updates = new ArrayList<>();
 		
 		MongoDatabase conn1 = BackendTestCommon.getMongoDatabase("localhost", 27017, "Reviews", "admin", "LciPZmCUQjR1Jp1Y");
-		MongoDBEngine e1 = new MongoDBEngine(store, script, updates, uuids, conn1);
+		MongoDBEngine e1 = new MongoDBEngine(store, script, uuids, conn1);
 		
 		Connection conn2 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "XeNnEybEFjSe5aLy");
-		MariaDBEngine e2 = new MariaDBEngine(store, script, updates, uuids, () -> conn2);
+		MariaDBEngine e2 = new MariaDBEngine(store, script, uuids, () -> conn2);
 		
 		Map<String, Binding> map = new HashMap<>();
 		
@@ -65,7 +65,7 @@ public class TestFindManyAndUpdate {
 				"{\"$pull\": {\"product\": {\"$in\": [${param_750}]}}}",
 				map);
 		
-		Runner.executeUpdates(script, updates);
+		Runner.executeUpdates(script);
 	
 	}
 }

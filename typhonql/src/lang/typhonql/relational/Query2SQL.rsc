@@ -345,7 +345,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
 }  
   
 
-SQLExpr expr2sql((Expr)`?`, Ctx ctx, Log log = noLog) = placeholder();
+SQLExpr expr2sql((Expr)`<PlaceHolder ph>`, Ctx ctx, Log log = noLog) = SQLExpr::placeholder(name = "<ph.name>");
 
 SQLExpr expr2sql((Expr)`<Int i>`, Ctx ctx, Log log = noLog) = lit(integer(toInt("<i>")));
 

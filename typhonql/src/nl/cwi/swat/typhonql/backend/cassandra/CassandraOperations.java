@@ -94,14 +94,14 @@ public class CassandraOperations  implements Operations, AutoCloseable {
 	}
 
 	public IValue buildOperations(ResultStore store, List<Consumer<List<Record>>> script,
-			List<Runnable> updates, TyphonSessionState state, Map<String, UUID> uuids,
-			IEvaluatorContext ctx, IValueFactory vf) {
+			TyphonSessionState state, Map<String, UUID> uuids, IEvaluatorContext ctx,
+			IValueFactory vf) {
 
 		Type aliasedTuple = unalias(Objects.requireNonNull(ctx.getCurrentEnvt().lookupAlias("CassandraOperations")));
 		BiFunction<String, Function<IValue[], Result<IValue>>, ICallableValue> makeFunc = 
 				(ft, bd) -> makeFunction(ctx, state, func(aliasedTuple, ft), bd);
 
-		CassandraEngine engine = new CassandraEngine(store, script, updates, uuids);
+		CassandraEngine engine = new CassandraEngine(store, script, uuids);
 
 		return vf.tuple(
 				makeFunc.apply("executeQuery", executeBody(engine)),

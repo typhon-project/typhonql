@@ -44,7 +44,7 @@ public class TestDDLMongo {
 		
 		MongoDatabase conn1 = BackendTestCommon.getMongoDatabase("localhost", 27018, "Reviews", "admin", "admin");
 		
-		MongoDBEngine e1 = new MongoDBEngine(store, script, updates, uuids, conn1);
+		MongoDBEngine e1 = new MongoDBEngine(store, script, uuids, conn1);
 		
 		// script([step("Reviews",mongo(
 		//	findAndUpdateMany("Reviews","Biography","","{$set: { \"rating\" : null}}")),()),finish()])
@@ -53,6 +53,6 @@ public class TestDDLMongo {
 				"{$set: { \"rating\" : null}}",
 				Collections.EMPTY_MAP);
 
-		Runner.executeUpdates(script, updates);
+		Runner.executeUpdates(script);
 	}
 }

@@ -31,6 +31,7 @@ data Step
   // executeQuery("x", "relational", "select p.name from Person as p", ())
   = step(str result, Call call, Bindings bindings, list[Path] signature = [])
   | read(list[Path] path)
+  | javaRead(str className, str javaContents, list[Path] path, list[str] finalColumnNames)
   | finish()
   | newId(str var)
   ;
@@ -162,6 +163,10 @@ str runScriptAux(Script scr, Session session, Schema schema) {
       
       case newId(str var): {
         result = session.newId(var);
+      }
+      
+      case javaRead(str className, str javaContents, list[Path] path, list[str] finalColumnNames): {
+        session.javaReadAndStore(className, javaContents, path, finalColumnNames);
       }
           
       case read(list[Path path] paths): {

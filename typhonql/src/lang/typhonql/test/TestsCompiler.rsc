@@ -129,6 +129,12 @@ void setup(PolystoreInstance p, bool doTest) {
 	p.runUpdate((Request) `insert Tag { @id: #kitchen, name: "kitchen" }`);
 	p.runUpdate((Request) `insert Tag { @id: #music, name: "music" }`);
 	p.runUpdate((Request) `insert Tag { @id: #social, name: "social" }`);
+	
+	p.runUpdate((Request) `insert Tag { @id: #friendly, name: "friendly" }`);
+	
+
+	p.runUpdate((Request) `insert Synonym { @id: #syn1, source: #social, target: #friendly, weight: 10 }`);
+	
 
     if (doTest) {
       rs = p.runQuery((Request)`from Tag t select t.@id, t.name`);
@@ -136,7 +142,8 @@ void setup(PolystoreInstance p, bool doTest) {
         [U("fun"), "fun"],
         [U("kitchen"), "kitchen"],
         [U("music"), "music"],
-        [U("social"), "social"]
+        [U("social"), "social"],
+        [U("friendly"), "friendly"]
       ]>);
     }
 
@@ -182,6 +189,24 @@ void setup(PolystoreInstance p, bool doTest) {
 	  rs = p.runQuery((Request)`from User u select u.wishes where u.@id == #pablo`);
 	  p.assertResultEquals("wish obtained from user", rs, <["u.wishes"], [[U("wish1")], [U("wish2")]]>);
 	}
+	
+	p.runUpdate((Request) `insert Word { @id: #outstanding, name: "outstanding" }`);
+	p.runUpdate((Request) `insert Evaluation { @id: #evaluation1, body: "This is outstanding!" }`);
+	p.runUpdate((Request) `insert Occurrence { @id: #occurrence1, times:10, word: #outstanding, evaluation: #evaluation1 }`);
+	
+	if (doTest) {
+	  rs = p.runQuery((Request)`from Occurrence o select o.@id`);
+	  p.assertResultEquals("occurrence was inserted", rs, <["o.@id"], [
+	    [U("occurrence1")]]>);
+	  
+	  rs = p.runQuery((Request)`from Product p select p.wishes where p.@id == #tv`);
+	  p.assertResultEquals("wish obtained from product", rs, <["p.wishes"], [[U("wish1")]]>);
+	  
+	  rs = p.runQuery((Request)`from User u select u.wishes where u.@id == #pablo`);
+	  p.assertResultEquals("wish obtained from user", rs, <["u.wishes"], [[U("wish1")], [U("wish2")]]>);
+	}
+	
+	
 }
 
 void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
@@ -346,12 +371,34 @@ void testBlobs(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Review r select r.screenshot where r.@id == #newReview`);
   p.assertResultEquals("Blob in Mongo", rs, <["r.screenshot"], [["dXU="]]>);
 }
-  
 
-void testDeleteAllSQLBasic(PolystoreInstance p) {
-  p.runUpdate((Request)`delete Tag t`);
+
+void testDeleteAllSQLNeoWithCascade(PolystoreInstance p) {
+  p.runUpdate((Request)`delete Tag t where t.name == "friendly"`);
   rs = p.runQuery((Request)`from Tag t select t.@id`);
-  p.assertResultEquals("deleteAllSQLBasic", rs, <["t.@id"], []>);
+  p.assertResultEquals("testDeleteAllSQLNeoCascade", rs, <["t.@id"], 
+		[[U("fun")],
+        [U("kitchen")],
+        [U("music")],
+        [U("social")]]>);
+  rs = p.runQuery((Request)`from Synonym s select s.@id`);
+  p.assertResultEquals("deleting a synonym by cascade on tag deletes it", rs, <["s.@id"], []>);
+  rs = p.runQuery((Request)`from Tag t select t.synonymsFrom where t.@id == #social`);
+  p.assertResultEquals("deleting a synonym by cascade on tag deletes the synonyms of tag 1", rs, <["t.synonymsFrom"], [[{}]]>);
+  rs = p.runQuery((Request)`from Tag t select t.synonymsTo where t.@id == #friendly`);
+  p.assertResultEquals("deleting a synonym by cascade on tag deletes the synonyms of tag 2", rs, <["t.synonymsTo"], []>);
+  
+}
+
+void testDeleteAllSQLMongoNeoWithCascade(PolystoreInstance p) {
+  p.runUpdate((Request)`delete Word w where w.name == "outstanding"`);
+  rs = p.runQuery((Request)`from Word w select w.@id`);
+  p.assertResultEquals("testDeleteAllSQLMongoNeoWithCascade", rs, <["w.@id"], 
+		[]>);
+  rs = p.runQuery((Request)`from Occurrence o select o.@id`);
+  p.assertResultEquals("deleting a occurrence by cascade on word deletes it", rs, <["o.@id"], []>);
+  rs = p.runQuery((Request)`from Evaluation e select e.occurrences where t.@id == #evaluation1`);
+  p.assertResultEquals("deleting a occurrence by cascade on word deletes the evaluations of that occurrence", rs, <["e.occurrences"], []>);
 }
 
 void testDeleteAllWithCascade(PolystoreInstance p) {
@@ -373,9 +420,8 @@ void testDeleteAllWithCascade(PolystoreInstance p) {
 
   rs = p.runQuery((Request)`from Tag t select t.@id`);
   p.assertResultEquals("deleting products does not delete tags", rs, <["t.@id"], 
-    [[U("fun")], [U("kitchen")], [U("music")], [U("social")]]>);
+    [[U("fun")], [U("kitchen")], [U("music")], [U("social")], [U("friendly")]]>);
 }
-
 
 void testDeleteKidsRemovesParentLinksSQLLocal(PolystoreInstance p) {
   p.runUpdate((Request)`delete Item i where i.product == #tv`);
@@ -462,6 +508,7 @@ void testDeleteSQLNeoCascade(PolystoreInstance p) {
   p.assertResultEquals("testDeleteSQLNeoCascadeFromEnd", rs, <["u.@id", "u.wishes"], [[U("pablo"),  U("wish2")]]>);
     
 }
+
 
 void testUpdateSingleRefSQLNeo(PolystoreInstance p) {
   p.runUpdate((Request)`update Wish w where w.@id == #wish1 set {product: #radio}`);
@@ -617,6 +664,24 @@ void testGISonSQL(PolystoreInstance p) {
 
   rs = p.runQuery((Request)`from Product p select p.name where #point(2.0 3.0) & p.availabilityRegion`);
   p.assertResultEquals("testGISonSQLIntersectLiteral", rs, <["p.name"], [["TV"]]>);
+  
+
+}
+
+void testGISonNeo(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from Concordance c select c.@id where #point(2.0 3.0) in c.availabilityRegion`);
+  p.assertResultEquals("testGISonNeoLiteralPoint", rs, <["c.@id"], [[U("TV")]]>);
+  rs = p.runQuery((Request)`from Concordance c select c.@id where #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0)) in c.availabilityRegion`);
+  p.assertResultEquals("testGISonNeoLiteralPolygon", rs, <["c.@id"], [[U("TV")]]>);
+  rs = p.runQuery((Request)`from Concordance c select c.@id where c.location in #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0))`);
+  p.assertResultEquals("testGISonNeoLiteralPolygonRhs", rs, <["c.@id"], [[U("Pablo")]]>);
+
+  rs = p.runQuery((Request)`Concordance c select c.@id where c.location in c.availabilityRegion`);
+  p.assertResultEquals("testGISonNeoJoin", rs, <["c.@id"], [[U("Pablo")]]>);
+
+
+  rs = p.runQuery((Request)`from Concordance c select c.@id where #point(2.0 3.0) & c.availabilityRegion`);
+  p.assertResultEquals("testGISonNeoIntersectLiteral", rs, <["c.@id"], [["TV"]]>);
   
 
 }
@@ -936,6 +1001,8 @@ void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	  , testInsertNeo
 	  , testNeoReachability
 	  , testUpdateAttrNeo
+	  , testDeleteAllSQLNeoWithCascade
+	  //, testDeleteAllSQLMongoNeoWithCascade
 	  
 	  , test1
 	  , test2

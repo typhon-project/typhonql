@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.env.ModuleEnvironment;
@@ -99,7 +100,7 @@ public class TyphonSession implements Operations {
 				XMIPolystoreConnection.buildExternalArguments(
 						toStringArray(columnNames),
 						toStringArray(columnTypes),
-						toStringMatrix(values));
+						toStringMatrix(values), Collections.emptyMap());
 		return newSessionWrapper(connections, fileMap, Optional.of(externalArguments), ctx).getTuple();
 	}
 	
@@ -199,6 +200,7 @@ public class TyphonSession implements Operations {
 		FunctionType doneType = (FunctionType) aliasedTuple.getFieldType("finish");
 		FunctionType closeType = (FunctionType) aliasedTuple.getFieldType("done");
 		FunctionType newIdType = (FunctionType) aliasedTuple.getFieldType("newId");
+		FunctionType javaCall = (FunctionType) aliasedTuple.getFieldType("javaReadAndStore");
 		FunctionType hasAnyExternalArgumentsType = (FunctionType) aliasedTuple.getFieldType("hasAnyExternalArguments");
 		FunctionType hasMoreExternalArgumentsType = (FunctionType) aliasedTuple.getFieldType("hasMoreExternalArguments");
 		FunctionType nextExternalArgumentsType = (FunctionType) aliasedTuple.getFieldType("nextExternalArguments");
@@ -207,7 +209,6 @@ public class TyphonSession implements Operations {
 		ResultStore store = new ResultStore(blobMap, externalArguments);
 		Map<String, UUID> uuids = new HashMap<>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
-		List<Runnable> updates = new ArrayList<>();
 		TyphonSessionState state = new TyphonSessionState();
 
 		MariaDBOperations mariaDBOperations = new MariaDBOperations(mariaDbConnections);
@@ -223,16 +224,17 @@ public class TyphonSession implements Operations {
 		return new SessionWrapper(vf.tuple(makeGetResult(state, getResultType, ctx),
 				makeGetJavaResult(state, getJavaResultType, ctx),
 				makeReadAndStore(store, script, state, readAndStoreType, ctx),
-				makeFinish(script, updates, state, doneType, ctx),
+				makeJavaReadAndStore(store, script, state, uuids, ctx, javaCall),
+				makeFinish(script, state, doneType, ctx),
 				makeClose(store, state, closeType, ctx),
 				makeNewId(uuids, state, newIdType, ctx),
 				makeHasAnyExternalArguments(store, state, hasAnyExternalArgumentsType, ctx),
 				makeHasMoreExternalArguments(store, state, hasMoreExternalArgumentsType, ctx),
 				makeNextExternalArguments(store, state, nextExternalArgumentsType, ctx),
-				mariaDBOperations.newSQLOperations(store, script, updates, state, uuids, ctx, vf),
-				mongoOperations.newMongoOperations(store, script, updates, state, uuids, ctx, vf),
-				cassandra.buildOperations(store, script, updates, state, uuids, ctx, vf),
-				neo.newNeo4JOperations(store, script, updates, state, uuids, ctx, vf)
+				mariaDBOperations.newSQLOperations(store, script, state, uuids, ctx, vf),
+				mongoOperations.newMongoOperations(store, script, state, uuids, ctx, vf),
+				cassandra.buildOperations(store, script, state, uuids, ctx, vf),
+				neo.newNeo4JOperations(store, script, state, uuids, ctx, vf)
 				), state);
 	}
 
@@ -275,21 +277,18 @@ public class TyphonSession implements Operations {
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
+	
+	private static List<Path> compilePaths(IList pathsList) {
+		List<Path> paths = new ArrayList<>();
+		for (IValue v: pathsList) {
+			paths.add(toPath((ITuple)v));
+		}
+		return paths;
+	}
 
 	private ResultTable computeResultTable(ResultStore store, List<Consumer<List<Record>>> script, IValue[] args) {
-		List<Path> paths = new ArrayList<>();
-
-		IList pathsList = (IList) args[0];
-		Iterator<IValue> iter = pathsList.iterator();
-
-		while (iter.hasNext()) {
-			ITuple tuple = (ITuple) iter.next();
-			paths.add(toPath(tuple));
-		}
-
 		try {
-			ResultTable rt = Runner.computeResultTable(script, paths);
-			return rt;
+			return Runner.computeResultTable(script, compilePaths((IList) args[0]));
 		} catch (RuntimeException e) {
 			throw RuntimeExceptionFactory.javaException(e, null, null);
 		}
@@ -372,16 +371,26 @@ public class TyphonSession implements Operations {
 		});
 	}
 
-	private ICallableValue makeFinish(List<Consumer<List<Record>>> script, List<Runnable> updates, TyphonSessionState state,
+	private ICallableValue makeFinish(List<Consumer<List<Record>>> script, TyphonSessionState state,
 			FunctionType readAndStoreType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, readAndStoreType, args -> {
-			Runner.executeUpdates(script, updates);
+			Runner.executeUpdates(script);
 			script.clear();
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
 
-	private Path toPath(ITuple path) {
+	private IValue makeJavaReadAndStore(ResultStore store, List<Consumer<List<Record>>> script, 
+			TyphonSessionState state, Map<String, UUID> uuids, IEvaluatorContext ctx, FunctionType javaCall) {
+		return makeFunction(ctx, state, javaCall, args -> {
+			List<Path> paths = compilePaths((IList)args[2]);
+			List<String> columnNames = ((IList)args[3]).stream().map(v -> ((IString)v).getValue()).collect(Collectors.toList());
+			JavaOperation.compileAndAggregate(store, state, script, uuids, ((IString)args[0]).getValue(), ((IString)args[1]).getValue(), paths, columnNames);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
+		});
+	}
+
+	private static Path toPath(ITuple path) {
 		IList pathLst = (IList) path.get(3);
 		Iterator<IValue> vs = pathLst.iterator();
 		List<String> fields = new ArrayList<String>();

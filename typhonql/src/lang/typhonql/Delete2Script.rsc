@@ -58,6 +58,7 @@ import util::Maybe;
 alias DeleteContext = tuple[
   str entity,
   Bindings myParams,
+  Bindings nextStepParams,
   Expr me,
   SQLExpr sqlMe,
   DBObject mongoMe,
@@ -67,7 +68,8 @@ alias DeleteContext = tuple[
   Schema schema
 ];
 
-Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, Schema s) {
+Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, Schema s,
+	map[str, Param] initialParams = ()) {
   //s.rels = symmetricReduction(s.rels);
   
   str ent = "<e>";
@@ -81,6 +83,8 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   CQLExpr cqlMe = cBindMarker(name=myId);
   NeoExpr neoMe = NeoExpr::nPlaceholder(name=myId);
   Bindings myParams = ( myId: toBeDeleted );
+  Bindings nextStepParams = ();
+  
   Script theScript = script([]);
   
   void addSteps(list[Step] steps) {
@@ -105,7 +109,8 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   else {
     // first, find all id's of e things that need to be updated
     Request req = (Request)`from <EId e> <VId x> select <VId x>.@id where <{Expr ","}+ ws>`;
-    addSteps(compileQuery(req, p, s));
+    addSteps(compileQuery(req, p, s, initialParams = initialParams));
+    nextStepParams += (myId : field(p.name, "<x>", "<e>", "@id"));
   }
   
   
@@ -113,6 +118,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   DeleteContext ctx = <
     ent,
     myParams,
+    nextStepParams,
     me,
     sqlMe,
     mongoMe,
@@ -271,12 +277,12 @@ void deleteKids(
   <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
   DeleteContext ctx
 ) {
-  ctx.addSteps(removeFromJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, ctx.myParams));
+  //ctx.addSteps(removeFromJunction(dbName, from, fromRole, to, toRole, ctx.sqlMe, ctx.myParams));
   
-  ctx.addSteps(cascadeViaInverseNeo(other, to, toRole, from, ctx.neoMe, ctx.myParams, ctx.schema));
+  //ctx.addSteps(cascadeViaInverseNeo(other, to, toRole, from, ctx.neoMe, ctx.myParams, ctx.schema));
   
   Request removeEdge = [Request] "delete <to> edge where edge.<toRole> == <ctx.me>";
-  Script scr = delete2script(removeEdge, ctx.schema);
+  Script scr = delete2script(removeEdge, ctx.schema, initialParams = ctx.nextStepParams);
   ctx.addSteps(scr.steps);
   
   //deleteObject(<neo4j(), other>, ctx);

@@ -18,13 +18,15 @@ package nl.cwi.swat.typhonql.backend.rascal;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import nl.cwi.swat.typhonql.backend.Closables;
+import nl.cwi.swat.typhonql.client.JsonSerializableResult;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class TyphonSessionState implements AutoCloseable {
 	
 	private boolean finalized = false;
-	private ResultTable result = null;
+	private JsonSerializableResult result = null;
 
 	private final List<AutoCloseable> operations = new ArrayList<>();
 
@@ -36,11 +38,11 @@ public class TyphonSessionState implements AutoCloseable {
         Closables.autoCloseAll(operations, Exception.class);
 	}
 
-	public ResultTable getResult() {
+	public JsonSerializableResult getResult() {
 		return result;
 	}
 
-	public void setResult(ResultTable result) {
+	public void setResult(JsonSerializableResult result) {
 		this.result = result;
 	}
 
