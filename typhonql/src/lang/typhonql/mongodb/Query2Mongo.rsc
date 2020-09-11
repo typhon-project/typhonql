@@ -25,11 +25,13 @@ import lang::typhonml::TyphonML;
 import lang::typhonml::Util;
 import lang::typhonql::mongodb::DBCollection;
 import lang::typhonql::util::Strings;
+import lang::typhonql::util::Dates;
 
 import List;
 import ValueIO;
 import IO;
 import String;
+import util::Math;
 
 ////////
 /////// TODO: normalization (e.g. expandNavigation) is SQL specific
@@ -444,8 +446,7 @@ DBObject expr2obj(e:(Expr)`<VId x>.@id`, Ctx ctx) {
 DBObject expr2obj((Expr)`<PlaceHolder ph>`, Ctx _) = DBObject::placeholder(name = "<ph.name>");
 DBObject expr2obj((Expr)`<UUID id>`, Ctx _) = mUuid("<id.part>");
 
-DBObject expr2obj((Expr)`<DateTime d>`, Ctx _) 
-  = object([<"$date", \value(readTextValueString(#datetime, "<d>"))>]);
+DBObject expr2obj((Expr)`<DateTime d>`, Ctx _) = \value(convert(d));
 
 DBObject expr2obj((Expr)`<Int i>`, Ctx _) = \value(toInt("<i>"));
 

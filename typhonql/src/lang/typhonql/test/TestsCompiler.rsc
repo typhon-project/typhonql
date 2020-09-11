@@ -955,6 +955,12 @@ void printSchema() {
 }
 
 
+void testDeleteAllSQLBasic(PolystoreInstance p) {
+  p.runUpdate((Request)`delete Tag t`);
+  rs = p.runQuery((Request)`from Tag t select t.@id`);
+  p.assertResultEquals("deleteAllSQLBasic", rs, <["t.@id"], []>);
+}
+
 void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	tests = 
 	  [ testKeyValueFeatures

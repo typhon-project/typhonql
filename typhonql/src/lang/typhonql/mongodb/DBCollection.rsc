@@ -21,6 +21,7 @@ import List;
 import String;
 import DateTime;
 import lang::typhonql::util::UUID;
+import lang::typhonql::util::Dates;
 
 alias Prop
   = tuple[str name, DBObject val];  
@@ -51,7 +52,17 @@ str pp(\value(str s)) = "\"<strEscape(s)>\"";
 
 str pp(\value(bool b)) = "<b>";
 
-str pp(\value(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
+str pp(\value(datetime d)) {
+    epoch = epochMilliSeconds(d);
+    if (onlyDate(d)) {
+        return pp(object([<"$timestamp", object([
+            <"t", \value(round(epoch / 1000))>,
+            <"i", \value(epoch >= 0 ? 1 : -1)>
+            ])
+       >]));
+    }
+    return pp(object([<"$date", object([<"$numberLong", \value(epoch)>])>]));
+}
 
 str pp(mUuid(val)) = pp(object([
         <"$binary", object([

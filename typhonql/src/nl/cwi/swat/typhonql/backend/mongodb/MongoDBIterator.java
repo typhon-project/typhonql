@@ -16,12 +16,15 @@
 
 package nl.cwi.swat.typhonql.backend.mongodb;
 
+import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 import org.bson.Document;
+import org.bson.types.BSONTimestamp;
 import org.bson.types.Binary;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -114,7 +117,13 @@ public class MongoDBIterator implements ResultIterator {
 			throw new RuntimeException("Unsupported document in result. Doc:" + geo);
 		}
 		else if (fromDB instanceof Date) {
-			return ((Date)fromDB).toInstant().atZone(ZoneId.of("UTC")).toOffsetDateTime();
+			// due to strange way dates & timestamps are stored in mogo, we swap them around
+			return ((Date)fromDB).toInstant();
+		}
+		else if (fromDB instanceof BSONTimestamp) {
+			 long seconds = ((BSONTimestamp) fromDB).getTime();
+			 int beforEpoch = ((BSONTimestamp) fromDB).getInc();
+			 return Instant.ofEpochSecond(seconds * beforEpoch).atOffset(ZoneOffset.UTC).toLocalDate();
 		}
 		else if (fromDB instanceof String) {
 			String strValue = (String)fromDB;

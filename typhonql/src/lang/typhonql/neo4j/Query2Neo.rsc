@@ -15,6 +15,7 @@ import lang::typhonml::Util;
 
 import lang::typhonql::util::Log;
 import lang::typhonql::util::Strings;
+import lang::typhonql::util::Dates;
 
 import IO;
 import ValueIO;
@@ -389,9 +390,9 @@ NeoExpr expr2neo((Expr)`<Real r>`, Ctx ctx, Log log = noLog) = nLit(nDecimal(toR
 
 NeoExpr expr2neo((Expr)`<Str s>`, Ctx ctx, Log log = noLog) = nLit(nText(unescapeQLString(s)));
 
-NeoExpr expr2neo((Expr)`<DateAndTime d>`, Ctx ctx, Log log = noLog) = nLit(nDateTime(readTextValueString(#datetime, "<d>")));
+NeoExpr expr2neo((Expr)`<DateAndTime d>`, Ctx ctx, Log log = noLog) = nLit(nDateTime(convert(d)));
 
-NeoExpr expr2neo((Expr)`<JustDate d>`, Ctx ctx, Log log = noLog) = nLit(nDate(readTextValueString(#datetime, "<d>")));
+NeoExpr expr2neo((Expr)`<JustDate d>`, Ctx ctx, Log log = noLog) = nLit(nDate(convert(d)));
 
 NeoExpr expr2neo((Expr)`#point(<Real x> <Real y>)`, Ctx ctx, Log log = noLog) = nLit(nPoint(toReal("<x>"), toReal("<y>")));
 
