@@ -230,12 +230,6 @@ public class TyphonQL {
 		return mw.done();
 	}
 
-	private static void log(String prettyString) {
-		try {
-			ThreadSafeImpulseConsole.INSTANCE.getWriter().write(prettyString);
-		} catch (IOException e) {
-		}
-	}
 
 	private IConstructor buildConnectionInfo(String host, int port, String dbType, String user,
 			String password) {
