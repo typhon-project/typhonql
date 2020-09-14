@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.text.StringSubstitutor;
 import org.bson.Document;
 import org.locationtech.jts.geom.Geometry;
-import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
 import org.wololo.jts2geojson.GeoJSONWriter;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -177,25 +176,17 @@ public class MongoDBEngine extends Engine {
 	}
 	
 	private void scheduleUpdate(String collectionName, String doc, Map<String, Binding> bindings, BiConsumer<MongoCollection<Document>, Document> operation) {
-		log("Scheduling mongo update: " + doc + "\n");
 		new UpdateExecutor(store, script, uuids, bindings, () -> "Mongo update" + doc) {
 			
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
 				MongoCollection<Document> coll = db.getCollection(collectionName);
 				Document parsedQuery = resolveQuery(store, () -> getGridFS(), doc, values);
-				log("Executing mongo update: " + parsedQuery + "\n");
 				operation.accept(coll, parsedQuery);
 			}
 		}.scheduleUpdate();
 	}
 	
-	private static void log(String msg) {
-		try {
-			ThreadSafeImpulseConsole.INSTANCE.getWriter().append(msg);
-		} catch (IOException e) {
-		}
-	}
 
     @FunctionalInterface
     private interface TriConsumer<T, U, V> {
@@ -204,7 +195,6 @@ public class MongoDBEngine extends Engine {
 
     }
 	private void executeFilteredUpdate(String collectionName, String filter, String doc, Map<String, Binding> bindings, TriConsumer<MongoCollection<Document>, Document, Document> operation) {
-		log("Scheduling mongo filtered update: " + doc + "filter" + filter + "\n");
 		new UpdateExecutor(store, script, uuids, bindings, () -> "Mongo: " + doc + " filter:" + filter) {
 			
 			@Override
@@ -212,7 +202,6 @@ public class MongoDBEngine extends Engine {
 				MongoCollection<Document> coll = db.getCollection(collectionName);
 				Document parsedFilter = resolveQuery(store, () -> getGridFS(), filter, values);
 				Document parsedQuery = resolveQuery(store, () -> getGridFS(),doc, values);
-				log("Executing mongo filtered update: " + parsedQuery + "\n");
 				operation.accept(coll, parsedFilter, parsedQuery);
 			}
 		}.scheduleUpdate();
