@@ -10,6 +10,9 @@
     <attributes xsi:type="typhonml:Attribute" name="screenshot">
       <type xsi:type="typhonml:BlobType"/>
     </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="posted">
+      <type xsi:type="typhonml:DatetimeType"/>
+    </attributes>
     <relations name="product" type="//@entities.1" cardinality="one"/>
     <relations name="user" type="//@entities.9" cardinality="one"/>
   </entities>
@@ -103,6 +106,9 @@
     </attributes>
     <attributes xsi:type="typhonml:Attribute" name="avatarURL">
       <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="created">
+      <type xsi:type="typhonml:DatetimeType"/>
     </attributes>
     <relations name="biography" type="//@entities.10" opposite="//@entities.10/@relations.0" isContainment="true"/>
     <relations name="reviews" type="//@entities.0" cardinality="zero_many" opposite="//@entities.0/@relations.1"/>
