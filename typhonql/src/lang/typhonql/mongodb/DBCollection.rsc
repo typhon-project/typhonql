@@ -18,6 +18,7 @@ module lang::typhonql::mongodb::DBCollection
 
 import IO;
 import List;
+import util::Math;
 import String;
 import DateTime;
 import lang::typhonql::util::UUID;
@@ -56,12 +57,12 @@ str pp(\value(datetime d)) {
     epoch = epochMilliSeconds(d);
     if (onlyDate(d)) {
         return pp(object([<"$timestamp", object([
-            <"t", \value(round(epoch / 1000))>,
-            <"i", \value(epoch >= 0 ? 1 : -1)>
+            <"t", \value("<round(epoch / 1000)>")>,
+            <"i", \value("<epoch >= 0 ? 1 : -1>")>
             ])
        >]));
     }
-    return pp(object([<"$date", object([<"$numberLong", \value(epoch)>])>]));
+    return pp(object([<"$date", object([<"$numberLong", \value("<epoch>")>])>]));
 }
 
 str pp(mUuid(val)) = pp(object([

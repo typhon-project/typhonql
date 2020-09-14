@@ -42,7 +42,7 @@ public class DateTimes {
 	
 	public IString printUTCDateTime(IDateTime dt, IString format) {
 		DateTimeFormatter formatter =  DateTimeFormatter.ofPattern(format.getValue());
-		return vf.string(formatter.format(toOffsetDateTime(dt).toInstant()));
+		return vf.string(formatter.format(toOffsetDateTime(dt).withOffsetSameInstant(ZoneOffset.UTC)));
 	}
 	
 }

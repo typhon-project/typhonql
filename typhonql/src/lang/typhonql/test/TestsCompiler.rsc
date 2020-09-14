@@ -54,6 +54,7 @@ KeyVal aBillingKeyVal =
 
 void setup(PolystoreInstance p, bool doTest) {
 	p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo", location: #point(2.0 3.0), 
+                          '  created: $2020-01-02T12:24:00$,
 	                      '   photoURL: "moustache",
 	                      '   avatarURL: "blocky",
 	                      '   address: "alsoThere",
@@ -61,6 +62,7 @@ void setup(PolystoreInstance p, bool doTest) {
 	                      '   , zipcode: zip(nums: "1234", letters: "ab")
 	                      '   , location: #point(2.0 3.0))}`);
 	p.runUpdate((Request) `insert User { @id: #davy, name: "Davy", location: #point(20.0 30.0), photoURL: "beard",
+                          '  created: $2020-01-02T12:24:00-03:00$,
 	                      '   avatarURL: "blockyBeard",
 	                      '   address: "alsoThere",
 	                      '  billing: address( street: "Bla", city: "Almere"
@@ -91,9 +93,9 @@ void setup(PolystoreInstance p, bool doTest) {
 	     [[U("tv"), "TV", "Flat", "2020-04-13"], [U("radio"), "Radio", "Loud", "2020-04-13"]]>);
 	}
 	
-	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev1, content: "Good TV", user: #pablo, product: #tv, location: #point(2.0 3.0), screenshot: #blob:s1 }`, (U("s1") : "xx"));
-	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv, location: #point(20.0 30.0), screenshot: #blob:s2 }`, (U("s2") : "yy"));
-	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio, location: #point(3.0 2.0), screenshot: #blob:s3 }`, (U("s3") : "zz"));
+	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev1, content: "Good TV", user: #pablo, product: #tv, posted: $2020-02-03T02:11:00+01:00$, location: #point(2.0 3.0), screenshot: #blob:s1 }`, (U("s1") : "xx"));
+	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv, posted: $2020-02-03T02:11:00$, location: #point(20.0 30.0), screenshot: #blob:s2 }`, (U("s2") : "yy"));
+	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio, posted: $2020-02-03T02:11:00$, location: #point(3.0 2.0), screenshot: #blob:s3 }`, (U("s3") : "zz"));
 	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Review r select r.@id, r.content, r.user, r.product`);
@@ -284,6 +286,7 @@ void testLoneVars(PolystoreInstance p) {
 
 void testCustomDataTypes(PolystoreInstance p) {
   p.runUpdate((Request) `insert User { @id: #jurgen, name: "Jurgen", location: #point(2.0 3.0), 
+                          '  created: $2020-01-02T12:24:00$,
                         '  photoURL: "moustache",
                         '  avatarURL: "blockyMoustache",
 	                    '  address: "Address 2",
@@ -366,7 +369,7 @@ void testBlobs(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i.picture where i.@id == #tv5`);
   p.assertResultEquals("Blob in SQL", rs, <["i.picture"], [["YWE="]]>);
   
-  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s4 }`, (U("s4") : "uu"));
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, posted: $2020-02-02T11:11:00$, location: #point(1.0 1.0), screenshot: #blob:s4 }`, (U("s4") : "uu"));
   
   rs = p.runQuery((Request)`from Review r select r.screenshot where r.@id == #newReview`);
   p.assertResultEquals("Blob in Mongo", rs, <["r.screenshot"], [["dXU="]]>);
@@ -444,7 +447,7 @@ void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
 }
 
 void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
-  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s4 }`, (U("s4") : "uu"));
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, posted: $2020-11-22T23:55:00$, location: #point(1.0 1.0), screenshot: #blob:s4 }`, (U("s4") : "uu"));
   p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", reviews: [#newReview], availabilityRegion: #polygon((1.0 1.0)), price: 400, productionDate: $2001-01-01$}`);
   
   // this below query is not as intended, r remains unconstrained, so you get all review contents.
@@ -470,6 +473,7 @@ void testInsertSQLNeo(PolystoreInstance p) {
   p.assertResultEquals("testInsertSQLNeoToEnd", rs, <["w.product"], [[U("laptop")]]>);
   
   p.runUpdate((Request) `insert User { @id: #tijs, name: "Tijs", location: #point(2.0 3.0), 
+                          '  created: $2020-01-02T12:24:00$,
 	                      '   photoURL: "cwi",
 	                      '   avatarURL: "something",
 	                      '   address: "somwehere",
@@ -590,7 +594,7 @@ void testUpdateManyXrefSQLLocalSetToEmpty(PolystoreInstance p) {
 
 
 void testUpdateManyContainSQLtoExternal(PolystoreInstance p) {
-  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s5 }`, (U("s5") : "uu"));
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, posted: $2020-02-03T02:11:00$, location: #point(1.0 1.0), screenshot: #blob:s5 }`, (U("s5") : "uu"));
   p.runUpdate((Request)`update Product p where p.@id == #tv set {reviews +: [#newReview]}`);
   
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #tv, p.reviews == r`);
@@ -606,7 +610,7 @@ void testUpdateManyContainSQLtoExternalRemove(PolystoreInstance p) {
 
 
 void testUpdateManyContainSQLtoExternalSet(PolystoreInstance p) {
-  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "super!", user: #davy, location: #point(1.0 1.0), screenshot: #blob:s6 }`, (U("s6") : "uu"));
+  p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "super!", posted: $2020-02-03T02:11:00$, user: #davy, location: #point(1.0 1.0), screenshot: #blob:s6 }`, (U("s6") : "uu"));
   p.runUpdate((Request)`update Product p where p.@id == #tv set {reviews: [#newReview]}`);
   
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #tv, p.reviews == r`);
@@ -728,6 +732,15 @@ void testGISPrint(PolystoreInstance p) {
     p.assertResultEquals("GIS Print - Mongo", rs, <["r.location"], [["POINT (2 3)"],["POINT (20 30)"], ["POINT (3 2)"]]>);
 }
 
+void testDateTimePrint(PolystoreInstance p) {
+    rs = p.runQuery((Request)`from User u select u.created where u.@id == #davy`);
+    p.assertResultEquals("Print datetime - SQL", rs, <["u.created"],[["2020-01-02T15:24:00Z"]]>);
+    
+    rs = p.runQuery((Request)`from Review r select r.posted where r.@id == #rev1`);
+    p.assertResultEquals("Print datetime - Mongo", rs, <["r.posted"],[["2020-02-03T01:11:00Z"]]>);
+    
+}
+
 
 void testInsertNeo(PolystoreInstance p) {
   // TODO: this shows the cyclic reference problem we still need to solve.
@@ -735,6 +748,7 @@ void testInsertNeo(PolystoreInstance p) {
 
   // inventory: [#laptop1, #laptop2], 
   p.runUpdate((Request) `insert User { @id: #paul, name: "Paul", location: #point(2.0 3.0), photoURL: "klint",
+                          '  created: $2020-01-02T12:24:00$,
 	                      '  billing: address( street: "Eigth", city: "Ams"
 	                      '   , zipcode: zip(nums: "1234", letters: "ab")
 	                      '   , location: #point(2.0 3.0))}`);
@@ -754,6 +768,7 @@ void testEscapedStrings(PolystoreInstance p) {
     p.runUpdate((Request)`insert Tag { @id: #escp2, name: "Es\\tcaped\\""}`);
 
     p.runUpdate((Request) `insert User { @id: #escp3, name: "Es\\tcaped\\"", location: #point(2.0 3.0), photoURL: "Es\\tcaped\\"",
+                          '  created: $2020-01-02T12:24:00$,
                           '  address: "aa",
                           '  avatarURL: "bb",
 	                      '  billing: address( street: "Eigth", city: "Ams"
@@ -798,6 +813,7 @@ void testPreparedUpdatesSimpleSQLUpdate(PolystoreInstance p) {
 
 void testPreparedUpdatesSimpleSQLWithRefs(PolystoreInstance p) {
 	p.runPreparedUpdate((Request) `insert User { name: ??name, location: #point(2.0 3.0), 
+                          '  created: $2020-01-02T12:24:00$,
 	                      '   photoURL: "generic",
 	                      '   avatarURL: "blocky",
 	                      '   biography: ??bio,
@@ -820,7 +836,7 @@ void testPreparedUpdatesSimpleSQLWithRefs(PolystoreInstance p) {
 }
 
 void testPreparedUpdatesSimpleMongo(PolystoreInstance p) {
-	p.runPreparedUpdate((Request) `insert Review { content: ??content, location: #point(2.0 3.0) }`,
+	p.runPreparedUpdate((Request) `insert Review { content: ??content, posted: $2020-02-03T22:11:00$, location: #point(2.0 3.0) }`,
 						  ["content"],
 						  ["string"],
 						  [
@@ -837,18 +853,18 @@ void testPreparedUpdatesSimpleMongo(PolystoreInstance p) {
 }
 
 void testPreparedUpdatesSimpleMongoWithRefs(PolystoreInstance p) {
-	p.runPreparedUpdate((Request) `insert Review { content: ??content, user: ??user, product: ??product, location: #point(2.0 3.0) }`,
-						  ["content", "user", "product"],
-						  ["string", "uuid", "uuid"],
+	p.runPreparedUpdate((Request) `insert Review { content: ??content, user: ??user, product: ??product, posted: ??posted, location: #point(2.0 3.0) }`,
+						  ["content", "user", "product", "posted"],
+						  ["string", "uuid", "uuid", "datetime"],
 						  [
-						   ["Awful TV", U("tv"), U("pablo") ],
-				           ["Excellent TV", U("tv"), U("davy") ]]);
-	rs = p.runQuery((Request) `from Review r select r.content, r.user, r.product where r.product = #tv`);		    
+						   ["Awful TV", U("tv"), U("pablo"), "2020-01-02T12:22:00Z"],
+				           ["Excellent TV", U("tv"), U("davy"), "2020-01-02T12:22:00Z" ]]);
+	rs = p.runQuery((Request) `from Review r select r.content, r.user, r.product, r.posted, where r.product = #tv`);		    
 	p.assertResultEquals("prepared insert statement on mongo with references (simple)", rs,   
-		<["r.content","r.user","r.product"],
-		[["Good TV", U("pablo"), U("tv")],
-		 ["Awful TV", U("pablo"), U("tv")],
-		 ["Excellent TV", U("davy"), U("tv")]]>);
+		<["r.content","r.user","r.product", "r.posted"],
+		[["Good TV", U("pablo"), U("tv"), "2020-01-02T12:22:00Z"],
+		 ["Awful TV", U("pablo"), U("tv"), "2020-01-02T12:22:00Z"],
+		 ["Excellent TV", U("davy"), U("tv"), "2020-01-02T12:22:00Z"]]>);
 }
 
 
@@ -922,13 +938,13 @@ void test11(PolystoreInstance p) {
 
 
 void test12(PolystoreInstance p) {
-	p.runUpdate((Request) `insert User { @id: #tijs, name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0), address: "a", avatarURL: "b", photoURL: "c" }`);
+	p.runUpdate((Request) `insert User { @id: #tijs, name: "Tijs", <KeyVal aBillingKeyVal>, created: $2020-01-02T12:13:00$, location: #point(1.0 1.0), address: "a", avatarURL: "b", photoURL: "c" }`);
 	rs = p.runQuery((Request) `from User u select u.@id where u.@id == #tijs`);
 	p.assertResultEquals("basic insert in sql", rs, <["u.@id"],[[U("tijs")]]>);
 }
 
 void test13(PolystoreInstance p) {
-	res = p.runUpdate((Request) `insert User { name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0), address: "a", avatarURL: "b", photoURL: "c" }`);
+	res = p.runUpdate((Request) `insert User { name: "Tijs", <KeyVal aBillingKeyVal>, location: #point(1.0 1.0), created: $2020-01-02T12:13:00$, address: "a", avatarURL: "b", photoURL: "c" }`);
 	p.assertEquals("one insert is one object inserted", size(res), 1);
 	uuid =res[0];
 	rs = p.runQuery([Request] "from User u select u.@id where u.@id == #<uuid>");

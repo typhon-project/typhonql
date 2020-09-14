@@ -19,6 +19,7 @@ package nl.cwi.swat.typhonql.client.resulttable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 

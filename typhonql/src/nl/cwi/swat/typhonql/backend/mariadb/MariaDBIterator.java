@@ -25,9 +25,12 @@ import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.UUID;
 
 import org.locationtech.jts.geom.GeometryFactory;
@@ -63,6 +66,7 @@ public class MariaDBIterator implements ResultIterator {
 	
 	private static final Map<Integer, ColumnMapperFunction> columnMapperFuncs;
 	private static final GeometryFactory wsgFactory = new GeometryFactory(new PrecisionModel(), 4326);
+	private static final Calendar UTC = Calendar.getInstance(TimeZone.getTimeZone(ZoneId.of("UTC")));
 
 	static {
 		columnMapperFuncs = new HashMap<>();
@@ -72,7 +76,7 @@ public class MariaDBIterator implements ResultIterator {
 		columnMapperFuncs.put(Types.BINARY, (r, i) -> MakeUUID.uuidFromBytes(r.getBytes(i)));
 		columnMapperFuncs.put(ColumnType.LONGBLOB.getSqlType(), (r, i) -> blobOrGeo(r.getBinaryStream(i)));
 		columnMapperFuncs.put(ColumnType.DATE.getSqlType(), (r, i) -> r.getDate(i).toLocalDate());
-		columnMapperFuncs.put(ColumnType.DATETIME.getSqlType(), (r, i) -> r.getTimestamp(i).toInstant());
+		columnMapperFuncs.put(ColumnType.DATETIME.getSqlType(), (r, i) -> r.getTimestamp(i, UTC).toInstant());
 		columnMapperFuncs.put(ColumnType.DOUBLE.getSqlType(), ResultSet::getDouble);
 		columnMapperFuncs.put(ColumnType.FLOAT.getSqlType(), ResultSet::getDouble);
 		columnMapperFuncs.put(ColumnType.GEOMETRY.getSqlType(), (r, i) -> blobOrGeo(r.getBinaryStream(i)));
