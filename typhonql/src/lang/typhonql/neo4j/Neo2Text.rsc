@@ -2,6 +2,7 @@ module lang::typhonql::neo4j::Neo2Text
 
 import lang::typhonql::neo4j::Neo;
 import lang::typhonml::Util;
+import lang::typhonql::util::Dates;
 import List;
 import String;
 import DateTime;
@@ -154,7 +155,7 @@ str neopp(nInteger(int x)) = "<x>";
 
 str neopp(nBoolean(bool b)) = "<b>";
 
-str neopp(nDateTime(datetime d)) = "localdatetime(\'<replaceFirst(printDate(d, "YYYY-MM-dd HH:mm:ss"), " ", "T")>\')";
+str neopp(nDateTime(datetime d)) = "datetime(\'<printUTCDate(d, "yyyy-MM-dd\'T\'HH:mm:ss.SSSX")>\')";
 
 str neopp(nDate(datetime d)) = "date(\'<printDate(d, "YYYY-MM-dd")>\')";
 

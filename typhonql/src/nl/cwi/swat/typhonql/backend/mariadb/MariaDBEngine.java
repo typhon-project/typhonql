@@ -19,6 +19,9 @@ package nl.cwi.swat.typhonql.backend.mariadb;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -85,6 +88,9 @@ public class MariaDBEngine extends Engine {
             }
             else if (value instanceof UUID) {
             	stm.setBytes(i, MakeUUID.uuidToBytes((UUID)value));
+            }
+            else if (value instanceof Instant) {
+            	stm.setObject(i, ((Instant) value).atOffset(ZoneOffset.UTC).toLocalDateTime());
             }
             else {
                 // TODO: what to do with NULL?

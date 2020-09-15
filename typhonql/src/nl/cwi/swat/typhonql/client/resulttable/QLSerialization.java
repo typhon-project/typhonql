@@ -2,22 +2,21 @@ package nl.cwi.swat.typhonql.client.resulttable;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.stream.Stream;
 
+import org.apache.tinkerpop.gremlin.structure.io.binary.types.InstantSerializer;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 
 
 public class QLSerialization {
@@ -31,7 +30,7 @@ public class QLSerialization {
 		customSerializers.addSerializer(Polygon.class, new GeometrySerializer());
 		customSerializers.addSerializer(Point.class, new GeometrySerializer());
 		customSerializers.addSerializer(LocalDate.class, new LocalDateSerializer());
-		customSerializers.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer());
+		customSerializers.addSerializer(Instant.class, new InstantSerializer());
 		customSerializers.addSerializer(InputStream.class, new ByteStreamSerializer());
 
 		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
@@ -68,16 +67,16 @@ public class QLSerialization {
 	
 	
 	@SuppressWarnings("serial")
-	public static class LocalDateTimeSerializer extends StdSerializer<LocalDateTime> {
+	public static class InstantSerializer extends StdSerializer<Instant> {
 		
-		public LocalDateTimeSerializer() {
-			super(LocalDateTime.class);
+		public InstantSerializer() {
+			super(Instant.class);
 		}
 
 		@Override
-		public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider provider)
+		public void serialize(Instant value, JsonGenerator gen, SerializerProvider provider)
 				throws IOException {
-			gen.writeString(value.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+			gen.writeString(DateTimeFormatter.ISO_INSTANT.format(value));
 		}
 	}
 

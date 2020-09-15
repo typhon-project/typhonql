@@ -20,6 +20,7 @@ import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
 import lang::typhonql::Script;
 import lang::typhonql::util::Strings;
+import lang::typhonql::util::Dates;
 import lang::typhonql::Normalize;
 import lang::typhonql::Session;
 import lang::typhonql::TDBC;
@@ -652,7 +653,7 @@ DBObject obj2dbObj((Expr)`<UUID id>`) = mUuid(uuid2str(id));
 DBObject obj2dbObj((Expr)`#blob:<UUIDPart prt>`) = \value("#blob:<prt>");
 
 DBObject obj2dbObj((Expr)`<DateTime d>`) 
-  = object([<"$date", \value(readTextValueString(#datetime, "<d>"))>]);
+  = \value(convert(d));
 
 
 DBObject obj2dbObj((Expr)`#point(<Real x> <Real y>)`) 

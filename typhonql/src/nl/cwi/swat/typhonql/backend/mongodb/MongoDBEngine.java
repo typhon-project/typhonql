@@ -19,6 +19,7 @@ package nl.cwi.swat.typhonql.backend.mongodb;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -125,10 +126,13 @@ public class MongoDBEngine extends Engine {
 			return new GeoJSONWriter().write((Geometry)obj).toString();
 		}
 		else if (obj instanceof LocalDate) {
-			return serialize(((LocalDate) obj).atStartOfDay());
+			// it's mixed around with instance, since timestamps only store seconds since epoch, which is fine for dates, but not so fine for tru timestamps
+			long epoch = ((LocalDate)obj).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+			return "{\"$timestamp\": {\"t\":" + Math.abs(epoch) + "\"i\": "+ (epoch >= 0 ? "1" : "-1") + "}}";
 		}
-		else if (obj instanceof LocalDateTime) {
-			return "{\"$date\": {\"$numberLong\":" + ((LocalDateTime)obj).toEpochSecond(ZoneOffset.UTC) * 1000L + "}}";
+		else if (obj instanceof Instant) {
+			// it's mixed around with instance, since timestamps only store seconds since epoch, which is fine for dates, but not so fine for tru timestamps
+			return "{\"$date\": {\"$numberLong\":" + ((Instant)obj).toEpochMilli() + "}}";
 		}
 		else if (obj instanceof UUID) {
 			return "{ \"$binary\": {\"base64\": \"" + MakeUUID.uuidToBase64((UUID)obj) + "\", \"subType\": \"04\"}}";

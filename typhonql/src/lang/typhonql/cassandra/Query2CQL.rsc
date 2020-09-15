@@ -31,6 +31,7 @@ import lang::typhonql::cassandra::Schema2CQL;
 
 import lang::typhonql::util::Log;
 import lang::typhonql::util::Strings;
+import lang::typhonql::util::Dates;
 
 import String;
 import ValueIO;
@@ -219,10 +220,10 @@ CQLExpr expr2cql((Expr)`<Str s>`) = cTerm(cString(unescapeQLString(s)));
 
 // a la cql timestamp
 CQLExpr expr2cql((Expr)`<DateAndTime d>`) 
-  = cTerm(cString(printDate(readTextValueString(#datetime, "<d>"), "yyyy-MM-dd\'T\'HH:mm:ss.SSSZZ")));
+  = cTerm(cString(printUTCDate(convert(d), "yyyy-MM-dd\'T\'HH:mm:ss.SSSXX")));
 
 CQLExpr expr2cql((Expr)`<JustDate d>`)  
-  = cTerm(cString(printDate(readTextValueString(#datetime, "<d>"), "yyyy-MM-dd")));
+  = cTerm(cString(printDate(convert(d), "yyyy-MM-dd")));
 
 CQLExpr expr2cql((Expr)`<UUID u>`) = cTerm(cUUID("<u>"[1..]));
 
