@@ -22,7 +22,7 @@ extend lang::std::Id;
 syntax Expr
   = attr: VId var "." {Id "."}+  attrs
   | var: VId var
-  | placeHolder: PlaceHolder
+  | placeHolder: PlaceHolder ph
   | key: VId var "." "@id"
   | @category="Number" \int: Int intValue
   | @category="Constant" \str: Str strValue
