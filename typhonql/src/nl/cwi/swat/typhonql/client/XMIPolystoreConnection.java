@@ -273,47 +273,6 @@ public class XMIPolystoreConnection {
 		return specials.appendTail(result).toString();
 	}
 	
-	private static final Map<String, Function<String, IValue>> qlRascalValueMappers;
-	static {
-		final IString QUOTE = VF.string('"');
-		final IString DOLLAR = VF.string('$');
-		final IString POUND = VF.string('#');
-		qlRascalValueMappers = new HashMap<>();
-		qlRascalValueMappers.put("int", VF::string);
-		qlRascalValueMappers.put("bigint", VF::string);
-		qlRascalValueMappers.put("float", VF::string);
-		qlRascalValueMappers.put("string", s -> QUOTE.concat(VF.string(s)).concat(QUOTE));
-		qlRascalValueMappers.put("bool", VF::string);
-		qlRascalValueMappers.put("text", VF::string);
-		qlRascalValueMappers.put("date", s -> DOLLAR.concat(VF.string(s)).concat(DOLLAR));
-		qlRascalValueMappers.put("datetime", s -> DOLLAR.concat(VF.string(s)).concat(DOLLAR));
-		qlRascalValueMappers.put("point", s -> POUND.concat(VF.string(s.toLowerCase())));
-		qlRascalValueMappers.put("polygon", s -> POUND.concat(VF.string(s.toLowerCase())));
-		qlRascalValueMappers.put("uuid", s -> POUND.concat(VF.string(s.toLowerCase())));
-	}
-	
-	private static IList buildBoundRowValues(String[] columnTypes, String[][] matrix) {
-		List<Function<String, IValue>> mappedColumns
-			= new ArrayList<>(columnTypes.length);
-		for (String ct : columnTypes) {
-			Function<String, IValue> mapper = qlRascalValueMappers.get(ct);
-			if (mapper == null) {
-				throw new RuntimeException("Unknown type: " + ct 
-						+ " not in: " + qlRascalValueMappers.keySet());
-			}
-			mappedColumns.add(mapper);
-		}
-		IListWriter result = VF.listWriter();
-		for (String[] row: matrix) {
-			IListWriter rowList = VF.listWriter();
-			for (int c = 0; c < row.length; c++) {
-				rowList.append(mappedColumns.get(c).apply(row[c]));
-			}
-			result.append(rowList.done());
-		}
-		return result.done();
-	}
-	
 	private static final Map<String, Function<String, Object>> qlValueMappers;
 	private static final GeometryFactory wsgFactory = new GeometryFactory(new PrecisionModel(), 4326);
 	static {
