@@ -135,6 +135,7 @@ data ColumnType
   | date()
   | uuidType()
   | dateTime()
+  | boolean()
   ; 
   
 data Value

@@ -258,3 +258,4 @@ str pp(date()) = "date";
 str pp(dateTime()) = "datetime";
 str pp(point()) = "point";
 str pp(polygon()) = "polygon";
+str pp(boolean()) = "boolean";
