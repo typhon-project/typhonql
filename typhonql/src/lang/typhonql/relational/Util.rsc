@@ -89,6 +89,7 @@ ColumnType typhonType2SQL("polygon") = polygon();
 ColumnType typhonType2SQL("Real") = float();
 
 ColumnType typhonType2SQL("String") = text();
+ColumnType typhonType2SQL("bool") = boolean();
 
 ColumnType typhonType2SQL("string") = text();
 
