@@ -64,6 +64,10 @@ Script createEntity(p:<mongodb(), str dbName>, str entity, Schema s, Log log = n
 	return script([step(dbName, mongo(createCollection(dbName, entity)), ())]);
 }
 
+Script createEntity(p:<neo4j(), str dbName>, str entity, Schema s, Log log = noLog) {
+
+}
+
 default Script createEntity(p:<db, str dbName>, str entity, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
 }
@@ -85,6 +89,11 @@ Script createAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str
 				findAndUpdateMany(dbName, entity, "{}", "{$set: { \"<attribute>\" : null}}"));
 	return script([step(dbName, call, ())]);
 }
+
+Script createAttribute(p:<neo4j(), str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
+	
+}
+
 
 default Script createAttribute(p:<db, str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
@@ -134,6 +143,10 @@ Script createRelation(p:<mongodb(), str dbName>, str entity, str relation, str t
 	return script([step(dbName, call, ())]);
 }
 
+Script createRelation(p:<neo4j(), str dbName>, str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
+
+}
+
 default Script createRelation(p:<db, str dbName>,  str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
 }
@@ -152,6 +165,10 @@ Script dropEntity(p:<sql(), str dbName>, str entity, Schema s, Log log = noLog) 
 
 Script dropEntity(p:<mongodb(), str dbName>, str entity, Schema s, Log log = noLog) {
 	return script([step(dbName, mongo(dropCollection(dbName, entity)), ())]);
+}
+
+Script dropEntity(p:<neo4j(), str dbName>, str entity, Schema s, Log log = noLog) {
+	return script();
 }
 
 default Script dropEntity(p:<db, str dbName>, str entity, Schema s, Log log = noLog) {
@@ -175,6 +192,13 @@ Script dropAttribute(p:<mongodb(), str dbName>, str entity, str attribute, Schem
 				findAndUpdateMany(dbName, entity, "{}", "{$unset: { \"<attribute>\" : 1}}"));
 	return script([step(dbName, call, ())]);
 }
+
+Script dropAttribute(p:<neo4j(), str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
+	Call call = mongo(
+				findAndUpdateMany(dbName, entity, "{}", "{$unset: { \"<attribute>\" : 1}}"));
+	return script([step(dbName, call, ())]);
+}
+
 
 default Script dropAttribute(p:<db, str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
@@ -222,6 +246,10 @@ Script dropRelation(p:<mongodb(), str dbName>, str entity, str relation, str to,
 	}
 }
 
+Script dropRelation(p:<neo4j(), str dbName>, str entity, str relation, str to, str toRole, bool containment, Schema s, Log log = noLog) {
+
+}
+
 default Script dropRelation(p:<db, str dbName>,  str entity, str relation, str to, str toRole, bool containment, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
 }
@@ -246,6 +274,14 @@ Script renameEntity(p:<mongodb(), str dbName>, str entity, str newName, Schema s
   	}
   	throw "Not found entity <eId>";
 }
+
+Script renameEntity(p:<neo4j(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
+	if (<p:<db, dbName>, eId> <- s.placement, entity == eId) {
+		return script([step(dbName, mongo(renameCollection(dbName, entity, newName)), ())]);
+  	}
+  	throw "Not found entity <eId>";
+}
+
 
 default Script renameEntity(p:<db, str dbName>, str entity, str newName, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
@@ -274,6 +310,10 @@ Script renameAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str
 	return script([step(dbName, call, ())]);
 }
 
+Script renameAttribute(p:<neo4j(), str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
+
+}
+
 default Script renameAttribute(p:<db, str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
 }
@@ -299,6 +339,10 @@ Script renameRelation(p:<mongodb(), str dbName>, str entity, str relation, str n
 	Call call = mongo(
 				findAndUpdateMany(dbName, entity, "", "{ $rename : { \"<relation>\" : \"<newName>\" }}"));
 	return script([step(dbName, call, ())]);
+}
+
+Script renameRelation(p:<neo4j(), str dbName>, str entity, str relation, str newName, Schema s, Log log = noLog) {
+	
 }
 
 default Script renameRelation(p:<db, str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
