@@ -78,7 +78,7 @@ alias TestExecuter =
 		void(list[void(PolystoreInstance proxy)], bool) runTests,
 		Schema() fetchSchema];
 		
-TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password, Log log = NO_LOG()) {
+TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password, Log log = NO_LOG(), bool doTypeChecking = true) {
 	Conn conn = <host, port, user, password>;
 	Schema sch = fetchSchema(conn);
 	CheckerMLSchema checkSch = convertModel(fetchNonNormalizedModel(conn));
@@ -86,14 +86,15 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	Session session;
 	
 	void checkRequest(Request r, Schema schm = sch) {
-	   try {
-           model = checkQLTree(r, (schm == sch) ? checkSch : converModel(schm));
+	   if (doTypeChecking)
+	   	try {
+           model = checkQLTree(r, (schm == sch) ? checkSch : convertModel(schm));
            for (m <- model.messages) {
                println("  <failEmoji> checker: <m>");
            }
-	   } catch value v: {
+	    } catch value v: {
 	       println("Checker crashed with: <v>");
-	   }
+	    }
 	};
 	
 	Stats stats = ();
@@ -260,7 +261,7 @@ Schema fetchNonNormalizedModel(Conn c)
 
 list[str] runDDLInTest(Request req, Schema s, Session session, Log log) {
 	runDDL(req, s, session, log = log);
-	return <-1, ()>;
+	return [];
 }
 
 list[str] runUpdateInTest(Request req, Schema s, Session session, Log log) {
