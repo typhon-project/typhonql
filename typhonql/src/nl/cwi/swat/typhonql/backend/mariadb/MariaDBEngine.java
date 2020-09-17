@@ -52,16 +52,21 @@ public class MariaDBEngine extends Engine {
 		this.connection = sqlConnection;
 	}
 
-	private PreparedStatement prepareQuery(String query, List<String> vars, Set<String> blobs) throws SQLException {
+	private PreparedStatement prepareQuery(String query, List<String> vars, Set<String> blobs, Set<String> geometries) throws SQLException {
 		Matcher m = QL_PARAMS.matcher(query);
 		StringBuffer result = new StringBuffer(query.length());
 		while (m.find()) {
-            m.appendReplacement(result, "?");
 			String param = m.group(1);
-            if (param.startsWith("blob-")) {
-            	param = param.substring("blob-".length());
-            	blobs.add(param);
-            }
+			if (geometries.contains(param)) {
+				m.appendReplacement(result, "GeomFromWKB(?, 4326)");
+			}
+			else {
+                m.appendReplacement(result, "?");
+                if (param.startsWith("blob-")) {
+                    param = param.substring("blob-".length());
+                    blobs.add(param);
+                }
+			}
             vars.add(param);
 		}
 		m.appendTail(result);
@@ -73,7 +78,13 @@ public class MariaDBEngine extends Engine {
             throws SQLException {
         List<String> vars = new ArrayList<>();
         Set<String> blobs = new HashSet<>();
-        PreparedStatement stm = prepareQuery(query, vars, blobs);
+        Set<String> geometries = new HashSet<>();
+        values.forEach((k, v) -> {
+        	if (v instanceof Geometry) {
+        		geometries.add(k);
+        	}
+        });
+        PreparedStatement stm = prepareQuery(query, vars, blobs, geometries);
         int i = 1;
         for (String varName : vars) {
             Object value = values.get(varName);
@@ -81,7 +92,7 @@ public class MariaDBEngine extends Engine {
                 stm.setBlob(i, store.getBlob(varName));
             }
             else if (value instanceof Geometry) {
-                stm.setBytes(i, new WKBWriter().write((Geometry) value));
+            	stm.setBytes(i, new WKBWriter().write((Geometry) value));
             }
             else if (value instanceof UUID) {
             	stm.setBytes(i, MakeUUID.uuidToBytes((UUID)value));
