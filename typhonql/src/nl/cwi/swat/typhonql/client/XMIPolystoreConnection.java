@@ -292,7 +292,11 @@ public class XMIPolystoreConnection {
 	
 	private static Geometry readWKT(String s) {
 		try {
-			return new WKTReader(wsgFactory).read(s);
+			Geometry result = new WKTReader(wsgFactory).read(s);
+			if (result == null) {
+				throw new RuntimeException("Error parsing geometry: " + s);
+			}
+			return result;
 		} catch (ParseException e) {
 			throw new RuntimeException("Error parsing geometry", e);
 		}
