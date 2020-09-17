@@ -24,7 +24,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 
-import nl.cwi.swat.typhonql.client.CommandResult;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 
@@ -40,7 +39,7 @@ public class XMIBasedTyphonQLClientTest4DDL {
 
 		XMIPolystoreConnection conn = new XMIPolystoreConnection();
 		
-		CommandResult cr = conn.executeUpdate(xmiString, Arrays.asList(infos), Collections.emptyMap(), "create Bank at Inventory");
+		 String[] cr = conn.executeUpdate(xmiString, Arrays.asList(infos), Collections.emptyMap(), "create Bank at Inventory");
 		System.out.println(cr);
 		
 	}
