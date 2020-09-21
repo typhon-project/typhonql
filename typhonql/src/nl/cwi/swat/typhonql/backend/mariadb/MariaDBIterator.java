@@ -22,10 +22,15 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.UUID;
 
 import org.locationtech.jts.geom.GeometryFactory;
@@ -61,23 +66,24 @@ public class MariaDBIterator implements ResultIterator {
 	
 	private static final Map<Integer, ColumnMapperFunction> columnMapperFuncs;
 	private static final GeometryFactory wsgFactory = new GeometryFactory(new PrecisionModel(), 4326);
+	private static final Calendar UTC = Calendar.getInstance(TimeZone.getTimeZone(ZoneId.of("UTC")));
 
 	static {
 		columnMapperFuncs = new HashMap<>();
 		// TODO: consider not using class name but something else for this mapping (like SQL type)
-		columnMapperFuncs.put(ColumnType.BIGINT.getSqlType(), (r, i) -> r.getLong(i));
-		columnMapperFuncs.put(ColumnType.BIT.getSqlType(), (r, i) -> r.getBoolean(i));
+		columnMapperFuncs.put(ColumnType.BIGINT.getSqlType(), ResultSet::getLong);
+		columnMapperFuncs.put(ColumnType.BIT.getSqlType(), ResultSet::getBoolean);
 		columnMapperFuncs.put(Types.BINARY, (r, i) -> MakeUUID.uuidFromBytes(r.getBytes(i)));
 		columnMapperFuncs.put(ColumnType.LONGBLOB.getSqlType(), (r, i) -> blobOrGeo(r.getBinaryStream(i)));
-		columnMapperFuncs.put(ColumnType.DATE.getSqlType(), (r, i) -> r.getObject(i, LocalDate.class));
-		columnMapperFuncs.put(ColumnType.DATETIME.getSqlType(), (r, i) -> r.getObject(i, LocalDateTime.class));
-		columnMapperFuncs.put(ColumnType.DOUBLE.getSqlType(), (r, i) -> r.getDouble(i));
-		columnMapperFuncs.put(ColumnType.FLOAT.getSqlType(), (r, i) -> r.getDouble(i));
+		columnMapperFuncs.put(ColumnType.DATE.getSqlType(), (r, i) -> r.getDate(i).toLocalDate());
+		columnMapperFuncs.put(ColumnType.DATETIME.getSqlType(), (r, i) -> r.getTimestamp(i, UTC).toInstant());
+		columnMapperFuncs.put(ColumnType.DOUBLE.getSqlType(), ResultSet::getDouble);
+		columnMapperFuncs.put(ColumnType.FLOAT.getSqlType(), ResultSet::getDouble);
 		columnMapperFuncs.put(ColumnType.GEOMETRY.getSqlType(), (r, i) -> blobOrGeo(r.getBinaryStream(i)));
-		columnMapperFuncs.put(ColumnType.INTEGER.getSqlType(), (r, i) -> r.getInt(i));
+		columnMapperFuncs.put(ColumnType.INTEGER.getSqlType(), ResultSet::getInt);
 		columnMapperFuncs.put(ColumnType.NULL.getSqlType(), (r, i) -> null);
-		columnMapperFuncs.put(ColumnType.STRING.getSqlType(), (r, i) -> r.getString(i));
-		columnMapperFuncs.put(Types.CHAR, (r, i) -> r.getString(i));
+		columnMapperFuncs.put(ColumnType.STRING.getSqlType(), ResultSet::getString);
+		columnMapperFuncs.put(Types.CHAR, ResultSet::getString);
 	}
 	
 	private static Object blobOrGeo(InputStream b) {

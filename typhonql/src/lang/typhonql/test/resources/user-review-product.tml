@@ -12,6 +12,7 @@ entity Review {
 	content : text
 	location: point
 	screenshot: blob
+	posted: datetime
 	product -> Product[1]
 	user -> User[1]
 }
@@ -76,6 +77,7 @@ entity User {
 	location: point
 	photoURL: string[256]
 	avatarURL: string[256]
+	created: datetime
 	biography :-> Biography."Biography.user"[0..1]
 	reviews -> Review."Review.user"[0..*]
 	wishes :-> Wish."Wish.user"[0..*]

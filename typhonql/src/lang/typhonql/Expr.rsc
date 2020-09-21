@@ -151,34 +151,26 @@ lexical Real
   
 syntax DateTime
 	= date: JustDate date
-	| time: JustTime  time
 	| full: DateAndTime dateTime ;
 
 lexical JustDate
 	= "$" DatePart "$";
 	
-lexical DatePart
-	= [0-9] [0-9] [0-9] [0-9] "-" [0-1] [0-9] "-" [0-3] [0-9] 
-	| [0-9] [0-9] [0-9] [0-9] [0-1] [0-9] [0-3] [0-9] ;
+lexical DatePart = Year y "-" Month m "-" Day d;
 	
+lexical Year = [0-9] [0-9] [0-9] [0-9];
+lexical Month = [0-1] [0-9];
+lexical Day = [0-3] [0-9];
 	
-lexical JustTime
-	= "$T" TimePartNoTZ !>> [+\-] "$"
-	| "$T" TimePartNoTZ TimeZonePart "$"
-	;
-	
-lexical DateAndTime
-	= "$" DatePart "T" TimePartNoTZ !>> [+\-] "$"
-	| "$" DatePart "T" TimePartNoTZ TimeZonePart "$";
+lexical DateAndTime = "$" DatePart "T" TimePart ZoneOffset? "$";
 
-lexical TimeZonePart
-	= [+ \-] [0-1] [0-9] ":" [0-5] [0-9] 
+lexical ZoneOffset 
+	= [+ \-] Hour h ":" Minute m
 	| "Z" 
-	| [+ \-] [0-1] [0-9] 
-	| [+ \-] [0-1] [0-9] [0-5] [0-9] 
 	;
 
-lexical TimePartNoTZ
-	= [0-2] [0-9] [0-5] [0-9] [0-5] [0-9] ([, .] [0-9] ([0-9] [0-9]?)?)? 
-	| [0-2] [0-9] ":" [0-5] [0-9] ":" [0-5] [0-9] ([, .] [0-9] ([0-9] [0-9]?)?)? 
-	;
+lexical TimePart = Hour h ":" Minute m ":" Second s Millisecond? ms;
+lexical Hour = [0-2] [0-9];
+lexical Minute = [0-5] [0-9];
+lexical Second = [0-5] [0-9];
+lexical Millisecond = [.] [0-9] ([0-9] [0-9]?)?;

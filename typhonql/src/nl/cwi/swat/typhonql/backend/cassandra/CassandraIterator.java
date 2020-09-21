@@ -16,18 +16,19 @@
 
 package nl.cwi.swat.typhonql.backend.cassandra;
 
-import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
 import com.datastax.oss.driver.api.core.cql.ColumnDefinition;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+
 import nl.cwi.swat.typhonql.backend.ResultIterator;
 
 public class CassandraIterator implements ResultIterator {
@@ -44,10 +45,10 @@ public class CassandraIterator implements ResultIterator {
 		mappers.put(DataTypes.DATE.getProtocolCode(), Row::getLocalDate);
 		mappers.put(DataTypes.DOUBLE.getProtocolCode(), Row::getDouble);
 		mappers.put(DataTypes.INT.getProtocolCode(), Row::getInt);
+		mappers.put(DataTypes.BIGINT.getProtocolCode(), Row::getLong);
 		mappers.put(DataTypes.TEXT.getProtocolCode(), Row::getString);
-		mappers.put(DataTypes.TIME.getProtocolCode(), Row::getLocalTime);
-		mappers.put(DataTypes.TIMESTAMP.getProtocolCode(), (r, c) -> r.getInstant(c).atZone(ZoneId.of("UTC")).toLocalDateTime());
-		mappers.put(DataTypes.UUID.getProtocolCode(), (r, c) -> r.getUuid(c).toString());
+		mappers.put(DataTypes.TIMESTAMP.getProtocolCode(), Row::getInstant);
+		mappers.put(DataTypes.UUID.getProtocolCode(), Row::getUuid);
 	}
 
 	public CassandraIterator(ResultSet results) {

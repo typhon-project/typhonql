@@ -18,6 +18,7 @@ module lang::typhonql::relational::SQL2Text
 
 import lang::typhonql::relational::SQL;
 import lang::typhonml::Util;
+import lang::typhonql::util::Dates;
 import List;
 import String;
 import DateTime;
@@ -186,7 +187,7 @@ str pp(integer(int x)) = "<x>";
 
 str pp(boolean(bool b)) = "<b>";
 
-str pp(dateTime(datetime d)) = "\'<printDate(d, "YYYY-MM-dd HH:mm:ss")>\'";
+str pp(dateTime(datetime d)) = "\'<printUTCDateTime(d, "YYYY-MM-dd HH:mm:ss")>\'";
 
 str pp(date(datetime d)) = "\'<printDate(d, "YYYY-MM-dd")>\'";
 

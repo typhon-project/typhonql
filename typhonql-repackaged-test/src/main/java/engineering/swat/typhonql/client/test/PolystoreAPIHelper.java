@@ -81,7 +81,7 @@ public class PolystoreAPIHelper {
 		
 		if (response1.getStatusLine() != null) {
 			if (response1.getStatusLine().getStatusCode() != HttpStatus.SC_OK)
-				throw new RuntimeException("Problem with the HTTP connection to the polystore: Status was " + response1.getStatusLine().getStatusCode());
+				throw new RuntimeException("Problem with the HTTP connection to the polystore: Status was " + response1.getStatusLine().getStatusCode() + "for : " + path);
 		}
 		
 		try {

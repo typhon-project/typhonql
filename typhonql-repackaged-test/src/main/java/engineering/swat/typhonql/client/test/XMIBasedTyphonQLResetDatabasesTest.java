@@ -26,9 +26,9 @@ import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 public class XMIBasedTyphonQLResetDatabasesTest {
 	
 	private static String HOST = "localhost";
-	private static int PORT = 8080;
-	private static String USER = "pablo";
-	private static String PASSWORD = "antonio";
+	private static int PORT = 8082;
+	private static String USER = "admin";
+	private static String PASSWORD = "admin1@";
 	
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		

@@ -1,5 +1,6 @@
 package nl.cwi.swat.typhonql.backend.neo4j;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -84,7 +85,10 @@ public class Neo4JEngine extends Engine {
 			return toNeo4JObject(((LocalDate) obj).atStartOfDay());
 		}
 		else if (obj instanceof LocalDateTime) {
-			return "{\"$date\": {\"$numberLong\":" + ((LocalDateTime)obj).toEpochSecond(ZoneOffset.UTC) * 1000L + "}}";
+			return obj;
+		}
+		else if (obj instanceof Instant) {
+			return ((Instant) obj).atOffset(ZoneOffset.UTC);
 		}
 		else
 			throw new RuntimeException("Query executor does not know how to serialize object of type " +obj.getClass());

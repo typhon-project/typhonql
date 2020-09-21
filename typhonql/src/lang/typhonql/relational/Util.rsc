@@ -18,6 +18,7 @@ module lang::typhonql::relational::Util
 
 import lang::typhonql::Expr;
 import lang::typhonql::util::Strings;
+import lang::typhonql::util::Dates;
 import lang::typhonql::relational::SQL;
 import List;
 import String;
@@ -139,9 +140,9 @@ Value evalExpr((Expr)`#polygon(<{Segment ","}* segs>)`)
 lrel[real, real] seg2lrel((Segment)`(<{XY ","}* xys>)`)
   = [ <toReal("<x>"), toReal("<y>")> | (XY)`<Real x> <Real y>` <- xys ]; 
 
-Value evalExpr((Expr)`<DateAndTime d>`) =Value::dateTime(readTextValueString(#datetime, "<d>"));
+Value evalExpr((Expr)`<DateAndTime d>`) =Value::dateTime(convert(d));
 
-Value evalExpr((Expr)`<JustDate d>`) = Value::date(readTextValueString(#datetime, "<d>"));
+Value evalExpr((Expr)`<JustDate d>`) = Value::date(convert(d));
 
 // should only happen for @id field (because refs should be done via keys etc.)
 Value evalExpr((Expr)`<UUID u>`) = sUuid("<u.part>");

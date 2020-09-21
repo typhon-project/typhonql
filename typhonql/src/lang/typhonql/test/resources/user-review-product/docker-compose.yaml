@@ -63,7 +63,7 @@ services:
     image: clms/typhon-polystore-ui:latest
     environment:
       API_PORT: 8080
-      API_HOST: localhost
+      API_HOST: typhon-polystore-service
     depends_on: 
       - typhon-polystore-service
     ports:
@@ -71,4 +71,6 @@ services:
         published: 4200
   typhonql-server:
     image: swatengineering/typhonql-server:dev
+    environment:
+      TZ: Europe/Amsterdam
     restart: always

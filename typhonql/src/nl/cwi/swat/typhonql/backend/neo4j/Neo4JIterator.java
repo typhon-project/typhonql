@@ -70,8 +70,8 @@ public class Neo4JIterator implements ResultIterator {
 		else if (v.hasType(TYPES.DATE())) {
 			return v.asLocalDate();
 		}
-		else if (v.hasType(TYPES.LOCAL_DATE_TIME())) {
-			return v.asLocalDateTime();
+		else if (v.hasType(TYPES.DATE_TIME())) {
+			return v.asOffsetDateTime().toInstant();
 		}
 		else if (v.hasType(TYPES.LIST())) {
 			List<List<Object>> lines = v.asList(Values.ofList());
