@@ -16,6 +16,7 @@
 
 package nl.cwi.swat.typhonql.backend.mariadb;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -35,6 +36,7 @@ import java.util.regex.Matcher;
 
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKBWriter;
+import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
 
 import lang.typhonql.util.MakeUUID;
 import nl.cwi.swat.typhonql.backend.Binding;
@@ -45,13 +47,15 @@ import nl.cwi.swat.typhonql.backend.ResultIterator;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.UpdateExecutor;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
+import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 
 public class MariaDBEngine extends Engine {
 
 	private final Supplier<Connection> connection;
+	private final Map<String, PreparedStatementArgs> preparedQueries = new HashMap<>();
 
-	public MariaDBEngine(ResultStore store, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, Supplier<Connection> sqlConnection) {
-		super(store, script, uuids);
+	public MariaDBEngine(ResultStore store, TyphonSessionState state, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, Supplier<Connection> sqlConnection) {
+		super(store, state, script, uuids);
 		this.connection = sqlConnection;
 	}
 
@@ -73,44 +77,63 @@ public class MariaDBEngine extends Engine {
             vars.add(param);
 		}
 		m.appendTail(result);
-		String jdbcQuery = result.toString();
-        return connection.get().prepareStatement(jdbcQuery);
+        return connection.get().prepareStatement(result.toString());
 	}
 
-    private PreparedStatement prepareAndBind(String query, Map<String, Object> values)
+    private PreparedStatement prepareAndBind(String query, Map<String, Object> values, boolean delayable)
             throws SQLException {
-        List<String> vars = new ArrayList<>();
-        Set<String> blobs = new HashSet<>();
-        Set<String> geometries = new HashSet<>();
-        values.forEach((k, v) -> {
-        	if (v instanceof Geometry) {
-        		geometries.add(k);
-        	}
-        });
-        PreparedStatement stm = prepareQuery(query, vars, blobs, geometries);
+    	PreparedStatementArgs preparedQuery = preparedQueries.get(query);
+    	if (preparedQuery == null) {
+            List<String> vars = new ArrayList<>();
+            Set<String> blobs = new HashSet<>();
+            Set<String> geometries = new HashSet<>();
+            values.forEach((k, v) -> {
+                if (v instanceof Geometry) {
+                    geometries.add(k);
+                }
+            });
+            PreparedStatement stm = prepareQuery(query, vars, blobs, geometries);
+            preparedQuery = new PreparedStatementArgs(stm, vars, blobs);
+            preparedQueries.put(query, preparedQuery);
+    	}
         int i = 1;
-        for (String varName : vars) {
+        for (String varName : preparedQuery.variables) {
             Object value = values.get(varName);
-            if (value == null && blobs.contains(varName)) {
-                stm.setBlob(i, store.getBlob(varName));
+            if (value == null && preparedQuery.blobs.contains(varName)) {
+                preparedQuery.statement.setBlob(i, store.getBlob(varName));
             }
             else if (value instanceof Geometry) {
-            	stm.setBytes(i, new WKBWriter().write((Geometry) value));
+            	preparedQuery.statement.setBytes(i, new WKBWriter().write((Geometry) value));
             }
             else if (value instanceof UUID) {
-            	stm.setBytes(i, MakeUUID.uuidToBytes((UUID)value));
+            	preparedQuery.statement.setBytes(i, MakeUUID.uuidToBytes((UUID)value));
             }
             else if (value instanceof Instant) {
-            	stm.setObject(i, ((Instant) value).atOffset(ZoneOffset.UTC).toLocalDateTime());
+            	preparedQuery.statement.setObject(i, ((Instant) value).atOffset(ZoneOffset.UTC).toLocalDateTime());
             }
             else {
                 // TODO: what to do with NULL?
                 // other classes jdbc can take care of itself
-                stm.setObject(i, value);
+                preparedQuery.statement.setObject(i, value);
             }
             i++;
         }
-        return stm;
+        if (delayable && store.hasExternalArguments()) {
+        	preparedQuery.statement.addBatch();
+        	if (!preparedQuery.alreadyScheduled) {
+        		PreparedStatement stm = preparedQuery.statement;
+        		state.addDelayedTask(() -> {
+					try {
+						stm.executeBatch();
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+				});
+        		preparedQuery.alreadyScheduled = true;
+        	}
+        	return null;
+        }
+        return preparedQuery.statement;
     }
 
 	public void executeSelect(String resultId, String query, List<Path> signature) {
@@ -124,7 +147,7 @@ public class MariaDBEngine extends Engine {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				try {
-					return new MariaDBIterator(prepareAndBind(query, values).executeQuery());
+					return new MariaDBIterator(prepareAndBind(query, values, false).executeQuery());
 				} catch (SQLException e1) {
 					throw new RuntimeException(e1);
 				}
@@ -140,11 +163,27 @@ public class MariaDBEngine extends Engine {
             @Override
             protected void performUpdate(Map<String, Object> values) {
                 try {
-					prepareAndBind(query, values).executeUpdate();
+					PreparedStatement result = prepareAndBind(query, values, true);
+					if (result != null) {
+						// we aren't scheduled for later
+						result.executeUpdate();
+					}
                 } catch (SQLException e1) {
                     throw new RuntimeException(e1);
                 }
             }
 		}.scheduleUpdate();
+	}
+	
+	private static class PreparedStatementArgs {
+		public final PreparedStatement statement;
+		public final List<String> variables;
+		public final Set<String> blobs;
+		public boolean alreadyScheduled = false;
+		public PreparedStatementArgs(PreparedStatement statement, List<String> variables, Set<String> blobs) {
+			this.statement = statement;
+			this.variables = variables;
+			this.blobs = blobs;
+		}
 	}
 }

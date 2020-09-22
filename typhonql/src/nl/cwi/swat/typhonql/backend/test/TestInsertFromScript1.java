@@ -32,6 +32,7 @@ import nl.cwi.swat.typhonql.backend.GeneratedIdentifier;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.mariadb.MariaDBEngine;
+import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 
 public class TestInsertFromScript1 {
 	
@@ -59,7 +60,7 @@ public class TestInsertFromScript1 {
 		
 		Connection conn = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
 		
-		MariaDBEngine e1 = new MariaDBEngine(store, script, uuids,() -> conn);
+		MariaDBEngine e1 = new MariaDBEngine(store, new TyphonSessionState(), script,uuids, () -> conn);
 		
 		uuids.put("param_0", UUID.randomUUID());
 		HashMap<String, Binding> map1 = new LinkedHashMap<String, Binding>();

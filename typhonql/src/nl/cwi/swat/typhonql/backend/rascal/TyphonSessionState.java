@@ -29,6 +29,8 @@ public class TyphonSessionState implements AutoCloseable {
 	private JsonSerializableResult result = null;
 
 	private final List<AutoCloseable> operations = new ArrayList<>();
+	
+	private final List<Runnable> delayedTasks = new ArrayList<>();
 
 
 	@Override
@@ -52,5 +54,14 @@ public class TyphonSessionState implements AutoCloseable {
 	
 	public void addOpperations(AutoCloseable op) {
 		operations.add(op);
+	}
+	
+	public void addDelayedTask(Runnable task) {
+		delayedTasks.add(task);
+	}
+	
+	public void flush() {
+		delayedTasks.forEach(Runnable::run);
+		delayedTasks.clear();
 	}
 }

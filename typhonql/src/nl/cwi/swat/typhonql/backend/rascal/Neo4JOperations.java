@@ -107,7 +107,7 @@ public class Neo4JOperations implements Operations, AutoCloseable {
 		
 		Function<String, Neo4JEngine> getEngine = 
 				(dbName) ->
-					new Neo4JEngine(store, script, uuids, getConnection(dbName, true));
+					new Neo4JEngine(store, state, script, uuids, getConnection(dbName, true));
 
 		return vf.tuple(makeExecuteMatch(getEngine, state, executeMatchType, ctx, vf),
 				makeExecuteUpdate(getEngine, state, executeUpdateType, ctx, vf));

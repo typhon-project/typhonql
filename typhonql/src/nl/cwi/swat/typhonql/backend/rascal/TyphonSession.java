@@ -256,6 +256,10 @@ public class TyphonSession implements Operations {
 			IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, nextExternalArgumentsType, args -> {
 			store.nextExternalArguments();
+			if (!store.hasMoreExternalArguments()) {
+				// we are done iterating over arguments, so let's flush all
+				state.flush();
+			}
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}

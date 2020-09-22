@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -24,13 +25,15 @@ import nl.cwi.swat.typhonql.backend.ResultIterator;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.UpdateExecutor;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
+import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 
 
 public class Neo4JEngine extends Engine {
 	private final Driver driver;
+	private final List<Consumer<Session>> delayedUpdates = new ArrayList();
 
-	public Neo4JEngine(ResultStore store, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, Driver driver) {
-		super(store, script, uuids);
+	public Neo4JEngine(ResultStore store, TyphonSessionState state, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, Driver driver) {
+		super(store, state, script, uuids);
 		this.driver = driver;
 	}
 	
@@ -39,8 +42,21 @@ public class Neo4JEngine extends Engine {
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
 				Map<String, Object> pars = toNeo4JObjects(values);
-				try (Session session = driver.session()) {
-					session.run(query, pars);
+				if (store.hasExternalArguments()) {
+					if (delayedUpdates.isEmpty()) {
+						state.addDelayedTask(() -> {
+                            try (Session session = driver.session()) {
+                            	delayedUpdates.forEach(c -> c.accept(session));
+                            	delayedUpdates.clear();
+                            }
+						});
+					}
+					delayedUpdates.add(s -> s.run(query, pars));
+				}
+				else {
+                    try (Session session = driver.session()) {
+                        session.run(query, pars);
+                    }
 				}
 			}
 			

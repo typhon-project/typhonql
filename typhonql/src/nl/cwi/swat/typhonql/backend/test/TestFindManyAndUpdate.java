@@ -37,6 +37,7 @@ import nl.cwi.swat.typhonql.backend.Runner;
 import nl.cwi.swat.typhonql.backend.mariadb.MariaDBEngine;
 import nl.cwi.swat.typhonql.backend.mongodb.MongoDBEngine;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
+import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 
 public class TestFindManyAndUpdate {
 
@@ -47,11 +48,12 @@ public class TestFindManyAndUpdate {
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();
 		
+		TyphonSessionState state = new TyphonSessionState();
 		MongoDatabase conn1 = BackendTestCommon.getMongoDatabase("localhost", 27017, "Reviews", "admin", "LciPZmCUQjR1Jp1Y");
-		MongoDBEngine e1 = new MongoDBEngine(store, script, uuids, conn1);
+		MongoDBEngine e1 = new MongoDBEngine(store, state, script, uuids, conn1);
 		
 		Connection conn2 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "XeNnEybEFjSe5aLy");
-		MariaDBEngine e2 = new MariaDBEngine(store, script, uuids, () -> conn2);
+		MariaDBEngine e2 = new MariaDBEngine(store, state, script, uuids, () -> conn2);
 		
 		Map<String, Binding> map = new HashMap<>();
 		

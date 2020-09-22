@@ -59,6 +59,7 @@ import nl.cwi.swat.typhonql.backend.ResultIterator;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.UpdateExecutor;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
+import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 
 public class MongoDBEngine extends Engine {
 	private final MongoDatabase db;
@@ -71,8 +72,8 @@ public class MongoDBEngine extends Engine {
 		return gridBucket;
 	}
 
-	public MongoDBEngine(ResultStore store, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, MongoDatabase db) {
-		super(store, script, uuids);
+	public MongoDBEngine(ResultStore store, TyphonSessionState state, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, MongoDatabase db) {
+		super(store, state, script, uuids);
 		this.db = db;
 	}
 
