@@ -284,7 +284,7 @@ public class MongoOperations implements Operations, AutoCloseable {
 			aliasedTuple = aliasedTuple.getAliased();
 		}
 
-		Function<String, MongoDBEngine> getEngine = dbName -> new MongoDBEngine(store, script, uuids, getDatabase(dbName));
+		Function<String, MongoDBEngine> getEngine = dbName -> new MongoDBEngine(store, state, script, uuids, getDatabase(dbName));
 
 		return vf.tuple(makeFind(getEngine, state, func(aliasedTuple, "find"), ctx, vf),
 				makeFindWithProjection(getEngine, state, func(aliasedTuple, "findWithProjection"), ctx, vf),
