@@ -144,6 +144,25 @@ void smokeKeyValInf() {
   
 }
 
+bool isFreeTextType(str ty) = startsWith(ty, "freetext");
+
+rel[str, str] getFreeTypeAnalyses(str ty) = 
+	{<analysis[0..leftBracketPos], analysis[(leftBracketPos+1)..-1]> | analysis <- split(", ", csv), leftBracketPos := findFirst(analysis, "[")}
+	when csv := ty[9..-1];
+	
+rel[str, str] getFreeTypeAnalyses(str ent, str f, Schema s) {
+    // return the list of processes associated with a free text attribute
+    if (<ent, f, ty> <- s.attrs, isFreeTextType(ty))
+    	return getFreeTypeAnalyses(ty);
+   	return {};
+} 	
+
+bool isFreeTextAttr(str ent, str f, Schema s) {
+    // return the list of processes associated with a free text attribute
+    if (<ent, f, ty> <- s.attrs, isFreeTextType(ty))
+    	return true;
+   	return false;
+} 
 
 list[str] isKeyValAttr(str ent, str f, Schema s) {
     // return the inferred entity role if f is a key val attribute
