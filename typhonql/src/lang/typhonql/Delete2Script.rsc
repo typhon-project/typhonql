@@ -127,6 +127,11 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
     addSteps,
     s
   >;
+  
+  if (a <- s.attrs, isFreeTextAttr(ent, a, s)) {
+  	str json = getDeleteJson(nlpMe, ent);
+    addSteps([step("nlae", nlp(delete(json)), myParams)]);
+  }
  
   for (Rel r:<ent, Cardinality _, _, _, _, str to, true> <- s.rels) {
      //println("Deleting kids: <ent> -\> <to>");
