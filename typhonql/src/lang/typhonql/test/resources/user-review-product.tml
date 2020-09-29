@@ -16,6 +16,7 @@ entity Review {
 	product -> Product[1]
 	user -> User[1]
 }
+
 entity Product {
 	name : string[256]
 	description : string[256]
@@ -97,6 +98,13 @@ entity Wish {
 	product -> Product[1]
 }
 
+entity Company {
+	name: string[64]
+	mission: freetext[SentimentAnalysis[eng_spa], NamedEntityRecognition[ner1]]
+	vision: freetext[SentimentAnalysis[eng_spa]]
+	
+}
+
 keyvaluedb Stuff {
 	elements {
 		User { userKey -> ("User.photoURL", "User.avatarURL") } 
@@ -125,6 +133,7 @@ relationaldb Inventory {
 		table { TagDB: Tag }
 		table { ItemDB: Item }
 		table { WordDB : Word }
+		table { CompanyDB : Company }
 	}
 }
 
