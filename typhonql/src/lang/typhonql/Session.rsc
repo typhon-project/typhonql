@@ -38,7 +38,8 @@ alias Session = tuple[
 	SQLOperations sql,
    	MongoOperations mongo,
    	CassandraOperations cassandra,
-   	Neo4JOperations neo
+   	Neo4JOperations neo,
+   	NlpOperations nlp 
 ];
 
 alias ResultTable
@@ -84,6 +85,11 @@ alias MongoOperations = tuple[
 	void (str dbName, str coll) dropCollection,
 	void (str dbName) dropDatabase
 ];
+
+alias NlpOperations = tuple[
+	void (str json, Bindings bindings) process
+];
+
 
 data Connection
  // for now they are the same, but they might be different
