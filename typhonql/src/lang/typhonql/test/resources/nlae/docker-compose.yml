@@ -1,0 +1,19 @@
+version: "3"
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.8.1
+    environment:
+      ES_JAVA_OPTS: '-Xms256m -Xmx512m'
+      discovery.type: single-node
+  rest-api:
+    image: ehudev/nlae-rest-api-sim:latest
+    depends_on:
+      - elasticsearch
+    ports:
+      - "8888:8080"
+
+volumes:
+ esdata1:
+   driver: local
+
