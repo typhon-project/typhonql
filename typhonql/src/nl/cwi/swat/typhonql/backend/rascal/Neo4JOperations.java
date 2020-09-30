@@ -117,6 +117,6 @@ public class Neo4JOperations implements Operations, AutoCloseable {
 
 	@Override
 	public void close() throws Exception {
-		Closables.autoCloseAll(connections.values(), Neo4jException.class);
+		connections.values().forEach(d -> d.closeAsync());
 	}
 }
