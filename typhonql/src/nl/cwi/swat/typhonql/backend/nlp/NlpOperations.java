@@ -57,11 +57,12 @@ public class NlpOperations implements Operations, AutoCloseable{
 		}
 
 		FunctionType processType = (FunctionType) aliasedTuple.getFieldType("process");
-		
+		FunctionType deleteType = (FunctionType) aliasedTuple.getFieldType("delete");
 		
 		Supplier<NlpEngine> getEngine = () -> new NlpEngine(store, state, script, uuids, host, port, user, password);
 
-		return vf.tuple(makeProcess(getEngine, state, processType, ctx, vf));
+		return vf.tuple(makeProcess(getEngine, state, processType, ctx, vf),
+				makeDelete(getEngine, state, deleteType, ctx, vf));
 	}
 
 	private IValue makeProcess(Supplier<NlpEngine> getEngine, TyphonSessionState state, FunctionType processType, IEvaluatorContext ctx,
@@ -73,6 +74,19 @@ public class NlpOperations implements Operations, AutoCloseable{
 			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
 			
 			getEngine.get().process(query, bindingsMap);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
+		});
+	}
+	
+	private IValue makeDelete(Supplier<NlpEngine> getEngine, TyphonSessionState state, FunctionType deleteType, IEvaluatorContext ctx,
+			IValueFactory vf) {
+		return makeFunction(ctx, state, deleteType, args -> {
+			String query = ((IString) args[0]).getValue();
+			IMap bindings = (IMap) args[1];
+
+			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
+			
+			getEngine.get().delete(query, bindingsMap);
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
