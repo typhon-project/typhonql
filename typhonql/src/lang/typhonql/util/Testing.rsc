@@ -81,7 +81,8 @@ alias TestExecuter =
 TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, str user, str password, Log log = NO_LOG()) {
 	Conn conn = <host, port, user, password>;
 	Schema sch = fetchSchema(conn);
-	CheckerMLSchema checkSch = convertModel(fetchNonNormalizedModel(conn));
+	Schema schPlain = fetchNonNormalizedModel(conn);
+	CheckerMLSchema checkSch = convertModel(schPlain);
 	map[str, Connection] connections =  readConnectionsInfo(conn.host, toInt(conn.port), conn.user, conn.password);
 	Session session;
 	
@@ -126,21 +127,21 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	ResultTable(Request req) myRunQuery = ResultTable(Request req) {
         checkRequest(req);
 		ses = newSession(connections);
-		result = runQueryInTest(req, sch, ses, log);
+		result = runQueryInTest(req, sch, schPlain, ses, log);
 		ses.done();
 		return result;
 	};
 	ResultTable(Request req, Schema s) myRunQueryForSchema = ResultTable(Request req, Schema s) {
         checkRequest(req, schm = s);
 		ses = newSession(connections);
-		result = runQueryInTest(req, s, ses, log);
+		result = runQueryInTest(req, s, s, ses, log);
 		ses.done();
 		return result;
 	};
 	list[str](Request req) myRunUpdate = list[str](Request req) {
         checkRequest(req);
 		ses = newSession(connections);
-		result = runUpdateInTest(req, sch, ses, log);
+		result = runUpdateInTest(req, sch, schPlain, ses, log);
 		ses.done();
 		return result;
 	};
@@ -148,14 +149,14 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	myRunUpdateBlobs = list[str](Request req, map[str,str] blobMap) {
         checkRequest(req);
 		ses = newSession(connections, blobMap = blobMap);
-		result = runUpdateInTest(req, sch, ses, log);
+		result = runUpdateInTest(req, sch, schPlain, ses, log);
 		ses.done();
 		return result;
 	};
 	list[str](Request req, Schema s) myRunUpdateForSchema = list[str](Request req, Schema s) {
         checkRequest(req, schm = s);
-		ses = newSession(connections, log = log);
-		result = runUpdateInTest(req, s, ses, log);
+		ses = newSession(connections);
+		result = runUpdateInTest(req, s, s, ses, log);
 		ses.done();
 		return result;
 	};
@@ -177,7 +178,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		myRunPreparedUpdate = list[str](Request req, list[str] columnNames, list[str] columnTypes, list[list[str]] vs) {
         checkRequest(req);
 	    ses = newSessionWithArguments(connections, columnNames, columnTypes, vs); 
-		result = runUpdateInTest(req, sch, ses, log);
+		result = runUpdateInTest(req, sch, schPlain, ses, log);
 		ses.done();
 		return result;
 	};
@@ -263,12 +264,12 @@ list[str] runDDLInTest(Request req, Schema s, Session session, Log log) {
 	return <-1, ()>;
 }
 
-list[str] runUpdateInTest(Request req, Schema s, Session session, Log log) {
-	return runUpdate(req, s, session, log = log);
+list[str] runUpdateInTest(Request req, Schema s, Schema sPlain, Session session, Log log) {
+	return runUpdate(req, s, sPlain, session, log = log);
 }
 
-ResultTable runQueryInTest(Request req, Schema s, Session session, Log log) {
-	return runQuery(req, s, session, log = log);
+ResultTable runQueryInTest(Request req, Schema s, Schema sPlain, Session session, Log log) {
+	return runQuery(req, s, sPlain, session, log = log);
 }
 
 void resetDatabasesInTest(Schema sch, Session session, Log log) {
