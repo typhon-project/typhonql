@@ -63,6 +63,7 @@ list[Path] exp2path((Expr)`<VId x>`, Env env, Schema s)
   = exp2path((Expr)`<VId x>.@id`, env, s);
 
 
+
 list[Path] exp2path((Expr)`<VId x>.@id`, Env env, Schema s)
   = [<p.name, "<x>", ent, ["@id"]>]
   when
@@ -79,6 +80,11 @@ list[Path] exp2path((Expr)`<VId x>.<Id f>`, Env env, Schema s)
   when
     str ent := env["<x>"],
     <Place p, ent> <- s.placement;
+
+// NB: for the aggregation iteration this should be the aliased variables
+list[Path] exp2path((Expr)`<VId agg>(<Expr e>) as <Id _>`, Env env, Schema s)
+  = exp2path(e, env, s);
+  
 
 default list[Path] exp2path(Expr _, Env _, Schema _) = [];
 
