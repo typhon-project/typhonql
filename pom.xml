@@ -81,7 +81,7 @@
         <repository>
             <id>usethesource-rascalmpl-stable</id>
             <layout>p2</layout>
-            <url>https://update.rascal-mpl.org/archive/0.18.2/</url>
+            <url>https://update.rascal-mpl.org/archive/0.18.3/</url>
         </repository>
 
         <repository>

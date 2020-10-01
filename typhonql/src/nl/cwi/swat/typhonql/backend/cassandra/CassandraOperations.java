@@ -101,7 +101,7 @@ public class CassandraOperations  implements Operations, AutoCloseable {
 		BiFunction<String, Function<IValue[], Result<IValue>>, ICallableValue> makeFunc = 
 				(ft, bd) -> makeFunction(ctx, state, func(aliasedTuple, ft), bd);
 
-		CassandraEngine engine = new CassandraEngine(store, script, uuids);
+		CassandraEngine engine = new CassandraEngine(store, state, script, uuids);
 
 		return vf.tuple(
 				makeFunc.apply("executeQuery", executeBody(engine)),

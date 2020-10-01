@@ -32,6 +32,7 @@ import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.Runner;
 import nl.cwi.swat.typhonql.backend.mariadb.MariaDBEngine;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
+import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class TestSelect4 {
@@ -44,9 +45,10 @@ public class TestSelect4 {
 		Map<String, UUID> uuids = new HashMap<>();
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();
+		TyphonSessionState state = new TyphonSessionState();
 		
 		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
-		MariaDBEngine e1 = new MariaDBEngine(store, script, uuids, () -> conn1);
+		MariaDBEngine e1 = new MariaDBEngine(store, state, script, uuids, () -> conn1);
 		
 		e1.executeSelect("Inventory", "select `p`.`Product.name` as `p.Product.name`, `p`.`Product.@id` as `p.Product.@id` from `Product` as `p` where true;",
 				Arrays.asList(new Path("Inventory", "p", "Product", new String[] { "name" })));
