@@ -25,6 +25,7 @@ import lang::typhonql::Session;
 import lang::typhonql::Request2Script;
 import lang::typhonql::Schema2Script;
 import lang::typhonql::Script;
+import lang::typhonql::check::Checker;
 import lang::typhonml::XMIReader;
 
 import lang::typhonql::util::Log;
@@ -44,7 +45,7 @@ void runDDL(Request r, Schema s, Session session, Log log = noLog) {
 		// TODO This is needed because we do not have an explicit way to distinguish
 		// DDL updates from DML updates. Perhaps we should consider it
   		if (isDDL(stmt)) {
-  			runUpdate(r, s, session, log = log);
+  			runUpdate(r, s, s, session, log = log);
   		}
   		else {
   			throw "DDL statement should have been provided";
@@ -55,13 +56,28 @@ void runDDL(Request r, Schema s, Session session, Log log = noLog) {
   	}
 }
 
-list[str] runUpdate(Request r, Schema s, Session session, Log log = noLog,
+void validateQuery(Tree t, Schema s, Log log) {
+    m = checkQLTree(t, s);
+    errorMessage = "";
+    for (error(msg, at) <- m.messages) {
+        if (errorMessage != "") {
+            errorMessage += " & ";
+        }
+        errorMessage += "<msg> at offset <at.offset>";
+    }
+    if (errorMessage != "") {
+        throw errorMessage;
+    }
+}
+
+list[str] runUpdate(Request r, Schema s, Schema sPlain, Session session, Log log = noLog,
 	int argumentsSize = -1) {
 	if ((Request) `<Statement stmt>` := r) {
 		// TODO This is needed because we do not have an explicit way to distinguish
 		// DDL updates from DML updates. Perhaps we should consider it
   		if (!isDDL(stmt)) {
             startScript = getNanoTime();
+            validateQuery(r, sPlain, log);
   			scr = request2script(r, s, log = log);
 			log("[runUpdate] Script: <scr>");
             endScript = getNanoTime();
@@ -83,9 +99,10 @@ list[str] runUpdate(Request r, Schema s, Session session, Log log = noLog,
     throw "Statement should have been provided";
 }
 
-void runScriptForQuery(Request r, Schema sch, Session session, Log log = noLog) {
+void runScriptForQuery(Request r, Schema sch, Schema schPlain, Session session, Log log = noLog) {
 	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
         startScript = getNanoTime();
+        validateQuery(r, schPlain, log);
 		scr = request2script(r, sch, log = log);
         endScript = getNanoTime();
 		log("[runScriptForQuery] Script: <scr>");
@@ -99,18 +116,18 @@ void runScriptForQuery(Request r, Schema sch, Session session, Log log = noLog) 
 		throw "Expected query, given statement";
 }
 
-value runQueryAndGetJava(Request r, Schema sch, Session session, Log log = noLog) {
-	runScriptForQuery(r, sch, session, log = log);
+value runQueryAndGetJava(Request r, Schema sch, Schema schPlain, Session session, Log log = noLog) {
+	runScriptForQuery(r, sch, schPlain, session, log = log);
 	return session.getJavaResult();
 }
 
-value runGetEntity(str entity, str uuid, Schema sch, Session session, Log log = noLog) {
+value runGetEntity(str entity, str uuid, Schema sch, Schema schPlain, Session session, Log log = noLog) {
 	list[str] attributes = [att | <entity, att, _> <- sch.attrs];
 	// TODO put alias to the columns
 	Request r = parseRequest("from <entity> e select
 	                      ' <intercalate(", ", ["e.<a>" | a <- attributes])> 
 	                      'where e.@id == #<uuid>");	
-	runScriptForQuery(r, sch, session, log = log);
+	runScriptForQuery(r, sch, schPlain, session, log = log);
 	return session.getJavaResult();
 }
 
@@ -119,7 +136,7 @@ Where enrichWhere(str var, w:(Where) `where <{Expr ","}+ clauses>`) =
 		case (Expr) `<VId x>` => [Expr] "<var>.<x>"
 	};
 
-value listEntities(str entity, str whereClause, str limit, str sortBy, Schema sch, Session session, Log log = noLog) {
+value listEntities(str entity, str whereClause, str limit, str sortBy, Schema sch, Schema schPlain, Session session, Log log = noLog) {
 	list[str] attributes = [att | <entity, att, _> <- sch.attrs];
 	Request r = parseRequest("from <entity> e select
 	                      ' <intercalate(", ", ["e.<a>" | a <- attributes])> 
@@ -129,19 +146,15 @@ value listEntities(str entity, str whereClause, str limit, str sortBy, Schema sc
 		case Where w => enrichWhere("e", w) 
 	};	                      
 	                      
-	runScriptForQuery(r, sch, session, log = log);
+	runScriptForQuery(r, sch, schPlain, session, log = log);
 	return session.getJavaResult();
 }
 
-ResultTable runQuery(Request r, Schema sch, Session session, Log log = noLog) {
-	runScriptForQuery(r, sch, session, log = log);
+ResultTable runQuery(Request r, Schema sch, Schema schPlain, Session session, Log log = noLog) {
+	runScriptForQuery(r, sch, schPlain, session, log = log);
 	return session.getResult();
 }
 
-list[str] runPrepared(Request req, int argumentsSize, Schema s, Session session, Log log = noLog) {
-  cr = runUpdate(req, s, session, log = log, argumentsSize = argumentsSize);
-  return [cr];
-}
 
 void runSchema(Schema sch, Session session, Log log = noLog) {
     startScript = getNanoTime();
@@ -160,10 +173,10 @@ list[str] runUpdate(str src, str xmiString, map[str, Connection] connections, Lo
 }
 
 list[str] runUpdate(str src, str xmiString, Session session, Log log = noLog) {
-  Model m = xmiString2Model(xmiString);
-  Schema s = model2schema(m);
+  Schema s = loadSchemaFromXMI(xmiString, normalize = true);
+  Schema sPlain = loadSchemaFromXMI(xmiString, normalize = false);
   Request req = parseRequest(src);
-  return runUpdate(req, s, session, log = log);
+  return runUpdate(req, s, splain, session, log = log);
 }
 
 ResultTable runQuery(str src, str xmiString, map[str, Connection] connections, Log log = noLog) {
@@ -172,10 +185,10 @@ ResultTable runQuery(str src, str xmiString, map[str, Connection] connections, L
 }
 
 ResultTable runQuery(str src, str xmiString, Session session, Log log = noLog) {
-  Model m = xmiString2Model(xmiString);
-  Schema s = model2schema(m);
+  Schema s = loadSchemaFromXMI(xmiString, normalize = true);
+  Schema sPlain = loadSchemaFromXMI(xmiString, normalize = false);
   Request req = parseRequest(src);
-  return runQuery(req, s, session, log = log);
+  return runQuery(req, s, sPlain, session, log = log);
 }
 
 value runQueryAndGetJava(str src, str xmiString, map[str, Connection] connections, Log log = noLog) {
@@ -184,10 +197,10 @@ value runQueryAndGetJava(str src, str xmiString, map[str, Connection] connection
 }
 
 value runQueryAndGetJava(str src, str xmiString, Session session, Log log = noLog) {
-  Model m = xmiString2Model(xmiString);
-  Schema s = model2schema(m);
+  Schema s = loadSchemaFromXMI(xmiString, normalize = true);
+  Schema sPlain = loadSchemaFromXMI(xmiString, normalize = false);
   Request req = parseRequest(src);
-  return runQueryAndGetJava(req, s, session, log = log);
+  return runQueryAndGetJava(req, s, sPlain, session, log = log);
 }
 
 value runGetEntity(str entity, str uuid, str xmiString, map[str, Connection] connections, Log log = noLog) {
@@ -196,21 +209,15 @@ value runGetEntity(str entity, str uuid, str xmiString, map[str, Connection] con
 }
 
 value runGetEntity(str entity, str uuid, str xmiString, Session session, Log log = noLog) {
-  Model m = xmiString2Model(xmiString);
-  Schema s = model2schema(m);
-  return runGetEntity(entity, uuid, s, session, log = log);
+  Schema s = loadSchemaFromXMI(xmiString, normalize = true);
+  Schema sPlain = loadSchemaFromXMI(xmiString, normalize = false);
+  return runGetEntity(entity, uuid, s, sPlain, session, log = log);
 }
 
 value listEntities(str entity, str whereClause, str limit, str sortBy, str xmiString, Session session, Log log = noLog) {
-  Model m = xmiString2Model(xmiString);
-  Schema s = model2schema(m);
-  return listEntities(entity, whereClause, limit, sortBy, s, session, log = log);
-}
-
-list[str] runPrepared(str src, list[str] columnNames, list[str] columnTypes,
-	list[list[str]] values, str xmiString, map[str, Connection] connections, Log log = noLog) {
- 	Session session = newSessionWithArguments(connections, columnNames, columnTypes, values, log = log);
- 	return runPrepared(src, argumentsSize, xmiString, session, log = log);
+  Schema s = loadSchemaFromXMI(xmiString, normalize = true);
+  Schema sPlain = loadSchemaFromXMI(xmiString, normalize = false);
+  return listEntities(entity, whereClause, limit, sortBy, s, sPlain, session, log = log);
 }
 
 Request parseRequest(str src) {
