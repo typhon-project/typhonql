@@ -102,7 +102,9 @@ ColumnType typhonType2SQL("natural_language") = text();
 
 default ColumnType typhonType2SQL(str t) { throw "Unsupported Typhon type <t>"; }
 
-list[ColumnConstraint] typhonType2Constrains(str t) = [notNull()];
+list[ColumnConstraint] typhonType2Constrains("point") = [notNull()];
+list[ColumnConstraint] typhonType2Constrains("polygon") = [notNull()];
+default list[ColumnConstraint] typhonType2Constrains(str t) = [];
 
 list[str] columnName((KeyVal)`<Id x>: <EId customType> (<{KeyVal ","}* keyVals>)`, str entity) = [columnName("<x>", entity, "<customType>", "<y>") | (KeyVal)`<Id y>: <Expr e>` <- keyVals];
 
