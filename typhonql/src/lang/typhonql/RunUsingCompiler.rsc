@@ -70,14 +70,16 @@ void validateQuery(Tree t, Schema s, Log log) {
     }
 }
 
-list[str] runUpdate(Request r, Schema s, Schema sPlain, Session session, Log log = noLog,
+list[str] runUpdate(Request r, Schema s, Schema sPlain, Session session, bool runChecker = true, Log log = noLog,
 	int argumentsSize = -1) {
 	if ((Request) `<Statement stmt>` := r) {
 		// TODO This is needed because we do not have an explicit way to distinguish
 		// DDL updates from DML updates. Perhaps we should consider it
   		if (!isDDL(stmt)) {
             startScript = getNanoTime();
-            validateQuery(r, sPlain, log);
+            if (runChecker) {
+                validateQuery(r, sPlain, log);
+            }
   			scr = request2script(r, s, log = log);
 			log("[runUpdate] Script: <scr>");
             endScript = getNanoTime();
@@ -99,10 +101,12 @@ list[str] runUpdate(Request r, Schema s, Schema sPlain, Session session, Log log
     throw "Statement should have been provided";
 }
 
-void runScriptForQuery(Request r, Schema sch, Schema schPlain, Session session, Log log = noLog) {
+void runScriptForQuery(Request r, Schema sch, Schema schPlain, Session session,bool runChecker = true, Log log = noLog) {
 	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
         startScript = getNanoTime();
-        validateQuery(r, schPlain, log);
+        if (runChecker) {
+            validateQuery(r, schPlain, log);
+        }
 		scr = request2script(r, sch, log = log);
         endScript = getNanoTime();
 		log("[runScriptForQuery] Script: <scr>");
@@ -116,8 +120,8 @@ void runScriptForQuery(Request r, Schema sch, Schema schPlain, Session session, 
 		throw "Expected query, given statement";
 }
 
-value runQueryAndGetJava(Request r, Schema sch, Schema schPlain, Session session, Log log = noLog) {
-	runScriptForQuery(r, sch, schPlain, session, log = log);
+value runQueryAndGetJava(Request r, Schema sch, Schema schPlain, Session session, bool runChecker = true, Log log = noLog) {
+	runScriptForQuery(r, sch, schPlain, session, runChecker = runChecker, log = log);
 	return session.getJavaResult();
 }
 
@@ -150,8 +154,8 @@ value listEntities(str entity, str whereClause, str limit, str sortBy, Schema sc
 	return session.getJavaResult();
 }
 
-ResultTable runQuery(Request r, Schema sch, Schema schPlain, Session session, Log log = noLog) {
-	runScriptForQuery(r, sch, schPlain, session, log = log);
+ResultTable runQuery(Request r, Schema sch, Schema schPlain, Session session,bool runChecker = true, Log log = noLog) {
+	runScriptForQuery(r, sch, schPlain, session, runChecker = runChecker, log = log);
 	return session.getResult();
 }
 
@@ -167,32 +171,32 @@ void runSchema(Schema sch, Session session, Log log = noLog) {
     }
 }
 
-list[str] runUpdate(str src, str xmiString, map[str, Connection] connections, Log log = noLog) {
-  Session session = newSession(connections, log = log);
-  return runUpdate(src, xmiString, session, log = log);
+list[str] runUpdate(str src, str xmiString, map[str, Connection] connections, bool runChecker = true,Log log = noLog) {
+  Session session = newSession(connections);
+  return runUpdate(src, xmiString, session, runChecker = runChecker, log = log);
 }
 
-list[str] runUpdate(str src, str xmiString, Session session, Log log = noLog) {
+list[str] runUpdate(str src, str xmiString, Session session, bool runChecker = true, Log log = noLog) {
   Schema s = loadSchemaFromXMI(xmiString, normalize = true);
   Schema sPlain = loadSchemaFromXMI(xmiString, normalize = false);
   Request req = parseRequest(src);
-  return runUpdate(req, s, splain, session, log = log);
+  return runUpdate(req, s, sPlain, session, runChecker = runChecker, log = log);
 }
 
-ResultTable runQuery(str src, str xmiString, map[str, Connection] connections, Log log = noLog) {
-  Session session = newSession(connections, log = log);
-  return runQuery(src, xmiString, session, log = log);
+ResultTable runQuery(str src, str xmiString, map[str, Connection] connections, bool runChecker = true,Log log = noLog) {
+  Session session = newSession(connections);
+  return runQuery(src, xmiString, session, runChecker = runChecker, log = log);
 }
 
-ResultTable runQuery(str src, str xmiString, Session session, Log log = noLog) {
+ResultTable runQuery(str src, str xmiString, Session session, bool runChecker = true, Log log = noLog) {
   Schema s = loadSchemaFromXMI(xmiString, normalize = true);
   Schema sPlain = loadSchemaFromXMI(xmiString, normalize = false);
   Request req = parseRequest(src);
-  return runQuery(req, s, sPlain, session, log = log);
+  return runQuery(req, s, sPlain, session, runChecker = runChecker, log = log);
 }
 
 value runQueryAndGetJava(str src, str xmiString, map[str, Connection] connections, Log log = noLog) {
-  Session session = newSession(connections, log = log);
+  Session session = newSession(connections);
   return runQueryAndGetJava(src, xmiString, session, log = log);
 }
 
@@ -204,7 +208,7 @@ value runQueryAndGetJava(str src, str xmiString, Session session, Log log = noLo
 }
 
 value runGetEntity(str entity, str uuid, str xmiString, map[str, Connection] connections, Log log = noLog) {
-  Session session = newSession(connections, log = log);
+  Session session = newSession(connections);
   return runGetEntity(entity, uuid, xmiString, session, log = log);
 }
 
@@ -235,7 +239,7 @@ void runDDL(str src,  str xmiString, Session session, Log log = noLog) {
 }
 
 void runDDL(str src,  str xmiString, map[str, Connection] connections, Log log = noLog) {
-	Session session = newSession(connections, log = log);
+	Session session = newSession(connections);
 	runDDL(src, xmiString, session, log = log);
 }
 
@@ -246,7 +250,7 @@ void runSchema(str xmiString, Session session, Log log = noLog) {
 }
 
 void runSchema(str xmiString, map[str, Connection] connections, Log log = noLog) {
-	Session session = newSession(connections, log = log);
+	Session session = newSession(connections);
 	runSchema(xmiString, session, log = log);
 }
 

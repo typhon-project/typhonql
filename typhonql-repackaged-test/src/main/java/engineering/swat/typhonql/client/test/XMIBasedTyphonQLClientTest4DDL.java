@@ -39,7 +39,7 @@ public class XMIBasedTyphonQLClientTest4DDL {
 
 		XMIPolystoreConnection conn = new XMIPolystoreConnection();
 		
-		 String[] cr = conn.executeUpdate(xmiString, Arrays.asList(infos), Collections.emptyMap(), "create Bank at Inventory");
+		 String[] cr = conn.executeUpdate(xmiString, Arrays.asList(infos), Collections.emptyMap(), "create Bank at Inventory", true);
 		System.out.println(cr);
 		
 	}

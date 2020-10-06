@@ -271,7 +271,11 @@ public class QLRestServer {
 			throw new IOException("Missing query parameter in post body");
 		}
 		logger.trace("Running query: {}", args.query);
-		return engine.executeQuery(args.xmi, args.databaseInfo, args.query);
+		return engine.executeQuery(args.xmi, args.databaseInfo, args.query, checkedEnabled(r));
+	}
+
+	private static boolean checkedEnabled(HttpServletRequest r) {
+		return "true".equalsIgnoreCase(r.getHeader("QL-Validate"));
 	}
 
 	private static JsonSerializableResult handleCommand(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
@@ -288,11 +292,11 @@ public class QLRestServer {
                 throw new IOException("Mismatch between length of parameter names and parameter types");
             }
             return stringArray(engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.query,
-                    args.parameterNames, args.parameterTypes, args.boundRows));
+                    args.parameterNames, args.parameterTypes, args.boundRows, checkedEnabled(r)));
 			
 		}
 		else {
-            return stringArray(engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.query));
+            return stringArray(engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.query, checkedEnabled(r)));
 		}
 	}
 	

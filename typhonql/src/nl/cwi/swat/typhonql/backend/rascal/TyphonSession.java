@@ -100,7 +100,7 @@ public class TyphonSession implements Operations {
 				XMIPolystoreConnection.buildExternalArguments(
 						toStringArray(columnNames),
 						toStringArray(columnTypes),
-						toStringMatrix(values), Collections.emptyMap());
+						toStringMatrix(values), Collections.emptyMap(), true);
 		return newSessionWrapper(connections, fileMap, Optional.of(externalArguments), ctx).getTuple();
 	}
 	

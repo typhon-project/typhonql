@@ -149,7 +149,7 @@ public class XMIPolystoreConnection {
 	}
 	
 	
-	public JsonSerializableResult executeQuery(String xmiModel, List<DatabaseInfo> connections, String query) {
+	public JsonSerializableResult executeQuery(String xmiModel, List<DatabaseInfo> connections, String query, boolean runChecker) {
 		return sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> 
             (JsonSerializableResult) evaluator.call("runQueryAndGetJava", 
                 "lang::typhonql::RunUsingCompiler",
@@ -209,17 +209,17 @@ public class XMIPolystoreConnection {
 		
 	}
 	
-	public String[] executeUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String query) {
-		IValue val = evaluateUpdate(xmiModel, connections, blobMap, query);
+	public String[] executeUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String query, boolean runChecker) {
+		IValue val = evaluateUpdate(xmiModel, connections, blobMap, query, runChecker);
 		return toStringArray(val);
 	}
 	
 	
-	private IValue evaluateUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String update) {
+	private IValue evaluateUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String update, boolean runChecker) {
 		return sessionCall(connections, blobMap, (session, evaluator) -> 
 			evaluator.call("runUpdate", 
 				"lang::typhonql::RunUsingCompiler",
-				Collections.emptyMap(),
+                Collections.singletonMap("runChecker", VF.bool(runChecker)),
 				VF.string(update), 
 				VF.string(xmiModel),
 				session.getTuple())
@@ -227,8 +227,8 @@ public class XMIPolystoreConnection {
 	}
 	
 
-	private IValue evaluatePreparedStatementQuery(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String preparedStatement, String[] columnNames, String[] columnTypes, String[][] matrix) {
-		ExternalArguments externalArguments = buildExternalArguments(columnNames, columnTypes, matrix, blobMap);
+	private IValue evaluatePreparedStatementQuery(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String preparedStatement, String[] columnNames, String[] columnTypes, String[][] matrix, boolean runChecker) {
+		ExternalArguments externalArguments = buildExternalArguments(columnNames, columnTypes, matrix, blobMap, runChecker);
 
 		IListWriter columnsWriter = VF.listWriter();
 		for (String column : columnNames) {
@@ -237,7 +237,7 @@ public class XMIPolystoreConnection {
         return sessionCall(connections, blobMap, Optional.of(externalArguments), (session, evaluator) -> 
         	evaluator.call("runUpdate", 
                     "lang::typhonql::RunUsingCompiler",
-                    Collections.emptyMap(),
+                    Collections.singletonMap("runChecker", VF.bool(runChecker)),
                     VF.string(preparedStatement),
                     VF.string(xmiModel),
                     session.getTuple())
@@ -281,9 +281,9 @@ public class XMIPolystoreConnection {
 		qlValueMappers.put("int",Integer::parseInt);
 		qlValueMappers.put("bigint",Long::parseLong);
 		qlValueMappers.put("float",Float::parseFloat);
-		qlValueMappers.put("string", Objects::requireNonNull);
+		qlValueMappers.put("string", s -> s);
 		qlValueMappers.put("bool", Boolean::valueOf);
-		qlValueMappers.put("text", Objects::requireNonNull);
+		qlValueMappers.put("text", s -> s);
 		qlValueMappers.put("uuid", s -> s == null ? null : UUID.fromString(s));
 		qlValueMappers.put("date", s -> LocalDate.parse(s));
 		qlValueMappers.put("datetime", s -> LocalDateTime.parse(s));
@@ -319,7 +319,7 @@ public class XMIPolystoreConnection {
 	}
 	
 	
-	public static ExternalArguments buildExternalArguments(String[] columnNames, String[] columnTypes, String[][] matrix, Map<String, InputStream> blobs) {
+	public static ExternalArguments buildExternalArguments(String[] columnNames, String[] columnTypes, String[][] matrix, Map<String, InputStream> blobs, boolean enforceNonNull) {
 		@SuppressWarnings("unchecked")
 		Function<String, Object>[] mappers = new Function[columnTypes.length];
 		for (int m = 0; m < columnTypes.length; m++) {
@@ -339,7 +339,11 @@ public class XMIPolystoreConnection {
 			String[] row = matrix[i];
 			Object[] vs = new Object[row.length];
 			for (int j=0; j < row.length; j++) {
-				vs[j] = mappers[j].apply(row[j]);
+				String val = row[j];
+				if (enforceNonNull && val == null && !columnTypes[j].equals("uuid")) {
+					throw new RuntimeException("Missing value for row: " + i + " field: " + columnNames[j]);
+				}
+				vs[j] = mappers[j].apply(val);
 			}
 			values[i] = vs; 
 		}
@@ -394,8 +398,8 @@ public class XMIPolystoreConnection {
 		return URIResolverRegistry.getInstance().exists(URIUtil.getChildLocation(root, RascalManifest.META_INF_RASCAL_MF));
 	}
 	
-	public String[] executePreparedUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> fileMap, String preparedStatement, String[] columnNames, String[] columnTypes, String[][] values) {
-		IValue v = evaluatePreparedStatementQuery(xmiModel, connections, fileMap, preparedStatement, columnNames, columnTypes, values);
+	public String[] executePreparedUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> fileMap, String preparedStatement, String[] columnNames, String[] columnTypes, String[][] values, boolean runChecker) {
+		IValue v = evaluatePreparedStatementQuery(xmiModel, connections, fileMap, preparedStatement, columnNames, columnTypes, values, runChecker);
 		return toStringArray(v);
 	}
 	

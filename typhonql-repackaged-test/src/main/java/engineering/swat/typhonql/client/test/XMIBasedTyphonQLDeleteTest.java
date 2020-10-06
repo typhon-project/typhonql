@@ -46,7 +46,7 @@ public class XMIBasedTyphonQLDeleteTest {
 		//conn.resetDatabases(xmiString, connections);
 		
 		String query = "delete Product p where p.@id == #tv";
-		conn.executeUpdate(xmiString, connections, Collections.EMPTY_MAP, query);
+		conn.executeUpdate(xmiString, connections, Collections.EMPTY_MAP, query, true);
 		
 	}
 }
