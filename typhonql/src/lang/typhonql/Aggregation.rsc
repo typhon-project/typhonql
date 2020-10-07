@@ -31,6 +31,7 @@ import List;
 assumptions:
   - expansion of sole vars has happened
   - all aggregate functions are aliased with as
+  - we have either a Result that's grouped on, or an aggregate result
 
 from E1 e1, ..., En en
 select xj.fj, ..., fi(...) as xi
@@ -57,6 +58,14 @@ having ... (includes xi's from fi(...)...)
 
 */
 
+bool hasAggregation(Query q) = true
+  when
+    Result r <- q.selected,
+    (Result)`<VId agg>(<Expr e>) as <VId x>` := r;
+  
+  
+default bool hasAggregation(Query _) = false;
+
 
 list[Expr] whereExprs((Query)`from <{Binding ","}+ _> select <{Result ","}+ _> where <{Expr ","}+ conds>`)
   = [ c | Expr c <- conds ];
@@ -77,13 +86,6 @@ default Maybe[GroupBy] getGroupBy(Query _)
   = nothing();
    
 
-bool hasAggregation(Query q) = true
-  when
-    Result r <- q.selected,
-    (Result)`<VId agg>(<Expr e>) as <Id x>` := r;
-  
-  
-default bool hasAggregation(Query _) = false;
 
 // we assume agg can be count, max, min, sum, avg
 Result liftAgg((Result)`<VId agg>(<Expr e>) as <VId x>`) 
@@ -191,7 +193,7 @@ tuple[list[Expr], list[Expr]] decomposeGroupBy((GroupBy)`group <{Expr ","}+ gbs>
   = <[ gb | Expr gb <- gbs ], [ h | Expr h <- hs ]>;
 
 
-str className() = "AggregateIt";
+str aggregationClassName() = "AggregateIt";
 
 str myPkg() = "nl.cwi.swat.typhonql.backend.rascal";
 
@@ -208,9 +210,9 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
   str javaCode =   
     "package <myPkg()>;
     '
-    'public class <className()> implements <myPkg()>.JavaOperationImplementation {
+    'public class <aggregationClassName()> implements <myPkg()>.JavaOperationImplementation {
     '    
-    '   public <className()>(nl.cwi.swat.typhonql.backend.ResultStore store, nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState session
+    '   public <aggregationClassName()>(nl.cwi.swat.typhonql.backend.ResultStore store, nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState session
     '        , java.util.Map\<java.lang.String, java.util.UUID\> uuids) {
     '     // ???
     '   }
@@ -237,7 +239,7 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     
   if (save) {
     str path = replaceAll(myPkg(), ".", "/");
-    writeFile(|project://typhonql/src/<path>/<className()>.java|, javaCode);
+    writeFile(|project://typhonql/src/<path>/<aggregationClassName()>.java|, javaCode);
   }  
     
   return javaCode;
