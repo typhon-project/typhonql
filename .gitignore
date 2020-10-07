@@ -37,3 +37,4 @@ dependency-reduced-pom.xml
 .settings
 
 
+typhonql/src/nl/cwi/swat/typhonql/backend/rascal/AggregateIt.java

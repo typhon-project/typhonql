@@ -302,7 +302,7 @@ str having2cond((Expr)`<Int n>`) = "<n>";
 str having2cond((Expr)`<Str s>`) = "<s>";
 
 default str having2cond(Expr e) {
-  throw "Unsupported `having`-conditions: <e>";
+  throw "Unsupported `having`-condition: <e>";
 }
 
 
