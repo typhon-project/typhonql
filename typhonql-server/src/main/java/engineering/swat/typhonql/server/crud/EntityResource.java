@@ -66,7 +66,7 @@ public class EntityResource extends TyphonDALResource {
 	public Response deleteEntity(@PathParam("entityName") String entityName, @PathParam("uuid") String uuid) throws IOException {
 		String query = "delete " + entityName + " e where e.@id == #" +uuid;
 		QLRestServer.RestArguments args = getRestArguments();
-		String[] res = getEngine().executeUpdate(args.xmi, args.databaseInfo, args.blobs, query);
+		String[] res = getEngine().executeUpdate(args.xmi, args.databaseInfo, args.blobs, query, true);
 		return Response.ok().build();
 	}
 	
@@ -76,7 +76,7 @@ public class EntityResource extends TyphonDALResource {
 		String query = "update " + entityName + " e where e.@id == #" + uuid + " set { "
 				+ concatenateFields(delta) + "}";
 		QLRestServer.RestArguments args = getRestArguments();
-		String[] res = getEngine().executeUpdate(args.xmi, args.databaseInfo, args.blobs, query);
+		String[] res = getEngine().executeUpdate(args.xmi, args.databaseInfo, args.blobs, query, true);
 		return Response.ok().build();
 	}
 	

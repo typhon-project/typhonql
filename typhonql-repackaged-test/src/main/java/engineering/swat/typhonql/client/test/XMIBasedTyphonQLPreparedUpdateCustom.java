@@ -50,7 +50,7 @@ public class XMIBasedTyphonQLPreparedUpdateCustom {
 					new String[]{"1","POLYGON ((0.1 1.0, 2.0 0.0, 3.0 0.0, 0.1 1.0))","POINT (23.4 43.35)"},
 					new String[]{"2","POLYGON ((0.1 1.0, 2.0 0.0, 3.0 0.0, 0.1 1.0))","POINT (23.4 43.35)"}
                 }
-		);
+		, true);
 		System.out.println(Arrays.toString(rs));
 
 	}

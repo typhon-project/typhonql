@@ -36,7 +36,11 @@ public class XMIBasedTyphonQLResetDatabasesTest {
 		List<DatabaseInfo> infos = PolystoreAPIHelper.readConnectionsInfo(HOST, PORT,
 				USER, PASSWORD);
 		
+		System.err.println(infos);
+		
+		
 		String xmiString = PolystoreAPIHelper.readHttpModel(HOST, PORT, USER, PASSWORD);
+		System.err.println(xmiString);
 
 		XMIPolystoreConnection conn = new XMIPolystoreConnection();
 		

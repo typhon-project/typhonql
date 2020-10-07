@@ -100,7 +100,7 @@ public class TyphonSession implements Operations {
 				XMIPolystoreConnection.buildExternalArguments(
 						toStringArray(columnNames),
 						toStringArray(columnTypes),
-						toStringMatrix(values), Collections.emptyMap());
+						toStringMatrix(values), Collections.emptyMap(), true);
 		return newSessionWrapper(connections, fileMap, Optional.of(externalArguments), ctx).getTuple();
 	}
 	
@@ -110,6 +110,7 @@ public class TyphonSession implements Operations {
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
 		Map<String, ConnectionData> neoConnections = new HashMap<>();
+		Map<String, ConnectionData> nlpConnections = new HashMap<>();
 
 		Iterator<Entry<IValue, IValue>> connIter = connections.entryIterator();
 
@@ -135,6 +136,9 @@ public class TyphonSession implements Operations {
 				case "neoConnection":
                     neoConnections.put(dbName, data);
                     break; 
+				case "nlpConnection":
+                    nlpConnections.put(dbName, data);
+                    break; 
 			}
 		}
 		Map<String, InputStream> actualBlobMap = new HashMap<>();
@@ -153,6 +157,7 @@ public class TyphonSession implements Operations {
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
 		Map<String, ConnectionData> cassandraConnections = new HashMap<>();
 		Map<String, ConnectionData> neoConnections = new HashMap<>();
+		Map<String, ConnectionData> nlpConnections = new HashMap<>();
 		for (DatabaseInfo db : connections) {
 			switch (db.getDbms().toLowerCase()) {
 			case "mongodb":
@@ -166,6 +171,9 @@ public class TyphonSession implements Operations {
 				break;
 			case "neo4j":
 				neoConnections.put(db.getDbName(), new ConnectionData(db));
+				break;
+			case "nlae":
+				nlpConnections.put(db.getDbName(), new ConnectionData(db));
 				break;
 			default:
 				throw new RuntimeException("Missing type: " + db.getDbms());
