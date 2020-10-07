@@ -57,7 +57,7 @@ public class EntitiesResource extends TyphonDALResource {
 		String query = "insert " + entityName + " { " + concatenateFields(entity.getFields()) + "}";
  		try {
  			QLRestServer.RestArguments args = getRestArguments();
-			String[] uuids = getEngine().executeUpdate(args.xmi, args.databaseInfo, args.blobs, query);
+			String[] uuids = getEngine().executeUpdate(args.xmi, args.databaseInfo, args.blobs, query, true);
 			return Response.created(URI.create("/" + entityName + "/" + uuids[0])).build();
 		} catch (RuntimeException e) {
 			return Response.serverError().build();

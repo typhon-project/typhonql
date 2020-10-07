@@ -158,7 +158,7 @@ data TableResultJSON = contents(list[str] columnNames, list[list[value]] values)
 
 void setupIDE(bool isDevMode = false) {
   Schema sch = schema({}, {});
-  CheckerMLSchema cSch = ();
+  CheckerMLSchema cSch = <(), {}>;
   
   Schema currentSchema(Tree tree) {
 	if (schema({}, {}) := sch) {
@@ -170,7 +170,7 @@ void setupIDE(bool isDevMode = false) {
   }
   
   CheckerMLSchema currentCheckerSchema(Tree tree) {
-    if (cSch == ()) {
+    if (cSch == <(), {}>) {
         currentSchema(tree);
     }
     return cSch;

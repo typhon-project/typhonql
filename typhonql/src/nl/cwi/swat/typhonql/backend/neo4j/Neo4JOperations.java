@@ -6,8 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
@@ -120,6 +125,12 @@ public class Neo4JOperations implements Operations, AutoCloseable {
 
 	@Override
 	public void close() throws Exception {
-		Closables.autoCloseAll(connections.values(), Neo4jException.class);
+		try {
+		CompletableFuture.allOf(connections.values().stream()
+				.map(Driver::closeAsync)
+				.map(CompletionStage<Void>::toCompletableFuture)
+				.toArray(CompletableFuture[]::new)
+				).get(3, TimeUnit.SECONDS);
+		} catch (TimeoutException ignored) { }
 	}
 }

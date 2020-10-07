@@ -748,6 +748,8 @@ void testInsertNeo(PolystoreInstance p) {
 
   // inventory: [#laptop1, #laptop2], 
   p.runUpdate((Request) `insert User { @id: #paul, name: "Paul", location: #point(2.0 3.0), photoURL: "klint",
+                          '  address: "aa",
+                          '  avatarURL: "bb",
                           '  created: $2020-01-02T12:24:00$,
 	                      '  billing: address( street: "Eigth", city: "Ams"
 	                      '   , zipcode: zip(nums: "1234", letters: "ab")

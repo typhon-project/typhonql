@@ -47,7 +47,7 @@ public class XMIBasedTyphonQLSimpleQuery {
 		//ResultTable rt = conn.executeQuery(xmiString, infos, "from Product p, Review r select r.content where p.reviews == r, p.@id == #tv");
 		//CommandResult rt = conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "update User u where u.@id == #davy set {photoURL: \"other\", name: \"Landman\"}");
 		conn.resetDatabases(xmiString, infos);
-		 JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from User u select u.photoURL, u.name");
+		 JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from User u select u.photoURL, u.name", true);
 
 		System.out.println(rt);
 
