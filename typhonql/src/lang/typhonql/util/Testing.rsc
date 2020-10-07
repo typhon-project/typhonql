@@ -84,6 +84,8 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	Schema schPlain = fetchNonNormalizedModel(conn);
 	CheckerMLSchema checkSch = convertModel(schPlain);
 	map[str, Connection] connections =  readConnectionsInfo(conn.host, toInt(conn.port), conn.user, conn.password);
+	// Workaround: changing the retrieved host to localhost
+	connections = (() | it + (key : c[host ="localhost"])| key <- connections, Connnection c := connections[key]);
 	Session session;
 	
 	void checkRequest(Request r, Schema schm = sch) {

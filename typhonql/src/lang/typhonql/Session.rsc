@@ -91,6 +91,7 @@ data Connection
  | mongoConnection(str host, int port, str user, str password)
  | cassandraConnection(str host, int port, str user, str password)
  | neoConnection(str host, int port, str user, str password)
+ | nlpConnection(str host, int port, str user, str password)
  ;
 
 @reflect
