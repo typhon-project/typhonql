@@ -69,8 +69,8 @@ data SQLExpr
   | like(SQLExpr lhs, SQLExpr rhs) 
   | or(SQLExpr lhs, SQLExpr rhs) 
   | and(SQLExpr lhs, SQLExpr rhs) 
-  | notIn(SQLExpr arg, list[Value] vals)
-  | \in(SQLExpr arg, list[Value] vals)
+  | notIn(SQLExpr arg, list[SQLExpr] vals)
+  | \in(SQLExpr arg, list[SQLExpr] vals)
   | fun(str name, list[SQLExpr] args)
   ;
 

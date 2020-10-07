@@ -131,9 +131,9 @@ str pp(like(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) like (<pp(rhs)>)";
 str pp(or(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) or (<pp(rhs)>)"; 
 str pp(and(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) and (<pp(rhs)>)";
 str pp(notIn(SQLExpr arg, list[Value] vals)) 
-  = "(<pp(arg)>) not in (<intercalate(", ", [ pp(v) | Value v <- vals])>)";
-str pp(\in(SQLExpr arg, list[Value] vals)) 
-  = "(<pp(arg)>) in (<intercalate(", ", [ pp(v) | Value v <- vals])>)";
+  = "(<pp(arg)>) not in (<intercalate(", ", [ pp(v) | SQLExpr v <- vals])>)";
+str pp(\in(SQLExpr arg, list[SQLExpr] vals)) 
+  = "(<pp(arg)>) in (<intercalate(", ", [ pp(v) | SQLExpr v <- vals])>)";
 
 str pp(fun(str name, vals)) = "<name>(<intercalate(", ", [pp(v) | v <- vals])>)";
 
