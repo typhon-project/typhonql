@@ -82,7 +82,7 @@ list[Path] exp2path((Expr)`<VId x>.<Id f>`, Env env, Schema s)
     <Place p, ent> <- s.placement;
 
 // NB: for the aggregation iteration this should be the aliased variables
-list[Path] exp2path((Expr)`<VId agg>(<Expr e>) as <Id _>`, Env env, Schema s)
+list[Path] exp2path((Expr)`<VId agg>(<Expr e>) as <VId _>`, Env env, Schema s)
   = exp2path(e, env, s);
   
 

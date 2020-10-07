@@ -22,7 +22,7 @@ syntax Query
   = from: "from" {Binding ","}+ bindings "select" {Result ","}+ selected Where? where GroupBy? groupBy OrderBy? orderBy;
 
 syntax Result 
-  = aliassed: Expr!obj!lst expr "as" Id attr
+  = aliassed: Expr!obj!lst expr "as" VId attr
   | normal: Expr expr // only entity path is allowed, but we don't check
   ;
 
