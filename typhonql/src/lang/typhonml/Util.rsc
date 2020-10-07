@@ -27,6 +27,7 @@ import lang::ecore::Refs;
 import ParseTree;
 import IO;
 import Set;
+import Relation;
 import List;
 import String;
 import Node;
@@ -50,7 +51,7 @@ alias Attrs = rel[str from, str name, str \type];
 alias ChangeOps = list[ChangeOp];
 alias ChangeOp = tuple[str name, list[str] properties];
 
-data DB = cassandra() | mongodb() | neo4j() | sql() | hyperj() | recombine() | unknown() | typhon();
+data DB = cassandra() | mongodb() | neo4j() | sql() | hyperj() | recombine() | unknown() | typhon() | nlp();
 
 alias Place = tuple[DB db, str name];
 
@@ -213,6 +214,10 @@ Schema inlineCustomDataTypes(Schema s) {
 }
 
 Schema inferAuxEntities(Schema s) {
+	return inferKeyValueAuxEntities(inferNlpAuxEntities(s));
+}
+
+Schema inferKeyValueAuxEntities(Schema s) {
   /*
   KeyValueDB normalization:
    - attributes that are mapped to cassandra:
@@ -253,6 +258,74 @@ Schema inferAuxEntities(Schema s) {
 
 
 
+
+  return s;
+}
+
+str nlpEntity(str ent, str attributeName) = "<ent>__<attributeName>";
+str nlpEntity(str ent, str attributeName, str analysis) = "<ent>__<attributeName>__<analysis>";
+str nlpRole(str ent) = "<ent>$$nlp";
+
+str nlpAttributeAnalysisType(str analysis) = "__<analysis>";
+
+map[str, Attrs] customForNlpAnalysis = ( 
+	"SentimentAnalysis": {
+		<"__SentimentAnalysis", "begin", "int">,
+		<"__SentimentAnalysis", "end", "int">,
+		<"__SentimentAnalysis", "Sentiment", "int">,
+		<"__SentimentAnalysis", "SentimentLabel", "text">
+	}
+	,
+	"NamedEntityRecognition": {
+		<"__NamedEntityRecognition", "begin", "int">,
+		<"__NamedEntityRecognition", "end", "int">,
+		<"__NamedEntityRecognition", "NamedEntity", "text">
+	});
+
+Schema inferNlpAuxEntities(Schema s) {
+  /*
+  NLP normalization:
+   - attributes that are mapped to NLP:
+      - remove them from entity
+      - add to new entity
+
+  */
+  
+  bool isFreeTextType(str ty) = startsWith(ty, "freetext");
+  
+  rel[str, str] getFreeTypeAnalyses(str ty) = 
+	{<analysis[0..leftBracketPos], analysis[(leftBracketPos+1)..-1]> | analysis <- split(", ", csv), leftBracketPos := findFirst(analysis, "[")}
+	when csv := ty[9..-1];
+
+  rel[str, str, str] nlpAttrs
+    = { a | a:<ent, name, ty> <- s.attrs, isFreeTextType(ty) };
+
+  // for each entity
+  for (str ent <- domain(nlpAttrs)) {
+    
+    for (<ent, name, ty> <- nlpAttrs) {
+     	str newEnt = nlpEntity(ent, name);
+    	rel[str, str] analyses = getFreeTypeAnalyses(ty);
+    	
+    	// fields of the virtual type
+   		s.customs += {*customForNlpAnalysis[analysis] | <analysis, _> <- analyses};
+   		
+   		// adding virtual entity for this attribute
+   		//s.customs += {<nlpAttributeType(ent, name), analysis, nlpAttributeAnalysisType(analysis)> |<analysis, _> <- analyses};
+   		s.attrs += {<newEnt, analysis, nlpAttributeAnalysisType(analysis)> |<analysis, _> <- analyses};
+   		
+   		//s.attrs -= {<ent, name, ty>};
+   		//s.attrs += {<ent, name, "text">};
+   		
+   		// add containment
+   		//s.rels += {<ent, \one(), nlpRole(ent), "", \one(), newEnt, true>};
+   		//<nlpEntity(ent, name, analysis)
+   		s.rels += {<ent, \one(), name, "", \one(), newEnt, true> |<analysis, _> <- analyses };
+   		// add new placement
+    	s.placement += {<<nlp(), ent>, newEnt>};
+    
+    } 
+  }
 
   return s;
 }
