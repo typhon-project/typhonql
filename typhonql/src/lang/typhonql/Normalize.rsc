@@ -211,7 +211,6 @@ Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result 
     return memo[key];
   }
   
-  
   // NB: empty, because they are rewritten, so added later
   list[Result] newResults = [];
   list[Expr] newWheres = [];
@@ -236,6 +235,72 @@ Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result 
       if ([str role, str kvEntity] := isKeyValAttr(src, "<f>", s)) {
         VId kvX = newBinding(kvEntity, "<x>.<fs>", (Expr)`<VId x>.<{Id "."}+ fs>`);
         insert (Expr)`<VId kvX>.<Id f>`;
+        /*
+          add binding: kvEntity kvVar
+          add where:  kvVar.@id == x.<fs>.@id
+          replace with: kvVar.f
+        */
+      }
+    }
+  }
+  
+  if ((Request)`from <{Binding ","}+ _> select <{Result ","}+ rs> where <{Expr ","}+ ws>` := req) {
+    newResults = [ r | Result r <- rs ] + newResults;
+    newWheres = [ w | Expr w <- ws ] + newWheres;
+  }
+  
+  Query newQuery = buildQuery(newBindings, newResults, newWheres);
+  return (Request)`<Query newQuery>`;
+}
+
+Request inferNlpLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
+  // rewrite x.f -> x.A__B.f if f is an attribute that is mapped from keyVal
+  Env env = queryEnv(bs);
+  
+  str inferTarget(str src, list[Id] ids) {
+    if (ids == []) {
+      return src;
+    }
+    str via = "<ids[0]>";
+    if (<src, Cardinality _, via,  str _, Cardinality _, str trg, _> <- s.rels) {
+      return inferTarget(trg, ids[1..]);
+    }
+    else {
+      throw "Invalid role `<via>` for entity <src>";
+    }
+  }
+ 
+  int varId = 0;
+  map[str, VId] memo = ();
+  list[Binding] newBindings = [ b | Binding b <- bs ];
+  
+  VId newBinding(str entity, str path, Expr whereRhs) {
+    str key = "<entity>/<path>";
+    if (key notin memo) {
+      str x = "<uncapitalize(entity)>_nlp_<varId>";
+      varId += 1;
+      VId var = [VId]x;
+      memo[key] = var;
+      EId ent = [EId]entity;
+      newBindings += [(Binding)`<EId ent> <VId var>`]; 
+      newWheres += [(Expr)`<VId var>.@id == <Expr whereRhs>`];
+    }
+    return memo[key];
+  }
+  
+  
+  // NB: empty, because they are rewritten, so added later
+  list[Result] newResults = [];
+  list[Expr] newWheres = [];
+  
+  req = visit (req) {
+    case (Expr)`<VId x>.<Id f>.<{Id "."}+ fs>`: {
+      str src = env["<x>"];
+      if (isFreeTextAttr(src, "<f>", s)) {
+     	analyses = getFreeTypeAnalyses(src, "<f>", s);
+     	str tgt = inferTarget(env["<x>"], [ f ]);
+        VId nlpX = newBinding(tgt, "<x>.<f>", (Expr)`<VId x>.<Id f>`);
+        insert (Expr)`<VId nlpX>.<Id fs>`;
         /*
           add binding: kvEntity kvVar
           add where:  kvVar.@id == x.<fs>.@id
