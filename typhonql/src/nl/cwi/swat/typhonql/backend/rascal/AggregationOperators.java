@@ -14,7 +14,7 @@ public class AggregationOperators {
 	 * typhonql types that we support.
 	 */
 	
-	public static Object count(List<Record> vals) {
+	public static Object count(List<Record> vals, Field ignored) {
 		return vals.size();
 	}
 	
