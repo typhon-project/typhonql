@@ -53,8 +53,29 @@ Env queryEnvAndDyn({Binding ","}+ bs)
  = queryEnv(bs) + ("<x>": "<e>" | (Binding)`#dynamic(<EId e> <VId x>)` <- bs )
   + ("<x>": "<e>" | (Binding)`#ignored(<EId e> <VId x>)` <- bs );
 
+list[str] results2colNames({Result ","}+ rs, Env env, Schema s)
+  = [ result2colName(r) | Result r <- rs ];
+
+str result2colName((Result)`<Expr e>`) = expr2colName(e);
+
+str result2colName((Result)`<Expr e> as <VId x>`) = "<x>";
+
+str expr2colName((Expr)`<VId x>.@id`) = "<x>.@id";
+
+str expr2colName((Expr)`<VId x>.<Id f>`) = "<x>.<f>";
+    
+
 list[Path] results2paths({Result ","}+ rs, Env env, Schema s)
-  = [ *exp2path(e, env, s) | (Result)`<Expr e>` <- rs ];
+  = [ *result2path(r, env, s) | Result r <- rs ];
+
+list[Path] result2path((Result)`<Expr e>`, Env env, Schema s)
+  = exp2path(e, env, s);
+
+// NB: for the aggregation iteration this should be the aliased variables
+// (see expr2colname above)
+list[Path] result2path((Expr)`<VId agg>(<Expr e>) as <VId _>`, Env env, Schema s)
+  = exp2path(e, env, s);
+
 
 list[Path] where2paths((Where)`where <{Expr ","}+ ws>`, Env env, Schema s) 
   = [  *exp2path(w, env, s) | Expr w <- ws ];
@@ -81,9 +102,6 @@ list[Path] exp2path((Expr)`<VId x>.<Id f>`, Env env, Schema s)
     str ent := env["<x>"],
     <Place p, ent> <- s.placement;
 
-// NB: for the aggregation iteration this should be the aliased variables
-list[Path] exp2path((Expr)`<VId agg>(<Expr e>) as <VId _>`, Env env, Schema s)
-  = exp2path(e, env, s);
   
 
 default list[Path] exp2path(Expr _, Env _, Schema _) = [];
