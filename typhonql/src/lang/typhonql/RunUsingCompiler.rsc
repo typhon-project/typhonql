@@ -27,6 +27,7 @@ import lang::typhonql::Schema2Script;
 import lang::typhonql::Script;
 import lang::typhonql::check::Checker;
 import lang::typhonml::XMIReader;
+import ParseTree;
 
 import lang::typhonql::util::Log;
 import util::Benchmark;
