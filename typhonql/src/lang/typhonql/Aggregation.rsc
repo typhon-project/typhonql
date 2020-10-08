@@ -32,6 +32,7 @@ assumptions:
   - expansion of sole vars has happened
   - all aggregate functions are aliased with as
   - we have either a Result that's grouped on, or an aggregate result
+  - having classes only refer to the alias names of aggregate results
 
 from E1 e1, ..., En en
 select xj.fj, ..., fi(...) as xi
@@ -195,7 +196,7 @@ tuple[list[Expr], list[Expr]] decomposeGroupBy((GroupBy)`group <{Expr ","}+ gbs>
 
 str aggregationClassName() = "AggregateIt";
 
-str myPkg() = "nl.cwi.swat.typhonql.backend.rascal";
+str aggregationPkg() = "nl.cwi.swat.typhonql.backend.rascal";
 
 // this function assumes it is an aggregation query as result of extraction.
 str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
@@ -208,9 +209,9 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
   // the key positions (derived from group by) back to the
   // original fields.
   str javaCode =   
-    "package <myPkg()>;
+    "package <aggregationPkg()>;
     '
-    'public class <aggregationClassName()> implements <myPkg()>.JavaOperationImplementation {
+    'public class <aggregationClassName()> implements <aggregationPkg()>.JavaOperationImplementation {
     '    
     '   public <aggregationClassName()>(nl.cwi.swat.typhonql.backend.ResultStore store, nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState session
     '        , java.util.Map\<java.lang.String, java.util.UUID\> uuids) {
@@ -228,19 +229,20 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     '        java.util.List\<nl.cwi.swat.typhonql.backend.Record\> $records = $grouped.get($k);
     '        nl.cwi.swat.typhonql.backend.Record $key = $records.get(0);
     '        <aggs2vars(rs)>
-    '        if (<havings2conds(hs)>) {
+    '        <if (hs != []) {>
+    '        if (<havings2conds(hs)>)
+    '        <}>
     '          $result.add(<results2array(rs)>);
-    '        }
     '     }
     '     return $result.stream();
     '  }
     '}
     ";
     
-  if (save) {
-    str path = replaceAll(myPkg(), ".", "/");
+  //if (save) {
+    str path = replaceAll(aggregationPkg(), ".", "/");
     writeFile(|project://typhonql/src/<path>/<aggregationClassName()>.java|, javaCode);
-  }  
+  //}  
     
   return javaCode;
 }
@@ -270,7 +272,7 @@ str havings2conds(list[Expr] hs)
 // a variable ref always becomes a ref to an agg-var
 str having2cond((Expr)`<VId x>`) = "<x>";
 
-str havingOps() = "<myPkg()>.HavingOperators";
+str havingOps() = "<aggregationPkg()>.HavingOperators";
 
 str having2cond((Expr)`<Expr lhs> \< <Expr rhs>`) 
   = "<havingOps()>.lt(<having2cond(lhs)>, <having2cond(rhs)>)";
@@ -323,7 +325,7 @@ default str result2var((Result)`<Expr e>`) = expr2var(e);
 str expr2var(e:(Expr)`<VId agg>(<Expr agg>)`) = "<agg>$<e@\loc.offset>";
 
 
-str aggOps() = "<myPkg()>.AggregationOperators";
+str aggOps() = "<aggregationPkg()>.AggregationOperators";
 
 // this is a bit brittle: we're assuming expression is a field ref
 // that is at the position of this aggregation result because
