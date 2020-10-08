@@ -95,7 +95,7 @@ Script request2script(Request r, Schema s, Log log = noLog) {
       if (just(aggReq:(Request)`<Query agg>`) := maybeAgg) {
         list[str] finalCols = results2colNames(agg.selected, queryEnv(agg), s);
         
-        scr.steps += [javaRead(aggregationClassName(), aggregation2java(aggReq), paths, finalCols)];   
+        scr.steps += [javaRead("<aggregationPkg()>.<aggregationClassName()>", aggregation2java(aggReq), paths, finalCols)];   
       }
       else {
         scr.steps += [read(paths)];
