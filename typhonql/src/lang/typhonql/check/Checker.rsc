@@ -323,8 +323,14 @@ void collectBuildinFunction(Tree current, (VId)`distance`, list[Expr] args, Coll
     }
 }
 
+void collectBuildinFunction(Tree current, (VId)`count`, list[Expr] args, Collector c) {
+  // todo
+}
+
+
+
 default void collectBuildinFunction(Tree current, _, _, Collector c) {
-    c.report(error(current, "Unknown buildin function"));
+    c.report(error(current, "Unknown built-in function"));
 }
 
 
@@ -512,6 +518,7 @@ void collect(current:(Query)`from <{Binding ","}+ bindings> select <{Result ","}
 }
 
 void collect(Result current, Collector c) {
+    // TODO: deal with aliased results: ensure they are unique.
     collect(current.expr, c);
 }
 
