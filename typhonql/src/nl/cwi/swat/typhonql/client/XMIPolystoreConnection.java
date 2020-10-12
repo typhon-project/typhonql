@@ -119,7 +119,8 @@ public class XMIPolystoreConnection {
 		}
 
 
-		PathConfig pcfg = PathConfig.fromSourceProjectRascalManifest(root);
+		PathConfig pcfg = PathConfig.fromSourceProjectRascalManifest(root).addSourceLoc(URIUtil.correctLocation("lib", "typepal", ""));
+		System.err.println(pcfg);
 		ClassLoader cl = new SourceLocationClassLoader(pcfg.getClassloaders(), XMIPolystoreConnection.class.getClassLoader());
 
 		evaluators = new ConcurrentSoftReferenceObjectPool<>(10, TimeUnit.MINUTES, 1, calculateMaxEvaluators(), () -> {
@@ -139,6 +140,7 @@ public class XMIPolystoreConnection {
 			System.out.println("Starting a fresh evaluator to interpret the query (" + Integer.toHexString(System.identityHashCode(result)) + ")");
 			System.out.flush();
 			// now we are ready to import our main module
+			result.doImport(null, "analysis::typepal::TypePal");
 			result.doImport(null, "lang::typhonql::RunUsingCompiler");
 			result.doImport(null, "lang::typhonql::Session");
 			long stop = System.nanoTime();

@@ -491,7 +491,7 @@ void collectEntityType(EId entityName, Collector c) {
     }
     else {
         c.calculate("error", entityName, [], AType (Solver s) {
-            s.report(error(entityName, "Missing model in the typepal configuration"));
+            s.report(error(entityName, "Missing %v in the typepal configuration", "<entityName>"));
             return voidType();
         });
     }
