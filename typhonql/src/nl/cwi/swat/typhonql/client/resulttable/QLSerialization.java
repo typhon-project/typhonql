@@ -4,10 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.stream.Stream;
 
-import org.apache.tinkerpop.gremlin.structure.io.binary.types.InstantSerializer;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
@@ -22,6 +21,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 public class QLSerialization {
 
 
+
 	public static final ObjectMapper mapper;
 
 	static {
@@ -32,6 +32,7 @@ public class QLSerialization {
 		customSerializers.addSerializer(LocalDate.class, new LocalDateSerializer());
 		customSerializers.addSerializer(Instant.class, new InstantSerializer());
 		customSerializers.addSerializer(InputStream.class, new ByteStreamSerializer());
+		customSerializers.addSerializer(new StreamSerializer());
 
 		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
 		mapper.registerModule(customSerializers);
@@ -91,6 +92,46 @@ public class QLSerialization {
 		public void serialize(InputStream value, JsonGenerator gen, SerializerProvider provider) throws IOException {
 			gen.writeBinary(value, -1);
 		}
+
+	}
+	
+	
+	@SuppressWarnings({ "serial" })
+	private static final class StreamSerializer extends StdSerializer<Stream<?>> {
+		
+		private StreamSerializer() {
+			super(Stream.class, true);
+		}
+
+
+		@Override
+		public void serialize(Stream<?> value, JsonGenerator gen, SerializerProvider provider)
+				throws IOException {
+			gen.writeStartArray();
+			try {
+				value.forEachOrdered(element -> {
+					try {
+						if (element instanceof Object[]) {
+							Object[] obs = (Object[]) element;
+							gen.writeStartArray(obs.length);
+							for (Object o : obs) {
+								gen.writeObject(o);
+							}
+							gen.writeEndArray();
+
+						} else {
+							gen.writeObject(element);
+						}
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+				});
+			}
+			finally {
+				gen.writeEndArray();
+			}
+		}
+
 
 	}
 
