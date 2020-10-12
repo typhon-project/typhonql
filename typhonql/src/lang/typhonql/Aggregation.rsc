@@ -239,10 +239,10 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     '}
     ";
     
-  //if (save) {
+  if (save) {
     str path = replaceAll(aggregationPkg(), ".", "/");
     writeFile(|project://typhonql/src/<path>/<aggregationClassName()>.java|, javaCode);
-  //}  
+  }  
     
   return javaCode;
 }
