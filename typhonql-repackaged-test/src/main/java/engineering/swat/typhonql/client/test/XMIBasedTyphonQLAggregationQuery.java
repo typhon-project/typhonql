@@ -18,6 +18,7 @@ package engineering.swat.typhonql.client.test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.List;
 
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
@@ -47,9 +48,22 @@ public class XMIBasedTyphonQLAggregationQuery {
 		//ResultTable rt = conn.executeQuery(xmiString, infos, "from Product p, Review r select r.content where p.reviews == r, p.@id == #tv");
 		//CommandResult rt = conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "update User u where u.@id == #davy set {photoURL: \"other\", name: \"Landman\"}");
 		conn.resetDatabases(xmiString, infos);
+		
+		
+		conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "insert Product {@id: #b7dd8aaf-2652-474f-abfd-176ee05bc6a8, name: \"TV\", description: \"Flat\", productionDate:  $2020-04-13$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)), price: 20 }", false);
+
+		conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "insert Item {shelf: 1, product: #b7dd8aaf-2652-474f-abfd-176ee05bc6a8}", false);
+		conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "insert Item {shelf: 1, product: #b7dd8aaf-2652-474f-abfd-176ee05bc6a8}", false);
+		conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "insert Item {shelf: 2, product: #b7dd8aaf-2652-474f-abfd-176ee05bc6a8}", false);
+		conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "insert Item {shelf: 3, product: #b7dd8aaf-2652-474f-abfd-176ee05bc6a8}", false);
+		conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "insert Item {shelf: 3, product: #b7dd8aaf-2652-474f-abfd-176ee05bc6a8}", false);
+		conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "insert Item {shelf: 3, product: #b7dd8aaf-2652-474f-abfd-176ee05bc6a8}", false);
+		
 		JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf", true);
 
 		System.out.println(rt);
+
+		rt.serializeJSON(System.out);
 
 	}
 }
