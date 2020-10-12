@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -284,8 +285,8 @@ public class XMIPolystoreConnection {
 		qlValueMappers.put("bool", Boolean::valueOf);
 		qlValueMappers.put("text", s -> s);
 		qlValueMappers.put("uuid", UUID::fromString);
-		qlValueMappers.put("date", s -> LocalDate.parse(s));
-		qlValueMappers.put("datetime", s -> LocalDateTime.parse(s));
+		qlValueMappers.put("date", LocalDate::parse);
+		qlValueMappers.put("datetime", Instant::parse);
 		qlValueMappers.put("point", XMIPolystoreConnection::readWKT);
 		qlValueMappers.put("polygon", XMIPolystoreConnection::readWKT);
 	}
