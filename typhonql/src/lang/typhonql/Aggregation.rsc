@@ -162,6 +162,10 @@ void testAggregationExtraction() {
                  'where u.reviews == r.@id`;
 
   printResult(extractAggregation(req));
+
+  req = (Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf`; 
+
+  printResult(extractAggregation(req));
   
 }
 
@@ -222,17 +226,19 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     '   public java.util.stream.Stream\<java.lang.Object[]\> processStream(
     '       java.util.List\<nl.cwi.swat.typhonql.backend.Field\> $fields,
     '       java.util.stream.Stream\<nl.cwi.swat.typhonql.backend.Record\> $rows) {
+    '     
     '     <groupBysToJava(gbs, rs)>
     '      
     '     java.util.List\<java.lang.Object[]\> $result = new java.util.ArrayList\<\>();
-    '     for (java.lang.Object[] $k: $grouped.keySet()) {
+    '     for (java.util.List\<java.lang.Object\> $k: $grouped.keySet()) {
     '        java.util.List\<nl.cwi.swat.typhonql.backend.Record\> $records = $grouped.get($k);
     '        nl.cwi.swat.typhonql.backend.Record $key = $records.get(0);
     '        <aggs2vars(rs)>
     '        <if (hs != []) {>
     '        if (<havings2conds(hs)>)
-    '        <}>
+    '        <}>{
     '          $result.add(<results2array(rs)>);
+    '        }
     '     }
     '     return $result.stream();
     '  }
@@ -346,6 +352,7 @@ str aggs2vars(list[Result] rs) {
   for (int i <- [0..size(rs)]) {
     if (r:(Result)`<Expr agg> as <VId x>` := rs[i]) {
       s += "java.lang.Object <result2var(r)> = <agg2java(agg, i)>;\n";
+      //s += "System.err.println(\"AGG: <agg> as <x> = \" + <agg2java(agg, i)>);"; 
     }
   } 
   return s;
@@ -353,11 +360,11 @@ str aggs2vars(list[Result] rs) {
 
 str groupBysToGroupBys(list[Expr] gbs, map[Expr,int] pos) 
   = "$rows.collect(java.util.stream.Collectors.groupingBy((nl.cwi.swat.typhonql.backend.Record $x) -\> { 
-    '   return new java.lang.Object[]{<intercalate(", ", [ "$x.getObject($fields.get(<pos[gb]>))" | Expr gb <- gbs ])>}; 
+    '   return java.util.Arrays.asList(<intercalate(", ", [ "$x.getObject($fields.get(<pos[gb]>))" | Expr gb <- gbs ])>); 
     '} , java.util.stream.Collectors.toList()))"; 
   
 str nestedMap(list[Expr] gbs)
-  = "java.util.Map\<java.lang.Object[], java.util.List\<nl.cwi.swat.typhonql.backend.Record\>\>";
+  = "java.util.Map\<java.util.List\<java.lang.Object\>, java.util.List\<nl.cwi.swat.typhonql.backend.Record\>\>";
   
 
 
