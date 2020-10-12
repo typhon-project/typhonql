@@ -89,7 +89,7 @@ Script request2script(Request r, Schema s, Log log = noLog) {
       log("NORMALIZED: <r>");
       Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) 
          | Place p <- order, hitsBackend(r, p, s)]);
-         
+       
       list[Path] paths = results2paths(r.qry.selected, queryEnv(r.qry), s);
          
       if (just(aggReq:(Request)`<Query agg>`) := maybeAgg) {
@@ -140,6 +140,7 @@ void smokeScript() {
   }, {
     <"Person", "name", "text">,
     <"Person", "age", "int">,
+    <"Item", "shelf", "int">,
     <"SomeStuff", "photo", "text">,
     <"SomeStuff", "bitcoin", "text">,
     <"Cash", "amount", "int">,
@@ -151,6 +152,7 @@ void smokeScript() {
     <<cassandra(), "Stuff">, "SomeStuff">,
     <<sql(), "Inventory">, "Person">,
     <<sql(), "Inventory">, "Cash">,
+    <<sql(), "Inventory">, "Item">,
     <<mongodb(), "Reviews">, "Review">,
     <<mongodb(), "Reviews">, "Comment">
   }
@@ -307,4 +309,6 @@ void smokeScript() {
                  'group u.age, u.name having rc \> 2 || rc \< 0`);
                          
     
+  smokeIt((Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf`);
+  
 }
