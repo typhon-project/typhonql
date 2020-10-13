@@ -304,7 +304,7 @@ version(s), and exceptions or additional permissions here}.&quot;
    </requires>
 
    <plugin
-         id="org.rascalmpl.typepal"
+         id="typepal"
          download-size="0"
          install-size="0"
          version="0.0.0"/>

@@ -2,7 +2,7 @@ node {
   env.JAVA_HOME="${tool 'adopt-openjdk8'}"
   env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
   if (env.BRANCH_NAME == "master") {
-    env.MAVEN_OPTS= "-Dmaven.repo.local=/var/jenkins_home/workspace/.m2-ql-master -Djava.awt.headless=true"
+    env.MAVEN_OPTS= "-U -Dmaven.repo.local=/var/jenkins_home/workspace/.m2-ql-master -Djava.awt.headless=true"
   }
   else {
     env.MAVEN_OPTS= "-Dmaven.repo.local=/var/jenkins_home/workspace/.m2-ql-dev -Djava.awt.headless=true"
