@@ -30,6 +30,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -156,13 +157,7 @@ public class TyphonQL {
 		credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(user, password));
 		CloseableHttpClient httpclient = HttpClientBuilder.create().setDefaultCredentialsProvider(credentialsProvider).build();
 		HttpPost httpPost = new HttpPost(path);
-		try {
-			httpPost.setEntity(new StringEntity(body));
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-			throw RuntimeExceptionFactory.io(vf.string("Problem with encoding of the POST body"), null, null);
-		}
-		
+        httpPost.setEntity(new StringEntity(body, ContentType.APPLICATION_JSON));
 		CloseableHttpResponse response1;
 		try {
 			response1 = httpclient.execute(httpPost);
