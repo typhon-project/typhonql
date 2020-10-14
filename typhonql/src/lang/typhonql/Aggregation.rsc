@@ -257,7 +257,7 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
 str results2array(list[Result] rs)
   = "new java.lang.Object[] {<intercalate(", ", [ result2java(rs[i], i) | int i <- [0..size(rs)] ])>}";
 
-str result2java((Result)`<Expr _> as <VId x>`, int _) = "<x>";
+str result2java((Result)`<Expr _> as <VId x>`, int _) = "<x>$";
   
 // the default is that it's a non-aggregated result
 // which means it's in the group by clause; hence
@@ -276,7 +276,7 @@ str havings2conds(list[Expr] hs)
 // havings may only refer to aggregated data
 // and in our case this is always aliased, so
 // a variable ref always becomes a ref to an agg-var
-str having2cond((Expr)`<VId x>`) = "<x>";
+str having2cond((Expr)`<VId x>`) = "<x>$";
 
 str havingOps() = "<aggregationPkg()>.HavingOperators";
 
@@ -324,7 +324,7 @@ str groupBysToJava(list[Expr] gbs, map[Expr, int] pos)
   = "<nestedMap(gbs)> $grouped = <groupBysToGroupBys(gbs, pos)>;"; 
 
 
-str result2var((Result)`<Expr agg> as <VId x>`) = "<x>";
+str result2var((Result)`<Expr agg> as <VId x>`) = "<x>$";
 
 default str result2var((Result)`<Expr e>`) = expr2var(e);
 
