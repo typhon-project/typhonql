@@ -42,6 +42,9 @@ import lang::typhonql::neo4j::Query2Neo;
 import lang::typhonql::neo4j::Neo;
 import lang::typhonql::neo4j::Neo2Text;
 
+import lang::typhonql::nlp::Query2Nlp;
+import lang::typhonql::nlp::Nlp;
+
 import lang::typhonql::util::Log;
 
 import IO;
@@ -145,6 +148,23 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<neo4j(), str dbName>, Schema 
     return [];
   }
   return [step(dbName, neo(executeNeoQuery(dbName, neopp(neoStat))), params
+     , signature=
+         filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s)
+           +  where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];
+}
+
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<nlp(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = ()) {
+  log("COMPILING2NLP: <r>");
+  
+  <nlpStat, params> = compile2nlp(r, s, p);
+  params += initialParams;
+
+  
+  if (nlpStat.selectors == []) {
+    return [];
+  }
+  println(pp(nlpStat));
+  return [step(dbName, nlp(query(pp(nlpStat))), params
      , signature=
          filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s)
            +  where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];
