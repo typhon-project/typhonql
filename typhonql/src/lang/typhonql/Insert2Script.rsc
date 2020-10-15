@@ -86,7 +86,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   Place p = placeOf(entity, s);
   str myId = newParam();
   Bindings myParams = ( myId: generatedId(myId) | !hasId(kvs) );
-  NlpId nlpMe = hasId(kvs) ? NlpId::id(sUuid(evalId(kvs))) : NlpId::placeholder(myId);
+  NlpId nlpMe = hasId(kvs) ? NlpId::id(evalId(kvs)) : NlpId::placeholder(myId);
   SQLExpr sqlMe = hasId(kvs) ? lit(sUuid(evalId(kvs))) : SQLExpr::placeholder(name=myId);
   DBObject mongoMe = hasId(kvs) ? mUuid(evalId(kvs)) : DBObject::placeholder(name=myId);
   CQLExpr cqlMe = hasId(kvs) ? cTerm(cUUID(evalId(kvs))) : cBindMarker(name=myId);
@@ -196,13 +196,13 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   
   // Then we send off the freetext fields to the NLAE engine
   
-  map[str, rel[str,str]] analyses = ();
+  rel[str,str] analyses = {};
   for (KeyVal kv <- kvs, isFreeTextAttr(entity, kv has key ? "<kv.key>" : "@id", s)) {
   	str attr = "<kv.key>";
     Expr val = kv.\value;
-    if ((Expr) `<Str s>` := val) {
+    if ((Expr) `<Str string>` := val) {
     	analyses = getFreeTypeAnalyses(entity, kv has key ? "<kv.key>" : "@id", s);
-    	str json = getProcessJson(nlpMe, entity, attr, "<s.contents>", analyses);
+    	str json = getProcessJson(nlpMe, entity, attr, "<string.contents>", analyses);
     	addSteps([step("nlae", nlp(process(json)), myParams)]);
     }
     else
