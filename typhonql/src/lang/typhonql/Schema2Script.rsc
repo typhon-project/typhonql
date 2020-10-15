@@ -107,3 +107,5 @@ list[Step] place2script(p: <neo4j(), str db>, Schema s, Log log = noLog) {
 				[nLit(nBoolean(true))])))), ())];
 	return steps;
 }
+
+list[Step] place2script(p: <nlp(), str db>, Schema s, Log log = noLog) = [];
