@@ -88,7 +88,8 @@ alias MongoOperations = tuple[
 
 alias NlpOperations = tuple[
 	void (str json, Bindings bindings) process,
-	void (str json, Bindings bindings) delete
+	void (str json, Bindings bindings) delete,
+	void (str json, Bindings bindings, list[Path] paths) query
 ];
 
 

@@ -65,6 +65,7 @@ data NeoCall
 data NlpCall
   = process(str json)
   | delete(str json)
+  | query(str json)
   ;
   
 data MongoCall
@@ -169,6 +170,12 @@ str runScriptAux(Script scr, Session session, Schema schema) {
         
       case step(str r, nlp(process(str json)), Bindings ps):
       	session.nlp.process(json, ps);
+      	
+      case step(str r, nlp(delete(str json)), Bindings ps):
+      	session.nlp.delete(json, ps);
+      
+      case step(str r, nlp(query(str json)), Bindings ps):
+      	session.nlp.query(json, ps, s.signature);	
       
       case newId(str var): {
         result = session.newId(var);
