@@ -11,6 +11,7 @@ import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
 
+import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IMap;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
@@ -23,11 +24,15 @@ import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.rascal.ConnectionData;
 import nl.cwi.swat.typhonql.backend.rascal.Operations;
+import nl.cwi.swat.typhonql.backend.rascal.Path;
 import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 
 public class NlpOperations implements Operations, AutoCloseable{
 	
 	private static final String NLP_KEY = "nlae";
+	private static final String NLP_DEFAULT_HOST = "localhost";
+	private static final int NLP_DEFAULT_PORT = 8888;
+	
 	
 	private static final TypeFactory TF = TypeFactory.getInstance();
 
@@ -44,8 +49,13 @@ public class NlpOperations implements Operations, AutoCloseable{
 			user = cd.getPassword();
 			password = cd.getPassword();
 		}
-		else
-			throw new RuntimeException("Problems initializing Nlp operations. Missing connection information");
+		else {
+			host = NLP_DEFAULT_HOST;
+			port = NLP_DEFAULT_PORT;
+			user = null;
+			password = null;
+			//throw new RuntimeException("Problems initializing Nlp operations. Missing connection information");
+		}
 		
 	}
 	
@@ -58,11 +68,28 @@ public class NlpOperations implements Operations, AutoCloseable{
 
 		FunctionType processType = (FunctionType) aliasedTuple.getFieldType("process");
 		FunctionType deleteType = (FunctionType) aliasedTuple.getFieldType("delete");
+		FunctionType queryType = (FunctionType) aliasedTuple.getFieldType("query");
 		
 		Supplier<NlpEngine> getEngine = () -> new NlpEngine(store, state, script, uuids, host, port, user, password);
 
 		return vf.tuple(makeProcess(getEngine, state, processType, ctx, vf),
-				makeDelete(getEngine, state, deleteType, ctx, vf));
+				makeDelete(getEngine, state, deleteType, ctx, vf),
+				makeQuery(getEngine, state, queryType, ctx, vf));
+	}
+
+	private IValue makeQuery(Supplier<NlpEngine> getEngine, TyphonSessionState state, FunctionType queryType,
+			IEvaluatorContext ctx, IValueFactory vf) {
+		return makeFunction(ctx, state, queryType, args -> {
+			String query = ((IString) args[0]).getValue();
+			IMap bindings = (IMap) args[1];
+			IList signatureList = (IList) args[2];
+			
+			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
+			List<Path> signature = rascalToJavaSignature(signatureList);
+			
+			getEngine.get().query(query, bindingsMap, signature);
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
+		});
 	}
 
 	private IValue makeProcess(Supplier<NlpEngine> getEngine, TyphonSessionState state, FunctionType processType, IEvaluatorContext ctx,
