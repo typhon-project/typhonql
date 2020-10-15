@@ -62,6 +62,7 @@ alias Pragmas = rel[str dbName, Option option];
 data Option
   = indexSpec(str name, rel[str entity, str feature] features)
   | graphSpec(rel[str entity, str from, str to] edges)
+  | nlpSpec(rel[str entity, str field, str analysis, str workflow] workflows)
   ;
 
 str ppSchema(Schema s) {
@@ -262,26 +263,31 @@ Schema inferKeyValueAuxEntities(Schema s) {
   return s;
 }
 
-str nlpEntity(str ent, str attributeName) = "<ent>__<attributeName>";
-str nlpEntity(str ent, str attributeName, str analysis) = "<ent>__<attributeName>__<analysis>";
-str nlpRole(str ent) = "<ent>$$nlp";
+public str nlpEntity(str ent) = "<ent>___NLP";
+public str nlpRelation() = "NLP___";
+public str nlpCustomDataType(str entity, str field) = "NLP___<entity>_<field>";
+public bool isNlpCustomDataType(str name) = startsWith(name, "NLP___");
 
-str nlpAttributeAnalysisType(str analysis) = "__<analysis>";
-
-map[str, Attrs] customForNlpAnalysis = ( 
+public map[str, Attrs] customForNlpAnalysis = ( 
 	"SentimentAnalysis": {
-		<"__SentimentAnalysis", "begin", "int">,
-		<"__SentimentAnalysis", "end", "int">,
-		<"__SentimentAnalysis", "Sentiment", "int">,
-		<"__SentimentAnalysis", "SentimentLabel", "text">
+		<"SentimentAnalysis", "begin", "int">,
+		<"SentimentAnalysis", "end", "int">,
+		<"SentimentAnalysis", "Sentiment", "int">,
+		<"SentimentAnalysis", "SentimentLabel", "text">
 	}
 	,
 	"NamedEntityRecognition": {
-		<"__NamedEntityRecognition", "begin", "int">,
-		<"__NamedEntityRecognition", "end", "int">,
-		<"__NamedEntityRecognition", "NamedEntity", "text">
+		<"NamedEntityRecognition", "begin", "int">,
+		<"NamedEntityRecognition", "end", "int">,
+		<"NamedEntityRecognition", "NamedEntity", "text">
 	});
-
+	
+public bool isFreeTextType(str ty) = startsWith(ty, "freetext");
+  
+public rel[str, str] getFreeTypeAnalyses(str ty) = 
+  {<analysis[0..leftBracketPos], analysis[(leftBracketPos+1)..-1]> | analysis <- split(", ", csv), leftBracketPos := findFirst(analysis, "[")}
+  when csv := ty[9..-1];
+		
 Schema inferNlpAuxEntities(Schema s) {
   /*
   NLP normalization:
@@ -291,42 +297,33 @@ Schema inferNlpAuxEntities(Schema s) {
 
   */
   
-  bool isFreeTextType(str ty) = startsWith(ty, "freetext");
-  
-  rel[str, str] getFreeTypeAnalyses(str ty) = 
-	{<analysis[0..leftBracketPos], analysis[(leftBracketPos+1)..-1]> | analysis <- split(", ", csv), leftBracketPos := findFirst(analysis, "[")}
-	when csv := ty[9..-1];
+  rel[str, str, str, str] nlpAttrs
+    = { <ent, nlpEntity(ent), name, ty> | a:<ent, name, ty> <- s.attrs, isFreeTextType(ty) };
 
-  rel[str, str, str] nlpAttrs
-    = { a | a:<ent, name, ty> <- s.attrs, isFreeTextType(ty) };
-
-  // for each entity
-  for (str ent <- domain(nlpAttrs)) {
-    
-    for (<ent, name, ty> <- nlpAttrs) {
-     	str newEnt = nlpEntity(ent, name);
-    	rel[str, str] analyses = getFreeTypeAnalyses(ty);
+    // for each entity
+   for (<ent, newEnt, name, ty> <- nlpAttrs) {
+     	rel[str, str] analyses = getFreeTypeAnalyses(ty);
     	
     	// fields of the virtual type
    		s.customs += {*customForNlpAnalysis[analysis] | <analysis, _> <- analyses};
    		
    		// adding virtual entity for this attribute
    		//s.customs += {<nlpAttributeType(ent, name), analysis, nlpAttributeAnalysisType(analysis)> |<analysis, _> <- analyses};
-   		s.attrs += {<newEnt, analysis, nlpAttributeAnalysisType(analysis)> |<analysis, _> <- analyses};
+   		s.attrs += {<newEnt, name, nlpCustomDataType(ent, name)>};
+   		s.customs += {<nlpCustomDataType(ent, name), analysis, analysis> | <analysis, _> <- analyses};
    		
    		//s.attrs -= {<ent, name, ty>};
    		//s.attrs += {<ent, name, "text">};
    		
-   		// add containment
-   		//s.rels += {<ent, \one(), nlpRole(ent), "", \one(), newEnt, true>};
-   		//<nlpEntity(ent, name, analysis)
-   		s.rels += {<ent, \one(), name, "", \one(), newEnt, true> |<analysis, _> <- analyses };
-   		// add new placement
-    	s.placement += {<<nlp(), ent>, newEnt>};
-    
-    } 
-  }
-
+   		workflows = {<newEnt, name, analysis, w> | <analysis, w> <- analyses};
+   		
+    	s.pragmas += {<ent, nlpSpec(workflows)>};   
+  } 
+  for (<ent, newEnt> <- {<ent, newEnt> | <ent, newEnt, _, _> <- nlpAttrs}) {
+  	s.rels += {<ent, \one(), nlpRelation(), "", \one(), newEnt, true> };
+  	s.placement += {<<nlp(), ent>, newEnt>};
+  } 
+  
   return s;
 }
 
