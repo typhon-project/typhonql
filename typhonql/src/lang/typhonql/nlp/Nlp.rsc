@@ -1,6 +1,7 @@
 module lang::typhonql::nlp::Nlp
 
 import List;
+import String;
 
 data NlpId = id(str id) | placeholder(str name);
 
@@ -25,15 +26,38 @@ data NExpr
 	
 str pp(nSelect(nFrom(str entity, str label), withs, selectors, wheres))
 	= "{
-	  '  \"from\": { \"entity\" : \"<entity>\", \"named\" : \"<label>\",
+	  '  \"from\": { \"entity\" : \"<ppEntity(entity)>\", \"named\" : \"<ppVar(label)>\"},
 	  '	 \"with\": [<ppWiths>],
 	  '  \"select\": [<ppSelectors>],
-	  '  \"where\": [<ppWheres>/]
+	  '  \"where\": [<ppWheres>]
 	  '}"
-	when ppWiths := intercalate(",", [pp(w) | w <- with]),
+	when ppWiths := intercalate(",", [pp(w) | w <- withs]),
 	     ppSelectors := intercalate(",", [pp(p) | p <- selectors]),
 	     ppWheres := intercalate(",", [pp(w) | w <- wheres]);
-	  
+
+	
+str pp(nWith(NPath path, str workflow)) = "{ \"path\": <pp(path)>, \"workflow\": \"<workflow>\"}";
+
+str pp(nPath(str var, list[str] field)) = "\"<intercalate(".", [ppVar(var)] + field)>\"";
+
+str pp(nBinaryOp(str op, NExpr lhs, NExpr rhs)) = "{\"op\": \"<op>\", \"lhs\": <pp(lhs)>, \"rhs\": <pp(rhs)> }";
+
+str pp(nAttr(str var, list[str] path)) = "{\"attr\": \"<intercalate(".", [ppVar(var)] + path)>\"}";
+
+str pp(nPlaceholder(str name)) = "${<name>}";
+
+str pp(nLiteral(str val, str ty)) = "{\"lit\" : \"<val>\", \"type\" : \"<ty>\"}";
+default str pp(nLiteral(str val, str ty)) = val;
+
+str ppVar(str var) {
+ 	parts =split("__", var);
+ 	return parts[2];
+}
+
+str ppEntity(str ent) {
+ 	parts =split("___", ent);
+ 	return parts[0];
+}
 
 /*{
   “from”: {“entity”: “Review”, “named”: “r”}
@@ -69,24 +93,24 @@ str pp(nSelect(nFrom(str entity, str label), withs, selectors, wheres))
 str getProcessJson(NlpId id, str entity, str field, str text, rel[str,str] analyses) {
 	return 
 		"{
-		|	\"id\": <pp(id)>
-		|	\"entityType\": <entity>
-		|	\"fieldName\": <field>
-		|	\"text\": <text>
-		|	\"nlpFeatures\": [<intercalate(", ", ["\"<a>\"" | <a, w> <- analyses])>]
-		|	\"workflowNames\": [<intercalate(", ", ["\"<w>\"" | <a, w> <- analyses])>]
-		|}";
+		'	\"id\": \"<pp(id)>\",
+		'	\"entityType\": \"<entity>\",
+		'	\"fieldName\": \"<field>\",
+		'	\"text\": \"<text>\",
+		'	\"nlpFeatures\": [<intercalate(", ", ["\"<a>\"" | <a, w> <- analyses])>],
+		'	\"workflowNames\": [<intercalate(", ", ["\"<w>\"" | <a, w> <- analyses])>]
+		'}";
 
 }
 
 str getDeleteJson(NlpId id, str entity) {
 	return 
 		"{
-		|	\"id\": <pp(id)>
-		|	\"entityType\": <entity>
-		|}";
+		'	\"id\": \"<pp(id)>\",
+		'	\"entityType\": \"<entity>\"
+		'}";
 
 }
 
 str pp(id(str name)) = name;
-str pp(placeholder(str name)) = "$<name>";
+str pp(placeholder(str name)) = "${<name>}";
