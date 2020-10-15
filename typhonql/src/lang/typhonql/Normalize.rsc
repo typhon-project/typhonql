@@ -185,9 +185,15 @@ Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result 
       return src;
     }
     str via = "<ids[0]>";
+    str nlpEnt = nlpEntity(src);
+    
     if (<src, Cardinality _, via,  str _, Cardinality _, str trg, _> <- s.rels) {
       return inferTarget(trg, ids[1..]);
     }
+    // Ignoring NLP
+    else if (<src, via, ty> <- s.attrs, isFreeTextType(ty)) {
+      return src;
+    } 
     else {
       throw "Invalid role `<via>` for entity <src>";
     }
@@ -256,19 +262,6 @@ Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result 
 Request inferNlpLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
   // rewrite x.f -> x.A__B.f if f is an attribute that is mapped from keyVal
   Env env = queryEnv(bs);
-  
-  str inferTarget(str src, list[Id] ids) {
-    if (ids == []) {
-      return src;
-    }
-    str via = "<ids[0]>";
-    if (<src, Cardinality _, via,  str _, Cardinality _, str trg, _> <- s.rels) {
-      return inferTarget(trg, ids[1..]);
-    }
-    else {
-      throw "Invalid role `<via>` for entity <src>";
-    }
-  }
  
   int varId = 0;
   map[str, VId] memo = ();
@@ -277,7 +270,7 @@ Request inferNlpLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result ","
   VId newBinding(str entity, str path, Expr whereRhs) {
     str key = "<entity>/<path>";
     if (key notin memo) {
-      str x = "<uncapitalize(entity)>_nlp_<varId>";
+      str x = "<uncapitalize(entity)>_<varId>__<path>";
       varId += 1;
       VId var = [VId]x;
       memo[key] = var;
@@ -298,9 +291,10 @@ Request inferNlpLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result ","
       str src = env["<x>"];
       if (isFreeTextAttr(src, "<f>", s)) {
      	analyses = getFreeTypeAnalyses(src, "<f>", s);
-     	str tgt = inferTarget(env["<x>"], [ f ]);
-        VId nlpX = newBinding(tgt, "<x>.<f>", (Expr)`<VId x>.<Id f>`);
-        insert (Expr)`<VId nlpX>.<Id fs>`;
+     	str tgt = nlpEntity(src);
+     	Id nlpRel = [Id] nlpRelation();
+        VId nlpX = newBinding(tgt, "<x>", (Expr)`<VId x>.<Id nlpRel>`);
+        insert (Expr)`<VId nlpX>.<Id f>.<Id fs>`;
         /*
           add binding: kvEntity kvVar
           add where:  kvVar.@id == x.<fs>.@id
