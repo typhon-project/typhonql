@@ -76,6 +76,15 @@ bool qlSubType(bigIntType(), floatType()) = true;
 bool qlSubType(stringType(), textType()) = true;
 bool qlSubType(textType(), stringType()) = true;
 
+bool qlSubType(freeTextType(_), stringType()) = true;
+bool qlSubType(stringType(), freeTextType(_)) = true;
+
+bool qlSubType(userDefinedType(name), stringType()) = true
+	when isNlpCustomDataType(name);
+	
+bool qlSubType(stringType(), userDefinedType(name)) = true
+	when isNlpCustomDataType(name);
+
 bool qlSubType(uuidType(), entityType(_)) = true;
 
 bool qlSubType(voidType(), _) = true;
@@ -707,13 +716,24 @@ CheckerMLSchema convertModel(Schema mlSchema) {
     fields = ( entityType(tpn) : 
         (
           (fn : <(ftp in mlSchema.customs<from>) ? userDefinedType(ftp) : calcMLType(ftp), \one()> | <fn, ftp> <- mlSchema.attrs[tpn])
+        //+ (fn : <entityType(nlpEntity(tpn)), \one()> | <fn, ftp> <- mlSchema.attrs[tpn], isFreeTextType(ftp))
+        + (fn: <userDefinedType(nlpCustomDataType(tpn, fn)), \one()>
+    	|  <fn, ftp> <- mlSchema.attrs[tpn], isFreeTextType(ftp))
         + (fr : <entityType(to), fc> | <fc, fr, _, _, to, _> <- mlSchema.rels[tpn])
         + (tr : <entityType(from), tc> | <from, _, _, tr, tc, tpn, _> <- mlSchema.rels)) // inverse roles
     | tpn <- entities(mlSchema)
     ) + (userDefinedType(tpn) : 
-        (fn : <(ftp in mlSchema.customs<from>) ? userDefinedType(ftp) : calcMLType(ftp), \one()> | <fn, ftp> <- mlSchema.customs[tpn]) 
+        (fn : <(ftp in mlSchema.customs<from>) ? userDefinedType(ftp) : calcMLType(ftp), \one()> | <fn, ftp> <- mlSchema.customs[tpn])   
     | tpn <- mlSchema.customs<from>
-    );
+    ) + (userDefinedType(tpn) :
+    	(fn : <calcMLType(ftp), \one()> |  <actualName, fn, ftp> <- customForNlpAnalysis[tpn])
+    | tpn <-  customForNlpAnalysis
+    ) + (userDefinedType(nlpCustomDataType(tpn, fn)) :
+       (an: <userDefinedType(an), \one()> | <an, wf> <- getFreeTypeAnalyses(ftp))
+        | tpn <- entities(mlSchema), <fn, ftp> <- mlSchema.attrs[tpn], isFreeTextType(ftp)
+    )
+    ;
+    
     graphEdges = {
         <
             fields[entityType(ent)][frm]<0>,
