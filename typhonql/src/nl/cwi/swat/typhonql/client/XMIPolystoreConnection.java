@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -119,7 +120,8 @@ public class XMIPolystoreConnection {
 		}
 
 
-		PathConfig pcfg = PathConfig.fromSourceProjectRascalManifest(root);
+		PathConfig pcfg = PathConfig.fromSourceProjectRascalManifest(root).addSourceLoc(URIUtil.correctLocation("lib", "typepal", ""));
+		System.err.println(pcfg);
 		ClassLoader cl = new SourceLocationClassLoader(pcfg.getClassloaders(), XMIPolystoreConnection.class.getClassLoader());
 
 		evaluators = new ConcurrentSoftReferenceObjectPool<>(10, TimeUnit.MINUTES, 1, calculateMaxEvaluators(), () -> {
@@ -139,6 +141,7 @@ public class XMIPolystoreConnection {
 			System.out.println("Starting a fresh evaluator to interpret the query (" + Integer.toHexString(System.identityHashCode(result)) + ")");
 			System.out.flush();
 			// now we are ready to import our main module
+			result.doImport(null, "analysis::typepal::TypePal");
 			result.doImport(null, "lang::typhonql::RunUsingCompiler");
 			result.doImport(null, "lang::typhonql::Session");
 			long stop = System.nanoTime();
@@ -285,8 +288,8 @@ public class XMIPolystoreConnection {
 		qlValueMappers.put("bool", Boolean::valueOf);
 		qlValueMappers.put("text", s -> s);
 		qlValueMappers.put("uuid", s -> s == null ? null : UUID.fromString(s));
-		qlValueMappers.put("date", s -> LocalDate.parse(s));
-		qlValueMappers.put("datetime", s -> LocalDateTime.parse(s));
+		qlValueMappers.put("date", LocalDate::parse);
+		qlValueMappers.put("datetime", Instant::parse);
 		qlValueMappers.put("point", XMIPolystoreConnection::readWKT);
 		qlValueMappers.put("polygon", XMIPolystoreConnection::readWKT);
 	}

@@ -26,7 +26,7 @@ import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 public class XMIBasedTyphonQLResetDatabasesTest {
 	
 	private static String HOST = "localhost";
-	private static int PORT = 8082;
+	private static int PORT = 8080;
 	private static String USER = "admin";
 	private static String PASSWORD = "admin1@";
 	
