@@ -208,6 +208,14 @@ void setup(PolystoreInstance p, bool doTest) {
 	  p.assertResultEquals("wish obtained from user", rs, <["u.wishes"], [[U("wish1")], [U("wish2")]]>);
 	}
 	
+	/*p.runUpdate((Request) `insert Company { @id: #ibm, name: "IBM", mission: "Be better", vision: "More machines" }`);
+	
+	if (doTest) {
+	  rs = p.runQuery((Request)`from Company c select c.@id`);
+	  p.assertResultEquals("company was inserted", rs, <["c.@id"], [
+	    [U("ibm")]]>);
+	}
+	*/
 	
 }
 
@@ -282,6 +290,35 @@ void testLoneVars(PolystoreInstance p) {
   p.assertEquals("all features from biography retrieved", rs, <["b.content", "b.user"]
     , [["Chilean", U("pablo")]]>);
     
+}
+
+void testInsertFreetextAttributes(PolystoreInstance p) {
+  p.runUpdate((Request) `insert Company { @id: #ibm, name: "IBM", mission: "Be better", vision: "Forever"}`);
+  rs = p.runQuery((Request)`from Company c select c.@id`);
+  p.assertResultEquals("company was inserted", rs, <["c.@id"], [
+	    [U("ibm")]]>); 
+                        
+}
+
+void testSelectKeyVal(PolystoreInstance p) {
+	rs = p.runQuery((Request)`from User u select u.name, u.photoURL where u == #escp3`);
+}
+
+void testSelectCustom(PolystoreInstance p) {
+	rs = p.runQuery((Request)`from User u select u.billing.street`);
+}
+void testSelectFreetextAttributes(PolystoreInstance p) {
+  rs = p.runQuery((Request) `from Company c select c.@id, c.mission, c.mission.SentimentAnalysis.Sentiment where c.mission.SentimentAnalysis.Sentiment \>= 1 && c.vision.SentimentAnalysis.Sentiment \>= 2`);
+  p.assertResultEquals("company retrieved", rs, <["c.@id"], [
+	    [U("ibm"), "Be better", 1]]>); 
+                        
+}
+
+void testSelectFreetextAttributes2(PolystoreInstance p) {
+  rs = p.runQuery((Request) `from Foundation c select c.@id, c.mission, c.mission.SentimentAnalysis.Sentiment where c.mission.SentimentAnalysis.begin \>= 1 && c.mission.NamedEntityRecognition.begin \>= 2`);
+  p.assertResultEquals("company retrieved", rs, <["c.@id"], [
+	    [U("ibm"), "Be better", 1]]>); 
+                        
 }
 
 void testCustomDataTypes(PolystoreInstance p) {
@@ -965,7 +1002,8 @@ void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG(), bool runTest
 }
 
 Schema fetchSchema() {
-	return executer().fetchSchema();
+	Schema s = executer().fetchSchema();
+	return s;
 }
 
 void printSchema() {
