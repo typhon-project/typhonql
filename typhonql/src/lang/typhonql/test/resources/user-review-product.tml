@@ -99,10 +99,15 @@ entity Wish {
 }
 
 entity Company {
-	name: string[64]
-	mission: freetext[SentimentAnalysis[eng_spa], NamedEntityRecognition[ner1]]
-	vision: freetext[SentimentAnalysis[eng_spa]]
-	
+	name: string[256]
+	mission: freetext[SentimentAnalysis[eng_spa]]
+	vision: freetext[SentimentAnalysis[eng_fr]]
+}
+
+entity Foundation {
+	name: string[256]
+	mission: freetext[SentimentAnalysis[eng_spa], NamedEntityRecognition[eng_ner]]
+	vision: freetext[SentimentAnalysis[eng_fr]]
 }
 
 keyvaluedb Stuff {
@@ -134,6 +139,7 @@ relationaldb Inventory {
 		table { ItemDB: Item }
 		table { WordDB : Word }
 		table { CompanyDB : Company }
+		table { FoundationDB : Foundation }
 	}
 }
 

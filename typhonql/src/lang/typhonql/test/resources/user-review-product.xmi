@@ -136,17 +136,32 @@
   </entities>
   <entities name="Company">
     <attributes xsi:type="typhonml:Attribute" name="name">
-      <type xsi:type="typhonml:StringType" maxSize="64"/>
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
     </attributes>
     <attributes xsi:type="typhonml:Attribute" name="mission">
       <type xsi:type="typhonml:FreetextType">
         <tasks workflowName="eng_spa" type="SentimentAnalysis"/>
-        <tasks workflowName="ner1" type="NamedEntityRecognition"/>
       </type>
     </attributes>
     <attributes xsi:type="typhonml:Attribute" name="vision">
       <type xsi:type="typhonml:FreetextType">
+        <tasks workflowName="eng_fr" type="SentimentAnalysis"/>
+      </type>
+    </attributes>
+  </entities>
+  <entities name="Foundation">
+    <attributes xsi:type="typhonml:Attribute" name="name">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="mission">
+      <type xsi:type="typhonml:FreetextType">
         <tasks workflowName="eng_spa" type="SentimentAnalysis"/>
+        <tasks workflowName="eng_ner" type="NamedEntityRecognition"/>
+      </type>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="vision">
+      <type xsi:type="typhonml:FreetextType">
+        <tasks workflowName="eng_fr" type="SentimentAnalysis"/>
       </type>
     </attributes>
   </entities>
@@ -168,6 +183,7 @@
     <tables name="ItemDB" entity="//@entities.3"/>
     <tables name="WordDB" entity="//@entities.7"/>
     <tables name="CompanyDB" entity="//@entities.13"/>
+    <tables name="FoundationDB" entity="//@entities.14"/>
   </databases>
   <databases xsi:type="typhonml:GraphDB" name="MoreStuff">
     <edges from="//@entities.12/@relations.0" to="//@entities.12/@relations.1" entity="//@entities.12"/>
