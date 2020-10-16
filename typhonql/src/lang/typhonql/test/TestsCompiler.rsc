@@ -208,6 +208,23 @@ void setup(PolystoreInstance p, bool doTest) {
 	  p.assertResultEquals("wish obtained from user", rs, <["u.wishes"], [[U("wish1")], [U("wish2")]]>);
 	}
 	
+	
+	p.runUpdate((Request) `insert Company { @id: #ibm, name: "IBM", mission: "Be better", vision: "Forever"}`);
+    
+    // Not done for now because NLAE gets stuck with NER
+    //p.runUpdate((Request) `insert Foundation { @id: #wwf, name: "WWF", mission: "Better world", vision: "We are the world"}`);
+    
+    if (doTest) {
+  		rs = p.runQuery((Request)`from Company c select c.@id, c.mission`);
+  		p.assertResultEquals("company was inserted", rs, <["c.@id", "c.mission"], [
+	    	[U("ibm"), "Be better"]]>);
+	    
+	    // Not done for now because NLAE gets stuck with NER
+	    //rs = p.runQuery((Request)`from Foundation f select f.@id`);
+	    //p.assertResultEquals("foundation was inserted", rs, <["f.@id", "f.mission"], [
+	    //	[U("wwf"), "Better world"]]>); 
+	} 
+	
 	/*p.runUpdate((Request) `insert Company { @id: #ibm, name: "IBM", mission: "Be better", vision: "More machines" }`);
 	
 	if (doTest) {
@@ -217,6 +234,10 @@ void setup(PolystoreInstance p, bool doTest) {
 	}
 	*/
 	
+}
+
+void resetDatabases(PolystoreInstance p) {
+	p.resetDatabases();
 }
 
 void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
@@ -292,33 +313,27 @@ void testLoneVars(PolystoreInstance p) {
     
 }
 
-void testInsertFreetextAttributes(PolystoreInstance p) {
-  p.runUpdate((Request) `insert Company { @id: #ibm, name: "IBM", mission: "Be better", vision: "Forever"}`);
-  rs = p.runQuery((Request)`from Company c select c.@id`);
-  p.assertResultEquals("company was inserted", rs, <["c.@id"], [
-	    [U("ibm")]]>); 
-                        
-}
-
-void testSelectKeyVal(PolystoreInstance p) {
-	rs = p.runQuery((Request)`from User u select u.name, u.photoURL where u == #escp3`);
-}
-
-void testSelectCustom(PolystoreInstance p) {
-	rs = p.runQuery((Request)`from User u select u.billing.street`);
-}
 void testSelectFreetextAttributes(PolystoreInstance p) {
   rs = p.runQuery((Request) `from Company c select c.@id, c.mission, c.mission.SentimentAnalysis.Sentiment where c.mission.SentimentAnalysis.Sentiment \>= 1 && c.vision.SentimentAnalysis.Sentiment \>= 2`);
-  p.assertResultEquals("company retrieved", rs, <["c.@id"], [
-	    [U("ibm"), "Be better", 1]]>); 
+  
+  // We do not know yet the expected result
+  //p.assertResultEquals("company retrieved", rs, <["c.@id"], [
+  //	    [U("ibm"), "Be better", 1]]>); 
                         
 }
 
 void testSelectFreetextAttributes2(PolystoreInstance p) {
-  rs = p.runQuery((Request) `from Foundation c select c.@id, c.mission, c.mission.SentimentAnalysis.Sentiment where c.mission.SentimentAnalysis.begin \>= 1 && c.mission.NamedEntityRecognition.begin \>= 2`);
-  p.assertResultEquals("company retrieved", rs, <["c.@id"], [
-	    [U("ibm"), "Be better", 1]]>); 
+  rs = p.runQuery((Request) `from Foundation f select f.@id, f.mission, f.mission.SentimentAnalysis.Sentiment where f.mission.SentimentAnalysis.begin \>= 1 && f.mission.NamedEntityRecognition.begin \>= 2`);
+  // We do not know yet the expected result
+  //p.assertResultEquals("foundation retrieved", rs, <["f.@id"], [
+  //    [U("ibm"), "Better world", 1]]>); 
                         
+}
+
+void testDeleteFreetextAttributes(PolystoreInstance p) {
+    p.runUpdate((Request) `delete Company c where c.@id == #ibm`);
+	rs = p.runQuery((Request) `from Company c select c.@id where  c.@id == #ibm`);
+	p.assertResultEquals("company (with free text attribtues) deleted", rs, <["c.@id"], []>);
 }
 
 void testCustomDataTypes(PolystoreInstance p) {
