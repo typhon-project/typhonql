@@ -50,6 +50,7 @@ import lang::typhonql::neo4j::Neo;
 import lang::typhonql::neo4j::Neo2Text;
 import lang::typhonql::neo4j::NeoUtil;
 
+import lang::typhonql::nlp::Nlp;
 
 import IO;
 import List;
@@ -64,6 +65,7 @@ alias DeleteContext = tuple[
   DBObject mongoMe,
   CQLExpr cqlMe,
   NeoExpr neoMe,
+  NExpr nlpMe,
   void (list[Step]) addSteps,
   Schema schema
 ];
@@ -82,6 +84,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
   DBObject mongoMe = DBObject::placeholder(name=myId);
   CQLExpr cqlMe = cBindMarker(name=myId);
   NeoExpr neoMe = NeoExpr::nPlaceholder(name=myId);
+  NExpr nlpMe = NExpr::nPlaceholder(myId);
   Bindings myParams = ( myId: toBeDeleted );
   Bindings nextStepParams = ();
   
@@ -96,6 +99,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
     sqlMe = pointer2sql(uuid2pointer(mySelf));
     mongoMe = pointer2mongo(uuid2pointer(mySelf));
 	neoMe = pointer2neo(uuid2pointer(mySelf));
+	nlpMe = pointer2nlp(uuid2pointer(mySelf));
 	cqlMe = pointer2cql(uuid2pointer(mySelf));
     myParams = ();
   } else if ((Where)`where <VId _>.@id == <PlaceHolder mySelf>` := (Where)`where <{Expr ","}+ ws>`) {
@@ -103,6 +107,7 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
     sqlMe = pointer2sql(placeholder2pointer(mySelf));
     mongoMe = pointer2mongo(placeholder2pointer(mySelf));
 	neoMe = pointer2neo(placeholder2pointer(mySelf));
+	nlpMe = pointer2nlp(placeholder2pointer(mySelf));
 	cqlMe = pointer2cql(placeholder2pointer(mySelf));
     myParams = ();
   }
@@ -124,15 +129,11 @@ Script delete2script((Request)`delete <EId e> <VId x> where <{Expr ","}+ ws>`, S
     mongoMe,
     cqlMe,
     neoMe,
+    nlpMe,
     addSteps,
     s
   >;
   
-  if (a <- s.attrs, isFreeTextAttr(ent, a, s)) {
-  	str json = getDeleteJson(nlpMe, ent);
-    addSteps([step("nlae", nlp(delete(json)), myParams)]);
-  }
- 
   for (Rel r:<ent, Cardinality _, _, _, _, str to, true> <- s.rels) {
      //println("Deleting kids: <ent> -\> <to>");
      deleteKids(p, placeOf(to, s), r, ctx);
@@ -327,6 +328,31 @@ void deleteKids(
   //deleteObject(<neo4j(), other>, ctx);
   //deleteReferenceInNeo(to, ctx.neoMe, ctx.myParams, ctx.schema);
 }
+
+/*
+ * NLP only have incoming ownership pointers
+ */
+
+void deleteKids(
+  <sql(), str dbName>, <nlp(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
+  DeleteContext ctx
+) {
+  str json = getDeleteJson(ctx.nlpMe, to);
+  println(json);
+  ctx.addSteps([step("nlae", nlp(delete(json)), ctx.myParams)]);  
+}
+
+void deleteKids(
+  <mongodb(), str dbName>, <nlp(), str other>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
+  DeleteContext ctx
+) {
+  str json = getDeleteJson(ctx.nlpMe, to);
+  println(json);
+  ctx.addSteps([step("nlae", nlp(delete(json)), ctx.myParams)]); 
+}
+
 
 
 /*
