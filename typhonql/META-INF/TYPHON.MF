@@ -1,0 +1,4 @@
+PolystoreHost: localhost
+PolystorePort: 8080
+PolystoreUser: admin
+PolystorePassword: admin1@
