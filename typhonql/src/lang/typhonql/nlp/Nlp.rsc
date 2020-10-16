@@ -3,8 +3,6 @@ module lang::typhonql::nlp::Nlp
 import List;
 import String;
 
-data NlpId = id(str id) | placeholder(str name);
-
 data NStat = nSelect(
 	NFrom from,
 	list[NWith] withs,
@@ -23,6 +21,9 @@ data NExpr
 	| nAttr(str var, list[str] path)
 	| nPlaceholder(str name)
 	;
+	
+NExpr pointer2nlp(pointerUuid(str name)) = nLiteral(name, "uuid");
+NExpr pointer2nlp(pointerPlaceholder(str name)) = nPlaceholder(name);	
 	
 str pp(nSelect(nFrom(str entity, str label), withs, selectors, wheres))
 	= "{
@@ -90,11 +91,11 @@ str ppEntity(str ent) {
   ]
 
 */
-str getProcessJson(NlpId id, str entity, str field, str text, rel[str,str] analyses) {
+str getProcessJson(NExpr id, str entity, str field, str text, rel[str,str] analyses) {
 	return 
 		"{
-		'	\"id\": \"<pp(id)>\",
-		'	\"entityType\": \"<entity>\",
+		'	\"id\": \"<ppId(id)>\",
+		'	\"entityType\": \"<ppEntity(entity)>\",
 		'	\"fieldName\": \"<field>\",
 		'	\"text\": \"<text>\",
 		'	\"nlpFeatures\": [<intercalate(", ", ["\"<a>\"" | <a, w> <- analyses])>],
@@ -103,14 +104,16 @@ str getProcessJson(NlpId id, str entity, str field, str text, rel[str,str] analy
 
 }
 
-str getDeleteJson(NlpId id, str entity) {
+str getDeleteJson(NExpr id, str entity) {
 	return 
 		"{
-		'	\"id\": \"<pp(id)>\",
-		'	\"entityType\": \"<entity>\"
+		'	\"id\": \"<ppId(id)>\",
+		'	\"entityType\": \"<ppEntity(entity)>\"
 		'}";
 
 }
 
-str pp(id(str name)) = name;
-str pp(placeholder(str name)) = "${<name>}";
+str ppId(nLiteral(uuid, "uuid")) = uuid;
+default str ppId(NExpr e) {
+	throw "Wrong expresion <e> instead of identifier";
+}
