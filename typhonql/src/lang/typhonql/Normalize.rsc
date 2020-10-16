@@ -44,7 +44,9 @@ default Request addWhereIfAbsent(Request r) = r;
 
 
 void smokeNormalize() {
-  s = schema({
+  s = schema(
+  { "Person", "Review", "Comment", "Reply" },
+  {
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
     <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
@@ -71,6 +73,7 @@ void smokeNormalize() {
 
 void smokeKeyValInf() {
   s = schema(
+  { "User", "Review", "Product", "User", "Tag", "User__Stuff", "User__MoreStuff", "Category", "Biography", "Review", "Item" },
   {
     <"Review",\one(),"user","reviews",zero_many(),"User",false>,
     <"Product",zero_many(),"tags","tags^",zero_one(),"Tag",false>,

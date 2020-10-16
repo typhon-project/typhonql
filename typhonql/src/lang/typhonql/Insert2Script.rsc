@@ -717,7 +717,9 @@ Schema testSchema() = schema({
 
 /*
 void smoke2sqlWithAllOnDifferentSQLDB() {
-  s = schema({
+  s = schema(
+  { "Person", "Review", "Comment", "Reply" },
+  {
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
     <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
