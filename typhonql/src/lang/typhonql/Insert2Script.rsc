@@ -64,6 +64,7 @@ alias InsertContext = tuple[
   DBObject mongoMe,
   CQLExpr cqlMe,
   NeoExpr neoMe,
+  NExpr nlpMe,
   void (list[Step]) addSteps,
   void (SQLStat(SQLStat)) updateSQLInsert,
   void (DBObject(DBObject)) updateMongoInsert,
@@ -86,7 +87,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   Place p = placeOf(entity, s);
   str myId = newParam();
   Bindings myParams = ( myId: generatedId(myId) | !hasId(kvs) );
-  NlpId nlpMe = hasId(kvs) ? NlpId::id(evalId(kvs)) : NlpId::placeholder(myId);
+  NExpr nlpMe = hasId(kvs) ? nLiteral(evalId(kvs), "uuid") : NExpr::nPlaceholder(myId);
   SQLExpr sqlMe = hasId(kvs) ? lit(sUuid(evalId(kvs))) : SQLExpr::placeholder(name=myId);
   DBObject mongoMe = hasId(kvs) ? mUuid(evalId(kvs)) : DBObject::placeholder(name=myId);
   CQLExpr cqlMe = hasId(kvs) ? cTerm(cUUID(evalId(kvs))) : cBindMarker(name=myId);
@@ -155,6 +156,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
     mongoMe,
     cqlMe,
     neoMe,
+    nlpMe,
     addSteps,
     updateSQLInsert,
     updateMongoInsert,
@@ -203,6 +205,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
     if ((Expr) `<Str string>` := val) {
     	analyses = getFreeTypeAnalyses(entity, kv has key ? "<kv.key>" : "@id", s);
     	str json = getProcessJson(nlpMe, entity, attr, "<string.contents>", analyses);
+    	println(json);
     	addSteps([step("nlae", nlp(process(json)), myParams)]);
     }
     else
