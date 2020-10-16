@@ -41,8 +41,8 @@ import Boolean;
 
 // abstraction over TyphonML, to be extended with back-end specific info in the generic map
 data Schema
-  = schema(Rels rels, Attrs attrs, Placement placement = {}, Attrs customs = {}, ChangeOps changeOperators = {},
-    Pragmas pragmas = {});
+  = schema(set[str] entities, Rels rels, Attrs attrs, Placement placement = {}, Attrs customs = {}, ChangeOps changeOperators = {},
+	    Pragmas pragmas = {});
 
 alias Rel = tuple[str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool containment];
 alias Rels = set[Rel];
@@ -89,7 +89,7 @@ Schema myDbSchema() = loadSchema(|project://typhonql/src/newmydb4.xmi|);
 
 Rels myDbToRels() = model2rels(load(#Model, |project://typhonql/src/lang/newmydb4.xmi|));
 
-set[str] entities(Schema s) = s.rels<0> + s.attrs<0>;
+set[str] entities(Schema s) = s.entities;
 
 bool isImplicitRole(str role) = endsWith(role, "^");
 
@@ -184,7 +184,7 @@ default Placement place(Database db, Model m) {
 
 
 Schema model2schema(Model m, bool normalize=true)
-  =  ( schema(model2rels(m), model2attrs(m),
+  =  ( schema(model2entities(m), model2rels(m), model2attrs(m),
        customs = model2customs(m), 
        placement= model2placement(m),
        pragmas = model2pragmas(m),
@@ -451,6 +451,7 @@ Attrs model2customs(Model m) {
   return result;
 }
 
+set[str] model2entities(Model m) = {entity | Entity(str entity, _, _, _, _) <- m.entities};
 
 @doc{
 This functions flattens the relational structure of a TyphonML model into a flat set
