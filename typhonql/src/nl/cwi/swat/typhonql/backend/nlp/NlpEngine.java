@@ -143,6 +143,8 @@ public class NlpEngine extends Engine {
 				}
 				
 				String r = doPost("queryTextAnalytics", json);
+				
+				// TODO agreeing upon a JSON format for the response first
 				return null;
 			}
 
