@@ -25,7 +25,6 @@ import lang::typhonql::TDBC;
 import lang::typhonql::Order;
 import lang::typhonql::Normalize;
 
-
 import lang::typhonql::util::Log;
 
 import lang::typhonql::relational::SQL;
@@ -37,6 +36,11 @@ import lang::typhonql::relational::SchemaToSQL;
 
 import lang::typhonql::mongodb::Query2Mongo;
 import lang::typhonql::mongodb::DBCollection;
+
+import lang::typhonql::neo4j::Neo;
+import lang::typhonql::neo4j::Neo2Text;
+import lang::typhonql::neo4j::NeoUtil;
+
 
 import IO;
 import List;
@@ -65,7 +69,8 @@ Script createEntity(p:<mongodb(), str dbName>, str entity, Schema s, Log log = n
 }
 
 Script createEntity(p:<neo4j(), str dbName>, str entity, Schema s, Log log = noLog) {
-
+	// Neo4j is fully schemaless
+	return [];
 }
 
 default Script createEntity(p:<db, str dbName>, str entity, Schema s, Log log = noLog) {
@@ -91,7 +96,13 @@ Script createAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str
 }
 
 Script createAttribute(p:<neo4j(), str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
+	/*NeoStat stat = \nMatchUpdate(
+  			just(nMatch
+  				([nPattern(nNodePattern("__n1", [], []), [nRelationshipPattern(nDoubleArrow(), "__r1",  ctx.entity, [], nNodePattern("__n2", [], []))])], [])),
+			nSet([nSetPlusEquals("__r1", nMapLit(( graphPropertyName("<attribute>", ctx.entity) : nLit(evalNeoExpr(kv.\value)) | KeyVal kv <- kvs )))]),
+			[nLit(nBoolean(true))]);*/
 	
+	return script([]);
 }
 
 
@@ -144,7 +155,7 @@ Script createRelation(p:<mongodb(), str dbName>, str entity, str relation, str t
 }
 
 Script createRelation(p:<neo4j(), str dbName>, str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
-
+	return script([]);
 }
 
 default Script createRelation(p:<db, str dbName>,  str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
@@ -168,7 +179,41 @@ Script dropEntity(p:<mongodb(), str dbName>, str entity, Schema s, Log log = noL
 }
 
 Script dropEntity(p:<neo4j(), str dbName>, str entity, Schema s, Log log = noLog) {
-	return script();
+	
+	list[Step] steps = [step(dbName, neo(executeNeoUpdate(dbName, 
+		neopp(
+			nMatchUpdate(
+		    	just(
+		    		nMatch(
+		    			[
+		    				nPattern(nNodePattern("__n1", [], []),
+		    		    		[nRelationshipPattern(nDoubleArrow(), "__r1", entity, [], nNodePattern("__n2", [], []))]
+		    		    	)], [])),
+				nDetachDelete([nVariable("__r1")]), 
+				[nLit(nBoolean(true))])))), ())];
+				
+	// remove only if the vertices can participate in other graph kind of relations
+	verticesForEntity = {*vertex | <entity, _, _, _, _, vertex, _> <- s.rels};
+	verticesForOthers = {*vertex | <e, _, _, _, _, vertex, _> <- s.rels, <<neo4j(), _>, e> <- s.placement, e!=entity};
+	
+	toRemove = verticesForEntity - verticesForOthers;
+	println(verticesForEntity);	
+	println(verticesForOthers);
+    println(toRemove);	
+    
+    for (e <- toRemove) {
+    	steps += [step(dbName, neo(executeNeoUpdate(dbName, 
+		neopp(
+			nMatchUpdate(
+		    	just(
+		    		nMatch(
+		    			[
+		    				nPattern(nNodePattern("__n1", [e], []),[])], [])),
+				nDetachDelete([nVariable("__n1")]), 
+				[nLit(nBoolean(true))])))), ())];
+	}
+	
+	return script(steps);
 }
 
 default Script dropEntity(p:<db, str dbName>, str entity, Schema s, Log log = noLog) {
@@ -194,8 +239,15 @@ Script dropAttribute(p:<mongodb(), str dbName>, str entity, str attribute, Schem
 }
 
 Script dropAttribute(p:<neo4j(), str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
-	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "{}", "{$unset: { \"<attribute>\" : 1}}"));
+	Call call = 
+	 neo(executeNeoUpdate(dbName, 
+		neopp(
+		 \nMatchUpdate(
+  			just(nMatch
+  				([nPattern(nNodePattern("__n1", [], []), [nRelationshipPattern(nDoubleArrow(), "__r1",  entity, [], nNodePattern("__n2", [], []))])], [])),
+			nSet([nSetPlusEquals("__r1", nMapLit((graphPropertyName("<attribute>", entity) : nLit(nNull()))))]),
+			[nLit(nBoolean(true))]))));
+	
 	return script([step(dbName, call, ())]);
 }
 
