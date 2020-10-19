@@ -401,6 +401,50 @@ default Script renameRelation(p:<db, str dbName>, str entity, str attribute, str
 	throw "Unrecognized backend: <db>";
 }
 
+Script ddl2scriptAux((Request) `create index <Id indexName> for <EId eId>.{ <{Id ","}+ attrs> }`, Schema s, Log log = noLog) {
+  if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+	return createIndex(p, entity, "<indexName>", ["<a>" |Id a <- attrs], s, log = log);
+  }
+  throw "Not found entity <eId>";
+}
+
+Script createIndex(p:<sql(), str dbName>, str entity, str indexName, list[str] attributes, Schema s, Log log = noLog) {
+	TableConstraint index = index("<entity>_<indexName>", regular(), [columnName(attr, entity) | attr <- attributes]);
+	SQLStat stat = alterTable(tableName(entity), [addConstraint(index)]);
+	return script([step(dbName, sql(executeStatement(dbName, pp(stat))), ())]);
+}
+
+Script createIndex(p:<mongodb(), str dbName>, str entity, str indexName, list[str] attributes, Schema s, Log log = noLog) {
+	// steps += [step(db, mongo(createIndex(db, entity, "{\"<attrOrRef>\": 1}")), ())
+    //   | <db, indexSpec(str name, rel[str, str] ftrs)> <- s.pragmas, <entity, str attrOrRef> <- ftrs ];
+	//return script([step(dbName, call, ())]);
+}
+
+Script ddl2scriptAux((Request) `drop index <EId eId>.<Id indexName>`, Schema s, Log log = noLog) {
+  if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+	return dropIndex(p, entity, "<indexName>", s, log = log);
+  }
+  throw "Not found entity <eId>";
+}
+
+Script dropIndex(p:<sql(), str dbName>, str entity, str indexName, Schema s, Log log = noLog) {
+	SQLStat stat = alterTable(tableName(entity), [dropConstraint("<entity>_<indexName>")]);
+	return script([step(dbName, sql(executeStatement(dbName, pp(stat))), ())]);
+}
+
+Script dropIndex(p:<mongodb(), str dbName>, str entity, str indexName, Schema s, Log log = noLog) {
+ 	//if (<dbName, indexSpec(entity, rel[str, str] ftrs)> <- s.pragmas
+	//Call call = mongo(
+	//			findAndUpdateMany(dbName, entity, "{}", "{$set: { \"<attribute>\" : null}}"));
+	//return script([step(dbName, call, ())]);
+}
+
+default Script createIndex(p:<db, str dbName>, str entity, str indexName, list[str] attributes, Schema s, Log log = noLog) {
+	throw "Unrecognized backend: <db>";
+}
+
+
+
 Cardinality toCardinality("1", "*") = one_many();
 Cardinality toCardinality("0", "*") = zero_many();
 Cardinality toCardinality("0", "1") = zero_one();
