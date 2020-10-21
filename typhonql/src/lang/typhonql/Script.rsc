@@ -70,7 +70,7 @@ data MongoCall
   | deleteOne(str dbName, str coll, str query)
   | deleteMany(str dbName, str coll, str query)
   | createCollection(str dbName, str coll)
-  | createIndex(str dbName, str coll, str keys)
+  | createIndex(str dbName, str coll, str indexName, str keys)
   | renameCollection(str dbName, str coll, str newName)
   | dropCollection(str dbName, str coll)
   | dropDatabase(str dbName)
@@ -140,14 +140,17 @@ str runScriptAux(Script scr, Session session, Schema schema) {
       case step(str r, mongo(createCollection(str db, str coll)), Bindings ps):
         session.mongo.createCollection(db, coll); 
 
-      case step(str r, mongo(createIndex(str db, str coll, str keys)), Bindings ps):
-        session.mongo.createIndex(db, coll, keys); 
+      case step(str r, mongo(createIndex(str db, str coll, str indexName, str keys)), Bindings ps):
+        session.mongo.createIndex(db, coll, indexName, keys); 
 
       //case step(str r, mongo(createIndex(str db, str coll, lrel[str selector, str index] selectors)), Bindings ps):
       //  session.mongo.createIndex(db, coll, selectors); 
         
       case step(str r, mongo(dropCollection(str db, str coll)), Bindings ps):
         session.mongo.dropCollection(db, coll); 
+        
+      case step(str r, mongo(dropIndex(str db, str coll, str indexName)), Bindings ps):
+        session.mongo.dropIndex(db, coll, indexName); 
         
       case step(str r, mongo(dropDatabase(str db)), Bindings ps):
         session.mongo.dropDatabase(db);   
