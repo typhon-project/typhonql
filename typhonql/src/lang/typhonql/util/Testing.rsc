@@ -74,7 +74,7 @@ alias PolystoreInstance =
 alias TestExecuter =
 	tuple[
 		void(void(PolystoreInstance, bool), bool) runSetup,
-		void(void(PolystoreInstance proxy), bool) runTest,
+		void(void(PolystoreInstance proxy), bool, bool) runTest,
 		void(list[void(PolystoreInstance proxy)], bool) runTests,
 		Schema() fetchSchema];
 		
@@ -217,9 +217,9 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 		proxy.closeSession();
 	};
 	
-	myRunTest = void(void(PolystoreInstance proxy) t, bool runTestsInSetup) {
+	void(void(PolystoreInstance proxy), bool, bool) myRunTest = void(void(PolystoreInstance proxy) t, bool runSetup, bool runTestsInSetup) {
 		proxy.resetStats();
-		runTest(proxy, setup, t, log = log, runTestsInSetup = runTestsInSetup);
+		runTest(proxy, setup, t, log = log, runSetup = runSetup, runTestsInSetup = runTestsInSetup);
 	};
 	
 	myRunTests = void(list[void(PolystoreInstance proxy)] ts, bool runTestsInSetup) {
@@ -276,10 +276,12 @@ void resetDatabasesInTest(Schema sch, Session session, Log log) {
 	runSchema(sch, session, log = log);
 }
 
-void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log = LOG, bool runTestsInSetup = false) {
+void runTest(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, void(PolystoreInstance) t, Log log = LOG, bool runSetup = true, bool runTestsInSetup = false) {
 	println("Running test: <t>");
-	proxy.resetDatabases();
-	setup(proxy, runTestsInSetup);
+	if (runSetup) {
+		proxy.resetDatabases();
+		setup(proxy, runTestsInSetup);
+	}
 	try {
 		t(proxy);		
 	}
@@ -334,12 +336,12 @@ Stats assertException(str testName, void() block, Stats stats) {
 	return stats;
 }
 
-void runTests(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, list[void(PolystoreInstance)] tests, Log log = log ,  bool runTestsInSetup = false/*void(value v) {println(v);}*/) {
+void runTests(PolystoreInstance proxy, void(PolystoreInstance, bool) setup, list[void(PolystoreInstance)] tests, Log log = log ,  bool runSetup = true, bool runTestsInSetup = false/*void(value v) {println(v);}*/) {
 	
 	proxy.resetStats();
 	
 	for (t <- tests) {
-		runTest(proxy, setup, t, log = log, runTestsInSetup = runTestsInSetup);
+		runTest(proxy, setup, t, log = log, runSetup = runSetup, runTestsInSetup = runTestsInSetup);
 	}
 	
 	Stats stats = proxy.getStats();
