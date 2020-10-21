@@ -17,6 +17,7 @@
 module lang::typhonql::check::Test
 
 import lang::typhonml::TyphonML;
+import lang::typhonql::TDBC;
 import lang::typhonql::check::Checker;
 extend analysis::typepal::TestFramework;
 
@@ -25,16 +26,16 @@ TModel checkQLTree(Tree e, CheckerMLSchema schema, bool debug) = checkQLTree(e, 
 test bool runExprTest(bool debug = false)
     = runTests([|project://typhonql/src/lang/typhonql/check/expressions.ttl|], 
             #Expr, 
-            TModel (t) { return checkQLTree(t, (), debug); }, 
+            TModel (t) { return checkQLTree(t, <(), {}>, debug); }, 
             runName = "QL Expressions");
             
             
-CheckerMLSchema queriesModel = (
+CheckerMLSchema queriesModel = <(
     entityType("User"): (
         "name": <stringType(), \one()>,
         "changes": <entityType("User"), zero_many()>
     )
-);
+), {}>;
             
 test bool runQueryTest(bool debug = false) 
     = runTests([|project://typhonql/src/lang/typhonql/check/queries.ttl|], 

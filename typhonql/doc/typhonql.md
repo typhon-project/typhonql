@@ -78,26 +78,22 @@ To be implemented:
 ### Geographical expressions
 
 
+
 ```notTyphonQL
 pt1 = point(1.3,2.5)
 pt2 = point(3.5,4.6)
 pg1 = polygon([
-  [point(0,0), pt1], 
-  [pt1, point(1,1)], 
-  [point(1,1), pt2], 
-  [pt2, point(0,0)]
+  [point(0, 0), pt1, point(1,1), pt2, point(0,0)]
 ])
 pg2 = polygon([
-  [point(3,0), pt1], 
-  [pt1, point(2,2)], 
-  [point(2,2), pt2], 
-  [pt2, point(3,2)]
+  [point(3,0), pt1, point(2,2), pt2, point(3,2)]
 ])
 ```
+*(note: pseudo QL syntax to make it a bit more readable)*
 
 distance in meters:
   
-- two points: `distance(pt1, pt2)` (better idea for a infix operator are welcome, but it looked a bit strange to me)
+- two points: `distance(pt1, pt2)` 
 - one point and closest edge of polygon: `distance(pt1, pg2)`
 
 containment:
@@ -108,7 +104,7 @@ overlap:
 - polygon partially overlaps another polygon: `pg1 & pg2`
 
 
-*note*: on mongodb backends distance is limited to the where query and only in presence of a comparision operator. 
+*note*: on mongodb backends distance is limited to the where query and only in presence of a comparison operator. Cassandra and neo4j don't support geo operations.
 
 ### Graph expressions
 If two entities are related to each other through an entity stored in a graph database, it is possible to use the reachability expression:
@@ -126,7 +122,6 @@ Example 2:  `person1 -[friendOf, 1..]-> person2` -> Find friends of `person1` us
 Example 3:  `person1 -[friendOf, ..3]-> person2` -> Find friends of `person1` using at most 3 jumps. By default the lower limit would be 1.
 
 Example 4:  `person1 -[friendOf]-> person2` -> Find friends of `person1` using at least 1 jumps and without constraining the number of jumps. This expression computes the transitive closure of `friendOf` for the set `{ person1 }`.
-
 
 ### Blobs
 
@@ -173,6 +168,13 @@ Cascading delete of contained object is currently limited to one hop across data
 In other words, if a sequence of containment relations alternatingly cross multiple database back-ends
 the cascade is only performed for the first relation.
 
+### Date time & timezones
+
+Every datebase handles date-time, time zones and time offsets differently. For typhon ql we picked a scheme that would be correct for most use cases, and we could support for all of the backends.
+
+We store and normalize all date times in UTC/Zulu time zone. If you send a date time with an offset, we apply that offset and store it in UTC time. If you send a date time without an offset, we use the time zone of the QL server (that is configurable via the `TZ` environment flag) to translate it to UTC.
+
+On querying a date-time field, you will always get back the UTC version. Client libraries can use that to convert it back to a display format if required. If you are dealing with an application with multiple time zones, it's a good idea to store the zone id (like `Europe/Amsterdam`) in a separate field next to the date-time.
 
 # TyphonQL by Example
 
@@ -522,7 +524,7 @@ For both ease of writing and performance, it's possible to generate send a singl
 
 Some remarks about this api:
 
-- You have to give the names for the parameters, their typhon types, and then a 2d string array, with rows that are bound to the parameters, in the same order.
+- You have to give the names for the parameters, their typhon types, and then a 2d __string__ array, with rows that are bound to the parameters, in the same order.
 - The syntax of the values is the same as the output of a query. You do not have to encode the values as QL literals (for example, a uuid doesn't have to be prefixed with `#`, and a string doesn't require double escaping).
 - Valid types are:
   - `int`

@@ -38,6 +38,7 @@ import nl.cwi.swat.typhonql.backend.Runner;
 import nl.cwi.swat.typhonql.backend.mariadb.MariaDBEngine;
 import nl.cwi.swat.typhonql.backend.mongodb.MongoDBEngine;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
+import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class TestSelect {
@@ -50,11 +51,12 @@ public class TestSelect {
 		
 		List<Consumer<List<Record>>> script = new ArrayList<>();
 		List<Runnable> updates = new ArrayList<>();
+		TyphonSessionState state = new TyphonSessionState();
 		
 		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
 		MongoDatabase conn2 = BackendTestCommon.getMongoDatabase("localhost", 27018, "Reviews", "admin", "admin");
-		MariaDBEngine e1 = new MariaDBEngine(store, script, uuids, () -> conn1);
-		MongoDBEngine e2 = new MongoDBEngine(store, script, uuids, conn2);
+		MariaDBEngine e1 = new MariaDBEngine(store, state, script, uuids, () -> conn1);
+		MongoDBEngine e2 = new MongoDBEngine(store, state, script, uuids, conn2);
 		
 		e1.executeSelect("Inventory", "select u.`User.name` as `u.User.name`,  u.`User.@id` as `u.User.@id` from User u where u.`User.name` = \"Claudio\"", 
 				Arrays.asList(new Path("Inventory", "u", "User", new String[] { "@id" })));

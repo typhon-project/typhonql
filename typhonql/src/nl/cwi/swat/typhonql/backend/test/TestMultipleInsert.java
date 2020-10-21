@@ -19,7 +19,6 @@ package nl.cwi.swat.typhonql.backend.test;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -29,13 +28,12 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import nl.cwi.swat.typhonql.backend.Binding;
-import nl.cwi.swat.typhonql.backend.Field;
 import nl.cwi.swat.typhonql.backend.GeneratedIdentifier;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.Runner;
 import nl.cwi.swat.typhonql.backend.mariadb.MariaDBEngine;
-import nl.cwi.swat.typhonql.backend.rascal.Path;
+import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 
 public class TestMultipleInsert {
 
@@ -57,7 +55,7 @@ public class TestMultipleInsert {
 		List<Runnable> updates = new ArrayList<>();
 		
 		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "example");
-		MariaDBEngine e1 = new MariaDBEngine(store, script, uuids, () -> conn1);
+		MariaDBEngine e1 = new MariaDBEngine(store, new TyphonSessionState(), script, uuids, () -> conn1);
 		LinkedHashMap<String, Binding> map0 = new LinkedHashMap<String, Binding>();
 		UUID uuid = UUID.randomUUID();
 		uuids.put("param_611", uuid);

@@ -64,6 +64,12 @@
             <version>0.18.2</version>
         </dependency>
         <dependency>
+            <groupId>org.rascalmpl</groupId>
+            <artifactId>typepal</artifactId>
+            <version>0.4.10</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
             <groupId>engineering.swat.typhon</groupId>
             <artifactId>typhonql</artifactId>
             <version>0.1.0-SNAPSHOT</version>

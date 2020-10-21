@@ -17,30 +17,41 @@
 package engineering.swat.typhonql.client.test;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
+import nl.cwi.swat.typhonql.client.JsonSerializableResult;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 
-public class XMIBasedTyphonQLClientTest4DDL {
+public class XMIBasedTyphonQLPreparedUpdateCustom {
+	
+	private static String HOST = "localhost";
+	private static int PORT = 8082;
+	private static String USER = "admin";
+	private static String PASSWORD = "admin1@";
+	
 	public static void main(String[] args) throws IOException, URISyntaxException {
-		DatabaseInfo[] infos = new DatabaseInfo[] {
-				new DatabaseInfo("localhost", 27017, "Reviews", "documentdb", "documentdb", "admin", "admin"),
-				new DatabaseInfo("localhost", 3306, "Inventory", "mariadb", "mariadb", "root", "example") };
-			
-		String fileName = "file:///Users/pablo/git/typhonql/typhonql/src/lang/typhonml/user-review-product-bio.tmlx";
 		
-		String xmiString = String.join("\n", Files.readAllLines(Paths.get(new URI(fileName))));
+		
+		List<DatabaseInfo> infos = PolystoreAPIHelper.readConnectionsInfo(HOST, PORT,
+				USER, PASSWORD);
+		
+		String xmiString = PolystoreAPIHelper.readHttpModel(HOST, PORT, USER, PASSWORD);
 
 		XMIPolystoreConnection conn = new XMIPolystoreConnection();
-		
-		 String[] cr = conn.executeUpdate(xmiString, Arrays.asList(infos), Collections.emptyMap(), "create Bank at Inventory", true);
-		System.out.println(cr);
-		
+		String[] rs = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), 
+				"insert Datatypes{ i: ??i, area: ??area, vehicle_position: ??vehicle_position }",
+				new String[]{"i","area","vehicle_position"},
+				new String[]{"int","polygon","point"}, 
+				new String[][] {
+					new String[]{"1","POLYGON ((0.1 1.0, 2.0 0.0, 3.0 0.0, 0.1 1.0))","POINT (23.4 43.35)"},
+					new String[]{"2","POLYGON ((0.1 1.0, 2.0 0.0, 3.0 0.0, 0.1 1.0))","POINT (23.4 43.35)"}
+                }
+		, true);
+		System.out.println(Arrays.toString(rs));
+
 	}
 }

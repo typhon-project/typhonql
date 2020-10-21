@@ -170,7 +170,7 @@ void setupIDE(bool isDevMode = false) {
   }
   
   CheckerMLSchema currentCheckerSchema(Tree tree) {
-    if (cSch == ()) {
+    if (cSch == <(), {}>) {
         currentSchema(tree);
     }
     return cSch;

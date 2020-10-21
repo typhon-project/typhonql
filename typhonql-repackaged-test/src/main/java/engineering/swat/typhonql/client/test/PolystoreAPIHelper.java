@@ -81,7 +81,7 @@ public class PolystoreAPIHelper {
 		
 		if (response1.getStatusLine() != null) {
 			if (response1.getStatusLine().getStatusCode() != HttpStatus.SC_OK)
-				throw new RuntimeException("Problem with the HTTP connection to the polystore: Status was " + response1.getStatusLine().getStatusCode());
+				throw new RuntimeException("Problem with the HTTP connection to the polystore: Status was " + response1.getStatusLine().getStatusCode() + "for : " + path);
 		}
 		
 		try {
@@ -119,7 +119,7 @@ public class PolystoreAPIHelper {
 		for (BsonValue v : array.getValues()) {
 			BsonDocument d = v.asDocument();
 			try {
-				DatabaseInfo info = new DatabaseInfo(d.getString("externalHost").getValue(),
+				DatabaseInfo info = new DatabaseInfo(fixLocalHostIfNeeded(d.getString("externalHost").getValue()),
 						d.getNumber("externalPort").intValue(), 
 						d.getString("name").getValue(),
 						d.getString("dbType").getValue(),
@@ -132,6 +132,13 @@ public class PolystoreAPIHelper {
 			}
 		}
 		return lst;
+	}
+
+	private static String fixLocalHostIfNeeded(String value) {
+		if (!value.contains(".")) {
+			return "localhost";
+		}
+		return value;
 	}
 
 }

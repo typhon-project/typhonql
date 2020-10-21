@@ -1,6 +1,6 @@
 module lang::typhonql::neo4j::NeoUtil
 
-import lang::typhonql::Expr;
+import lang::typhonql::TDBC;
 import lang::typhonql::neo4j::Neo;
 import lang::typhonml::Util;
 import lang::typhonql::util::Strings;
@@ -67,5 +67,3 @@ bool isAttr((KeyVal)`<Id x> +: <Expr _>`, str e, Schema s) = false;
 bool isAttr((KeyVal)`<Id x> -: <Expr _>`, str e, Schema s) = false;
 
 bool isAttr((KeyVal)`@id: <Expr _>`, str _, Schema _) = false;
-  
-
