@@ -52,8 +52,13 @@ bool hasId({KeyVal ","}* kvs) = hasId([ kv | KeyVal kv <- kvs ]);
 
 bool hasId(list[KeyVal] kvs) = any((KeyVal)`@id: <Expr _>` <- kvs);
 
+bool hasIdPlaceHolder({KeyVal ","}* kvs) = any((KeyVal)`@id: <PlaceHolder _>` <- kvs); 
+
 str evalId({KeyVal ","}* kvs) = "<e>"[1..]
   when (KeyVal)`@id: <UUID e>` <- kvs;
+
+str evalIdPlaceHolder({KeyVal ","}* kvs) = "<name>"
+  when (KeyVal)`@id: ??<Id name>` <- kvs;
 
 alias InsertContext = tuple[
   str entity,
@@ -84,10 +89,13 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   Place p = placeOf(entity, s);
   str myId = newParam();
   Bindings myParams = ( myId: generatedId(myId) | !hasId(kvs) );
-  SQLExpr sqlMe = hasId(kvs) ? lit(sUuid(evalId(kvs))) : SQLExpr::placeholder(name=myId);
-  DBObject mongoMe = hasId(kvs) ? mUuid(evalId(kvs)) : DBObject::placeholder(name=myId);
-  CQLExpr cqlMe = hasId(kvs) ? cTerm(cUUID(evalId(kvs))) : cBindMarker(name=myId);
-  NeoExpr neoMe = hasId(kvs) ? nLit(nText(evalId(kvs))) : NeoExpr::nPlaceholder(name=myId);
+  if (hasIdPlaceHolder(kvs)) {
+    myId = evalIdPlaceHolder(kvs);
+  }
+  SQLExpr sqlMe = hasId(kvs) && !hasIdPlaceHolder(kvs) ? lit(sUuid(evalId(kvs))) : SQLExpr::placeholder(name=myId);
+  DBObject mongoMe = hasId(kvs) && !hasIdPlaceHolder(kvs)  ? mUuid(evalId(kvs)) : DBObject::placeholder(name=myId);
+  CQLExpr cqlMe = hasId(kvs) && !hasIdPlaceHolder(kvs)  ? cTerm(cUUID(evalId(kvs))) : cBindMarker(name=myId);
+  NeoExpr neoMe = hasId(kvs) && !hasIdPlaceHolder(kvs)  ? nLit(nText(evalId(kvs))) : NeoExpr::nPlaceholder(name=myId);
 
   SQLStat theInsert = \insert(tableName("<e>"), [], []);
   DBObject theObject = object([ ]);
@@ -639,8 +647,8 @@ DBObject obj2dbObj((Expr)`<EId e> {<{KeyVal ","}* kvs>}`)
 //DBObject obj2dbObj((Expr)`[<{Obj ","}* objs>]`)
 //  = array([ obj2dbObj((Expr)`<Obj obj>`) | Obj obj <- objs ]);
 
-DBObject obj2dbObj((Expr)`[<{UUID ","}* refs>]`)
-  = array([ obj2dbObj((Expr)`<UUID ref>`) | UUID ref <- refs ]);
+DBObject obj2dbObj((Expr)`[<{PlaceHolderOrUUID ","}* refs>]`)
+  = array([ obj2dbObj((Expr)`<UUID ref>`) | (PlaceHolderOrUUID)`<UUID ref>` <- refs ]);
 
 DBObject obj2dbObj((Expr)`<Bool b>`) = \value("<b>" == "true");
 

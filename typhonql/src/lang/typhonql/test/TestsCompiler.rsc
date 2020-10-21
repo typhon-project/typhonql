@@ -794,16 +794,16 @@ void testEscapedStrings(PolystoreInstance p) {
 }
 
 void testPreparedUpdatesSimpleSQL(PolystoreInstance p) {
-	p.runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description, availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-01-01$, price: 2000 }`,
-						  ["name", "description"],
-						  ["string", "string"],
+	p.runPreparedUpdate((Request) `insert Product { @id: ??id, name: ??name, description: ??description, availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-01-01$, price: 2000 }`,
+						  ["id", "name", "description"],
+						  ["uuid", "string", "string"],
 						  [
-						   ["Guitar", "Tanglewood"],
-				           ["Violin", "Stradivarius"]]);
-	rs = p.runQuery((Request) `from Product p select p.name, p.description`);		    
+						   [U("guitar"), "Guitar", "Tanglewood"],
+				           [U("voilin"), "Violin", "Stradivarius"]]);
+	rs = p.runQuery((Request) `from Product p select p.@id, p.name, p.description`);		    
 	p.assertResultEquals("prepared insert statement on sql (simple)", rs,   
-		<["p.name","p.description"],
-		[["Guitar","Tanglewood"],["Violin","Stradivarius"],["Radio","Loud"],["TV","Flat"]]>);
+		<["p.@id", "p.name","p.description"],
+		[[U("guitar"), "Guitar","Tanglewood"],[U("violin"),"Violin","Stradivarius"],[U("radio"), "Radio","Loud"],[U("tv"), "TV","Flat"]]>);
 }
 
 void testPreparedUpdatesSimpleSQLUpdate(PolystoreInstance p) {
