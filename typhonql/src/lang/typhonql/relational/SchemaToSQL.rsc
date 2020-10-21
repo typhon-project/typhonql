@@ -76,8 +76,8 @@ list[TableConstraint] indexes(str e, rel[str, str] attrs, Schema schema)
         | <str attr, str typ> <- attrs, typ notin schema.customs<from>, typhonType2SQL(typ) in {polygon(), point()}
     ]
     + [
-        index("<e>_<iname>", regular(), [columnName(attr, ent) | <ent, attr> <- columns])
-        | <<sql(), str dbName>, e> <- schema.placement, indexSpec(str iname, columns) <- schema.pragmas[dbName], {e} == columns<0>
+        index("<e>_<iname>", regular(), [columnName(attr, e) | attr <- columns])
+        | <<sql(), str dbName>, e> <- schema.placement, indexSpec(str iname, e, columns) <- schema.pragmas[dbName]
     ];
  
 // ugh...
