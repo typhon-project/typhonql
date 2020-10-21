@@ -93,18 +93,10 @@ Script createAttribute(p:<sql(), str dbName>, str entity, str attribute, str ty,
 }
 
 Script createAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
-	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "{}", "{$set: { \"<attribute>\" : null}}"));
-	return script([step(dbName, call, ())]);
+	return script([]);
 }
 
 Script createAttribute(p:<neo4j(), str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
-	/*NeoStat stat = \nMatchUpdate(
-  			just(nMatch
-  				([nPattern(nNodePattern("__n1", [], []), [nRelationshipPattern(nDoubleArrow(), "__r1",  ctx.entity, [], nNodePattern("__n2", [], []))])], [])),
-			nSet([nSetPlusEquals("__r1", nMapLit(( graphPropertyName("<attribute>", ctx.entity) : nLit(evalNeoExpr(kv.\value)) | KeyVal kv <- kvs )))]),
-			[nLit(nBoolean(true))]);*/
-	
 	return script([]);
 }
 
@@ -181,9 +173,7 @@ Script createRelation(p:<sql(), str dbName>, str entity, str relation, str targe
 }
 
 Script createRelation(p:<mongodb(), str dbName>, str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
-	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "{}", "{$set: { \"<relation>\" : null}}"));
-	return script([step(dbName, call, ())]);
+	return script([]);
 }
 
 Script createRelation(p:<neo4j(), str dbName>, str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
