@@ -31,8 +31,8 @@ services:
   stuff:
     image: cassandra:latest
     environment:
-      MAX_HEAP_SIZE: 1G
-      HEAP_NEWSIZE: 400M
+      MAX_HEAP_SIZE: 700M
+      HEAP_NEWSIZE: 300M
     ports:
       - target: 9042
         published: 9042
@@ -67,7 +67,7 @@ services:
     depends_on: 
       - typhon-polystore-service
     ports:
-      - target: 4200
+      - target: 8400
         published: 4200
   typhonql-server:
     image: swatengineering/typhonql-server:dev
