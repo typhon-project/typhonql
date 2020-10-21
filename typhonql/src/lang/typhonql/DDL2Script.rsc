@@ -415,9 +415,8 @@ Script createIndex(p:<sql(), str dbName>, str entity, str indexName, list[str] a
 }
 
 Script createIndex(p:<mongodb(), str dbName>, str entity, str indexName, list[str] attributes, Schema s, Log log = noLog) {
-	// steps += [step(db, mongo(createIndex(db, entity, "{\"<attrOrRef>\": 1}")), ())
-    //   | <db, indexSpec(str name, rel[str, str] ftrs)> <- s.pragmas, <entity, str attrOrRef> <- ftrs ];
-	//return script([step(dbName, call, ())]);
+	stp = step(db, mongo(createIndex(dbName, entity, "{ <intercalate(", ",["\"<attrOrRef>\": 1"| str attrOrRef <- attributes])>}")), ());
+	return script([stp]);
 }
 
 Script ddl2scriptAux((Request) `drop index <EId eId>.<Id indexName>`, Schema s, Log log = noLog) {
