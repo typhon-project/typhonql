@@ -21,6 +21,7 @@ extend lang::typhonql::Expr;
 syntax Statement
   = \createEntity: "create" EId eId "at" Id db
   | \createAttribute: "create" EId eId "." Id name ":" Type typ
+  | \createAttributeKeyValue: "create" EId eId "." Id name ":" Type typ "forKV" kvDb
   | \createRelation: "create" EId eId "." Id relation Inverse? inverse Arrow EId target "[" CardinalityEnd lower ".." CardinalityEnd upper "]"
   | \createIndex: "create" "index" Id indexName "for" EId eId "."  "{" {Id ","}+ attributes "}" 
   | \dropEntity: "drop" EId eId

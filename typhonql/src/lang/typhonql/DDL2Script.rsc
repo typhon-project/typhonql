@@ -37,6 +37,9 @@ import lang::typhonql::relational::SchemaToSQL;
 import lang::typhonql::mongodb::Query2Mongo;
 import lang::typhonql::mongodb::DBCollection;
 
+import lang::typhonql::cassandra::Schema2CQL;
+import lang::typhonql::cassandra::CQL2Text;
+
 import lang::typhonql::neo4j::Neo;
 import lang::typhonql::neo4j::Neo2Text;
 import lang::typhonql::neo4j::NeoUtil;
@@ -69,7 +72,7 @@ Script createEntity(p:<mongodb(), str dbName>, str entity, Schema s, Log log = n
 }
 
 Script createEntity(p:<neo4j(), str dbName>, str entity, Schema s, Log log = noLog) {
-	// Neo4j is fully schemaless
+	// Neo4j is schemaless
 	return [];
 }
 
@@ -105,6 +108,34 @@ Script createAttribute(p:<neo4j(), str dbName>, str entity, str attribute, str t
 	return script([]);
 }
 
+Script ddl2scriptAux((Request) `create <EId eId>.<Id attribute> : <Type ty> forKV <Id kvDb>`, Schema s, Log log = noLog) {
+  if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+  	str originalEntity = "<eId>";
+  	str db = "<kvDb>";
+  	str role = keyValRole(db, originalEntity);
+  	str kvEntity = keyValEntity(db, originalEntity);
+  
+  	CQLColumnDefinition attributeCol =
+  		cColumnDef(cColName(kvEntity, "<attribute>"), type2cql("<ty>"));
+  	CQLColumnDefinition relCol = cColumnDef(cColName(kvEntity, role), cUUID());
+  
+  	steps = [];
+  
+  	if (<q:<cassandra(), dbName>, entity> <- s.placement, entity == kvEntity) {
+  		CQLStat cqlStat = cAlterTable(cTableName(entity),  cAdd([attributeCol, relCol]));
+  		steps += step(db, cassandra(cExecuteGlobalStatement(db, pp(cqlStat))), ());
+  	} else {
+    	CQLStat cqlStat = cCreateTable(cTableName(kvEntity), [attributeCol, relCol]); 
+    	steps += step(db, cassandra(cExecuteGlobalStatement(db, pp(cqlStat))), ());
+  	}
+   
+  	Script relScript = createRelation(p, originalEntity, role, kvEntity, \one(), true, Maybe::nothing(), s, log = log);
+  	steps += relScript.steps;
+  	return script(steps);
+  }
+  throw "Not found entity <eId>";
+}
+
 
 default Script createAttribute(p:<db, str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
@@ -131,7 +162,8 @@ Script createRelation(p:<sql(), str dbName>, str entity, str relation, str targe
  	
  	//processRelation(entity, fromCard, fromRole, toRole, toCard, targetEntity, containment);
  	Cardinality toCard = zero_one();
- 	str inverseName = "<relation>^";
+ 	//str inverseName = "<relation>^";
+ 	str inverseName = "";
  	if (just(iname) := inverse) {
  		if (r:<targetEntity, Cardinality c, iname, _, _, _, _> <- schema.rels) { 
         	toCard = c;
@@ -197,10 +229,7 @@ Script dropEntity(p:<neo4j(), str dbName>, str entity, Schema s, Log log = noLog
 	verticesForOthers = {*vertex | <e, _, _, _, _, vertex, _> <- s.rels, <<neo4j(), _>, e> <- s.placement, e!=entity};
 	
 	toRemove = verticesForEntity - verticesForOthers;
-	println(verticesForEntity);	
-	println(verticesForOthers);
-    println(toRemove);	
-    
+	
     for (e <- toRemove) {
     	steps += [step(dbName, neo(executeNeoUpdate(dbName, 
 		neopp(
@@ -251,6 +280,10 @@ Script dropAttribute(p:<neo4j(), str dbName>, str entity, str attribute, Schema 
 	return script([step(dbName, call, ())]);
 }
 
+Script dropAttribute(p:<cassandra(), str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
+	CQLStat cqlStat = cAlterTable(cTableName(entity),  cDrop([cColName(entity, "<attribute>")])); 
+    return script([step(db, cassandra(cExecuteGlobalStatement(db, pp(cqlStat))), ())]);
+}
 
 default Script dropAttribute(p:<db, str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
