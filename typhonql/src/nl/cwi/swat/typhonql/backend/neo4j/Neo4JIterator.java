@@ -93,8 +93,11 @@ public class Neo4JIterator implements ResultIterator {
 			Point p = v.asPoint();
 			return wsgFactory.createPoint(new Coordinate(p.x(), p.y()));
 		}
+		if (v.hasType(TYPES.NULL())) {
+			return null;
+		}
 		else
-			throw new RuntimeException("There is no mapper for Neo4J type " + v.type());
+			throw new RuntimeException("There is no mapper for Neo4J type " + v.type().name());
 	}
 	
 	private static LinearRing createRing(List<Object> coords) {

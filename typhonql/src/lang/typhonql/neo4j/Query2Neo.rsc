@@ -583,7 +583,9 @@ where `r`.`Review.user` = `p`.`Person.@id`
 
 */
 
-Schema testSchema() = schema({
+Schema testSchema() = schema(
+  { "Concordance", "Product", "Wish", "User", "Product" },
+  {
     <"Concordance", \one(), "from", "from^", \one(), "Product", false>,
     <"Concordance", \one(), "to", "to^", \one(), "Product", false>,
     <"Product", \one(), "from^", "from", \one(), "Concordance", true>,

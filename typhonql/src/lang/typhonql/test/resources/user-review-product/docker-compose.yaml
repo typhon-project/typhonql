@@ -74,3 +74,6 @@ services:
     environment:
       TZ: Europe/Amsterdam
     restart: always
+    ports:
+      - target: 7000
+        published: 7000
