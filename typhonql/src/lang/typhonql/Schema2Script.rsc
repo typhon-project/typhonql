@@ -83,11 +83,11 @@ list[Step] place2script(p:<mongodb(), str db>, Schema s, Log log = noLog) {
 
 
     // add geo indexes
-    steps += [step(db, mongo(createIndex(db, entity, "{\"<attr>\": \"2dsphere\"}")), ()) 
+    steps += [step(db, mongo(createIndex(db, entity, "<entity>_<attr>_spatial", "{\"<attr>\": \"2dsphere\"}")), ()) 
         | <str attr, str typ> <- s.attrs[entity], typ == "point" || typ == "polygon"];
         
     // add specified indexes    
-    steps += [step(db, mongo(createIndex(db, entity, "{ <intercalate(", ",["\"<attrOrRef>\": 1"| str attrOrRef <- ftrs])>}")), ())
+    steps += [step(db, mongo(createIndex(db, entity, "<entity>_<name>", "{ <intercalate(", ",["\"<attrOrRef>\": 1"| str attrOrRef <- ftrs])>}")), ())
        | <db, indexSpec(str name, entity, list[str] ftrs)> <- s.pragmas];
           
   }
