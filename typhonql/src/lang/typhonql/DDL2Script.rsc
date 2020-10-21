@@ -403,39 +403,38 @@ default Script renameRelation(p:<db, str dbName>, str entity, str attribute, str
 
 Script ddl2scriptAux((Request) `create index <Id indexName> for <EId eId>.{ <{Id ","}+ attrs> }`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
-	return createIndex(p, entity, "<indexName>", ["<a>" |Id a <- attrs], s, log = log);
+	return createIndex(p, entity, "<entity>_<indexName>", ["<a>" |Id a <- attrs], s, log = log);
   }
   throw "Not found entity <eId>";
 }
 
 Script createIndex(p:<sql(), str dbName>, str entity, str indexName, list[str] attributes, Schema s, Log log = noLog) {
-	TableConstraint index = index("<entity>_<indexName>", regular(), [columnName(attr, entity) | attr <- attributes]);
+	TableConstraint index = index(indexName, regular(), [columnName(attr, entity) | attr <- attributes]);
 	SQLStat stat = alterTable(tableName(entity), [addConstraint(index)]);
 	return script([step(dbName, sql(executeStatement(dbName, pp(stat))), ())]);
 }
 
 Script createIndex(p:<mongodb(), str dbName>, str entity, str indexName, list[str] attributes, Schema s, Log log = noLog) {
-	stp = step(db, mongo(createIndex(dbName, entity, "{ <intercalate(", ",["\"<attrOrRef>\": 1"| str attrOrRef <- attributes])>}")), ());
+	stp = step(db, mongo(createIndex(dbName, entity, indexName, "{ <intercalate(", ",["\"<attrOrRef>\": 1"| str attrOrRef <- attributes])>}")), ());
 	return script([stp]);
 }
 
 Script ddl2scriptAux((Request) `drop index <EId eId>.<Id indexName>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
-	return dropIndex(p, entity, "<indexName>", s, log = log);
+	return dropIndex(p, entity, "<entity>_<indexName>", s, log = log);
   }
   throw "Not found entity <eId>";
 }
 
 Script dropIndex(p:<sql(), str dbName>, str entity, str indexName, Schema s, Log log = noLog) {
-	SQLStat stat = alterTable(tableName(entity), [dropConstraint("<entity>_<indexName>")]);
+	SQLStat stat = alterTable(tableName(entity), [dropConstraint(indexName)]);
 	return script([step(dbName, sql(executeStatement(dbName, pp(stat))), ())]);
 }
 
 Script dropIndex(p:<mongodb(), str dbName>, str entity, str indexName, Schema s, Log log = noLog) {
- 	//if (<dbName, indexSpec(entity, rel[str, str] ftrs)> <- s.pragmas
-	//Call call = mongo(
-	//			findAndUpdateMany(dbName, entity, "{}", "{$set: { \"<attribute>\" : null}}"));
-	//return script([step(dbName, call, ())]);
+	stp = step(db, mongo(dropIndex(dbName, entity, indexName)), ());
+	return script([stp]);
+
 }
 
 default Script createIndex(p:<db, str dbName>, str entity, str indexName, list[str] attributes, Schema s, Log log = noLog) {
