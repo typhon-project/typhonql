@@ -252,6 +252,59 @@ void testDropRelationMariaDB(PolystoreInstance p) {
 	 //p.assertEquals("test5", rs,  <["p.@id", "p.availability"],[[ "guitar", 50 ]]>);
 }
 
+void testCreateIndexMariaDB(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDLForSchema((Request) `create index NameAddressIndex for User.{name, address}`, s);
+	
+}
+
+void testDropIndexMariaDB(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDLForSchema((Request) `drop index User.NameAddressIndex`, s);
+}
+
+
+void testCreateIndexMongo(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDLForSchema((Request) `create index ContentPostedIndex for Review.{content, posted}`, s);	
+	
+}
+
+void testDropIndexMongo(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDLForSchema((Request) `drop index Review.ContentPostedIndex`, s);
+}
+
+void testCreateAttributeKVInMariaDB(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDL((Request) `create User.yearsExperience : int forKV Stuff`);
+	
+}
+
+void testDropAttributeKVInMariaDB(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDL((Request) `drop User.yearsExperience`);
+	
+}
+
+void testCreateAttributeKVInMongo(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDL((Request) `drop User.yearsExperience`);
+	
+}
+
+
+void testDropAttributeKVInMongo(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDL((Request) `drop Biography.characters`);
+	
+	
+}
+
+Schema fetchSchema() {
+	return executer().fetchSchema();
+}
+
 
 TestExecuter executer(Log log = NO_LOG()) = 
 	initTest(setup, HOST, PORT, USER, PASSWORD, log = log, doTypeChecking = false);

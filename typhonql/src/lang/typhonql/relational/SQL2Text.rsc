@@ -78,13 +78,20 @@ str pp(DropOption::restrict()) = "restrict";
 str pp(DropOption::cascade()) = "cascade";
 
 // Alter
-
+str pp(addConstraint(c:index(_, _, _)))
+  = "add 
+    '<pp(c)>";
+   
 str pp(addConstraint(TableConstraint c))
   = "add constraint 
-    '<pp(c)>";
+    '<pp(c)>"
+  when index(_, _, _) !:= c;
     
 str pp(dropConstraint(str name))
   = "drop constraint <q(name)>";
+  
+str pp(dropIndex(str name))
+  = "drop index <q(name)>";  
     
 str pp(addColumn(column(str name, ColumnType \type, list[ColumnConstraint] constraints)))
   = "add <q(name)> <pp(\type)>";

@@ -241,9 +241,13 @@ default Script dropEntity(p:<db, str dbName>, str entity, Schema s, Log log = no
 
 Script ddl2scriptAux((Request) `drop attribute <EId eId>.<Id attribute>`, Schema s, Log log = noLog) {
   if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
-	return dropAttribute(p, entity, "<attribute>", s, log = log);
+    return dropAttribute(p, entity, "<attribute>", s, log = log);
   }
-  throw "Not found entity <eId>";
+  else if (<q:<cassandra(), kvBackend>, kvEntity> <- s.placement, entitiy == keyValEntity(kvBackend, entity)) {
+  	return dropAttribute(q, kvEntity, "<attribute>", s, log = log);
+  }
+  else
+  	throw "Not found entity <eId>";
 }
 
 Script dropAttribute(p:<sql(), str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
@@ -438,7 +442,7 @@ Script createIndex(p:<sql(), str dbName>, str entity, str indexName, list[str] a
 }
 
 Script createIndex(p:<mongodb(), str dbName>, str entity, str indexName, list[str] attributes, Schema s, Log log = noLog) {
-	stp = step(db, mongo(createIndex(dbName, entity, indexName, "{ <intercalate(", ",["\"<attrOrRef>\": 1"| str attrOrRef <- attributes])>}")), ());
+	stp = step(dbName, mongo(createIndex(dbName, entity, indexName, "{ <intercalate(", ",["\"<attrOrRef>\": 1"| str attrOrRef <- attributes])>}")), ());
 	return script([stp]);
 }
 
@@ -450,12 +454,13 @@ Script ddl2scriptAux((Request) `drop index <EId eId>.<Id indexName>`, Schema s, 
 }
 
 Script dropIndex(p:<sql(), str dbName>, str entity, str indexName, Schema s, Log log = noLog) {
-	SQLStat stat = alterTable(tableName(entity), [dropConstraint(indexName)]);
+	SQLStat stat = alterTable(tableName(entity), [Alter::dropIndex(indexName)]);
 	return script([step(dbName, sql(executeStatement(dbName, pp(stat))), ())]);
 }
 
 Script dropIndex(p:<mongodb(), str dbName>, str entity, str indexName, Schema s, Log log = noLog) {
-	stp = step(db, mongo(dropIndex(dbName, entity, indexName)), ());
+	println(indexName);
+	stp = step(dbName, mongo(dropIndex(dbName, entity, indexName)), ());
 	return script([stp]);
 
 }

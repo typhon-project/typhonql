@@ -71,6 +71,7 @@ data MongoCall
   | deleteMany(str dbName, str coll, str query)
   | createCollection(str dbName, str coll)
   | createIndex(str dbName, str coll, str indexName, str keys)
+  | dropIndex(str dbName, str coll, str indexName)
   | renameCollection(str dbName, str coll, str newName)
   | dropCollection(str dbName, str coll)
   | dropDatabase(str dbName)
