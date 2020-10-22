@@ -181,12 +181,12 @@ void testCreateAttributeNeo(PolystoreInstance p) {
 
 void testDropAttributeMariaDB(PolystoreInstance p) {
 	 s = p.fetchSchema();
-	 p.runDDL((Request) `drop attribute Product.description`);
+	 p.runDDL((Request) `drop attribute Product.price`);
 	 
 	 // We need to fake the schema update
-	 s.attrs -=  {<"Product", "description", "string(256)">};
+	 s.attrs -=  {<"Product", "price", "int">};
 	 p.assertException("drop attribute works on MariaDB",
-	 	void() { p.runQuery((Request) `from Product p select p.description`);});
+	 	void() { p.runQuery((Request) `from Product p select p.price`);});
 }
 
 // drop attribute (document)
