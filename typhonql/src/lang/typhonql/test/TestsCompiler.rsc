@@ -329,6 +329,14 @@ void testSelectFreetextAttributes2(PolystoreInstance p) {
   //    [U("ibm"), "Better world", 1]]>); 
                         
 }
+void testInsertFreetextAttributes(PolystoreInstance p) {
+	p.runUpdate((Request) `insert Company { @id: #ibm, name: "IBM", mission: "Be better", vision: "Forever"}`);
+   	
+   	rs = p.runQuery((Request)`from Company c select c.@id, c.mission`);
+  	p.assertResultEquals("company was inserted", rs, <["c.@id", "c.mission"], [
+	    	[U("ibm"), "Be better"]]>);
+	 
+}
 
 void testDeleteFreetextAttributes(PolystoreInstance p) {
     p.runUpdate((Request) `delete Company c where c.@id == #ibm`);
