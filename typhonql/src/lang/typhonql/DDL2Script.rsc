@@ -37,6 +37,7 @@ import lang::typhonql::relational::SchemaToSQL;
 import lang::typhonql::mongodb::Query2Mongo;
 import lang::typhonql::mongodb::DBCollection;
 
+import lang::typhonql::cassandra::CQL;
 import lang::typhonql::cassandra::Schema2CQL;
 import lang::typhonql::cassandra::CQL2Text;
 
@@ -107,22 +108,27 @@ Script ddl2scriptAux((Request) `create <EId eId>.<Id attribute> : <Type ty> forK
   	str role = keyValRole(db, originalEntity);
   	str kvEntity = keyValEntity(db, originalEntity);
   
+    CQLColumnDefinition primaryKeyCol =
+       cColumnDef(cTyphonId(kvEntity), cUUID(), primaryKey=true);
   	CQLColumnDefinition attributeCol =
   		cColumnDef(cColName(kvEntity, "<attribute>"), type2cql("<ty>"));
   	CQLColumnDefinition relCol = cColumnDef(cColName(kvEntity, role), cUUID());
+  	
+   	steps = [step(db, cassandra(cExecuteGlobalStatement(db, "USE \"<kvDb>\";")), ())];
   
-  	steps = [];
-  
-  	if (<q:<cassandra(), dbName>, entity> <- s.placement, entity == kvEntity) {
-  		CQLStat cqlStat = cAlterTable(cTableName(entity),  cAdd([attributeCol, relCol]));
+  	if (<q:<cassandra(), db>, kvEntity> <- s.placement) {
+  		CQLStat cqlStat = cAlterTable(cTableName(kvEntity),  cAdd([attributeCol]));
   		steps += step(db, cassandra(cExecuteGlobalStatement(db, pp(cqlStat))), ());
   	} else {
-    	CQLStat cqlStat = cCreateTable(cTableName(kvEntity), [attributeCol, relCol]); 
+    	CQLStat cqlStat = cCreateTable(cTableName(kvEntity), [primaryKeyCol, attributeCol, relCol]); 
     	steps += step(db, cassandra(cExecuteGlobalStatement(db, pp(cqlStat))), ());
+    	Script relScript1 = createEntity(p, kvEntity, s, log = log);
+    	steps += relScript1.steps;
+    	Script relScript2 = createRelation(p, originalEntity, role, kvEntity, \one(), true, Maybe::nothing(), s, log = log);
+  		steps += relScript2.steps;
   	}
    
-  	Script relScript = createRelation(p, originalEntity, role, kvEntity, \one(), true, Maybe::nothing(), s, log = log);
-  	steps += relScript.steps;
+    iprintln(steps);
   	return script(steps);
   }
   throw "Not found entity <eId>";
@@ -240,10 +246,13 @@ default Script dropEntity(p:<db, str dbName>, str entity, Schema s, Log log = no
 }
 
 Script ddl2scriptAux((Request) `drop attribute <EId eId>.<Id attribute>`, Schema s, Log log = noLog) {
-  if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+  str att = "<attribute>";
+  str entity = "<eId>";
+  
+  if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>", <entity, att, _> <- s.attrs) {
     return dropAttribute(p, entity, "<attribute>", s, log = log);
   }
-  else if (<q:<cassandra(), kvBackend>, kvEntity> <- s.placement, entitiy == keyValEntity(kvBackend, entity)) {
+  else if (<q:<cassandra(), kvBackend>, kvEntity> <- s.placement, kvEntity := keyValEntity(kvBackend, entity)) {
   	return dropAttribute(q, kvEntity, "<attribute>", s, log = log);
   }
   else
@@ -274,9 +283,11 @@ Script dropAttribute(p:<neo4j(), str dbName>, str entity, str attribute, Schema 
 	return script([step(dbName, call, ())]);
 }
 
-Script dropAttribute(p:<cassandra(), str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
-	CQLStat cqlStat = cAlterTable(cTableName(entity),  cDrop([cColName(entity, "<attribute>")])); 
-    return script([step(db, cassandra(cExecuteGlobalStatement(db, pp(cqlStat))), ())]);
+Script dropAttribute(p:<cassandra(), str db>, str entity, str attribute, Schema s, Log log = noLog) {
+	steps = [step(db, cassandra(cExecuteGlobalStatement(db, "USE \"<db>\";")), ())];
+	CQLStat cqlStat = cAlterTable(cTableName(entity),  cDrop([cColName(entity, "<attribute>")]));
+	steps += step(db, cassandra(cExecuteGlobalStatement(db, pp(cqlStat))), ());
+    return script(steps);
 }
 
 default Script dropAttribute(p:<db, str dbName>, str entity, str attribute, Schema s, Log log = noLog) {

@@ -275,21 +275,38 @@ void testDropIndexMongo(PolystoreInstance p) {
 	p.runDDLForSchema((Request) `drop index Review.ContentPostedIndex`, s);
 }
 
-void testCreateAttributeKVInMariaDB(PolystoreInstance p) {
+void testCreateAttributeKVInMariaDBForExistingTable(PolystoreInstance p) {
 	Schema s = p.fetchSchema();
-	p.runDDL((Request) `create User.yearsExperience : int forKV Stuff`);
+	p.runDDL((Request) `create User.years : int forKV Stuff`);
 	
 }
 
-void testDropAttributeKVInMariaDB(PolystoreInstance p) {
+void testDropAttributeKVInMariaDBForExistingTable(PolystoreInstance p) {
 	Schema s = p.fetchSchema();
-	p.runDDL((Request) `drop User.yearsExperience`);
+	// We need to fake the schema update
+	s.attrs +=  {<"User__Stuff", "years", "string(256)">}; 
+	p.runDDLForSchema((Request) `drop attribute User.years`, s);
+	
+}
+
+void testCreateAttributeKVInMariaDBForNewTable(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDL((Request) `create Item.description : text forKV Stuff`);
+	
+}
+
+void testDropAttributeKVInMariaDBForNewTable(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	// We need to fake the schema update
+	s.attrs +=  {<"Item__Stuff", "description", "text">}; 
+	s.placement += {<<cassandra(), "Stuff">, "Item__Stuff">};
+	p.runDDLForSchema((Request) `drop attribute Item.description`, s);
 	
 }
 
 void testCreateAttributeKVInMongo(PolystoreInstance p) {
 	Schema s = p.fetchSchema();
-	p.runDDL((Request) `drop User.yearsExperience`);
+	p.runDDL((Request) `create Biography.characters : int forKV Stuff`);
 	
 }
 
