@@ -48,6 +48,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.GridFSDownloadStream;
+import com.mongodb.client.model.IndexOptions;
 
 import lang.typhonql.util.MakeUUID;
 import nl.cwi.swat.typhonql.backend.Binding;
@@ -256,8 +257,14 @@ public class MongoDBEngine extends Engine {
 		scheduleGlobalUpdate(d -> d.getCollection(collection).renameCollection(new MongoNamespace(newName)));
 	}
 
-	public void executeCreateIndex(String collectionName, String keys) {
-		scheduleGlobalUpdate(d -> d.getCollection(collectionName).createIndex(Document.parse(keys)));
+	public void executeCreateIndex(String collectionName, String indexName, String keys) {
+		IndexOptions options = new IndexOptions().name(indexName);
+		scheduleGlobalUpdate(d -> d.getCollection(collectionName).createIndex(Document.parse(keys), options));
+	}
+
+	public void executeDropIndex(String collectionName, String indexName) {
+		scheduleGlobalUpdate(d -> d.getCollection(collectionName).dropIndex(indexName));
+		
 	}
 
 

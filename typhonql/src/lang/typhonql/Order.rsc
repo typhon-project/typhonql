@@ -275,7 +275,9 @@ int filterWeight(Expr e, Place p, map[str, str] env, Schema s)
   
 void tests() {
 
- s = schema({
+ s = schema(
+ { "Review", "Comment", "Reply", "Person" },
+ {
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
     <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,

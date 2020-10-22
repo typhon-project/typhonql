@@ -39,6 +39,7 @@ map[str, Connection] connections = (
 	);
  			
 Schema s = schema(
+  { "Review", "Biography", "Product", "User" },
   {
     <"Review",\one(),"product","reviews",zero_many(),"Product",false>,
     <"Review",\one(),"user","reviews",zero_many(),"User",false>,

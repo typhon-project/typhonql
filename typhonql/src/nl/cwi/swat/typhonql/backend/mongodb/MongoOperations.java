@@ -212,7 +212,8 @@ public class MongoOperations implements Operations, AutoCloseable {
 		return makeFunction(ctx, state, executeType, args -> {
 			String dbName = ((IString) args[0]).getValue();
 			String collection = ((IString) args[1]).getValue();
-			String keys = ((IString)args[2]).getValue();
+			String indexName = ((IString) args[2]).getValue();
+			String keys = ((IString)args[3]).getValue();
 			
 //			IRelation<IList> selectors = ((IList) args[2]).asRelation();
 //			Map<String, String> index = new LinkedHashMap<>();
@@ -221,7 +222,7 @@ public class MongoOperations implements Operations, AutoCloseable {
 //				index.put(((IString) tp.get(0)).getValue(), ((IString) tp.get(1)).getValue());
 //			}
 
-			engine.apply(dbName).executeCreateIndex(collection, keys);
+			engine.apply(dbName).executeCreateIndex(collection, indexName, keys);
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
@@ -258,6 +259,19 @@ public class MongoOperations implements Operations, AutoCloseable {
 			String collection = ((IString) args[1]).getValue();
 
 			engine.apply(dbName).executeDropCollection(dbName, collection);
+
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
+		});
+	}
+	
+	private ICallableValue makeDropIndex(Function<String, MongoDBEngine> engine, TyphonSessionState state, 
+			FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf) {
+		return makeFunction(ctx, state, executeType, args -> {
+			String dbName = ((IString) args[0]).getValue();
+			String collection = ((IString) args[1]).getValue();
+			String indexName = ((IString) args[2]).getValue();
+
+			engine.apply(dbName).executeDropIndex(collection, indexName);
 
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
@@ -300,6 +314,7 @@ public class MongoOperations implements Operations, AutoCloseable {
 				makeCreateIndex(getEngine, state, func(aliasedTuple, "createIndex"), ctx, vf),
 				makeRenameCollection(getEngine, state, func(aliasedTuple, "renameCollection"), ctx, vf),
 				makeDropCollection(getEngine, state, func(aliasedTuple, "dropCollection"), ctx, vf),
+				makeDropIndex(getEngine, state, func(aliasedTuple, "dropIndex"), ctx, vf),
 				makeDropDatabase(getEngine, state, func(aliasedTuple, "dropDatabase"), ctx, vf));
 	}
 

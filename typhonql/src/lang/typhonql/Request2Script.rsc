@@ -113,7 +113,9 @@ Script request2script(Request r, Schema s, Log log = noLog) {
 
 
 void smokeScript() {
-  s = schema({
+  s = schema(
+  { "Review", "Person", "Comment", "SomeStuff", "Cash", "Reply" },
+  {
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Person", zero_many(), "cash", "owner", \one(), "Cash", true>,
     <"Person", \one(), "SomeStuff__", "", \one(), "SomeStuff", true>,

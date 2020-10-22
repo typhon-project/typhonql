@@ -54,8 +54,13 @@ bool hasId({KeyVal ","}* kvs) = hasId([ kv | KeyVal kv <- kvs ]);
 
 bool hasId(list[KeyVal] kvs) = any((KeyVal)`@id: <Expr _>` <- kvs);
 
+bool hasIdPlaceHolder({KeyVal ","}* kvs) = any((KeyVal)`@id: <PlaceHolder _>` <- kvs); 
+
 str evalId({KeyVal ","}* kvs) = "<e>"[1..]
   when (KeyVal)`@id: <UUID e>` <- kvs;
+
+str evalIdPlaceHolder({KeyVal ","}* kvs) = "<name>"
+  when (KeyVal)`@id: ??<Id name>` <- kvs;
 
 alias InsertContext = tuple[
   str entity,
@@ -87,6 +92,10 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   Place p = placeOf(entity, s);
   str myId = newParam();
   Bindings myParams = ( myId: generatedId(myId) | !hasId(kvs) );
+
+  if (hasIdPlaceHolder(kvs)) {
+    myId = evalIdPlaceHolder(kvs);
+  }
   NExpr nlpMe = hasId(kvs) ? nLiteral(evalId(kvs), "uuid") : NExpr::nPlaceholder(myId);
   SQLExpr sqlMe = hasId(kvs) ? lit(sUuid(evalId(kvs))) : SQLExpr::placeholder(name=myId);
   DBObject mongoMe = hasId(kvs) ? mUuid(evalId(kvs)) : DBObject::placeholder(name=myId);
@@ -659,8 +668,8 @@ DBObject obj2dbObj((Expr)`<EId e> {<{KeyVal ","}* kvs>}`)
 //DBObject obj2dbObj((Expr)`[<{Obj ","}* objs>]`)
 //  = array([ obj2dbObj((Expr)`<Obj obj>`) | Obj obj <- objs ]);
 
-DBObject obj2dbObj((Expr)`[<{UUID ","}* refs>]`)
-  = array([ obj2dbObj((Expr)`<UUID ref>`) | UUID ref <- refs ]);
+DBObject obj2dbObj((Expr)`[<{PlaceHolderOrUUID ","}* refs>]`)
+  = array([ obj2dbObj((Expr)`<UUID ref>`) | (PlaceHolderOrUUID)`<UUID ref>` <- refs ]);
 
 DBObject obj2dbObj((Expr)`<Bool b>`) = \value("<b>" == "true");
 
@@ -737,7 +746,9 @@ Schema testSchema() = schema({
 
 /*
 void smoke2sqlWithAllOnDifferentSQLDB() {
-  s = schema({
+  s = schema(
+  { "Person", "Review", "Comment", "Reply" },
+  {
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
     <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,

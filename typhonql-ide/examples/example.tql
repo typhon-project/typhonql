@@ -7,7 +7,7 @@ insert Review {
 	product: #2375314f-6949-4fb6-8c9b-a1df69bd0289
 }
 
-from Review r select r.contents
+from Review r select r.@id
 
 from Review r select r
 

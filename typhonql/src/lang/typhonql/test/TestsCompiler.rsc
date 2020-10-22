@@ -527,6 +527,30 @@ void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
   p.assertResultEquals("InsertManyContainSQLtoExternal", rs, <["r.content"], [["expensive"]]>);
 }
 
+void testInsertWithNullSQL(PolystoreInstance p) {
+  // No description 
+  p.runUpdate((Request)`insert Product {@id: #wine, name: "Aliwen", productionDate:  $2020-04-14$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)), price: 150}`);
+  rs = p.runQuery((Request)`from Product p select p.@id, p.description where p.@id == #wine`);
+  p.assertResultEquals("testInsertWithNullSQL", rs, <["p.@id", "p.description"], [[U("wine"), {}]]>);
+
+}
+
+void testInsertWithNullNeo(PolystoreInstance p) {
+  // No description 
+  p.runUpdate((Request)`insert Wish {@id: #wish3, user: #davy, product: #tv}`);
+  rs = p.runQuery((Request)`from Wish w select w.@id, w.intensity where w.@id == #wish3`);
+  p.assertResultEquals("testInsertWithNullNeo", rs, <["w.@id", "w.intensity"], [[U("wish3"), {}]]>);
+
+}
+
+void testInsertWithNullMongo(PolystoreInstance p) {
+  // No description 
+  p.runUpdate((Request)`insert Biography { @id: #bio2, user: #davy }`);
+  rs = p.runQuery((Request)`from Biography b select b.@id, b.content where b.@id == #bio2`);
+  p.assertResultEquals("testInsertWithNullMongo", rs, <["b.@id", "b.content"], [[U("bio2"), {}]]>);
+
+}
+
 void testInsertSQLNeo(PolystoreInstance p) {
   p.runUpdate((Request)`insert Product {@id: #laptop, name: "Laptop", wishes: [#wish1], description: "Practical", productionDate:  $2020-04-14$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)), price: 150}`);
   rs = p.runQuery((Request)`from Wish w select w.product where w.@id == #wish1`);
@@ -848,16 +872,16 @@ void testEscapedStrings(PolystoreInstance p) {
 }
 
 void testPreparedUpdatesSimpleSQL(PolystoreInstance p) {
-	p.runPreparedUpdate((Request) `insert Product { name: ??name, description: ??description, availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-01-01$, price: 2000 }`,
-						  ["name", "description"],
-						  ["string", "string"],
+	p.runPreparedUpdate((Request) `insert Product { @id: ??id, name: ??name, description: ??description, availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-01-01$, price: 2000 }`,
+						  ["id", "name", "description"],
+						  ["uuid", "string", "string"],
 						  [
-						   ["Guitar", "Tanglewood"],
-				           ["Violin", "Stradivarius"]]);
-	rs = p.runQuery((Request) `from Product p select p.name, p.description`);		    
+						   [U("guitar"), "Guitar", "Tanglewood"],
+				           [U("voilin"), "Violin", "Stradivarius"]]);
+	rs = p.runQuery((Request) `from Product p select p.@id, p.name, p.description`);		    
 	p.assertResultEquals("prepared insert statement on sql (simple)", rs,   
-		<["p.name","p.description"],
-		[["Guitar","Tanglewood"],["Violin","Stradivarius"],["Radio","Loud"],["TV","Flat"]]>);
+		<["p.@id", "p.name","p.description"],
+		[[U("guitar"), "Guitar","Tanglewood"],[U("violin"),"Violin","Stradivarius"],[U("radio"), "Radio","Loud"],[U("tv"), "TV","Flat"]]>);
 }
 
 void testPreparedUpdatesSimpleSQLUpdate(PolystoreInstance p) {
@@ -1014,14 +1038,14 @@ void test13(PolystoreInstance p) {
 }
 
 
-TestExecuter executer(Log log = NO_LOG()) = initTest(setup, HOST, PORT, USER, PASSWORD, log = log);
+TestExecuter executer(Log log = NO_LOG(), bool doTypeChecking = true) = initTest(setup, HOST, PORT, USER, PASSWORD, log = log, doTypeChecking = doTypeChecking);
 
-void runTest(void(PolystoreInstance) t, Log log = NO_LOG(), bool runTestsInSetup = false) {
-	 executer(log = log).runTest(t, runTestsInSetup); 
+void runTest(void(PolystoreInstance) t, Log log = NO_LOG(), bool runSetup = true, bool runTestsInSetup = false, bool doTypeChecking = true) {
+	 executer(log = log, doTypeChecking = doTypeChecking).runTest(t, runSetup, runTestsInSetup); 
 }
 
-void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG(), bool runTestsInSetup = false) {
-	executer(log = log).runTests(ts, runTestsInSetup); 
+void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG(), bool runTestsInSetup = false, bool doTypeChecking = true) {
+	executer(log = log, doTypeChecking = doTypeChecking).runTests(ts, runTestsInSetup); 
 }
 
 Schema fetchSchema() {
@@ -1103,7 +1127,7 @@ void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	  , test12
 	  , test13
 	];
-	runTests(tests, log = log, runTestsInSetup = runTestsInSetup);
+	runTests(tests, log = log, runTestsInSetup = runTestsInSetup, doTypeChecking = false);
 }
 
 void runNeoTests(Log log = NO_LOG()) {

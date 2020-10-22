@@ -25,12 +25,15 @@ import lang::typhonml::TyphonML;
 import lang::typhonql::util::Testing;
 import lang::typhonml::Util;
 import lang::typhonql::TDBC;
+import lang::typhonql::Normalize; // for pUUID
 
 /*
  * These tests are meant to be run on a Typhon Polystore deployed according to the
  * resources/user-reviews-product folder
  */
  
+str U(str u) = pUUID(u);
+str base64(str b) = base64Encode(b);
  
 str HOST = "localhost";
 str PORT = "8080";
@@ -45,47 +48,53 @@ void setup(PolystoreInstance p, bool _) {
 
 // DDL
  
-// create entity (relational)
-void test1(PolystoreInstance p) {
+void testCreateEntityMariaDB(PolystoreInstance p) {
 	 s = p.fetchSchema();
 	 
-	 // We need to fake the schema update
-	 s.rels += { <"CreditCard", zero_one(), "foo", "bar", zero_one(), "User", false> };
+	 // We need to fake the schema update//
+	 s.entities += { "CreditCard" };
 	 s.placement += { << sql(), "Inventory" >,  "CreditCard"> };
 	
      p.runDDL((Request) `create CreditCard at Inventory`);
 	 
-	 rs = p.runQueryForSchema((Request) `from CreditCard c select c`, s);
-	 p.assertEquals("test1", rs,  <["c.@id"],[]>);
+	 rs = p.runQueryForSchema((Request) `from CreditCard c select c.@id`, s);
+	 p.assertEquals("create entity works on MariaDB", rs,  <["c.@id"],[]>);
 	 
 }
 
-// drop entity (relational)
-void test2(PolystoreInstance p) {
+void testCreateEntityMongo(PolystoreInstance p) {
+	 s = p.fetchSchema();
+	 
+	 // We need to fake the schema update
+	 //s.rels += { <"User", zero_one(), "foo", "bar", zero_one(), "Comment", false> };
+	 s.entities += { "Comment" };
+	 s.placement += { << mongodb(), "Reviews" >,  "Comment"> };
+	 p.runDDL((Request) `create Comment at Reviews`);
+	 rs = p.runQueryForSchema((Request) `from Comment c select c.@id`, s);
+	 p.assertEquals("create entity works on Mongo", rs,  <["c.@id"],[]>);
+	 
+}
+
+void testCreateEntityNeo(PolystoreInstance p) {
+	 s = p.fetchSchema();
+	 s.entities += { "Friend" };
+	 s.placement += { << neo4j(), "MoreStuff" >,  "Friend"> };
+	 p.runUpdate((Request) `create Friend at MoreStuff`);
+	 
+}
+
+void testDropEntityMariaDB(PolystoreInstance p) {
 	 s = p.fetchSchema();
 	 p.runUpdate((Request) `drop Product`);
 	 s.rels -= { p | p:<"Product", _, _, _, _, _, _> <- s.rels };
 	 s.attrs -= { p | p:<"Product", _, _> <- s.attrs };
-	 p.assertException("test2",
+	 p.assertException("drop entity works on MariaDB",
 	 	void() { p.runQuery((Request) `from Product p select p`);});
 	 
 }
 
-// create entity (document)
-void test3(PolystoreInstance p) {
-	 s = p.fetchSchema();
-	 
-	 // We need to fake the schema update
-	 s.rels += { <"User", zero_one(), "foo", "bar", zero_one(), "Comment", false> };
-	 s.placement += { << mongodb(), "Reviews" >,  "Comment"> };
-	 p.runDDL((Request) `create Comment at Reviews`);
-	 rs = p.runQueryForSchema((Request) `from Comment c select c`, s);
-	 p.assertEquals("test3", rs,  <["c.@id"],[]>);
-	 
-}
 
-// drop entity (document)
-void test4(PolystoreInstance p) {
+void testDropEntityMongo(PolystoreInstance p) {
 	 s = p.fetchSchema();
 	 
 	 p.runUpdate((Request) `drop Biography`);
@@ -93,13 +102,26 @@ void test4(PolystoreInstance p) {
 	 s.rels -= { p | p:<"Biography", _, _, _, _, _, _> <- s.rels };
 	 s.attrs -= { p | p:<"Biography", _, _> <- s.attrs };
 	 
-	 p.assertException("test4",
+	 p.assertException("drop entity works on Mongo",
 	 	void() { p.runQueryForSchema((Request) `from Biography b select b`, s);});
 	 
 }
 
-// create attribute (relational)
-void test5(PolystoreInstance p) {
+void testDropEntityNeo(PolystoreInstance p) {
+	 s = p.fetchSchema();
+	 
+	 p.runUpdate((Request) `drop Wish`);
+	  // We need to fake the schema update
+	 s.rels -= { p | p:<"Wish", _, _, _, _, _, _> <- s.rels };
+	 s.rels -= { p | p:<_, _, _, _, _, "Wish", _> <- s.rels };
+	 s.attrs -= { p | p:<"Wish", _, _> <- s.attrs };
+	 
+	 p.assertException("drop entity works on Neo",
+	 	void() { p.runQueryForSchema((Request) `from Wish w select w`, s);});
+	 
+}
+
+void testCreateAttributeMariaDB(PolystoreInstance p) {
 	 s = p.fetchSchema();
 	 
 	 // We need to fake the schema update
@@ -107,11 +129,10 @@ void test5(PolystoreInstance p) {
 	 p.runDDL((Request) `create Product.availability : int`);
 	 p.runUpdateForSchema((Request) `insert Product {@id: #guitar, name: "Guitar", description: "Wood", availability: 50 }`, s);
 	 rs = p.runQueryForSchema((Request) `from Product p select p.@id, p.availability`, s);
-	 p.assertEquals("test5", rs,  <["p.@id", "p.availability"],[[ "guitar", 50 ]]>);
+	 p.assertEquals("create attribute works on MariaDB", rs,  <["p.@id", "p.availability"],[[ U("guitar"), 50 ]]>);
 }
 
-// create attribute (document)
-void test6(PolystoreInstance p) {
+void testCreateAttributeMongo(PolystoreInstance p) {
 	 s = p.fetchSchema();
 	 
 	 // We need to fake the schema update
@@ -119,33 +140,97 @@ void test6(PolystoreInstance p) {
 	 p.runDDL((Request) `create Biography.rating : int`);
 	 p.runUpdateForSchema((Request) `insert Biography {@id: #bio1, content: "Good guy", country: "CL" }`, s);
 	 rs = p.runQueryForSchema((Request) `from Biography b select b.@id, b.country`, s);
-	 p.assertEquals("test6", rs,  <["b.@id", "b.country"],[[ "bio1", "CL" ]]>);
+	 p.assertEquals("create attribute works on Mongo", rs,  <["b.@id", "b.country"],[[ U("bio1"), "CL" ]]>);
 }
 
-// drop attribute (relational)
-void test7(PolystoreInstance p) {
+void testCreateAttributeNeo(PolystoreInstance p) {
 	 s = p.fetchSchema();
-	 p.runDDL((Request) `drop attribute Product.description`);
+	 p.runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat", productionDate:  $2020-04-13$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)), price: 20 }`);
+	 p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo", location: #point(2.0 3.0), 
+                          '  created: $2020-01-02T12:24:00$,
+	                      '   photoURL: "moustache",
+	                      '   avatarURL: "blocky",
+	                      '   address: "alsoThere",
+	                      '   billing: address( street: "Seventh", city: "Ams"
+	                      '   , zipcode: zip(nums: "1234", letters: "ab")
+	                      '   , location: #point(2.0 3.0))}`);
+     p.runUpdate((Request) `insert User { @id: #davy, name: "Davy", location: #point(20.0 30.0), photoURL: "beard",
+                          '  created: $2020-01-02T12:24:00-03:00$,
+	                      '   avatarURL: "blockyBeard",
+	                      '   address: "alsoThere",
+	                      '  billing: address( street: "Bla", city: "Almere"
+	                      '   , zipcode: zip(nums: "4566", letters: "cd")
+	                      '   , location: #point(20.0 30.0))}`);	                      
+	 
+	 p.runUpdate((Request) `insert Wish { @id: #wish1, intensity: 7, user: #pablo, product: #tv }`);
 	 
 	 // We need to fake the schema update
-	 s.attrs -=  {<"Product", "description", "string(256)">};
-	 p.assertException("test7",
-	 	void() { p.runQuery((Request) `from Product p select p.description`);});
+	 s.attrs += { <"Wish", "description", "string(256)">};
+	 p.runDDL((Request) `create Wish.description : string(256)`);
+	 
+	 p.runUpdateForSchema((Request) `insert Wish {@id: #wish3, product: #tv, user: #davy, intensity: 2, description: "For a long time" }`, s);
+	 
+	
+	 rs = p.runQueryForSchema((Request) `from Wish w select w.@id, w.intensity, w.description where w.@id == #wish3`, s);
+	 p.assertEquals("create attribute works on Neo 1", rs, <["w.@id", "w.intensity", "w.description"],[[ U("wish3"), 2, "For a long time"]]>);
+	 rs = p.runQueryForSchema((Request) `from Wish w select w.@id, w.intensity, w.description where w.@id == #wish1`, s);
+	 p.assertEquals("create attribute works on Neo 2", rs,  <["w.@id", "w.intensity", "w.description"],[[ U("wish1"), 7, {}]]>);
+	 
+	 
+}
+
+void testDropAttributeMariaDB(PolystoreInstance p) {
+	 s = p.fetchSchema();
+	 p.runDDL((Request) `drop attribute Product.price`);
+	 
+	 // We need to fake the schema update
+	 s.attrs -=  {<"Product", "price", "int">};
+	 p.assertException("drop attribute works on MariaDB",
+	 	void() { p.runQuery((Request) `from Product p select p.price`);});
 }
 
 // drop attribute (document)
-void test8(PolystoreInstance p) {
+void testDropAttributeMongo(PolystoreInstance p) {
 	 s = p.fetchSchema();
 	 p.runDDL((Request) `drop attribute Review.content`);
 	 
 	 // We need to fake the schema update
 	 s.attrs -= {<"Review", "content", "text">};
-	 p.assertException("test8",
+	 p.assertException("drop attribute works on Mongo",
 	 	void() { rt = p.runQuery((Request) `from Review r select r.content`); });
 }
 
-// create relation (relational)
-void test9(PolystoreInstance p) {
+// drop attribute (neo)
+void testDropAttributeNeo(PolystoreInstance p) {
+	 p.runUpdate((Request) `insert Product {@id: #tv, name: "TV", description: "Flat", productionDate:  $2020-04-13$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)), price: 20 }`);
+	 p.runUpdate((Request) `insert User { @id: #pablo, name: "Pablo", location: #point(2.0 3.0), 
+                          '  created: $2020-01-02T12:24:00$,
+	                      '   photoURL: "moustache",
+	                      '   avatarURL: "blocky",
+	                      '   address: "alsoThere",
+	                      '   billing: address( street: "Seventh", city: "Ams"
+	                      '   , zipcode: zip(nums: "1234", letters: "ab")
+	                      '   , location: #point(2.0 3.0))}`);
+     p.runUpdate((Request) `insert User { @id: #davy, name: "Davy", location: #point(20.0 30.0), photoURL: "beard",
+                          '  created: $2020-01-02T12:24:00-03:00$,
+	                      '   avatarURL: "blockyBeard",
+	                      '   address: "alsoThere",
+	                      '  billing: address( street: "Bla", city: "Almere"
+	                      '   , zipcode: zip(nums: "4566", letters: "cd")
+	                      '   , location: #point(20.0 30.0))}`);	                      
+	 
+	 p.runUpdate((Request) `insert Wish { @id: #wish1, intensity: 7, user: #pablo, product: #tv }`);
+	 s = p.fetchSchema();
+	 p.runDDL((Request) `drop attribute Wish.intensity`);
+	 
+	 // We need to fake the schema update
+	 s.attrs -= {<"Wish", "intensity", "int">};
+	 p.assertException("drop attribute works on Neo",
+	 	void() { rt = p.runQuery((Request) `from Wish w select w.intensity`); });
+}
+
+
+void testCreateRelationMariaDB(PolystoreInstance p) {
 	 Schema s = p.fetchSchema();
 	 
 	 // We need to fake the schema update
@@ -156,8 +241,7 @@ void test9(PolystoreInstance p) {
 	 //p.assertEquals("test5", rs,  <["p.@id", "p.availability"],[[ "guitar", 50 ]]>);
 }
 
-// drop relation (relational)
-void test10(PolystoreInstance p) {
+void testDropRelationMariaDB(PolystoreInstance p) {
 	 Schema s = p.fetchSchema();
 	 
 	 // We need to fake the schema update
@@ -168,18 +252,99 @@ void test10(PolystoreInstance p) {
 	 //p.assertEquals("test5", rs,  <["p.@id", "p.availability"],[[ "guitar", 50 ]]>);
 }
 
-
-TestExecuter getExecuter(Log log = NO_LOG()) = 
-	initTest(setup, HOST, PORT, USER, PASSWORD, log = log);
-
-void runTest(void(PolystoreInstance) t, Log log = NO_LOG()) {
-	getExecuter(log = log).runTest(t); 
+void testCreateIndexMariaDB(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDLForSchema((Request) `create index NameAddressIndex for User.{name, address}`, s);
+	
 }
 
-void runTests(list[void(PolystoreInstance)] ts) {
-	getExecuter().runTests(ts); 
+void testDropIndexMariaDB(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDLForSchema((Request) `drop index User.NameAddressIndex`, s);
+}
+
+
+void testCreateIndexMongo(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDLForSchema((Request) `create index ContentPostedIndex for Review.{content, posted}`, s);	
+	
+}
+
+void testDropIndexMongo(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDLForSchema((Request) `drop index Review.ContentPostedIndex`, s);
+}
+
+void testCreateAttributeKVInMariaDBForExistingTable(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDL((Request) `create User.years : int forKV Stuff`);
+	
+}
+
+void testDropAttributeKVInMariaDBForExistingTable(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	// We need to fake the schema update
+	s.attrs +=  {<"User__Stuff", "years", "string(256)">}; 
+	p.runDDLForSchema((Request) `drop attribute User.years`, s);
+	
+}
+
+void testCreateAttributeKVInMariaDBForNewTable(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDL((Request) `create Item.description : text forKV Stuff`);
+	
+}
+
+void testDropAttributeKVInMariaDBForNewTable(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	// We need to fake the schema update
+	s.attrs +=  {<"Item__Stuff", "description", "text">}; 
+	s.placement += {<<cassandra(), "Stuff">, "Item__Stuff">};
+	p.runDDLForSchema((Request) `drop attribute Item.description`, s);
+	
+}
+
+void testCreateAttributeKVInMongo(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDL((Request) `create Biography.characters : int forKV Stuff`);
+	
+}
+
+
+void testDropAttributeKVInMongo(PolystoreInstance p) {
+	Schema s = p.fetchSchema();
+	p.runDDL((Request) `drop Biography.characters`);
+	
+	
+}
+
+Schema fetchSchema() {
+	return executer().fetchSchema();
+}
+
+
+TestExecuter executer(Log log = NO_LOG()) = 
+	initTest(setup, HOST, PORT, USER, PASSWORD, log = log, doTypeChecking = false);
+	
+void runTest(void(PolystoreInstance) t, Log log = NO_LOG(), bool runSetup = true) {
+	executer(log = log).runTest(t, runSetup, false); 
+}
+
+void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG()) {
+	executer(log = log).runTests(ts, false, log = log); 
 }
 
 void runAll() {
-	runTests([test1, test2, test3, test4, test5, test6, test7, test8]);
+	runTests([
+		testCreateEntityMariaDB,
+		testCreateEntityMongo,
+		//testDropEntityMariaDB,
+		testDropEntityMongo,
+		//testCreateAttributeMariaDB,
+		testCreateAttributeMongo,
+		testDropAttributeMariaDB,
+		testDropAttributeMongo,
+		testCreateRelationMariaDB,
+		testDropRelationMariaDB
+		]);
 }

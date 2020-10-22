@@ -84,6 +84,7 @@ default CQLType type2cql(str t) { throw "Unsupported Typhon type <t>"; }
 
 void smokeIt() {
   s = schema({
+    {"Person", "Review", "Comment", "Cash", "Reply" },
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Person", zero_many(), "cash", "owner", \one(), "Cash", true>,
     <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
