@@ -67,7 +67,7 @@ services:
     depends_on: 
       - typhon-polystore-service
     ports:
-      - target: 8400
+      - target: 4200 
         published: 4200
   typhonql-server:
     image: swatengineering/typhonql-server:dev
