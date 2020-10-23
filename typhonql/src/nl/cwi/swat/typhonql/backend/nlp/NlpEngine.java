@@ -55,6 +55,7 @@ import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 public class NlpEngine extends Engine {
 	
 	public static final String NLP_REPOSITORY = "nlae";
+	private static final ObjectMapper MAPPER = new ObjectMapper();
 	
 	private final String host;
 	private final int port;
@@ -149,8 +150,13 @@ public class NlpEngine extends Engine {
 				
 				String r = doPost("queryTextAnalytics", json);
 				
-				// TODO agreeing upon a JSON format for the response first
-				return null;
+				try {
+					JsonNode resultsNode = MAPPER.readTree(r);
+					return new NlpIterator(resultsNode);
+				} catch (JsonProcessingException e) {
+					throw new RuntimeException("Wrong response from NLAE engine");
+				}
+				
 			}
 
 		}.scheduleSelect(NLP_REPOSITORY);
@@ -174,10 +180,9 @@ public class NlpEngine extends Engine {
 	}
 
 	protected String replaceInUpdateJson(String query, Map<String, Object> values) {
-		ObjectMapper mapper = new ObjectMapper();
 	    JsonNode node;
 		try {
-			node = mapper.readTree(query);
+			node = MAPPER.readTree(query);
 			if (!values.isEmpty()) {
 		    	String originalId =node.get("id").asText();
 		    	String id = originalId.substring(2, originalId.length());
@@ -185,7 +190,7 @@ public class NlpEngine extends Engine {
 		    		((ObjectNode)node).replace("id", TextNode.valueOf((String) values.get("id")));
 		    	}
 		    }
-		    return mapper.writeValueAsString(node);
+		    return MAPPER.writeValueAsString(node);
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException("Error processing Json when processing NLP request", e);
 		}
@@ -258,10 +263,10 @@ public class NlpEngine extends Engine {
 		bs.put("c_0", new GeneratedIdentifier("c_0"));
 		
 		engine.query("{\n" + 
-				"  \"from\": { \"entity\" : \"Company__mission\", \"named\" : \"company__mission_nlp_0\"},\n" + 
-				"         \"with\": [{ \"path\": \"company__mission_nlp_0.SentimentAnalysis\", \"workflow\": \"eng_spa\"}],\n" + 
-				"  \"select\": [\"company__mission_nlp_0.SentimentAnalysis$Sentiment\",\"company__mission_nlp_0.@id\"],\n" + 
-				"  \"where\": [{\"op\": \">=\", \"lhs\": {\"attr\": \"company__mission_nlp_0.SentimentAnalysis$Sentiment\"}, \"rhs\": {\"lit\" : \"1\", \"type\" : \"int\"} },{\"op\": \"==\", \"lhs\": {\"attr\": \"company__mission_nlp_0.@id\"}, \"rhs\": ${c_0} }]\n" + 
+				"  \"from\": { \"entity\" : \"Company\", \"named\" : \"c\"},\n" + 
+				"  \"with\": [{ \"path\": \"c.mission.SentimentAnalysis\", \"workflow\": \"eng_spa\"},{ \"path\": \"c.vision.SentimentAnalysis\", \"workflow\": \"eng_fr\"}],\n" + 
+				"  \"select\": [\"c.mission.SentimentAnalysis.Sentiment\",\"c.@id\"],\n" + 
+				"  \"where\": {\"binaryExpression\": {\"op\": \"&&\", \"lhs\": {\"binaryExpression\": {\"op\": \"==\", \"lhs\": {\"attribute\": {\"path\": \"c.@id\"}}, \"rhs\": {\"literal\": {\"value\": \"e757fd4f-edc4-3e82-9bb8-1b1b466a0947\", \"type\" : \"uuid\"}} }}, \"rhs\": {\"binaryExpression\": {\"op\": \"&&\", \"lhs\": {\"binaryExpression\": {\"op\": \">=\", \"lhs\": {\"attribute\": {\"path\": \"c.mission.SentimentAnalysis.Sentiment\"}}, \"rhs\": {\"literal\": {\"value\" : \"1\", \"type\" : \"int\"}} }}, \"rhs\": {\"binaryExpression\": {\"op\": \">=\", \"lhs\": {\"attribute\": {\"path\": \"c.vision.SentimentAnalysis.Sentiment\"}}, \"rhs\": {\"literal\": {\"value\" : \"2\", \"type\" : \"int\"}} }} }} }}\n" + 
 				"}", bs, Collections.EMPTY_LIST);
 		
 		Runner.executeUpdates(script);
