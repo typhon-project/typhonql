@@ -80,18 +80,22 @@ public class NlpEngine extends Engine {
 		this.password = password;
 	}
 	
+	private static String literal(String value, String type) {
+		return "{\"literal\": {\"value\": \""+ value +"\", \"type\" : \""+ type +"\"}}";
+	}
+	
 	private static String serialize(Object obj) {
 		if (obj == null) {
-			return "{\"lit\": \"null\", \"type\" : \"null\"}";
+			return literal("null", "null");
 		}
 		else if (obj instanceof Integer) {
-			return "{\"lit\": \"" + obj +  "\", \"type\" : \"int\"}";
+			return literal(obj.toString(), "int");
 		}
 		else if (obj instanceof Boolean) { 
-			return "{\"lit\": \"" + obj +  "\", \"type\" : \"boolean\"}";
+			return literal(obj.toString(), "bool");
 		}
 		else if (obj instanceof String) {
-			return "{\"lit\": \"" + obj +  "\", \"type\" : \"string\"}";
+			return literal((String) obj, "string");
 		}
 		else if (obj instanceof Geometry) {
 			throw new RuntimeException("Geo type not known by NLP engine");
@@ -108,7 +112,7 @@ public class NlpEngine extends Engine {
 			throw new RuntimeException("Instant type not known by NLP engine");
 		}
 		else if (obj instanceof UUID) {
-			return "{\"lit\": \"" + ((UUID) obj).toString() +  "\", \"type\" : \"uuid\"}";
+			return literal(obj.toString(), "uuid");
 			
 		}
 		else
@@ -122,6 +126,7 @@ public class NlpEngine extends Engine {
             @Override
             protected void performUpdate(Map<String, Object> values) {
                 String json = replaceInUpdateJson(query, values);
+                
                 doPost("processText", json);
 					
             }

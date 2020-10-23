@@ -7,7 +7,7 @@ data NStat = nSelect(
 	NFrom from,
 	list[NWith] withs,
 	list[NPath] selectors,
-	list[NExpr] wheres);
+	NExpr where);
 	
 data NFrom = nFrom(str entity, str label);
 	
@@ -17,6 +17,7 @@ data NWith = nWith(NPath path, str workflow);
 	
 data NExpr
 	= nBinaryOp(str op, NExpr lhs, NExpr rhs)
+	| nUnaryOp(str op, NExpr subExpr)
 	| nLiteral(str val, str \type)
 	| nAttr(str var, list[str] path)
 	| nPlaceholder(str name)
@@ -25,29 +26,30 @@ data NExpr
 NExpr pointer2nlp(pointerUuid(str name)) = nLiteral(name, "uuid");
 NExpr pointer2nlp(pointerPlaceholder(str name)) = nPlaceholder(name);	
 	
-str pp(nSelect(nFrom(str entity, str label), withs, selectors, wheres))
+str pp(nSelect(nFrom(str entity, str label), withs, selectors, where))
 	= "{
 	  '  \"from\": { \"entity\" : \"<ppEntity(entity)>\", \"named\" : \"<ppVar(label)>\"},
-	  '	 \"with\": [<ppWiths>],
+	  '  \"with\": [<ppWiths>],
 	  '  \"select\": [<ppSelectors>],
-	  '  \"where\": [<ppWheres>]
+	  '  \"where\": <pp(where)>
 	  '}"
 	when ppWiths := intercalate(",", [pp(w) | w <- withs]),
-	     ppSelectors := intercalate(",", [pp(p) | p <- selectors]),
-	     ppWheres := intercalate(",", [pp(w) | w <- wheres]);
+	     ppSelectors := intercalate(",", [pp(p) | p <- selectors]);
 
 	
 str pp(nWith(NPath path, str workflow)) = "{ \"path\": <pp(path)>, \"workflow\": \"<workflow>\"}";
 
 str pp(nPath(str var, list[str] field)) = "\"<intercalate(".", [ppVar(var)] + field)>\"";
 
-str pp(nBinaryOp(str op, NExpr lhs, NExpr rhs)) = "{\"op\": \"<op>\", \"lhs\": <pp(lhs)>, \"rhs\": <pp(rhs)> }";
+str pp(nBinaryOp(str op, NExpr lhs, NExpr rhs)) = "{\"binaryExpression\": {\"op\": \"<op>\", \"lhs\": <pp(lhs)>, \"rhs\": <pp(rhs)> }}";
 
-str pp(nAttr(str var, list[str] path)) = "{\"attr\": \"<intercalate(".", [ppVar(var)] + path)>\"}";
+str pp(nUnaryOp(str op, NExpr subExp)) = "{\"unaryExpression\": {\"op\": \"<op>\", \"subExpression\": <pp(subExp)> }}";
+
+str pp(nAttr(str var, list[str] path)) = "{\"attribute\": {\"path\": \"<intercalate(".", [ppVar(var)] + path)>\"}}";
 
 str pp(nPlaceholder(str name)) = "${<name>}";
 
-str pp(nLiteral(str val, str ty)) = "{\"lit\" : \"<val>\", \"type\" : \"<ty>\"}";
+str pp(nLiteral(str val, str ty)) = "{\"literal\": {\"value\" : \"<val>\", \"type\" : \"<ty>\"}}";
 default str pp(nLiteral(str val, str ty)) = val;
 
 str ppVar(str var) {

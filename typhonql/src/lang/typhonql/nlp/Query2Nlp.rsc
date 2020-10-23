@@ -93,9 +93,9 @@ tuple[NStat, Bindings] select2nlp((Query)`from <{Binding ","}+ bs> select <{Resu
 	
 	NExpr expr2nlp((Expr)`+<Expr e>`) = expr2nlp(e);
 	
-	NExpr expr2nlp((Expr)`-<Expr e>`) = nBinaryOp("-", nLiteral("0", "int"), expr2nlp(e));
+	NExpr expr2nlp((Expr)`-<Expr e>`) = nUnaryOp("-", expr2nlp(e));
 	
-	//NExpr expr2nlp((Expr)`!<Expr e>`) = not(expr2nlp(e));
+	NExpr expr2nlp((Expr)`!<Expr e>`) = nUnaryOp("!", expr2nlp(e));
 	
 	NExpr expr2nlp((Expr)`<Expr lhs> && <Expr rhs>`) 
 	  = nBinaryOp("&&", expr2nlp(lhs), expr2nlp(rhs));
@@ -143,11 +143,15 @@ tuple[NStat, Bindings] select2nlp((Query)`from <{Binding ","}+ bs> select <{Resu
   
   
 
-  NStat q = nSelect(nFrom("", ""), [], [], []);
+  NStat q = nSelect(nFrom("", ""), [], [], nLiteral("true", "bool"));
   
   void addWhere(NExpr e) {
      //println("ADDING where clause: <pp(e)>");
-    q.wheres += [e];
+    if (nLiteral("true", "bool") := q.where) {
+    	q.where = e;
+    } else {
+    	q.where = nBinaryOp("&&", e, q.where);
+    }
   }
   
   void addResult(NPath selector) {
@@ -298,7 +302,6 @@ tuple[NStat, Bindings] select2nlp((Query)`from <{Binding ","}+ bs> select <{Resu
     }
   }
   
-  q.wheres = [ e | NExpr e <- q.wheres, e != nLiteral("true", "boolean") ];
   return <q, params>;
 }
  
