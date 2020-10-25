@@ -167,6 +167,13 @@ bool isFreeTextAttr(str ent, str f, Schema s) {
    	return false;
 } 
 
+bool hasFreeTextAttr(str ent, Schema s) {
+    // return the list of processes associated with a free text attribute
+    if (<ent, f, ty> <- s.attrs, isFreeTextType(ty))
+    	return true;
+   	return false;
+} 
+
 list[str] isKeyValAttr(str ent, str f, Schema s) {
     // return the inferred entity role if f is a key val attribute
     // otherwise return empty.
@@ -290,9 +297,20 @@ Request inferNlpLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result ","
   list[Expr] newWheres = [];
   
   req = visit (req) {
+    case (Expr)`<VId x>.@id`: {
+      str src = env["<x>"];
+      if (hasFreeTextAttr(src, s)) {
+        str tgt = nlpEntity(src);
+     	Id nlpRel = [Id] nlpRelation();
+        VId nlpX = newBinding(tgt, "<x>", (Expr)`<VId x>.<Id nlpRel>`);
+        insert (Expr)`<VId nlpX>.@id`;
+      }
+    }
+  
     case (Expr)`<VId x>.<Id f>.<{Id "."}+ fs>`: {
       str src = env["<x>"];
       if (isFreeTextAttr(src, "<f>", s)) {
+        
      	analyses = getFreeTypeAnalyses(src, "<f>", s);
      	str tgt = nlpEntity(src);
      	Id nlpRel = [Id] nlpRelation();
