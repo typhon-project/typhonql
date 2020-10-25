@@ -1,12 +1,14 @@
 package nl.cwi.swat.typhonql.backend.nlp;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import nl.cwi.swat.typhonql.backend.ResultIterator;
+import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public class NlpIterator implements ResultIterator {
 	
@@ -20,15 +22,18 @@ public class NlpIterator implements ResultIterator {
 	
 	static {
 		TYPES.put("SentimentAnalysis$Sentiment", TYPE.INTEGER);
+		TYPES.put("SentimentAnalysis$begin", TYPE.INTEGER);
+		TYPES.put("SentimentAnalysis$end", TYPE.INTEGER);
+		TYPES.put("NamedEntityRecognition$NamedEntity", TYPE.STRING);
 	}
 	
 	private int index = -1;
 	private JsonNode records;
 	Map<String, Integer> columnHeaders;
-
+	
 	public NlpIterator(JsonNode resultsNode) {
 		JsonNode header = resultsNode.get("header");
-		JsonNode records = resultsNode.get("records");
+		records = resultsNode.get("records");
 		
 		if (header == null || !header.isArray() || records == null || !records.isArray()) 
 			throwWrongFormatException();
@@ -52,7 +57,7 @@ public class NlpIterator implements ResultIterator {
 
 	@Override
 	public boolean hasNextResult() {
-		return (index < records.size());
+		return (index < records.size() - 1);
 	}
 	
 	JsonNode getCurrentResult() {
@@ -61,19 +66,22 @@ public class NlpIterator implements ResultIterator {
 
 	@Override
 	public UUID getCurrentId(String label, String type) {
-		int i = columnHeaders.get(label + ".@id");
+		String simpleLabel = label.split("__")[2];
+		int i = columnHeaders.get(simpleLabel + ".@id");
 		String str = getCurrentResult().get(i).asText();
 		return UUID.fromString(str);
 	}
 
 	@Override
 	public Object getCurrentField(String label, String ty, String name) {
-		String[] parts = name.split("$");
+		String[] parts = name.split("\\$");
 		// part 0 is original attribute name, e.g., mission
 		// part 1 is analysis
 		// part 2 is attribute of analysis
 		TYPE type = TYPES.get(parts[1]+"$"+parts[2]);
-		int i = columnHeaders.get(label + ".@id");
+		String simpleLabel = label.split("__")[2];
+		String actualPath = name.replace("$", ".");
+		int i = columnHeaders.get(simpleLabel+"."+actualPath);
 		JsonNode node = getCurrentResult().get(i);
 		switch (type) {
 		case INTEGER:
@@ -89,7 +97,7 @@ public class NlpIterator implements ResultIterator {
 
 	@Override
 	public void beforeFirst() {
-		index = 0;
+		index = -1;
 	}
 
 }
