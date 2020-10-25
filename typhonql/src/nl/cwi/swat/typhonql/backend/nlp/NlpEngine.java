@@ -5,9 +5,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +34,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.locationtech.jts.geom.Geometry;
-import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
+//import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -41,15 +44,18 @@ import com.fasterxml.jackson.databind.node.TextNode;
 
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Engine;
-import nl.cwi.swat.typhonql.backend.GeneratedIdentifier;
+import nl.cwi.swat.typhonql.backend.Field;
 import nl.cwi.swat.typhonql.backend.QueryExecutor;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultIterator;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.Runner;
 import nl.cwi.swat.typhonql.backend.UpdateExecutor;
+import nl.cwi.swat.typhonql.backend.mariadb.MariaDBEngine;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
+import nl.cwi.swat.typhonql.backend.test.BackendTestCommon;
+import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 
 public class NlpEngine extends Engine {
@@ -139,15 +145,15 @@ public class NlpEngine extends Engine {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				String json = replaceInQueryJson(query, values);
-				try {
+				/*try {
 					ThreadSafeImpulseConsole.INSTANCE.getWriter().write(values+"\n");
 					ThreadSafeImpulseConsole.INSTANCE.getWriter().write(json+"\n");
 					ThreadSafeImpulseConsole.INSTANCE.getWriter().flush();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
-				}
-				
+				}*/
+
 				String r = doPost("queryTextAnalytics", json);
 				
 				try {
@@ -249,27 +255,50 @@ public class NlpEngine extends Engine {
 		}
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws SQLException {
 		List<Consumer<List<Record>>> script = new ArrayList<Consumer<List<Record>>>();
 		
 		Map<String, UUID> uuids = new HashMap<>();
-		uuids.put("c_0", UUID.randomUUID());
+		uuids.put("f_0", UUID.randomUUID());
 		
-		NlpEngine engine = new NlpEngine(new ResultStore(new HashMap<String, InputStream>()), 
-				new TyphonSessionState(), script, uuids, "localhost", 8888, null, null);
+		ResultStore rs = new ResultStore(new HashMap<String, InputStream>());
+		
+		TyphonSessionState ts = new TyphonSessionState();
+		Connection conn1 = BackendTestCommon.getConnection("localhost", 3306, "Inventory", "root", "XeNnEybEFjSe5aLy");
+		
+		MariaDBEngine mariaEngine = new MariaDBEngine(rs, ts, script, uuids, () -> conn1);
+		
+		mariaEngine.executeSelect("Inventory", "select `f`.`Foundation.@id` as `f.Foundation.@id`, `f`.`Foundation.mission` as `f.Foundation.mission`, `junction_NLP___$0`.`Foundation___NLP.unknown` as `f.Foundation.NLP___` from `Foundation` as `f` left outer join `Foundation.NLP___-Foundation___NLP.unknown` as `junction_NLP___$0` on (`junction_NLP___$0`.`Foundation.NLP___`) = (`f`.`Foundation.@id`);", 
+				Arrays.asList(new Path("Inventory", "f", "Foundation", new String[] { "@id" }),
+						new Path("Inventory", "f", "Foundation", new String[] { "mission" }),
+						new Path("Inventory", "f", "Foundation", new String[] { "NLP___" })));
+		
+		NlpEngine engine = new NlpEngine(rs, 
+				ts, script, uuids, "localhost", 8889, null, null);
 		//engine.process("{ \"id\": \"e757fd4f-edc4-3e82-9bb8-1b1b466a0947\", \"entityType\": \"Company\", \"fieldName\": \"vision\", \"text\": \"More machines\", \"nlpFeatures\": [\"SentimentAnalysis\"], \"workflowNames\": [\"eng_spa\"]}", new HashMap<>());
 		
 		Map<String, Binding> bs = new HashMap<>();
-		bs.put("c_0", new GeneratedIdentifier("c_0"));
+		bs.put("f_0", new Field("Inventory","f","Foundation", "@id"));
 		
-		engine.query("{\n" + 
-				"  \"from\": { \"entity\" : \"Company\", \"named\" : \"c\"},\n" + 
-				"  \"with\": [{ \"path\": \"c.mission.SentimentAnalysis\", \"workflow\": \"eng_spa\"},{ \"path\": \"c.vision.SentimentAnalysis\", \"workflow\": \"eng_fr\"}],\n" + 
-				"  \"select\": [\"c.mission.SentimentAnalysis.Sentiment\",\"c.@id\"],\n" + 
-				"  \"where\": {\"binaryExpression\": {\"op\": \"&&\", \"lhs\": {\"binaryExpression\": {\"op\": \"==\", \"lhs\": {\"attribute\": {\"path\": \"c.@id\"}}, \"rhs\": {\"literal\": {\"value\": \"e757fd4f-edc4-3e82-9bb8-1b1b466a0947\", \"type\" : \"uuid\"}} }}, \"rhs\": {\"binaryExpression\": {\"op\": \"&&\", \"lhs\": {\"binaryExpression\": {\"op\": \">=\", \"lhs\": {\"attribute\": {\"path\": \"c.mission.SentimentAnalysis.Sentiment\"}}, \"rhs\": {\"literal\": {\"value\" : \"1\", \"type\" : \"int\"}} }}, \"rhs\": {\"binaryExpression\": {\"op\": \">=\", \"lhs\": {\"attribute\": {\"path\": \"c.vision.SentimentAnalysis.Sentiment\"}}, \"rhs\": {\"literal\": {\"value\" : \"2\", \"type\" : \"int\"}} }} }} }}\n" + 
-				"}", bs, Collections.EMPTY_LIST);
+		engine.query("{\n  \"from\": { \"entity\" : \"Foundation\", \"named\" : \"f\"},\n  \"with\": [{ \"path\": \"f.mission.SentimentAnalysis\", \"workflow\": \"eng_spa\"},{ \"path\": \"f.mission.NamedEntityRecognition\", \"workflow\": \"eng_ner\"}],\n  \"select\": [\"f.@id\",\"f.mission.SentimentAnalysis.Sentiment\",\"f.mission.NamedEntityRecognition.NamedEntity\"],\n  \"where\": {\"binaryExpression\": {\"op\": \"&&\", \"lhs\": {\"binaryExpression\": {\"op\": \"==\", \"lhs\": {\"attribute\": {\"path\": \"f.@id\"}}, \"rhs\": ${f_0} }}, \"rhs\": {\"binaryExpression\": {\"op\": \"&&\", \"lhs\": {\"binaryExpression\": {\"op\": \">=\", \"lhs\": {\"attribute\": {\"path\": \"f.mission.SentimentAnalysis.begin\"}}, \"rhs\": {\"literal\": {\"value\" : \"1\", \"type\" : \"int\"}} }}, \"rhs\": {\"binaryExpression\": {\"op\": \">=\", \"lhs\": {\"attribute\": {\"path\": \"f.mission.NamedEntityRecognition.begin\"}}, \"rhs\": {\"literal\": {\"value\" : \"2\", \"type\" : \"int\"}} }} }} }}\n}", bs, 
+				Arrays.asList(
+						new Path("Foundation", "foundation___NLP_0__f", "Foundation___NLP", new String[] { "@id" }),
+						new Path("Foundation", "foundation___NLP_0__f", "Foundation___NLP", new String[] { "mission$SentimentAnalysis$Sentiment" }),
+						new Path("Foundation", "foundation___NLP_0__f", "Foundation___NLP", new String[] { "mission$NamedEntityRecognition$NamedEntity" })
+					));
 		
 		Runner.executeUpdates(script);
+		
+		//[<"Inventory","f","Foundation",["@id"]>
+		//,<"Inventory","f","Foundation",["mission"]>,
+		//<"Foundation","foundation___NLP_0__f","Foundation___NLP",["mission$SentimentAnalysis$Sentiment"]>,
+		//<"Foundation","foundation___NLP_0__f","Foundation___NLP",["mission$NamedEntityRecognition$NamedEntity"]>]
+		ResultTable rt = Runner.computeResultTable(script, Arrays.asList(
+				new Path("Inventory", "f", "Foundation", new String[] {"@id"}),
+				new Path("Inventory", "f", "Foundation", new String[] {"mission"}),
+				new Path("Foundation", "foundation___NLP_0__f", "Foundation___NLP", new String[] {"mission$SentimentAnalysis$Sentiment"}),
+				new Path("Foundation", "foundation___NLP_0__f", "Foundation___NLP", new String[] {"mission$NamedEntityRecognition$NamedEntity"})));
+		System.out.println(rt);
 	
 	}
 
