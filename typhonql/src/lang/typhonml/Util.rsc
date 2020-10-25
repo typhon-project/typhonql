@@ -239,6 +239,8 @@ Schema inferKeyValueAuxEntities(Schema s) {
   for (<str db, str ent> <- cassandraAttrs<0,1>) {
     set[str] names = cassandraAttrs[db][ent];
     str newEnt = keyValEntity(db, ent);
+    
+    s.entities += {newEnt};
 
     // create new attrs, while old attrs still there
     Attrs newAttrs = { <newEnt, n, t> | str n <- names,
@@ -301,6 +303,8 @@ Schema inferNlpAuxEntities(Schema s) {
     = { <ent, nlpEntity(ent), name, ty> | a:<ent, name, ty> <- s.attrs, isFreeTextType(ty) };
 
     // for each entity
+   s.entities += {newEntity |<_, newEntity, _, _> <- nlpAttrs};
+    
    for (<ent, newEnt, name, ty> <- nlpAttrs) {
      	rel[str, str] analyses = getFreeTypeAnalyses(ty);
     	
