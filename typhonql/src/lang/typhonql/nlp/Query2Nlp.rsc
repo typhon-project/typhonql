@@ -218,7 +218,6 @@ tuple[NStat, Bindings] select2nlp((Query)`from <{Binding ","}+ bs> select <{Resu
            addResult(nPath("<y>", ["@id"]));
            for (<ent, str a, str _> <- s.attrs) {
              Id f = [Id]a;
-             addWith("<y>", env["<y>"], "<f>", s);
              addResult(nPath("<y>", split("$", "<f>")));
            }
          }
@@ -232,16 +231,16 @@ tuple[NStat, Bindings] select2nlp((Query)`from <{Binding ","}+ bs> select <{Resu
       }
       case x:(Expr)`<VId y>.<Id f>`: {
          log("##### record results: <y>.<f>");
-    
+         
          if (str ent := env["<y>"], <p, ent> <- s.placement) {
            addWith("<y>", env["<y>"], "<f>", s);
            addResult(nPath("<y>", split("$", "<f>")));
          }
          
-         // always add the @id
-         if (str ent := env["<y>"], <p, ent> <- s.placement) {
-            addResult(nPath("<y>", ["@id"]));
-         }
+          // always add the @id
+          //if (str ent := env["<y>"], <p, ent> <- s.placement) {
+          //   addResult(nPath("<y>", ["@id"]));
+          //}
       }
       
       // TODO missing case for path longer than 1
@@ -255,7 +254,8 @@ tuple[NStat, Bindings] select2nlp((Query)`from <{Binding ","}+ bs> select <{Resu
   }*/
   
   q.from = nFrom("<myBindings[0].entity>", "<myBindings[0].var>");
-
+  
+ 
   for ((Result)`<Expr e>` <- rs) {
     switch (e) {
       case (Expr)`#done(<Expr x>)`: ;
