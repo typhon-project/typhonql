@@ -211,7 +211,6 @@ void setup(PolystoreInstance p, bool doTest) {
 	
 	p.runUpdate((Request) `insert Company { @id: #ibm, name: "IBM", mission: "Be better", vision: "Forever"}`);
     
-    // Not done for now because NLAE gets stuck with NER
     p.runUpdate((Request) `insert Foundation { @id: #wwf, name: "WWF", mission: "Better world", vision: "We are the world"}`);
     p.runUpdate((Request) `insert Foundation { @id: #greenpeace, name: "Greenpeace", mission: "Green peace", vision: "Peace should be green"}`);
     
@@ -226,16 +225,6 @@ void setup(PolystoreInstance p, bool doTest) {
 	    	[U("wwf"), "Better world"],
 	    	[U("greenpeace"), "Green peace"]]>); 
 	} 
-	
-	/*p.runUpdate((Request) `insert Company { @id: #ibm, name: "IBM", mission: "Be better", vision: "More machines" }`);
-	
-	if (doTest) {
-	  rs = p.runQuery((Request)`from Company c select c.@id`);
-	  p.assertResultEquals("company was inserted", rs, <["c.@id"], [
-	    [U("ibm")]]>);
-	}
-	*/
-	
 }
 
 void resetDatabases(PolystoreInstance p) {
