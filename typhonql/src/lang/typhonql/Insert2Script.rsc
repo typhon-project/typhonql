@@ -214,7 +214,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
     if ((Expr) `<Str string>` := val) {
     	analyses = getFreeTypeAnalyses(entity, kv has key ? "<kv.key>" : "@id", s);
     	str json = getProcessJson(nlpMe, entity, attr, "<string.contents>", analyses);
-    	println(json);
+    	//println(json);
     	addSteps([step("nlae", nlp(process(json)), myParams)]);
     }
     else
