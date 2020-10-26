@@ -50,6 +50,8 @@ public class NlpOperations implements Operations, AutoCloseable{
 			password = cd.getPassword();
 		}
 		else {
+			// Default values for testing
+			// TODO remove
 			host = NLP_DEFAULT_HOST;
 			port = NLP_DEFAULT_PORT;
 			user = null;
