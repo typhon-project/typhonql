@@ -339,7 +339,6 @@ void deleteKids(
   DeleteContext ctx
 ) {
   str json = getDeleteJson(ctx.nlpMe, to);
-  println(json);
   ctx.addSteps([step("nlae", nlp(delete(json)), ctx.myParams)]);  
 }
 
@@ -349,7 +348,6 @@ void deleteKids(
   DeleteContext ctx
 ) {
   str json = getDeleteJson(ctx.nlpMe, to);
-  println(json);
   ctx.addSteps([step("nlae", nlp(delete(json)), ctx.myParams)]); 
 }
 
