@@ -11,7 +11,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -134,8 +133,11 @@ public class NlpEngine extends Engine {
             protected void performUpdate(Map<String, Object> values) {
                 String json = replaceInUpdateJson(query, values);
                 
-                doPost("processText", json);
-					
+                // TODO this is a workaround to overcome the fact that
+                // the NLP engine is blocking
+                Thread t = new Thread(() -> doPost("processText", json));
+                t.setDaemon(true);
+				t.start();	
             }
 		}.scheduleUpdate();	
 	}
