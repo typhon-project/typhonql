@@ -49,6 +49,7 @@ import lang::typhonql::util::Log;
 
 import IO;
 import List;
+import String;
 
 Env queryEnvAndDyn(Query q) = queryEnvAndDyn(q.bindings);
 
@@ -163,7 +164,7 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<nlp(), str dbName>, Schema s,
   if (nlpStat.selectors == []) {
     return [];
   }
-  println(pp(nlpStat));
+ 
   return [step(dbName, nlp(query(pp(nlpStat))), params
      , signature=
          filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s)
