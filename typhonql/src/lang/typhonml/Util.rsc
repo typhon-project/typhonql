@@ -27,6 +27,7 @@ import lang::ecore::Refs;
 import ParseTree;
 import IO;
 import Set;
+import Relation;
 import List;
 import String;
 import Node;
@@ -50,7 +51,7 @@ alias Attrs = rel[str from, str name, str \type];
 alias ChangeOps = list[ChangeOp];
 alias ChangeOp = tuple[str name, list[str] properties];
 
-data DB = cassandra() | mongodb() | neo4j() | sql() | hyperj() | recombine() | unknown() | typhon();
+data DB = cassandra() | mongodb() | neo4j() | sql() | hyperj() | recombine() | unknown() | typhon() | nlp();
 
 alias Place = tuple[DB db, str name];
 
@@ -61,6 +62,7 @@ alias Pragmas = rel[str dbName, Option option];
 data Option
   = indexSpec(str name, str entity, list[str] features)
   | graphSpec(rel[str entity, str from, str to] edges)
+  | nlpSpec(rel[str entity, str field, str analysis, str workflow] workflows)
   ;
 
 str ppSchema(Schema s) {
@@ -213,6 +215,10 @@ Schema inlineCustomDataTypes(Schema s) {
 }
 
 Schema inferAuxEntities(Schema s) {
+	return inferKeyValueAuxEntities(inferNlpAuxEntities(s));
+}
+
+Schema inferKeyValueAuxEntities(Schema s) {
   /*
   KeyValueDB normalization:
    - attributes that are mapped to cassandra:
@@ -233,6 +239,8 @@ Schema inferAuxEntities(Schema s) {
   for (<str db, str ent> <- cassandraAttrs<0,1>) {
     set[str] names = cassandraAttrs[db][ent];
     str newEnt = keyValEntity(db, ent);
+    
+    s.entities += {newEnt};
 
     // create new attrs, while old attrs still there
     Attrs newAttrs = { <newEnt, n, t> | str n <- names,
@@ -254,6 +262,72 @@ Schema inferAuxEntities(Schema s) {
 
 
 
+  return s;
+}
+
+public str nlpEntity(str ent) = "<ent>___NLP";
+public str nlpRelation() = "NLP___";
+public str nlpCustomDataType(str entity, str field) = "NLP___<entity>_<field>";
+public bool isNlpCustomDataType(str name) = startsWith(name, "NLP___");
+
+public map[str, Attrs] customForNlpAnalysis = ( 
+	"SentimentAnalysis": {
+		<"SentimentAnalysis", "begin", "int">,
+		<"SentimentAnalysis", "end", "int">,
+		<"SentimentAnalysis", "Sentiment", "int">,
+		<"SentimentAnalysis", "SentimentLabel", "text">
+	}
+	,
+	"NamedEntityRecognition": {
+		<"NamedEntityRecognition", "begin", "int">,
+		<"NamedEntityRecognition", "end", "int">,
+		<"NamedEntityRecognition", "NamedEntity", "text">
+	});
+	
+public bool isFreeTextType(str ty) = startsWith(ty, "freetext");
+  
+public rel[str, str] getFreeTypeAnalyses(str ty) = 
+  {<analysis[0..leftBracketPos], analysis[(leftBracketPos+1)..-1]> | analysis <- split(", ", csv), leftBracketPos := findFirst(analysis, "[")}
+  when csv := ty[9..-1];
+		
+Schema inferNlpAuxEntities(Schema s) {
+  /*
+  NLP normalization:
+   - attributes that are mapped to NLP:
+      - remove them from entity
+      - add to new entity
+
+  */
+  
+  rel[str, str, str, str] nlpAttrs
+    = { <ent, nlpEntity(ent), name, ty> | a:<ent, name, ty> <- s.attrs, isFreeTextType(ty) };
+
+    // for each entity
+   s.entities += {newEntity |<_, newEntity, _, _> <- nlpAttrs};
+    
+   for (<ent, newEnt, name, ty> <- nlpAttrs) {
+     	rel[str, str] analyses = getFreeTypeAnalyses(ty);
+    	
+    	// fields of the virtual type
+   		s.customs += {*customForNlpAnalysis[analysis] | <analysis, _> <- analyses};
+   		
+   		// adding virtual entity for this attribute
+   		//s.customs += {<nlpAttributeType(ent, name), analysis, nlpAttributeAnalysisType(analysis)> |<analysis, _> <- analyses};
+   		s.attrs += {<newEnt, name, nlpCustomDataType(ent, name)>};
+   		s.customs += {<nlpCustomDataType(ent, name), analysis, analysis> | <analysis, _> <- analyses};
+   		
+   		//s.attrs -= {<ent, name, ty>};
+   		//s.attrs += {<ent, name, "text">};
+   		
+   		workflows = {<newEnt, name, analysis, w> | <analysis, w> <- analyses};
+   		
+    	s.pragmas += {<ent, nlpSpec(workflows)>};   
+  } 
+  for (<ent, newEnt> <- {<ent, newEnt> | <ent, newEnt, _, _> <- nlpAttrs}) {
+  	s.rels += {<ent, \one(), nlpRelation(), "", \one(), newEnt, true> };
+  	s.placement += {<<nlp(), ent>, newEnt>};
+  } 
+  
   return s;
 }
 

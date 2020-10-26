@@ -14,7 +14,7 @@
 * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
 ********************************************************************************/
 
-package nl.cwi.swat.typhonql.backend.rascal;
+package nl.cwi.swat.typhonql.backend.mongodb;
 
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +47,10 @@ import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Closables;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
-import nl.cwi.swat.typhonql.backend.mongodb.MongoDBEngine;
+import nl.cwi.swat.typhonql.backend.rascal.ConnectionData;
+import nl.cwi.swat.typhonql.backend.rascal.Operations;
+import nl.cwi.swat.typhonql.backend.rascal.Path;
+import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 
 public class MongoOperations implements Operations, AutoCloseable {
 

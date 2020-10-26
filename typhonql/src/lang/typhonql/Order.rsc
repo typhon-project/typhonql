@@ -168,7 +168,7 @@ DBPath navigate(str entity, list[str] path, Schema s) {
       return [<myPlace, entity>];
     }
     else { 
-      throw "No such field in schema: <head>";
+      throw "No such field <head> for entity <entity> in schema";
     }
   }
   else {

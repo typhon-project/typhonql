@@ -209,6 +209,26 @@ void setup(PolystoreInstance p, bool doTest) {
 	}
 	
 	
+	p.runUpdate((Request) `insert Company { @id: #ibm, name: "IBM", mission: "Be better", vision: "Forever"}`);
+    
+    p.runUpdate((Request) `insert Foundation { @id: #wwf, name: "WWF", mission: "Better world", vision: "We are the world"}`);
+    p.runUpdate((Request) `insert Foundation { @id: #greenpeace, name: "Greenpeace", mission: "Green peace", vision: "Peace should be green"}`);
+    
+    if (doTest) {
+  		rs = p.runQuery((Request)`from Company c select c.@id, c.mission`);
+  		p.assertResultEquals("company was inserted", rs, <["c.@id", "c.mission"], [
+	    	[U("ibm"), "Be better"]]>);
+	    
+	    // Not done for now because NLAE gets stuck with NER
+	    rs = p.runQuery((Request)`from Foundation f select f.@id`);
+	    p.assertResultEquals("foundation was inserted", rs, <["f.@id", "f.mission"], [
+	    	[U("wwf"), "Better world"],
+	    	[U("greenpeace"), "Green peace"]]>); 
+	} 
+}
+
+void resetDatabases(PolystoreInstance p) {
+	p.resetDatabases();
 }
 
 void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
@@ -282,6 +302,46 @@ void testLoneVars(PolystoreInstance p) {
   p.assertEquals("all features from biography retrieved", rs, <["b.content", "b.user"]
     , [["Chilean", U("pablo")]]>);
     
+}
+
+void testSelectFreetextAttributes(PolystoreInstance p) {
+  rs = p.runQuery((Request) `from Company c select c.@id, c.mission, c.mission.SentimentAnalysis.Sentiment where c.mission.SentimentAnalysis.Sentiment \>= 1 && c.vision.SentimentAnalysis.Sentiment \>= 2`);
+  
+  // We do not know yet the expected result
+  //p.assertResultEquals("company retrieved", rs, <["c.@id"], [
+  //	    [U("ibm"), "Be better", 1]]>); 
+                        
+}
+
+void testSelectFreetextAttributes2(PolystoreInstance p) {
+  rs = p.runQuery((Request) `from Foundation f select f.@id, f.mission, f.mission.SentimentAnalysis.Sentiment where f.mission.SentimentAnalysis.begin \>= 1 && f.mission.NamedEntityRecognition.begin \>= 2`);
+  // We do not know yet the expected result
+  //p.assertResultEquals("foundation retrieved", rs, <["f.@id"], [
+  //    [U("ibm"), "Better world", 1]]>); 
+                        
+}
+
+void testSelectFreetextAttributes3(PolystoreInstance p) {
+  rs = p.runQuery((Request) `from Foundation f select f.@id, f.mission, f.mission.SentimentAnalysis.Sentiment, f.mission.NamedEntityRecognition.NamedEntity where f.mission.SentimentAnalysis.begin \>= 1 && f.mission.NamedEntityRecognition.begin \>= 2`);
+  println(rs);
+  // We do not know yet the expected result
+  //p.assertResultEquals("foundation retrieved", rs, <["f.@id"], [
+  //    [U("ibm"), "Better world", 1]]>); 
+                        
+}
+void testInsertFreetextAttributes(PolystoreInstance p) {
+	p.runUpdate((Request) `insert Company { @id: #ibm, name: "IBM", mission: "Be better", vision: "Forever"}`);
+   	
+   	rs = p.runQuery((Request)`from Company c select c.@id, c.mission`);
+  	p.assertResultEquals("company was inserted", rs, <["c.@id", "c.mission"], [
+	    	[U("ibm"), "Be better"]]>);
+	 
+}
+
+void testDeleteFreetextAttributes(PolystoreInstance p) {
+    p.runUpdate((Request) `delete Company c where c.@id == #ibm`);
+	rs = p.runQuery((Request) `from Company c select c.@id where  c.@id == #ibm`);
+	p.assertResultEquals("company (with free text attribtues) deleted", rs, <["c.@id"], []>);
 }
 
 void testCustomDataTypes(PolystoreInstance p) {
@@ -989,7 +1049,8 @@ void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG(), bool runTest
 }
 
 Schema fetchSchema() {
-	return executer().fetchSchema();
+	Schema s = executer().fetchSchema();
+	return s;
 }
 
 void printSchema() {

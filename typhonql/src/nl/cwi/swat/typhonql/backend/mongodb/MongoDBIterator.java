@@ -17,7 +17,6 @@
 package nl.cwi.swat.typhonql.backend.mongodb;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
@@ -25,7 +24,6 @@ import java.util.UUID;
 
 import org.bson.Document;
 import org.bson.types.BSONTimestamp;
-import org.bson.types.Binary;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LinearRing;
@@ -38,7 +36,6 @@ import com.mongodb.client.MongoIterable;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 
-import lang.typhonql.util.MakeUUID;
 import nl.cwi.swat.typhonql.backend.ResultIterator;
 
 public class MongoDBIterator implements ResultIterator {
