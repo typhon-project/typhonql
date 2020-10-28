@@ -4,9 +4,15 @@ import lang::typhonql::Expr;
 import DateTime;
 import String;
 import ParseTree;
-import IO;
 
-int toInt(Tree t) = toInt("<t>");
+int toInt(Tree t) = toInt(removeZeroPrefix("<t>"));
+
+str removeZeroPrefix(str s) {
+    if (/^0+<after:.+>$/ := s) {
+        return after;
+    }
+    return s;
+}
 
 datetime convert((Expr)`<DateTime dt>`) = convert(dt);
 datetime convert((DateTime)`<JustDate dt>`) = convert(dt);
@@ -27,10 +33,17 @@ int factor((ZoneOffset)`+<Hour _>:<Minute _>`) = 1;
 datetime convert((DateAndTime)`$<DatePart date>T<TimePart time><ZoneOffset offset>$`) 
     = createDateTime(
         toInt(date.y), toInt(date.m), toInt(date.d),
-        toInt(time.h), toInt(time.m), toInt(time.s), ((ms <- time.ms) ? toInt("<ms>"[1..]) : 0),
+        toInt(time.h), toInt(time.m), toInt(time.s), msToInt(time.ms),
         (zuluTime ?  0 : factor(offset) * toInt(offset.h)), (zuluTime ? 0 : factor(offset) * toInt(offset.m))
     )
     when zuluTime := ((ZoneOffset)`Z` := offset);
+    
+int msToInt(Millisecond? ms) {
+    if (m <- ms) {
+        return toInt(removeZeroPrefix("<m>"[1..]));
+    }
+    return 0;
+}
 
 default datetime convert(Tree t) {
     throw "Forgot to support <t>";
