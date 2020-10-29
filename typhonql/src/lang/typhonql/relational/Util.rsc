@@ -19,6 +19,7 @@ module lang::typhonql::relational::Util
 import lang::typhonql::Expr;
 import lang::typhonql::util::Strings;
 import lang::typhonql::util::Dates;
+import lang::typhonql::util::UUID;
 import lang::typhonql::relational::SQL;
 import List;
 import String;
@@ -30,11 +31,19 @@ SQLExpr pointer2sql(pointerPlaceholder(str name)) = SQLExpr::placeholder(name = 
 
 str tableName(str entity) = "<entity>";
 
-str columnName(str attr, str entity) = "<entity>.<attr>";
+str columnName(str attr, str entity) = fixLongName("<entity>.<attr>", attr);
 
-str columnName(str attr, str entity, str custom, str element) = "<entity>.<attr>.<custom>.<element>";
+str columnName(str attr, str entity, str custom, str element) = fixLongName("<entity>.<attr>.<custom>.<element>", attr);
 
-str typhonId(str entity) = columnName("@id", entity); 
+
+str typhonId(str entity) = "<entity>.@id"; 
+
+str fixLongName(str name, str shortName) {
+    if (size(name) < 64) {
+        return name;
+    }
+    return "<shortName[..(64-37)]>_<hashUUID(name)>";
+}
 
 // we sort here to canonicalize the junction table name
 // and be independent of wether we navigate from either 
@@ -42,9 +51,9 @@ str typhonId(str entity) = columnName("@id", entity);
 str junctionTableName(str from, str fromRole, str to, str toRole) {
   lst = sort([from, to]);
   if (lst == [from, to]) {
-    return "<from>.<roleName(fromRole)>-<to>.<roleName(toRole)>";
+    return fixLongName("<from>.<roleName(fromRole)>-<to>.<roleName(toRole)>", "<from>-<to>");
   }
-  return  "<to>.<roleName(toRole)>-<from>.<roleName(fromRole)>";
+  return fixLongName("<to>.<roleName(toRole)>-<from>.<roleName(fromRole)>", "<to>-<from>");
 }
 
 str roleName(str role) = role == "" ? "unknown" : role;
