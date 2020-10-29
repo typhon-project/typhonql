@@ -9,6 +9,7 @@ services:
     ports:
       - target: 27017
         published: 27017
+    mem_limit: 512m
   morestuff:
     image: neo4j:latest
     environment:
@@ -21,6 +22,7 @@ services:
     ports:
       - target: 7687
         published: 7687
+    mem_limit: 1G
   inventory:
     image: mariadb:latest
     environment:
@@ -28,14 +30,16 @@ services:
     ports:
       - target: 3306
         published: 3306
+    mem_limit: 512m
   stuff:
     image: cassandra:latest
     environment:
-      MAX_HEAP_SIZE: 700M
+      MAX_HEAP_SIZE: 600M
       HEAP_NEWSIZE: 300M
     ports:
       - target: 9042
         published: 9042
+    mem_limit: 1g
   polystore-mongo:
     image: mongo:latest
     environment:
@@ -44,6 +48,7 @@ services:
       MONGO_INITDB_DATABASE: admin
     volumes:
       - ./models/:/docker-entrypoint-initdb.d
+    mem_limit: 256m
   typhon-polystore-service:
     image: clms/typhon-polystore-api:latest
     ports: 
@@ -59,16 +64,15 @@ services:
       - /app/resources:/app/classes:/app/libs/*
       - com.clms.typhonapi.Application
     restart: always
+    mem_limit: 512m
   polystore-ui:
     image: clms/typhon-polystore-ui:latest
-    environment:
-      API_PORT: 8080
-      API_HOST: typhon-polystore-service
     depends_on: 
       - typhon-polystore-service
     ports:
       - target: 4200 
         published: 4200
+    mem_limit: 512m
   typhonql-server:
     image: swatengineering/typhonql-server:dev
     environment:
@@ -77,3 +81,4 @@ services:
     ports:
       - target: 7000
         published: 7000
+    mem_limit: 2g
