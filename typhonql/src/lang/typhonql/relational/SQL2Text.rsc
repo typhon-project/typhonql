@@ -17,6 +17,7 @@
 module lang::typhonql::relational::SQL2Text
 
 import lang::typhonql::relational::SQL;
+import lang::typhonql::relational::Util;
 import lang::typhonml::Util;
 import lang::typhonql::util::Dates;
 import List;
@@ -219,7 +220,7 @@ str pp(sUuid(str uuid)) = "unhex(\'<replaceAll("<uuid>", "-", "")>\')";
 str pp(primaryKey(str c)) = "primary key (<q(c)>)";
 
 str pp(foreignKey(str c, str p, str k, OnDelete od)) 
-  = "foreign key (<q(c)>) 
+  = "foreign key `<fixLongName("fk-<c>-<p>-<k>", "fk-<k>")>` (<q(c)>) 
     '  references <q(p)>(<q(k)>)<pp(od)>";
 
 
@@ -227,7 +228,7 @@ str pp(index(_, spatial(), list[str] columns))
     = intercalate(", ", ["spatial index(<q(c)>)" | c <- columns]);
 
 str pp(index(str indexName, IndexKind kind, list[str] columns))
-    = "<pp(kind)> index <q(indexName)>(<intercalate(", ", [q(c) | c <- columns])>)"
+    = "<pp(kind)> index <q(fixLongName(indexName, indexName))>(<intercalate(", ", [q(c) | c <- columns])>)"
     when kind != spatial();
     
 // IndexKind
