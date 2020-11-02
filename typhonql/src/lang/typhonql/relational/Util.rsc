@@ -63,7 +63,7 @@ str junctionFkName(str from, str role)
 
 // todo: since we can only be contained by one thing, we can just do parent.@id as foreign keys.
 // but not with junctions because they can be between the same thing
-str fkName(str from, str to, str role) = columnName(role, "<from>.<to>");
+str fkName(str from, str to, str role) = fixLongName(columnName(role, "<from>.<to>"), role);
 
 //str fkName(str field) = "<field>_id";
 
