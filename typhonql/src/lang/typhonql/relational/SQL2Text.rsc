@@ -20,6 +20,7 @@ import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::Util;
 import lang::typhonml::Util;
 import lang::typhonql::util::Dates;
+import lang::typhonql::util::UUID;
 import List;
 import String;
 import DateTime;
@@ -213,7 +214,7 @@ str pp(sUuid(str uuid)) = "unhex(\'<replaceAll("<uuid>", "-", "")>\')";
 str pp(primaryKey(str c)) = "primary key (<q(c)>)";
 
 str pp(foreignKey(str c, str p, str k, OnDelete od)) 
-  = "foreign key `<fixLongName("fk-<c>-<p>-<k>", "fk-<k>")>` (<q(c)>) 
+  = "foreign key `fk-<makeUUID()>` (<q(c)>) 
     '  references <q(p)>(<q(k)>)<pp(od)>";
 
 
