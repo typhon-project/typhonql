@@ -323,10 +323,14 @@ void collectBuildinFunction(Tree current, (VId)`distance`, list[Expr] args, Coll
     }
 }
 
-void collectBuildinFunction(Tree current, (VId)`count`, list[Expr] args, Collector c) {
-  // todo
+void collectBuildinFunction(Tree current, VId f, list[Expr] args, Collector c) {
+  if ("<f>" in {"sum", "count", "max", "min", "avg"}) {
+    ; // todo
+  }
+  else {
+    c.report(error(current, "Unknown built-in function"));
+  }
 }
-
 
 
 default void collectBuildinFunction(Tree current, _, _, Collector c) {
@@ -517,9 +521,15 @@ void collect(current:(Query)`from <{Binding ","}+ bindings> select <{Result ","}
     c.leaveScope(current);
 }
 
-void collect(Result current, Collector c) {
-    // TODO: deal with aliased results: ensure they are unique.
-    collect(current.expr, c);
+void collect((Result)`<Expr e>`, Collector c) {
+    collect(e, c);
+}
+
+void collect((Result)`<Expr e> as <VId x>`, Collector c) {
+    collect(e, c);
+    // TODO: how to get the type of e here?
+    //c.define("<x>", tableRole(), x, intType());
+    
 }
 
 void collect(current:(Binding)`<EId entity> <VId name>`, Collector c) {
