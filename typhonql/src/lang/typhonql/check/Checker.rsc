@@ -515,17 +515,14 @@ void collectEntityType(EId entityName, Collector c) {
 /** Query **/
 /***********/
 
-void collect(current:(Query)`from <{Binding ","}+ bindings> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>`, Collector c) {
+void collect(current:(Query)`from <{Binding ","}+ bindings> select <{Result ","}+ selected> <Where? where> <Agg* aggs>`, Collector c) {
     c.enterScope(current);
     collect(bindings, selected, c);
     if (w <- where) {
         collect(w, c);
     }
-    if (g <- groupBy) {
-        collect(g, c);
-    }
-    if (ob <- orderBy) {
-        collect(ob, c);
+    for (Agg a <- aggs) {
+      collect(a, c);
     }
     c.leaveScope(current);
 }
@@ -554,14 +551,11 @@ void collect((Where)`where <{Expr ","}+ clauses>`, Collector c) {
     }
 }
 
-void collect((GroupBy)`group <{Expr ","}+ vars> <Having? having>`, Collector c) {
+void collect((Agg)`group <{Expr ","}+ vars>`, Collector c) {
     collect(vars, c);
-    if (h <- having) {
-        collect(h, c);
-    }
 }
 
-void collect((Having)`having <{Expr ","}+ clauses>`, Collector c) {
+void collect((Agg)`having <{Expr ","}+ clauses>`, Collector c) {
     // TODO: enable this if aliases work.
     //collect(clauses, c);
     //for (cl <- clauses) {
@@ -569,8 +563,12 @@ void collect((Having)`having <{Expr ","}+ clauses>`, Collector c) {
     //}
 }
 
-void collect((OrderBy)`order <{Expr ","}+ vars>`, Collector c) {
+void collect((Agg)`order <{Expr ","}+ vars>`, Collector c) {
     collect(vars, c);
+}
+
+void collect((Agg)`limit <Expr e>`, Collector c) {
+    collect(e, c);
 }
 
 /*******

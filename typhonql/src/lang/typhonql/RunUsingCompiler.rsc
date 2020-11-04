@@ -103,7 +103,7 @@ list[str] runUpdate(Request r, Schema s, Schema sPlain, Session session, bool ru
 }
 
 void runScriptForQuery(Request r, Schema sch, Schema schPlain, Session session,bool runChecker = true, Log log = noLog) {
-	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>` := r) {
+	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <Agg* aggs>` := r) {
         startScript = getNanoTime();
         if (runChecker) {
             validateQuery(r, schPlain, log);

@@ -59,34 +59,16 @@ having ... (includes xi's from fi(...)...)
 
 */
 
-bool hasAggregation(Query q) = true
-  when
-    Result r <- q.selected,
-    (Result)`<VId agg>(<Expr e>) as <VId x>` := r;
-  
-  
-default bool hasAggregation(Query _) = false;
+bool hasAggregation(Query q) = (Agg _ <- q.aggClauses);
 
 
-list[Expr] whereExprs((Query)`from <{Binding ","}+ _> select <{Result ","}+ _> where <{Expr ","}+ conds>`)
+list[Expr] whereExprs((Query)`from <{Binding ","}+ _> select <{Result ","}+ _> where <{Expr ","}+ conds> <Agg* _>`)
   = [ c | Expr c <- conds ];
+
+default list[Expr] whereExprs(Query _)
+  = [];
   
-list[Expr] whereExprs((Query)`from <{Binding ","}+ _> select <{Result ","}+ _> where <{Expr ","}+ conds> <GroupBy gb>`)
-  = [ c | Expr c <- conds ];
   
-default list[Expr] whereExprs(Query _) = [];
-
-
-Maybe[GroupBy] getGroupBy((Query)`from <{Binding ","}+ _> select <{Result ","}+ _> <GroupBy gb>`)
-  = just(gb);
-  
-Maybe[GroupBy] getGroupBy((Query)`from <{Binding ","}+ _> select <{Result ","}+ _> <Where _> <GroupBy gb>`)
-  = just(gb);
-
-default Maybe[GroupBy] getGroupBy(Query _)
-  = nothing();
-   
-
 
 // we assume agg can be count, max, min, sum, avg
 Result liftAgg((Result)`<VId agg>(<Expr e>) as <VId x>`) 
@@ -97,15 +79,12 @@ default Result liftAgg(Result r) = r;
 
 
 
-// buildQuery(list[Binding] bs, list[Result] rs, list[Expr] ws) {
-
 tuple[Request, Maybe[Request]] extractAggregation(r:(Request)`<Query q>`) {
   
   if (hasAggregation(q)) {
     // deal with it
     
     list[Result] lifted = [ liftAgg(r) | Result r <- q.selected ];
-  
      
     Query newQ = buildQuery([ b | Binding b <- q.bindings ]
       , lifted, whereExprs(q)); // NB: this is without group-by if any
@@ -114,9 +93,9 @@ tuple[Request, Maybe[Request]] extractAggregation(r:(Request)`<Query q>`) {
       , [ r | Result r <- q.selected ] // the originals
       ,  []);
       
-    if (just(GroupBy gb) := getGroupBy(q)) {
+    if (Agg* aggs := q.aggClauses) {
       if ((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ conds>` := aggQ) {
-        aggQ = (Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ conds> <GroupBy gb>`;
+        aggQ = (Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ conds> <Agg* aggs>`;
       }
       else {
        throw "BUG: buildQuery returns Query that\'s not well-formed: <aggQ>";
@@ -190,16 +169,16 @@ map[Expr, int] mapGroupedToPos(list[Expr] gbs, list[Result] rs) {
   return result;
 } 
 
-tuple[list[Result], list[Expr], list[Expr]] decomposeAgg(q:(Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true <GroupBy gb>`) {
-  <gbs, hs> = decomposeGroupBy(gb);
-  return <[ r | Result r <- rs ], gbs, hs>;
-}
-
-tuple[list[Expr], list[Expr]] decomposeGroupBy((GroupBy)`group <{Expr ","}+ gbs>`)
-  = <[ gb | Expr gb <- gbs ], []>;
-
-tuple[list[Expr], list[Expr]] decomposeGroupBy((GroupBy)`group <{Expr ","}+ gbs> having <{Expr ","}+ hs>`)
-  = <[ gb | Expr gb <- gbs ], [ h | Expr h <- hs ]>;
+//tuple[list[Result], list[Expr], list[Expr]] decomposeAgg(q:(Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true <GroupBy gb>`) {
+//  <gbs, hs> = decomposeGroupBy(gb);
+//  return <[ r | Result r <- rs ], gbs, hs>;
+//}
+//
+//tuple[list[Expr], list[Expr]] decomposeGroupBy((Agg)`group <{Expr ","}+ gbs>`)
+//  = <[ gb | Expr gb <- gbs ], []>;
+//
+//tuple[list[Expr], list[Expr]] decomposeGroupBy((Agg)`group <{Expr ","}+ gbs> having <{Expr ","}+ hs>`)
+//  = <[ gb | Expr gb <- gbs ], [ h | Expr h <- hs ]>;
 
 
 str aggregationClassName(bool suffix = false) = "AggregateIt<suffix ? "_" : "">";
@@ -208,7 +187,9 @@ str aggregationPkg() = "nl.cwi.swat.typhonql.backend.rascal";
 
 // this function assumes it is an aggregation query as result of extraction.
 str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
-  <rs, gbs, hs> = decomposeAgg(q);
+  //<rs, gbs, hs> = decomposeAgg(q);
+  
+  list[Result] rs = [ r | Result r <- q.selected ];
 
   // TODO: to save memory: the shared fields via group by are already
   // in the key of the groupBy map, so don't have to be in 
@@ -232,7 +213,7 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     '       java.util.stream.Stream\<nl.cwi.swat.typhonql.backend.Record\> $rows) {
     '     //System.out.println(\"FIELDS: \" + $fields);
     '
-    '     <groupBysToJava(gbs, rs)>
+    '     <groupBysToJava([ e | (Agg)`group <{Expr ","}+ es>` <- q.aggClauses, Expr e <- es ], rs)>
     '     //System.out.println($grouped);
     '      
     '     java.util.List\<java.lang.Object[]\> $result = new java.util.ArrayList\<\>();
@@ -240,9 +221,7 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     '        java.util.List\<nl.cwi.swat.typhonql.backend.Record\> $records = $grouped.get($k);
     '        nl.cwi.swat.typhonql.backend.Record $key = $records.get(0);
     '        <aggs2vars(rs)>
-    '        <if (hs != []) {>
-    '        if (<havings2conds(hs)>)
-    '        <}>{
+    '        if (<havings2conds([ e | (Agg)`having <{Expr ","}+ es>` <- q.aggClauses, Expr e <- es ])>) {
     '          $result.add(<results2array(rs)>);
     '        }
     '     }
@@ -277,7 +256,7 @@ default str result2java(Result _, int pos) = "$key.getObject($fields.get(<pos>))
 
 
 str havings2conds(list[Expr] hs)
-  = intercalate(" && ", [ having2cond(h) | Expr h <- hs ]);
+  = ( "true" | "<it> && <having2cond(h)>" | Expr h <- hs );
   
 // havings may only refer to aggregated data
 // and in our case this is always aliased, so
