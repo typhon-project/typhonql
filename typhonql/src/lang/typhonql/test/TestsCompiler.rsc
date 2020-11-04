@@ -259,6 +259,11 @@ void testBasicAggregation(PolystoreInstance p) {
   //rs = p.runQuery((Request)`from Item i select i.product, sum(i.product.price) as total group i.product`);
   //p.assertResultEquals("item prices summed correctly thru navigation", rs, <["i.product", "total"], 
   //  [[U("tv"), 4 * 20], [U("radio"), 2 * 30]]>);
+
+  rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
+                           'where i.product == p group i.product having total \> 60`);
+  p.assertResultEquals("item prices summed and larger than 60", rs, <["i.product", "total"], 
+    [[U("tv"), 4 * 20]]>);
     
 }
 
