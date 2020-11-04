@@ -218,9 +218,16 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
 }
 
 void testBasicAggregation(PolystoreInstance p) {
+
+  // select `Item.shelf`, count(`Item.@id`) from Item group by `Item.shelf`;
   rs = p.runQuery((Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf`);
   p.assertResultEquals("shelf items counted correctly", rs, <["i.shelf", "numOfItems"], 
-    [[1, 2], [2, 2], [3,3]]>);
+    [[1, 2], [2, 2], [3,2]]>);
+    
+  rs = p.runQuery((Request)`from Product p select p.@id, count(p.inventory) as numOfItems group p.@id`);  
+  p.assertResultEquals("product inventory items counted correctly", rs, <["p.@id", "numOfItems"], 
+    [[U("tv"), 4], [U("radio"), 2]]>);
+    
 }
 
 void testMultiVarOccurencesMapToSamePlaceholder(PolystoreInstance p) {
