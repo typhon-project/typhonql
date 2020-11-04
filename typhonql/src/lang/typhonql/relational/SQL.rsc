@@ -41,6 +41,7 @@ data Set
 data Alter
   = addConstraint(TableConstraint constraint)
   | dropConstraint(str constraintName)
+  | dropIndex(str indexName)
   | addColumn(Column column)
   | dropColumn(str columnName)
   | renameColumn(Column column, str newName)

@@ -21,10 +21,13 @@ extend lang::typhonql::Expr;
 syntax Statement
   = \createEntity: "create" EId eId "at" Id db
   | \createAttribute: "create" EId eId "." Id name ":" Type typ
+  | \createAttributeKeyValue: "create" EId eId "." Id name ":" Type typ "forKV" Id kvDb
   | \createRelation: "create" EId eId "." Id relation Inverse? inverse Arrow EId target "[" CardinalityEnd lower ".." CardinalityEnd upper "]"
+  | \createIndex: "create" "index" Id indexName "for" EId eId "."  "{" {Id ","}+ attributes "}" 
   | \dropEntity: "drop" EId eId
   | \dropAttribute: "drop" "attribute" EId eId "." Id name
   | \dropRelation: "drop" "relation" EId eId "." Id name
+  | \dropIndex: "drop" "index" EId eId "." Id indexName
   | \renameEntity: "rename" EId eId "to" EId newEntityName
   | \renameAttribute: "rename" "attribute" EId eId "." Id name"to" Id newName  
   | \renameRelation: "rename" "relation" EId eId  "." Id name "to" Id newName  
@@ -54,4 +57,5 @@ lexical Arrow = "-\>" | ":-\>";
 lexical CardinalityEnd = [0-1] | "*";
   
 bool isDDL(Statement s) = s is \createEntity || s is \createAttribute || s is \createRelation
-  || s is \dropEntity || s is \dropAttribute || s is \dropRelation || s is \renameAttribute || s is \renameRelation; 
+  || s is \dropEntity || s is \dropAttribute || s is \dropRelation || s is \renameAttribute || s is \renameRelation
+  || s is \createIndex || s is \dropIndex || s is \createAttributeKeyValue ; 

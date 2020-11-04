@@ -42,6 +42,8 @@ import lang::typhonql::neo4j::Neo;
 import lang::typhonql::neo4j::Neo2Text;
 import lang::typhonql::neo4j::NeoUtil;
 
+import lang::typhonql::nlp::Nlp;
+
 import IO;
 import ValueIO;
 import List;
@@ -67,6 +69,7 @@ alias InsertContext = tuple[
   DBObject mongoMe,
   CQLExpr cqlMe,
   NeoExpr neoMe,
+  NExpr nlpMe,
   void (list[Step]) addSteps,
   void (SQLStat(SQLStat)) updateSQLInsert,
   void (DBObject(DBObject)) updateMongoInsert,
@@ -89,13 +92,15 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   Place p = placeOf(entity, s);
   str myId = newParam();
   Bindings myParams = ( myId: generatedId(myId) | !hasId(kvs) );
+
   if (hasIdPlaceHolder(kvs)) {
     myId = evalIdPlaceHolder(kvs);
   }
-  SQLExpr sqlMe = hasId(kvs) && !hasIdPlaceHolder(kvs) ? lit(sUuid(evalId(kvs))) : SQLExpr::placeholder(name=myId);
-  DBObject mongoMe = hasId(kvs) && !hasIdPlaceHolder(kvs)  ? mUuid(evalId(kvs)) : DBObject::placeholder(name=myId);
-  CQLExpr cqlMe = hasId(kvs) && !hasIdPlaceHolder(kvs)  ? cTerm(cUUID(evalId(kvs))) : cBindMarker(name=myId);
-  NeoExpr neoMe = hasId(kvs) && !hasIdPlaceHolder(kvs)  ? nLit(nText(evalId(kvs))) : NeoExpr::nPlaceholder(name=myId);
+  NExpr nlpMe = hasId(kvs) ? nLiteral(evalId(kvs), "uuid") : NExpr::nPlaceholder(myId);
+  SQLExpr sqlMe = hasId(kvs) ? lit(sUuid(evalId(kvs))) : SQLExpr::placeholder(name=myId);
+  DBObject mongoMe = hasId(kvs) ? mUuid(evalId(kvs)) : DBObject::placeholder(name=myId);
+  CQLExpr cqlMe = hasId(kvs) ? cTerm(cUUID(evalId(kvs))) : cBindMarker(name=myId);
+  NeoExpr neoMe = hasId(kvs) ? nLit(nText(evalId(kvs))) : NeoExpr::nPlaceholder(name=myId);
 
   SQLStat theInsert = \insert(tableName("<e>"), [], []);
   DBObject theObject = object([ ]);
@@ -160,6 +165,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
     mongoMe,
     cqlMe,
     neoMe,
+    nlpMe,
     addSteps,
     updateSQLInsert,
     updateMongoInsert,
@@ -199,7 +205,22 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
     }
   }
   
-    
+  // Then we send off the freetext fields to the NLAE engine
+  
+  rel[str,str] analyses = {};
+  for (KeyVal kv <- kvs, isFreeTextAttr(entity, kv has key ? "<kv.key>" : "@id", s)) {
+  	str attr = "<kv.key>";
+    Expr val = kv.\value;
+    if ((Expr) `<Str string>` := val) {
+    	analyses = getFreeTypeAnalyses(entity, kv has key ? "<kv.key>" : "@id", s);
+    	str json = getProcessJson(nlpMe, entity, attr, "<string.contents>", analyses);
+    	//println(json);
+    	addSteps([step("nlae", nlp(process(json)), myParams)]);
+    }
+    else
+    	throw "Expression for a freetext attribute can only be a string literal";
+  } 
+  
   
   for ((KeyVal)`<Id x>: <Expr ref>` <- kvs) {
   	maybePointer = expr2pointer(ref);
@@ -725,7 +746,9 @@ Schema testSchema() = schema({
 
 /*
 void smoke2sqlWithAllOnDifferentSQLDB() {
-  s = schema({
+  s = schema(
+  { "Person", "Review", "Comment", "Reply" },
+  {
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
     <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,

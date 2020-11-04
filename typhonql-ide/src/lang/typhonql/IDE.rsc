@@ -157,11 +157,11 @@ default TreeSearchResult[Request] findRequest(_,_) = treeNotFound();
 data TableResultJSON = contents(list[str] columnNames, list[list[value]] values);
 
 void setupIDE(bool isDevMode = false) {
-  Schema sch = schema({}, {});
+  Schema sch = schema({}, {}, {});
   CheckerMLSchema cSch = <(), {}>;
   
   Schema currentSchema(Tree tree) {
-	if (schema({}, {}) := sch) {
+	if (schema({}, {}, {}) := sch) {
         <polystoreUri, user, password> = readTyphonConfig(tree@\loc);
         <sch, plainSch> = getSchema(polystoreUri, user, password);
         cSch = convertModel(plainSch);
@@ -179,7 +179,7 @@ void setupIDE(bool isDevMode = false) {
   
   
   void resetSchema() {
-    sch = schema({}, {});
+    sch = schema({}, {}, {});
     cSch = ();
   }
   

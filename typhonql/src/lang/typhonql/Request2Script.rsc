@@ -84,8 +84,9 @@ Script request2script(Request r, Schema s, Log log = noLog) {
       }
          
       list[Place] order = orderPlaces(r, s);
-      r = expandNavigation(inferKeyValLinks(expandLoneVars(addWhereIfAbsent(r), s), s), s);
+      r = expandNavigation(inferNlpLinks(inferKeyValLinks(expandLoneVars(addWhereIfAbsent(r), s), s), s), s);
       r = explicitJoinsInReachability(r, s);
+      r = eliminateCustomDataTypes(injectProperUUIDs(r), s);
       log("NORMALIZED: <r>");
       Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) 
          | Place p <- order, hitsBackend(r, p, s)]);
@@ -130,7 +131,9 @@ Script request2script(Request r, Schema s, Log log = noLog) {
 
 
 void smokeScript() {
-  s = schema({
+  s = schema(
+  { "Review", "Person", "Comment", "SomeStuff", "Cash", "Reply" },
+  {
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Person", zero_many(), "cash", "owner", \one(), "Cash", true>,
     <"Person", \one(), "SomeStuff__", "", \one(), "SomeStuff", true>,

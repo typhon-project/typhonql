@@ -17,8 +17,10 @@
 module lang::typhonql::relational::SQL2Text
 
 import lang::typhonql::relational::SQL;
+import lang::typhonql::relational::Util;
 import lang::typhonml::Util;
 import lang::typhonql::util::Dates;
+import lang::typhonql::util::UUID;
 import List;
 import String;
 import DateTime;
@@ -78,13 +80,20 @@ str pp(DropOption::restrict()) = "restrict";
 str pp(DropOption::cascade()) = "cascade";
 
 // Alter
-
+str pp(addConstraint(c:index(_, _, _)))
+  = "add 
+    '<pp(c)>";
+   
 str pp(addConstraint(TableConstraint c))
   = "add constraint 
-    '<pp(c)>";
+    '<pp(c)>"
+  when index(_, _, _) !:= c;
     
 str pp(dropConstraint(str name))
   = "drop constraint <q(name)>";
+  
+str pp(dropIndex(str name))
+  = "drop index <q(name)>";  
     
 str pp(addColumn(column(str name, ColumnType \type, list[ColumnConstraint] constraints)))
   = "add <q(name)> <pp(\type)>";
@@ -212,7 +221,7 @@ str pp(sUuid(str uuid)) = "unhex(\'<replaceAll("<uuid>", "-", "")>\')";
 str pp(primaryKey(str c)) = "primary key (<q(c)>)";
 
 str pp(foreignKey(str c, str p, str k, OnDelete od)) 
-  = "foreign key (<q(c)>) 
+  = "foreign key `fk-<makeUUID()>` (<q(c)>) 
     '  references <q(p)>(<q(k)>)<pp(od)>";
 
 
@@ -220,7 +229,7 @@ str pp(index(_, spatial(), list[str] columns))
     = intercalate(", ", ["spatial index(<q(c)>)" | c <- columns]);
 
 str pp(index(str indexName, IndexKind kind, list[str] columns))
-    = "<pp(kind)> index <q(indexName)>(<intercalate(", ", [q(c) | c <- columns])>)"
+    = "<pp(kind)> index <q(fixLongName(indexName, indexName))>(<intercalate(", ", [q(c) | c <- columns])>)"
     when kind != spatial();
     
 // IndexKind

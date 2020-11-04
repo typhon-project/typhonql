@@ -16,12 +16,10 @@
 
 package nl.cwi.swat.typhonql.backend.mariadb;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,7 +34,6 @@ import java.util.regex.Matcher;
 
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKBWriter;
-import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
 
 import lang.typhonql.util.MakeUUID;
 import nl.cwi.swat.typhonql.backend.Binding;

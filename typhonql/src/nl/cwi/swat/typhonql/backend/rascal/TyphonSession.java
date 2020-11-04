@@ -1,4 +1,5 @@
 /********************************************************************************
+
 * Copyright (c) 2018-2020 CWI & Swat.engineering 
 *
 * This program and the accompanying materials are made available under the
@@ -60,6 +61,10 @@ import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.Runner;
 import nl.cwi.swat.typhonql.backend.cassandra.CassandraOperations;
+import nl.cwi.swat.typhonql.backend.mariadb.MariaDBOperations;
+import nl.cwi.swat.typhonql.backend.mongodb.MongoOperations;
+import nl.cwi.swat.typhonql.backend.neo4j.Neo4JOperations;
+import nl.cwi.swat.typhonql.backend.nlp.NlpOperations;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
@@ -149,7 +154,7 @@ public class TyphonSession implements Operations {
 			String value = ((IString)cur.getValue()).getValue();
 			actualBlobMap.put(key, new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8)));
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, actualBlobMap, externalArguments, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, nlpConnections, actualBlobMap, externalArguments, ctx);
 	}
 
 	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, Map<String, InputStream> blobMap, Optional<ExternalArguments> externalArguments, IEvaluatorContext ctx) {
@@ -179,12 +184,12 @@ public class TyphonSession implements Operations {
 				throw new RuntimeException("Missing type: " + db.getDbms());
 			}
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, blobMap, externalArguments, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, nlpConnections, blobMap, externalArguments, ctx);
 	}
 
 	private SessionWrapper newSessionWrapper(Map<String, ConnectionData> mariaDbConnections,
 			Map<String, ConnectionData> mongoConnections, Map<String, ConnectionData> cassandraConnections, 
-			Map<String, ConnectionData> neoConnections, Map<String, InputStream> blobMap, 
+			Map<String, ConnectionData> neoConnections, Map<String, ConnectionData> nlpConnections, Map<String, InputStream> blobMap, 
 			Optional<ExternalArguments> externalArguments, IEvaluatorContext ctx) {
 		// checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function
@@ -223,12 +228,13 @@ public class TyphonSession implements Operations {
 		MongoOperations mongoOperations = new MongoOperations(mongoConnections);
 		CassandraOperations cassandra = new CassandraOperations(cassandraConnections);
 		Neo4JOperations neo = new Neo4JOperations(neoConnections);
+		NlpOperations nlp = new NlpOperations(nlpConnections);
 		state.addOpperations(mariaDBOperations);
 		state.addOpperations(mongoOperations);
 		state.addOpperations(cassandra);
 		state.addOpperations(neo);
+		state.addOpperations(nlp);
 		
-
 		return new SessionWrapper(vf.tuple(makeGetResult(state, getResultType, ctx),
 				makeGetJavaResult(state, getJavaResultType, ctx),
 				makeReadAndStore(store, script, state, readAndStoreType, ctx),
@@ -242,7 +248,8 @@ public class TyphonSession implements Operations {
 				mariaDBOperations.newSQLOperations(store, script, state, uuids, ctx, vf),
 				mongoOperations.newMongoOperations(store, script, state, uuids, ctx, vf),
 				cassandra.buildOperations(store, script, state, uuids, ctx, vf),
-				neo.newNeo4JOperations(store, script, state, uuids, ctx, vf)
+				neo.newNeo4JOperations(store, script, state, uuids, ctx, vf),
+				nlp.newNlpOperations(store, script, state, uuids, ctx, vf)
 				), state);
 	}
 

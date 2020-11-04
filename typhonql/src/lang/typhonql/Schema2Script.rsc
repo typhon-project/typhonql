@@ -83,12 +83,12 @@ list[Step] place2script(p:<mongodb(), str db>, Schema s, Log log = noLog) {
 
 
     // add geo indexes
-    steps += [step(db, mongo(createIndex(db, entity, "{\"<attr>\": \"2dsphere\"}")), ()) 
+    steps += [step(db, mongo(createIndex(db, entity, "<entity>_<attr>_spatial", "{\"<attr>\": \"2dsphere\"}")), ()) 
         | <str attr, str typ> <- s.attrs[entity], typ == "point" || typ == "polygon"];
         
     // add specified indexes    
-    steps += [step(db, mongo(createIndex(db, entity, "{\"<attrOrRef>\": 1}")), ())
-       | <db, indexSpec(str name, rel[str, str] ftrs)> <- s.pragmas, <entity, str attrOrRef> <- ftrs ];
+    steps += [step(db, mongo(createIndex(db, entity, "<entity>_<name>", "{ <intercalate(", ",["\"<attrOrRef>\": 1"| str attrOrRef <- ftrs])>}")), ())
+       | <db, indexSpec(str name, entity, list[str] ftrs)> <- s.pragmas];
           
   }
   
@@ -107,3 +107,5 @@ list[Step] place2script(p: <neo4j(), str db>, Schema s, Log log = noLog) {
 				[nLit(nBoolean(true))])))), ())];
 	return steps;
 }
+
+list[Step] place2script(p: <nlp(), str db>, Schema s, Log log = noLog) = [];
