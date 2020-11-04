@@ -534,11 +534,11 @@ void collect((Result)`<Expr e>`, Collector c) {
     collect(e, c);
 }
 
+
+
 void collect((Result)`<Expr e> as <VId x>`, Collector c) {
     collect(e, c);
-    // TODO: how to get the type of e here?
-    //c.define("<x>", tableRole(), x, intType());
-    
+	// TODO    
 }
 
 void collect(current:(Binding)`<EId entity> <VId name>`, Collector c) {
@@ -562,10 +562,11 @@ void collect((GroupBy)`group <{Expr ","}+ vars> <Having? having>`, Collector c) 
 }
 
 void collect((Having)`having <{Expr ","}+ clauses>`, Collector c) {
-    collect(clauses, c);
-    for (cl <- clauses) {
-        c.requireEqual(boolType(), cl, error(cl, "Having expects a boolean expression"));
-    }
+    // TODO: enable this if aliases work.
+    //collect(clauses, c);
+    //for (cl <- clauses) {
+    //    c.requireEqual(boolType(), cl, error(cl, "Having expects a boolean expression"));
+    //}
 }
 
 void collect((OrderBy)`order <{Expr ","}+ vars>`, Collector c) {
