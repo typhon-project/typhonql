@@ -228,6 +228,18 @@ void testBasicAggregation(PolystoreInstance p) {
   p.assertResultEquals("product inventory items counted correctly", rs, <["p.@id", "numOfItems"], 
     [[U("tv"), 4], [U("radio"), 2]]>);
     
+  // TODO: let type checker test at as-clauses are present
+  
+  rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total where i.product == p group i.product`);
+  p.assertResultEquals("item prices summed correctly", rs, <["i.product", "total"], 
+    [[U("tv"), 4 * 20], [U("radio"), 2 * 30]]>);
+    
+  // todo: sum(i.product.price)? that needs changing expandNavigation normalization (no; because of lifting)
+  // but it still does not work...
+  //rs = p.runQuery((Request)`from Item i select i.product, sum(i.product.price) as total group i.product`);
+  //p.assertResultEquals("item prices summed correctly thru navigation", rs, <["i.product", "total"], 
+  //  [[U("tv"), 4 * 20], [U("radio"), 2 * 30]]>);
+    
 }
 
 void testMultiVarOccurencesMapToSamePlaceholder(PolystoreInstance p) {
