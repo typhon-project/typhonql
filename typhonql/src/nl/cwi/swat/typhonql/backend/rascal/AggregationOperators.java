@@ -19,24 +19,24 @@ public class AggregationOperators {
 	}
 	
 	public static Object sum(List<Record> vals, Field field) {
-		return vals.stream().collect(Collectors.summingLong((Record x) -> ((Long)x.getObject(field))));
+		return vals.stream().collect(Collectors.summingInt((Record x) -> (Integer)x.getObject(field)));	
 	}
 	
 
 	public static Object avg(List<Record> vals, Field field) {
-		return vals.stream().collect(Collectors.averagingLong((Record x) -> ((Long)x.getObject(field))));
+		return vals.stream().collect(Collectors.averagingInt((Record x) -> ((Integer)x.getObject(field))));
 	}
 
 	
 	public static Object max(List<Record> vals, Field field) {
 		return vals.stream().collect(Collectors.maxBy(
-				(Record x, Record y) ->  ((Long)x.getObject(field)).compareTo((Long)y.getObject(field))
+				(Record x, Record y) ->  ((Integer)x.getObject(field)).compareTo((Integer)y.getObject(field))
 		));
 	}
 
 	public static Object min(List<Record> vals, Field field) {
 		return vals.stream().collect(Collectors.minBy(
-				(Record x, Record y) ->  ((Long)x.getObject(field)).compareTo((Long)y.getObject(field))
+				(Record x, Record y) ->  ((Integer)x.getObject(field)).compareTo((Integer)y.getObject(field))
 		));
 	}
 	
