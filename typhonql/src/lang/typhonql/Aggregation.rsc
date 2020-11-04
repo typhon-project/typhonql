@@ -230,8 +230,10 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     '   public java.util.stream.Stream\<java.lang.Object[]\> processStream(
     '       java.util.List\<nl.cwi.swat.typhonql.backend.Field\> $fields,
     '       java.util.stream.Stream\<nl.cwi.swat.typhonql.backend.Record\> $rows) {
-    '     
+    '     //System.out.println(\"FIELDS: \" + $fields);
+    '
     '     <groupBysToJava(gbs, rs)>
+    '     //System.out.println($grouped);
     '      
     '     java.util.List\<java.lang.Object[]\> $result = new java.util.ArrayList\<\>();
     '     for (java.util.List\<java.lang.Object\> $k: $grouped.keySet()) {
@@ -364,6 +366,8 @@ str aggs2vars(list[Result] rs) {
 
 str groupBysToGroupBys(list[Expr] gbs, map[Expr,int] pos) 
   = "$rows.collect(java.util.stream.Collectors.groupingBy((nl.cwi.swat.typhonql.backend.Record $x) -\> { 
+    '   //System.out.println(\"CURRENT RECORD: \" + $x);
+    '   //System.out.println(\"THE KEY: \" + java.util.Arrays.asList(<intercalate(", ", [ "$x.getObject($fields.get(<pos[gb]>))" | Expr gb <- gbs ])>));
     '   return java.util.Arrays.asList(<intercalate(", ", [ "$x.getObject($fields.get(<pos[gb]>))" | Expr gb <- gbs ])>); 
     '} , java.util.stream.Collectors.toList()))"; 
   
