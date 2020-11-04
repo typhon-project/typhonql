@@ -166,7 +166,11 @@ void testAggregationExtraction() {
   req = (Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf`; 
 
   printResult(extractAggregation(req));
-  
+
+
+  req = (Request)`from Item i, Product p select i.product, max(p.price) as total where i.product == p group i.product`;
+  printResult(extractAggregation(req));
+    
 }
 
 map[Expr, int] mapGroupedToPos(list[Expr] gbs, list[Result] rs) {
@@ -198,7 +202,7 @@ tuple[list[Expr], list[Expr]] decomposeGroupBy((GroupBy)`group <{Expr ","}+ gbs>
   = <[ gb | Expr gb <- gbs ], [ h | Expr h <- hs ]>;
 
 
-str aggregationClassName() = "AggregateIt";
+str aggregationClassName(bool suffix = false) = "AggregateIt<suffix ? "_" : "">";
 
 str aggregationPkg() = "nl.cwi.swat.typhonql.backend.rascal";
 
@@ -215,9 +219,9 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
   str javaCode =   
     "package <aggregationPkg()>;
     '
-    'public class <aggregationClassName()> implements <aggregationPkg()>.JavaOperationImplementation {
+    'public class <aggregationClassName(suffix=save)> implements <aggregationPkg()>.JavaOperationImplementation {
     '    
-    '   public <aggregationClassName()>(nl.cwi.swat.typhonql.backend.ResultStore store, nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState session
+    '   public <aggregationClassName(suffix=save)>(nl.cwi.swat.typhonql.backend.ResultStore store, nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState session
     '        , java.util.Map\<java.lang.String, java.util.UUID\> uuids) {
     '     // ???
     '   }
@@ -247,7 +251,7 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     
   if (save) {
     str path = replaceAll(aggregationPkg(), ".", "/");
-    writeFile(|project://typhonql/src/<path>/<aggregationClassName()>.java|, javaCode);
+    writeFile(|project://typhonql/src/<path>/<aggregationClassName(suffix=true)>.java|, javaCode);
   }  
     
   return javaCode;
