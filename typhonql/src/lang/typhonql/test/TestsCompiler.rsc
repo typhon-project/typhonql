@@ -789,7 +789,7 @@ void testGISonNeo(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Concordance c select c.@id where c.location in #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0))`);
   p.assertResultEquals("testGISonNeoLiteralPolygonRhs", rs, <["c.@id"], [[U("Pablo")]]>);
 
-  rs = p.runQuery((Request)`Concordance c select c.@id where c.location in c.availabilityRegion`);
+  rs = p.runQuery((Request)`from Concordance c select c.@id where c.location in c.availabilityRegion`);
   p.assertResultEquals("testGISonNeoJoin", rs, <["c.@id"], [[U("Pablo")]]>);
 
 
@@ -970,7 +970,7 @@ void testPreparedUpdatesSimpleMongoWithRefs(PolystoreInstance p) {
 						  [
 						   ["Awful TV", U("tv"), U("pablo"), "2020-01-02T12:22:00Z"],
 				           ["Excellent TV", U("tv"), U("davy"), "2020-01-02T12:22:00Z" ]]);
-	rs = p.runQuery((Request) `from Review r select r.content, r.user, r.product, r.posted, where r.product = #tv`);		    
+	rs = p.runQuery((Request) `from Review r select r.content, r.user, r.product, r.posted where r.product = #tv`);		    
 	p.assertResultEquals("prepared insert statement on mongo with references (simple)", rs,   
 		<["r.content","r.user","r.product", "r.posted"],
 		[["Good TV", U("pablo"), U("tv"), "2020-01-02T12:22:00Z"],
@@ -1091,7 +1091,8 @@ void testDeleteAllSQLBasic(PolystoreInstance p) {
 
 void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	tests = 
-	  [ testKeyValueFeatures
+	  [ testBasicAggregation
+	  , testKeyValueFeatures
 	  , testCustomDataTypes
 	  , testLoneVars
 	  , testInsertSingleValuedSQLCross
