@@ -563,7 +563,7 @@ void collect((Agg)`having <{Expr ","}+ clauses>`, Collector c) {
     //}
 }
 
-void collect((Agg)`order <{Expr ","}+ vars>`, Collector c) {
+void collect((Agg)`order <{Expr ","}+ vars> <Dir _>`, Collector c) {
     collect(vars, c);
 }
 
