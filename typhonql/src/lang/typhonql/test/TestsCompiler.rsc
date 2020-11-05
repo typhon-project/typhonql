@@ -268,7 +268,11 @@ void testBasicAggregation(PolystoreInstance p) {
 }
 
 void testLimit(PolystoreInstance p) {
-  // select `Item.shelf`, count(`Item.@id`) from Item group by `Item.shelf`;
+  rs = p.runQuery((Request)`from Item i select i.shelf limit 2`);
+  p.assertResultEquals("shelves selected correctly with limit 2", rs, <["i.shelf"], 
+    [[2], [3]]>);
+
+
   rs = p.runQuery((Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf limit 2`);
   p.assertResultEquals("shelf items counted correctly with limit 2", rs, <["i.shelf", "numOfItems"], 
     [[1, 2], [2, 2]]>);

@@ -153,6 +153,9 @@ void testAggregationExtraction() {
   req = (Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf limit 0`;
   printResult(extractAggregation(req));
   
+  req = (Request)`from Item i select i.shelf limit 2`;
+  printResult(extractAggregation(req));
+  
     
 }
 
@@ -189,10 +192,16 @@ str aggregationClassName(bool suffix = false) = "AggregateIt<suffix ? "_" : "">"
 
 str aggregationPkg() = "nl.cwi.swat.typhonql.backend.rascal";
 
+
+
+/*
+     java.util.List<java.lang.Object[]> $result = 
+    		 $rows.limit(0).map((nl.cwi.swat.typhonql.backend.Record $x) -> { return new java.lang.Object[] { null }; }).collect(Collectors.toList());
+*/
+
+
 // this function assumes it is an aggregation query as result of extraction.
 str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
-  //<rs, gbs, hs> = decomposeAgg(q);
-  
   list[Result] rs = [ r | Result r <- q.selected ];
 
   // TODO: to save memory: the shared fields via group by are already
@@ -217,10 +226,13 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     '       java.util.stream.Stream\<nl.cwi.swat.typhonql.backend.Record\> $rows) {
     '     //System.out.println(\"FIELDS: \" + $fields);
     '
+    '     java.util.List\<java.lang.Object[]\> $result;
+    '
+    '     <if ((Agg)`group <{Expr ","}+ _>` <- q.aggClauses) {>
+    '     $result = new java.util.ArrayList\<\>();
     '     <groupBysToJava([ e | (Agg)`group <{Expr ","}+ es>` <- q.aggClauses, Expr e <- es ], rs)>
     '     //System.out.println($grouped);
     '      
-    '     java.util.List\<java.lang.Object[]\> $result = new java.util.ArrayList\<\>();
     '     int $limit = 0;
     '     for (java.util.List\<java.lang.Object\> $k: $grouped.keySet()) {
     '        java.util.List\<nl.cwi.swat.typhonql.backend.Record\> $records = $grouped.get($k);
@@ -234,10 +246,18 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     '          }
     '          $limit++;
     '          <}>          
-    '          $result.add(<results2array(rs)>);
+    '          $result.add(<results2array("$key", rs)>);
     '          
     '        }
     '     }
+    '     <} else {>
+    '       $result = $rows
+    '       <if ( (Agg)`limit <Int i>` <- q.aggClauses) {>
+    '         .limit(<i>)
+    '       <}>
+    '         .map((nl.cwi.swat.typhonql.backend.Record $x) -\> 
+    '            { return <results2array("$x", rs)>; }).collect(java.util.stream.Collectors.toList());
+    '     <} /* not having group-by */>
     '     return $result.stream();
     '  }
     '}
@@ -252,10 +272,12 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
 }
 
 
-str results2array(list[Result] rs)
-  = "new java.lang.Object[] {<intercalate(", ", [ result2java(rs[i], i) | int i <- [0..size(rs)] ])>}";
+str results2array(str var, list[Result] rs)
+  = "new java.lang.Object[] {<intercalate(", ", [ result2java(var, rs[i], i) | int i <- [0..size(rs)] ])>}";
 
-str result2java((Result)`<Expr _> as <VId x>`, int _) = "<x>$";
+// the var arg is not used, assuming that "as" is only used
+// in aggregation (which should be enforced in the type checker).
+str result2java(str _, (Result)`<Expr _> as <VId x>`, int _) = "<x>$";
   
 // the default is that it's a non-aggregated result
 // which means it's in the group by clause; hence
@@ -263,7 +285,7 @@ str result2java((Result)`<Expr _> as <VId x>`, int _) = "<x>$";
 // all records have the same value; so we just take
 // the field at position pos of the first record in
 // $records (which is stored in $key).
-default str result2java(Result _, int pos) = "$key.getObject($fields.get(<pos>))";
+default str result2java(str var, Result _, int pos) = "<var>.getObject($fields.get(<pos>))";
 
 
 
