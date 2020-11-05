@@ -156,6 +156,13 @@ void testAggregationExtraction() {
   req = (Request)`from Item i select i.shelf limit 2`;
   printResult(extractAggregation(req));
   
+  req = (Request)`from Item i select i.shelf, i.@id limit 2 order i.shelf, i.@id`;
+  printResult(extractAggregation(req));
+  
+  req = (Request)`from Item i, Product p select i.product, max(p.price) as total 
+                 'where i.product == p group i.product limit 10 order total`;
+  printResult(extractAggregation(req));
+  
     
 }
 
@@ -226,39 +233,38 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     '       java.util.stream.Stream\<nl.cwi.swat.typhonql.backend.Record\> $rows) {
     '     //System.out.println(\"FIELDS: \" + $fields);
     '
-    '     java.util.List\<java.lang.Object[]\> $result;
-    '
     '     <if ((Agg)`group <{Expr ","}+ _>` <- q.aggClauses) {>
-    '     $result = new java.util.ArrayList\<\>();
+    '     java.util.List\<java.lang.Object[]\> $result = new java.util.ArrayList\<\>();
     '     <groupBysToJava([ e | (Agg)`group <{Expr ","}+ es>` <- q.aggClauses, Expr e <- es ], rs)>
     '     //System.out.println($grouped);
     '      
-    '     int $limit = 0;
     '     for (java.util.List\<java.lang.Object\> $k: $grouped.keySet()) {
     '        java.util.List\<nl.cwi.swat.typhonql.backend.Record\> $records = $grouped.get($k);
     '        nl.cwi.swat.typhonql.backend.Record $key = $records.get(0);
     '        <aggs2vars(rs)>
     '        if (<havings2conds([ e | (Agg)`having <{Expr ","}+ es>` <- q.aggClauses, Expr e <- es ])>) {
-    '          <if ((Agg)`limit <Int i>` <- q.aggClauses) {>
-    '          if ($limit == <i>) {
-    '            //System.out.println(\"LIMIT REACHED <i>; STOPPING\");
-    '            break;
-    '          }
-    '          $limit++;
-    '          <}>          
     '          $result.add(<results2array("$key", rs)>);
-    '          
     '        }
     '     }
+    '     return $result
+    '       .stream()
+    '       <if ((Agg)`order <{Expr ","}+ flds> <Dir dir>` <- q.aggClauses) {> 
+    '       .sorted(<comparator([ f | Expr f <- flds], rs, dir, "java.lang.Object[]", fld2javaWithAggregation)>)
+    '       <}>
+    '       <if ((Agg)`limit <Int i>` <- q.aggClauses) {>
+    '       .limit(<i>)
+    '       <}>;
     '     <} else {>
-    '       $result = $rows
-    '       <if ( (Agg)`limit <Int i>` <- q.aggClauses) {>
+    '       return $rows
+    '       <if ((Agg)`order <{Expr ","}+ flds> <Dir dir>` <- q.aggClauses) {>
+    '         .sorted(<comparator([ f | Expr f <- flds], rs, dir, "nl.cwi.swat.typhonql.backend.Record", fld2javaNoAggregation)>) 
+    '       <}> 
+    '       <if ((Agg)`limit <Int i>` <- q.aggClauses) {>
     '         .limit(<i>)
     '       <}>
     '         .map((nl.cwi.swat.typhonql.backend.Record $x) -\> 
-    '            { return <results2array("$x", rs)>; }).collect(java.util.stream.Collectors.toList());
+    '            { return <results2array("$x", rs)>; });
     '     <} /* not having group-by */>
-    '     return $result.stream();
     '  }
     '}
     ";
@@ -269,6 +275,55 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
   }  
     
   return javaCode;
+}
+
+str fld2javaWithAggregation(str var, list[Result] rs, Expr fld) {
+    int i = 0;
+    for (Result r <- rs) {
+      if ((Result)`<Expr _> as <VId x>` := r, (Expr)`<VId x>` := fld) {
+        return "<var>[<i>]";
+      }
+      if ((Result)`<Expr e>` := r, e := fld) {
+        return "<var>[<i>]";
+      } 
+      i += 1;
+    }
+    throw "No corresponding result of order expression <fld>";
+}
+
+
+str fld2javaNoAggregation(str var, list[Result] rs, Expr fld) {
+    int i = 0;
+    for (Result r <- rs) {
+      // Cannot happen here
+      //if ((Result)`<Expr _> as <VId x>` := r, (Expr)`<VId x>` := fld) {
+      //  return result2var(r); // when ordering by an aggregation result
+      //}
+      if ((Result)`<Expr e>` := r, e := fld) {
+        return "<var>.getObject($fields.get(<i>))";
+      } 
+      i += 1;
+    }
+    throw "No corresponding result of order expression <fld>";
+}
+
+str comparator(list[Expr] flds, list[Result] rs, Dir dir, str typ, str(str,list[Result], Expr) fld2java) {
+  return 
+    "new java.util.Comparator\<<typ>\>() {
+    '  @SuppressWarnings({ \"rawtypes\", \"unchecked\" })
+    '  public int compare(<typ> $o1, <typ> $o2) {
+    '    int $comp = 0;
+    '    <for (Expr fld <- flds) {>
+    '    $comp = ((java.lang.Comparable)<fld2java("$o1", rs, fld)>)
+    '       .compareTo((java.lang.Comparable)<fld2java("$o2", rs, fld)>);
+    '    if ($comp != 0) {
+    '      return <if ((Dir)`desc` := dir) {>-<}>$comp;
+    '    }
+    '    <}>
+    '    return $comp;
+    '  }
+    '}";     
+  
 }
 
 
