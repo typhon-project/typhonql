@@ -37,8 +37,14 @@ syntax Where = whereClause: "where" {Expr ","}+ clauses;
 syntax Agg
   = groupClause: "group" {Expr ","}+ exprs
   | havingClause: "having" {Expr ","}+ exprs
-  | orderClause: "order" {Expr ","}+ exprs
+  | orderClause: "order" {Expr ","}+ exprs Dir dir
   | limitClause: "limit" Expr expr
+  ;
+  
+syntax Dir
+  = "asc"
+  | "desc"
+  | /* asc */
   ;
   
 //syntax GroupBy = groupClause: "group" {Expr ","}+ exprs Having? having;
