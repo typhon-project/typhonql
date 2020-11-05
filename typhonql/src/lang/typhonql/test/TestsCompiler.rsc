@@ -1155,6 +1155,8 @@ void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	tests = 
 	  [ testBasicAggregation
 	  , testLimit
+	  , testLimitAndOrder
+	  , testOrdering
 	  , testKeyValueFeatures
 	  , testCustomDataTypes
 	  , testLoneVars
