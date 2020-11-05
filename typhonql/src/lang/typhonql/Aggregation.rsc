@@ -147,8 +147,12 @@ void testAggregationExtraction() {
   printResult(extractAggregation(req));
 
 
-  req = (Request)`from Item i, Product p select i.product, max(p.price) as total where i.product == p group i.product`;
+  req = (Request)`from Item i, Product p select i.product, max(p.price) as total where i.product == p group i.product limit 10`;
   printResult(extractAggregation(req));
+  
+  req = (Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf limit 0`;
+  printResult(extractAggregation(req));
+  
     
 }
 
@@ -217,12 +221,21 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     '     //System.out.println($grouped);
     '      
     '     java.util.List\<java.lang.Object[]\> $result = new java.util.ArrayList\<\>();
+    '     int $limit = 0;
     '     for (java.util.List\<java.lang.Object\> $k: $grouped.keySet()) {
     '        java.util.List\<nl.cwi.swat.typhonql.backend.Record\> $records = $grouped.get($k);
     '        nl.cwi.swat.typhonql.backend.Record $key = $records.get(0);
     '        <aggs2vars(rs)>
     '        if (<havings2conds([ e | (Agg)`having <{Expr ","}+ es>` <- q.aggClauses, Expr e <- es ])>) {
+    '          <if ((Agg)`limit <Int i>` <- q.aggClauses) {>
+    '          if ($limit == <i>) {
+    '            //System.out.println(\"LIMIT REACHED <i>; STOPPING\");
+    '            break;
+    '          }
+    '          $limit++;
+    '          <}>          
     '          $result.add(<results2array(rs)>);
+    '          
     '        }
     '     }
     '     return $result.stream();
