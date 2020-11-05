@@ -156,11 +156,15 @@ void testAggregationExtraction() {
   req = (Request)`from Item i select i.shelf limit 2`;
   printResult(extractAggregation(req));
   
-  req = (Request)`from Item i select i.shelf, i.@id limit 2 order i.shelf, i.@id`;
-  printResult(extractAggregation(req));
-  
   req = (Request)`from Item i, Product p select i.product, max(p.price) as total 
                  'where i.product == p group i.product limit 10 order total`;
+  printResult(extractAggregation(req));
+  
+  req = (Request)`from Item i, Product p select i.product, p.name, max(p.price) as total 
+                 'where i.product == p group i.product limit 10 order p.name, total desc`;
+  printResult(extractAggregation(req));
+  
+    req = (Request)`from Item i select i.shelf, i.@id limit 2 order i.shelf, i.@id`;
   printResult(extractAggregation(req));
   
     

@@ -278,6 +278,17 @@ void testLimit(PolystoreInstance p) {
     [[1, 2], [2, 2]]>);
 }
 
+void testOrdering(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from Item i select i.shelf order i.shelf`);
+  p.assertResultEquals("shelves correctly sorted", rs, <["i.shelf"], 
+      [[1], [1], [2], [2], [3], [3]]>);
+
+  rs = p.runQuery((Request)`from Item i select i.shelf order i.shelf desc`);
+  p.assertResultEquals("shelves correctly sorted in reverse", rs, <["i.shelf"], 
+      [[3], [3], [2], [2], [1], [1]]>);
+
+}
+
 
 void testMultiVarOccurencesMapToSamePlaceholder(PolystoreInstance p) {
   rs = p.runQuery((Request)`from User u, Review r select u.name where u.name == "Pablo",
