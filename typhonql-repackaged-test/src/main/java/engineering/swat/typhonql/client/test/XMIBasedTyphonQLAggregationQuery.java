@@ -67,7 +67,8 @@ public class XMIBasedTyphonQLAggregationQuery {
 
 		//rt = conn.executeQuery(xmiString, infos, "from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf having numOfItems > 1", false);
 
-		JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from Item i, Product p select i.product, sum(p.price) as total where i.product == p group i.product", false);
+		JsonSerializableResult rt = conn.executeQuery(xmiString, infos, 
+				"from Item i, Product p select i.product, sum(p.price) as total where i.product == p group i.product limit 1", false);
 
 		
 		
