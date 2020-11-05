@@ -278,6 +278,30 @@ void testLimit(PolystoreInstance p) {
     [[1, 2], [2, 2]]>);
 }
 
+void testLimitAndOrder(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from Item i select i.shelf limit 2 order i.shelf`);
+  p.assertResultEquals("shelves selected correctly limited and sorted", rs, <["i.shelf"], 
+    [[1], [1]]>);
+
+  rs = p.runQuery((Request)`from Item i select i.shelf limit 2 order i.shelf desc`);
+  p.assertResultEquals("shelves selected correctly limited and sorted in reverse", rs, <["i.shelf"], 
+    [[3], [3]]>);
+
+  rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
+                           'where i.product == p group i.product order total limit 1`);
+  p.assertResultEquals("item prices summed, sorted, limited", rs, <["i.product", "total"], 
+    [[U("radio"), 2 * 30]]>);
+  
+  rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
+                           'where i.product == p group i.product order total desc limit 1`);
+  p.assertResultEquals("item prices summed, sorted in reverse, limited", rs, <["i.product", "total"], 
+    [[U("tv"), 4 * 20]]>);
+  
+  
+  
+}
+
+
 void testOrdering(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i.shelf order i.shelf`);
   p.assertResultEquals("shelves correctly sorted", rs, <["i.shelf"], 
@@ -287,6 +311,16 @@ void testOrdering(PolystoreInstance p) {
   p.assertResultEquals("shelves correctly sorted in reverse", rs, <["i.shelf"], 
       [[3], [3], [2], [2], [1], [1]]>);
 
+  rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
+                           'where i.product == p group i.product order total`);
+  p.assertResultEquals("item prices sorted correctly", rs, <["i.product", "total"], 
+    [[U("tv"), 4 * 20], [U("radio"), 2 * 30]]>);
+ 
+  rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
+                           'where i.product == p group i.product order total desc`);
+  p.assertResultEquals("item prices sorted correctly in reverse", rs, <["i.product", "total"], 
+    [[U("radio"), 2 * 30], [U("tv"), 4 * 20]]>);
+  
 }
 
 

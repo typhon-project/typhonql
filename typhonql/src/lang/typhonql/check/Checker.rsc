@@ -564,7 +564,8 @@ void collect((Agg)`having <{Expr ","}+ clauses>`, Collector c) {
 }
 
 void collect((Agg)`order <{Expr ","}+ vars> <Dir _>`, Collector c) {
-    collect(vars, c);
+    // TODO: needs to deal with as-variables
+    //collect(vars, c);
 }
 
 void collect((Agg)`limit <Expr e>`, Collector c) {
