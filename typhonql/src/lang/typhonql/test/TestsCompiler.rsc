@@ -242,6 +242,10 @@ void testBasicAggregation(PolystoreInstance p) {
   p.assertResultEquals("items counted correctly", rs, <["cnt"], 
     [[6]]>);
 
+  rs = p.runQuery((Request)`from Item i select sum(i.shelf) as cnt group null`);
+  p.assertResultEquals("item shelves summed correctly", rs, <["cnt"], 
+    [[12]]>);
+
 
   // select `Item.shelf`, count(`Item.@id`) from Item group by `Item.shelf`;
   rs = p.runQuery((Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf`);
