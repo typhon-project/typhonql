@@ -112,6 +112,14 @@ str pp(as(str t, str x)) = "<q(t)> as <q(x)>";
 str pp(leftOuterJoin(As left, As right, SQLExpr on))
   = "<pp(left)> left outer join <pp(right)> on <pp(on)>";
 
+str pp(leftOuterJoin(As left, list[As] rights, list[SQLExpr] ons)) {
+  str s = pp(left);
+  for (int i <- [0..size(rights)]) {
+    s += " left outer join <pp(rights[i])>";
+    s += " on <pp(ons[i])>";
+  }
+  return s;
+}
 // Set
 
 str pp(\set(str c, SQLExpr e)) = "<q(c)> = <pp(e)>";

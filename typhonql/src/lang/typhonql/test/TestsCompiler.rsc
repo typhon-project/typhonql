@@ -375,19 +375,57 @@ actual: <["i.shelf","i.product"],[
 
 void testLoneVars(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i`);
-  p.assertEquals("all features from item retrieved", <rs<0>, {*rs<1>}>, <["i.picture", "i.shelf", "i.product"]
-    , {
+  p.assertResultEquals("all features from Item retrieved", rs, <["i.picture", "i.shelf", "i.product"]
+    , [
         [base64("aa"), 1, U("tv")],
         [base64("bb"), 1, U("tv")],
         [base64("cc"), 3, U("tv")],
         [base64("dd"), 3, U("tv")],
         [base64("ee"), 2, U("radio")],
         [base64("ff"), 2, U("radio")]
-    }>);
+    ]>);
+  
+  rs = p.runQuery((Request)`from User u select u`);
+  p.assertResultEquals("all features from User retrieved", rs,
+      <["u.name","u.billing$zipcode$nums","u.billing$street","u.billing$zipcode$letters",
+        "u.billing$location","u.address","u.created","u.billing$city","u.location","u.wishes",
+        "u.biography","u.Stuff__","u.reviews"],[
+       ["Pablo","1234","Seventh","ab","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)",U("wish1"),
+           U("bio1"),{},U("rev1")],
+       ["Pablo","1234","Seventh","ab","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)",U("wish2"),
+           U("bio1"),{},U("rev1")],
+       ["Davy","4566","Bla","cd","POINT (20 30)","alsoThere","2020-01-02T15:24:00Z","Almere","POINT (20 30)",{},{},{},U("rev2")],
+       ["Davy","4566","Bla","cd","POINT (20 30)","alsoThere","2020-01-02T15:24:00Z","Almere","POINT (20 30)",{},{},{},U("rev3")]
+       ]>
+       );
+  
+   
+    
+  rs = p.runQuery((Request)`from Review r select r`);
+  p.assertResultEquals("all features from Review retrieved",  rs,
+    <["r.location","r.screenshot","r.content","r.posted","r.user","r.product"],
+    [["POINT (20 30)","eXk=","","2020-02-03T01:11:00Z",U("davy"),U("tv")],
+     ["POINT (2 3)","eHg=","Good TV","2020-02-03T01:11:00Z",U("pablo"),U("tv")],
+     ["POINT (3 2)","eno=","***","2020-02-03T01:11:00Z",U("davy"),U("radio")]]>);
+  
     
   rs = p.runQuery((Request)`from Biography b select b`);
-  p.assertEquals("all features from biography retrieved", rs, <["b.content", "b.user"]
+  p.assertResultEquals("all features from Biography retrieved", rs, <["b.content", "b.user"]
     , [["Chilean", U("pablo")]]>);
+
+   
+  rs = p.runQuery((Request)`from User u, Biography b select u, b where u.biography == b`);
+  p.assertResultEquals("all features of Pablo and his Biography retrieved", rs, 
+     <["u.name","u.billing$zipcode$nums","u.billing$street","u.billing$zipcode$letters",
+       "u.billing$location","u.address","u.created","u.billing$city","u.location",
+       "u.wishes","u.biography","u.Stuff__","u.reviews","b.content","b.user"],[
+      ["Pablo","1234","Seventh","ab","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)",
+        U("wish1"),U("bio1"),{},U("rev1"),
+           "Chilean",U("pablo")],
+      ["Pablo","1234","Seventh","ab","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)",
+        U("wish2"),U("bio1"),{},U("rev1"),
+          "Chilean",U("pablo")]]>);
+  
     
 }
 

@@ -106,9 +106,10 @@ Steps to compile to SQL
 
 
 */
-tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`
+tuple[SQLStat, Bindings] select2sql(q:(Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`
   , Schema s, Place p, Log log = noLog) {
 
+  // println(q);
   SQLStat q = select([], [], [where([])]);
   
   void addWhere(SQLExpr e) {
@@ -125,14 +126,27 @@ tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Re
     if (as has name) {
       return as.name == tbl;
     }
-    return hasTableRight(as.right, tbl);
+    return hasTableRight(as.left, tbl);
   }
   
   void addLeftOuterJoin(str this, As other, SQLExpr on) {
+    // println("OUTER: this = <this>, other = <pp(other)>, on = <on>");
     for (int i <- [0..size(q.tables)]) {
       // me:as(_, this)
+      // println("TABLEs[<i>] = <q.tables[i]>");
+      // println("hasTableRight(<q.tables[i]>, <this>) = <hasTableRight(q.tables[i], this)>");
       if (As me := q.tables[i], hasTableRight(me, this)) {
-        q.tables[i] = leftOuterJoin(me, other, on);
+        // we lose the original `other` table here...
+        // if we update, so we append
+        if (me is leftOuterJoin) {
+          me.rights += [other];
+          me.ons += [on];
+          q.tables[i] = me;
+        }
+        else {
+          q.tables[i] = leftOuterJoin(me, [other], [on]);
+        }
+        //q.tables += [leftOuterJoin(me, other, on)];
         return;
       } 
     }
@@ -304,7 +318,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
 
   
   if (<entity, _, role, str toRole, _, str to, true> <- ctx.schema.rels, placeOf(to, ctx.schema) == ctx.place) {
-    log("########### local containment <entity> -<role>/<toRole>-\> <to>");
+    // println("########### local containment <entity> -<role>/<toRole>-\> <to>");
     str tbl1 = "<x>";
     str tbl2 = varForTarget(f, ctx.vars()); // introduce a new table alias
     ctx.addLeftOuterJoin(tbl1,
@@ -316,14 +330,16 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
     return column(tbl2, typhonId(to));
   }
   else if (<str parent, _, str parentRole, role, _, entity, true> <- ctx.schema.rels, placeOf(parent, ctx.schema) == ctx.place) {
-    log("########### local (reverse) containment <parent> -<parentRole>/<role>-\> <entity>");
+    // println("########### local (reverse) containment <parent> -<parentRole>/<role>-\> <entity>");
     str tbl1 = "<x>";
     return column(tbl1, fkName(parent, entity, role));
   }
   else if (<entity, _, role, str toRole, _, str to, _> <- ctx.schema.rels) {
-  	log("######### xref, or external containment: <entity> -<role>/<toRole>-\> <to> (`<e>`)  ");
+  	// println("######### xref, or external containment: <entity> -<role>/<toRole>-\> <to> (`<e>`)  ");
   	tbl1 = "<x>";
     tbl2 = varForJunction(f, ctx.vars());
+
+    //ctx.addFrom(as(junctionTableName(entity, role, to, toRole), tbl2));
 
     ctx.addLeftOuterJoin(tbl1,  	
   	  as(junctionTableName(entity, role, to, toRole), tbl2),

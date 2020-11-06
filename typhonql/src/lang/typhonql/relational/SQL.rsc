@@ -79,6 +79,7 @@ data SQLExpr
 data As
   = as(str table, str name)
   | leftOuterJoin(As left, As right, SQLExpr on)
+  | leftOuterJoin(As left, list[As] rights, list[SQLExpr] ons)
   ;
 
 data Clause
