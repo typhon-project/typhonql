@@ -278,7 +278,7 @@ Selecting all users:
 ```
 from User u select u
 ```
-This will return the identities of all users.
+This will return all the attributes of all users, including references to other entities.
 
 Selecting specific attributes of users:
 ```
@@ -307,7 +307,58 @@ from User u, Product p, Review r select u.name, p.name
 ```
 
 Note the use of "==" even for many-valued references.
-You may wonder why not use the `x in y` operator for
+You may wonder why not use the `x in y` operator for "joining" on collections; this has to do
+with how relational back-ends deal with multiplicity and would complicate the implementation
+considerably.
+
+### Aggregation Support
+
+TyphonQL currently supports the usual aggregation operators `count`, `sum`, `max`, `min`, and `avg`,
+to be used in combination with the group-construct.
+
+For instance, to count the number of reviews per user:
+```
+from User u 
+select u.name, count(u.reviews) as revCount
+group u.name
+```
+
+_NB_: *ALL* aggregation expressions (e.g. `count(u.reviews)`) need to be aliased with a variable name using "as".
+
+Aggregated values can be constrained using the having-clause:
+```
+from User u 
+select u.name, count(u.reviews) as revCount
+group u.name
+having revCount > 5
+```
+This selects all users (and their review counts) that have written more than five reviews.
+
+The aggregation component of TyphonQL also supports limit- and order-clauses for, respectively, limiting the size of 
+the result set, and sorting it. These can be used in combination with aggregation (group-by) or without.
+
+For instance:
+```
+from User u 
+select u.name, count(u.reviews) as revCount
+group u.name
+order revCount desc
+```
+sorts the previous query in descending order by review count.
+The "desc" modifier can also be omitted, in which case it amounts to using "asc" for ascending order.
+
+To get the most prolific reviewer, one could write:
+```
+from User u 
+select u.name, count(u.reviews) as revCount
+group u.name
+order revCount desc
+limit 1
+```
+
+
+
+
 
 
 ## Manipulating Data
