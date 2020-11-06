@@ -164,14 +164,17 @@ void testAggregationExtraction() {
                  'where i.product == p group i.product limit 10 order p.name, total desc`;
   printResult(extractAggregation(req));
   
-    req = (Request)`from Item i select i.shelf, i.@id limit 2 order i.shelf, i.@id`;
+  req = (Request)`from Item i select i.shelf, i.@id limit 2 order i.shelf, i.@id`;
   printResult(extractAggregation(req));
   
+  req = (Request)`from Item i select count(i) as c group null`;
+  printResult(extractAggregation(req));
     
 }
 
 map[Expr, int] mapGroupedToPos(list[Expr] gbs, list[Result] rs) {
   map[Expr, int] result = ();
+  
   outer: for (Expr gb <- gbs) {
     for (int i <- [0..size(rs)]) {
       if ((Result)`<Expr e>` := rs[i], e := gb) {
@@ -181,9 +184,11 @@ map[Expr, int] mapGroupedToPos(list[Expr] gbs, list[Result] rs) {
       if ((Result)`<Expr _> as <VId x>` := rs[i], (Expr)`<VId x>` := gb) {
         result[gb] = i;
         continue outer;
-      } 
+      }
+      // else: ignore (e.g. nulls) 
     }
   }
+  
   return result;
 } 
 
@@ -437,7 +442,11 @@ str aggs2vars(list[Result] rs) {
   return s;
 }
 
-str groupBysToGroupBys(list[Expr] gbs, map[Expr,int] pos) 
+str groupBysToGroupBys([(Expr)`null`], map[Expr,int] _)
+  = "java.util.Collections.singletonMap(java.util.Collections.emptyList(), 
+    '  $rows.collect(java.util.stream.Collectors.toList()))";
+      
+default str groupBysToGroupBys(list[Expr] gbs, map[Expr,int] pos) 
   = "$rows.collect(java.util.stream.Collectors.groupingBy((nl.cwi.swat.typhonql.backend.Record $x) -\> { 
     '   //System.out.println(\"CURRENT RECORD: \" + $x);
     '   //System.out.println(\"THE KEY: \" + java.util.Arrays.asList(<intercalate(", ", [ "$x.getObject($fields.get(<pos[gb]>))" | Expr gb <- gbs ])>));
