@@ -101,6 +101,7 @@ data TypePalConfig(CheckerMLSchema mlSchema = <(), {}>);
  data IdRole
     = tableRole()
     | fieldRole()
+    | aliasRole()
     ;
  
 
@@ -123,7 +124,7 @@ void collect(current:(Expr)`<VId var>`, Collector c) {
 }
 
 void collect(VId current, Collector c) {
-    c.use(current, {tableRole()});
+    c.use(current, {tableRole(), aliasRole()});
 }
 
 void collect(current:(Expr)`<PlaceHolder p>`, Collector c) {
@@ -332,18 +333,26 @@ void collectBuildinFunction(Tree current, (VId)`distance`, list[Expr] args, Coll
     }
 }
 
-void collectBuildinFunction(Tree current, VId f, list[Expr] args, Collector c) {
-  if ("<f>" in {"sum", "count", "max", "min", "avg"}) {
-    ; // todo
-  }
-  else {
-    c.report(error(current, "Unknown built-in function"));
-  }
-}
+set[str] aggregationFunctions = { "count", "sum", "max", "min", "avg"};
 
-
-default void collectBuildinFunction(Tree current, _, _, Collector c) {
-    c.report(error(current, "Unknown built-in function"));
+default void collectBuildinFunction(Tree current, VId functionName, list[Expr] args, Collector c) {
+    if ("<functionName>" in aggregationFunctions) {
+        if ([singleArg] := args) {
+            switch (functionName) {
+                case (VId)`count`: c.fact(current, intType()); 
+                case (VId)`avg`: c.fact(current, floatType());
+                default: c.fact(current, singleArg);
+            }
+            collect(singleArg, c);
+            if ((VId)`count` !:= functionName) {
+                c.require("type should be countable", current, args, void (Solver s) {
+                    s.requireTrue(s.getType(singleArg) in {intType(), floatType()}, error(singleArg, "Expected float of int type, but got: %t", singleArg));
+                });
+            }
+            return;
+        }
+    }
+    c.report(error(current, "Unknown buildin function"));
 }
 
 
@@ -527,15 +536,11 @@ void collect(current:(Query)`from <{Binding ","}+ bindings> select <{Result ","}
     c.leaveScope(current);
 }
 
-void collect((Result)`<Expr e>`, Collector c) {
-    collect(e, c);
-}
-
-
-
-void collect((Result)`<Expr e> as <VId x>`, Collector c) {
-    collect(e, c);
-	// TODO    
+void collect(Result current, Collector c) {
+    collect(current.expr, c);
+    if (current is aliassed) {
+        c.define("<current.attr>", aliasRole(), current.attr, defType(current.expr));
+    }
 }
 
 void collect(current:(Binding)`<EId entity> <VId name>`, Collector c) {
@@ -556,16 +561,14 @@ void collect((Agg)`group <{Expr ","}+ vars>`, Collector c) {
 }
 
 void collect((Agg)`having <{Expr ","}+ clauses>`, Collector c) {
-    // TODO: enable this if aliases work.
-    //collect(clauses, c);
-    //for (cl <- clauses) {
-    //    c.requireEqual(boolType(), cl, error(cl, "Having expects a boolean expression"));
-    //}
+    collect(clauses, c);
+    for (cl <- clauses) {
+        c.requireEqual(boolType(), cl, error(cl, "Having expects a boolean expression"));
+    }
 }
 
 void collect((Agg)`order <{Expr ","}+ vars> <Dir _>`, Collector c) {
-    // TODO: needs to deal with as-variables
-    //collect(vars, c);
+    collect(vars, c);
 }
 
 void collect((Agg)`limit <Expr e>`, Collector c) {
