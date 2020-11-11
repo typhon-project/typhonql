@@ -59,7 +59,8 @@ having ... (includes xi's from fi(...)...)
 
 */
 
-bool hasAggregation(Query q) = (Agg _ <- q.aggClauses);
+bool hasAggregation(Query q) 
+  = (Agg _ <- q.aggClauses) || hasAggregationOps(q);
 
 bool hasAggregationOps(Query q) 
   = (Result)`<VId _>(<{Expr ","}* _>) as <VId _>` <- q.selected; 
