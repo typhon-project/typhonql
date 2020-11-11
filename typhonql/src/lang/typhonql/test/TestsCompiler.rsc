@@ -245,7 +245,10 @@ void testBasicAggregation(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select sum(i.shelf) as cnt group null`);
   p.assertResultEquals("item shelves summed correctly", rs, <["cnt"], 
     [[12]]>);
-
+    
+  rs = p.runQuery((Request)`from Item i select count(i.@id) as cnt`);
+  p.assertResultEquals("items counted w/o group-clause", rs, <["cnt"], 
+    [[6]]>);
 
   // select `Item.shelf`, count(`Item.@id`) from Item group by `Item.shelf`;
   rs = p.runQuery((Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf`);
@@ -274,6 +277,7 @@ void testBasicAggregation(PolystoreInstance p) {
                            'where i.product == p group i.product having total \> 60`);
   p.assertResultEquals("item prices summed and larger than 60", rs, <["i.product", "total"], 
     [[U("tv"), 4 * 20]]>);
+
     
 }
 

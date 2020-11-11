@@ -325,11 +325,10 @@ group u.name
 
 _NB_: *ALL* aggregation expressions (e.g. `count(u.reviews)`) need to be aliased with a variable name using "as".
 
-If you want to consider the whole entity as the only group, use "group null", e.g.:
+If you want to consider the whole entity as the only group you may omit the "group"-clause, e.g.:
 ```
 from User u 
 select count(u.@id) as cnt
-group null
 ```
 Counts the number of unique users.
 
@@ -363,10 +362,6 @@ group u.name
 order revCount desc
 limit 1
 ```
-
-
-
-
 
 
 ## Manipulating Data

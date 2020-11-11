@@ -61,6 +61,27 @@ having ... (includes xi's from fi(...)...)
 
 bool hasAggregation(Query q) = (Agg _ <- q.aggClauses);
 
+bool hasAggregationOps(Query q) 
+  = (Result)`<VId _>(<{Expr ","}* _>) as <VId _>` <- q.selected; 
+
+bool hasGroupBy(Query q) 
+  = (Agg)`group <{Expr ","}+ _>` <- q.aggClauses; 
+
+Query addGroupingIfNeeded(Query q) {
+  if (hasAggregationOps(q), !hasGroupBy(q)) {
+    switch (q) {
+      case (Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ conds> <Agg* aggs>`:
+        return (Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ conds> group null <Agg* aggs>`;
+        
+      case (Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> <Agg* aggs>`:
+        return (Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> group null <Agg* aggs>`;
+        
+      default:
+        throw "Bug: bad query <q>";
+    }
+  }
+  return q;
+}
 
 list[Expr] whereExprs((Query)`from <{Binding ","}+ _> select <{Result ","}+ _> where <{Expr ","}+ conds> <Agg* _>`)
   = [ c | Expr c <- conds ];
@@ -80,7 +101,7 @@ default Result liftAgg(Result r) = r;
 
 
 tuple[Request, Maybe[Request]] extractAggregation(r:(Request)`<Query q>`) {
-  
+  q = addGroupingIfNeeded(q);
   if (hasAggregation(q)) {
     // deal with it
     
@@ -169,6 +190,10 @@ void testAggregationExtraction() {
   
   req = (Request)`from Item i select count(i) as c group null`;
   printResult(extractAggregation(req));
+
+  req = (Request)`from Item i select count(i) as c`;
+  printResult(extractAggregation(req));
+    
     
 }
 
