@@ -77,7 +77,7 @@ list[Path] result2path((Result)`<Expr e>`, Env env, Schema s)
 
 // NB: for the aggregation iteration this should be the aliased variables
 // (see expr2colname above)
-list[Path] result2path((Expr)`<VId agg>(<Expr e>) as <VId _>`, Env env, Schema s)
+list[Path] result2path((Result)`<VId agg>(<Expr e>) as <VId _>`, Env env, Schema s)
   = exp2path(e, env, s);
 
 
