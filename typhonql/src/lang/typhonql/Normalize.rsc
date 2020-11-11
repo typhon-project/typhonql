@@ -571,7 +571,7 @@ Request injectProperUUIDs(Request req) {
 }
 
 void smokeLoneVarExpansion() {
-  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product/user-review-product.xmi|);
+  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product.xmi|);
   Model m = xmiString2Model(xmi);
   Schema s = model2schema(m);
   
@@ -592,10 +592,6 @@ Request expandLoneVars(Request req, Schema s) {
         ent = env["<x>"];
         for (<ent, str name, _> <- s.attrs) {
 	      Id f = [Id]name;
-	      append outer: (Result)`<VId x>.<Id f>`;
-	    }
-        for (<ent, _, role, _, _, _, _> <- s.rels) {
-	      Id f = [Id]role;
 	      append outer: (Result)`<VId x>.<Id f>`;
 	    }
       }
