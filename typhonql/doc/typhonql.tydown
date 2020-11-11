@@ -278,7 +278,7 @@ Selecting all users:
 ```
 from User u select u
 ```
-This will return all the attributes of all users, including references to other entities.
+This will return all the attributes of all users (but *excluding* references to other entities).
 
 Selecting specific attributes of users:
 ```
