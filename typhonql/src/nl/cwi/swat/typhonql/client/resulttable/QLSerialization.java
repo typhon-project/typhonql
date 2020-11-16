@@ -11,7 +11,11 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonFactoryBuilder;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.core.json.JsonWriteFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -34,7 +38,13 @@ public class QLSerialization {
 		customSerializers.addSerializer(InputStream.class, new ByteStreamSerializer());
 		customSerializers.addSerializer(new StreamSerializer());
 
-		mapper = new ObjectMapper().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+		JsonFactory factory = new JsonFactoryBuilder()
+				.enable(JsonWriteFeature.WRITE_NUMBERS_AS_STRINGS)
+				.build();
+
+		mapper = new ObjectMapper(factory)
+				.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET)
+				;
 		mapper.registerModule(customSerializers);
 	}
 

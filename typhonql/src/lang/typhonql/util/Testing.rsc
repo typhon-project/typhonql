@@ -301,7 +301,7 @@ str detailEmoji = "\u001b[34m☢ \u001b[0m";
 Stats assertEquals(str testName, value actual, value expected, Stats stats) {
 	if (actual != expected) {
 	    stats[testName] = failed();
-		println(" <failEmoji>: `<testName>` expected: <expected>, actual: <actual>");
+		println(" <failEmoji>: `<testName>` expected: \n<expected>\nactual: \n<actual>");
 	}
 	else {
 	    stats[testName] = success();
@@ -313,11 +313,11 @@ Stats assertEquals(str testName, value actual, value expected, Stats stats) {
 Stats assertResultEquals(str testName, tuple[list[str] sig, list[list[value]] vals] actual, tuple[list[str] sig, list[list[value]] vals] expected, Stats stats) {
   if (actual.sig != expected.sig) {
     stats[testName] = failed();
-    println(" <failEmoji>: `<testName>` expected: <expected>, actual: <actual>");
+    println(" <failEmoji>: `<testName>` expected: \n<expected>\nactual: \n<actual>");
   }
   else if (toSet(actual.vals) != toSet(expected.vals)) {
     stats[testName] = failed();
-    println(" <failEmoji>: `<testName>` expected: <expected>, actual: <actual>");
+    println(" <failEmoji>: `<testName>` expected: \n<expected>\nactual: \n<actual>");
   }
   else {
     stats[testName] = success();

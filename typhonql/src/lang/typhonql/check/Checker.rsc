@@ -204,7 +204,7 @@ void collectKeyVal({KeyVal ","}* keyVals, EId entity, Collector c) {
 
 void collectKeyVal(current:(KeyVal)`@id : <Expr val>`, EId entity, Collector c) {
     collect(val, c);
-    c.requireEqual(uuidType(), val, error(current, "Expected uuid but got %t", val));
+    c.requireComparable(uuidType(), val, error(current, "Expected uuid but got %t", val));
 }
 
 void collectKeyVal(current:(KeyVal)`<Id key> : <Expr val>`, EId entity, Collector c) {

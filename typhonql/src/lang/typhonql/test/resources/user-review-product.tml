@@ -110,6 +110,41 @@ entity Foundation {
 	vision: freetext[SentimentAnalysis[eng_fr]]
 }
 
+
+entity EntitySmokeTest {
+	s : string[20]
+	t : text
+	i : int
+	r : bigint
+	f : float
+	b : bool
+	d : date
+	dt : datetime
+	pt : point
+	pg : polygon
+	ref -> ReferenceTest[1]
+}
+entity ReferenceTest {
+	r : int
+}
+
+
+entity EntitySmokeTest2 {
+	s : string[20]
+	t : text
+	i : int
+	r : bigint
+	f : float
+	b : bool
+	d : date
+	dt : datetime
+	pt : point
+	pg : polygon
+}
+
+
+
+
 keyvaluedb Stuff {
 	elements {
 		User { userKey -> ("User.photoURL", "User.avatarURL") } 
@@ -121,6 +156,7 @@ documentdb Reviews {
 		Biography : Biography
 		Category: Category
 		Evaluation: Evaluation
+		DataTypeTest2: EntitySmokeTest
 	}
 }
 
@@ -140,6 +176,20 @@ relationaldb Inventory {
 		table { WordDB : Word }
 		table { CompanyDB : Company }
 		table { FoundationDB : Foundation }
+		table{
+ 			DatatypesTable : EntitySmokeTest
+ 			index dtIndex{
+				attributes ('s')
+			}
+			idSpec ('s')
+		}
+  		table{
+ 			ReferTable : ReferenceTest
+ 			 index refIndex{
+				attributes ('r')
+			}
+			idSpec ('r')
+		}
 	}
 }
 

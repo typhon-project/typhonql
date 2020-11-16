@@ -165,6 +165,76 @@
       </type>
     </attributes>
   </entities>
+  <entities name="EntitySmokeTest">
+    <attributes xsi:type="typhonml:Attribute" name="s">
+      <type xsi:type="typhonml:StringType" maxSize="20"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="t">
+      <type xsi:type="typhonml:TextType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="i">
+      <type xsi:type="typhonml:IntType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="r">
+      <type xsi:type="typhonml:BigintType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="f">
+      <type xsi:type="typhonml:FloatType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="b">
+      <type xsi:type="typhonml:BoolType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="d">
+      <type xsi:type="typhonml:DateType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="dt">
+      <type xsi:type="typhonml:DatetimeType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="pt">
+      <type xsi:type="typhonml:PointType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="pg">
+      <type xsi:type="typhonml:PolygonType"/>
+    </attributes>
+    <relations name="ref" type="//@entities.16" cardinality="one"/>
+  </entities>
+  <entities name="ReferenceTest">
+    <attributes xsi:type="typhonml:Attribute" name="r">
+      <type xsi:type="typhonml:IntType"/>
+    </attributes>
+  </entities>
+  <entities name="EntitySmokeTest2">
+    <attributes xsi:type="typhonml:Attribute" name="s">
+      <type xsi:type="typhonml:StringType" maxSize="20"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="t">
+      <type xsi:type="typhonml:TextType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="i">
+      <type xsi:type="typhonml:IntType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="r">
+      <type xsi:type="typhonml:BigintType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="f">
+      <type xsi:type="typhonml:FloatType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="b">
+      <type xsi:type="typhonml:BoolType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="d">
+      <type xsi:type="typhonml:DateType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="dt">
+      <type xsi:type="typhonml:DatetimeType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="pt">
+      <type xsi:type="typhonml:PointType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="pg">
+      <type xsi:type="typhonml:PolygonType"/>
+    </attributes>
+  </entities>
   <databases xsi:type="typhonml:KeyValueDB" name="Stuff">
     <elements name="User" key="userKey" values="//@entities.9/@attributes.4 //@entities.9/@attributes.5"/>
   </databases>
@@ -173,6 +243,7 @@
     <collections name="Biography" entity="//@entities.10"/>
     <collections name="Category" entity="//@entities.2"/>
     <collections name="Evaluation" entity="//@entities.6"/>
+    <collections name="DataTypeTest2" entity="//@entities.17"/>
   </databases>
   <databases xsi:type="typhonml:RelationalDB" name="Inventory">
     <tables name="UserDB" entity="//@entities.9">
@@ -184,6 +255,14 @@
     <tables name="WordDB" entity="//@entities.7"/>
     <tables name="CompanyDB" entity="//@entities.13"/>
     <tables name="FoundationDB" entity="//@entities.14"/>
+    <tables name="DatatypesTable" entity="//@entities.15">
+      <indexSpec name="dtIndex" attributes="//@entities.15/@attributes.0"/>
+      <idSpec attributes="//@entities.15/@attributes.0"/>
+    </tables>
+    <tables name="ReferTable" entity="//@entities.16">
+      <indexSpec name="refIndex" attributes="//@entities.16/@attributes.0"/>
+      <idSpec attributes="//@entities.16/@attributes.0"/>
+    </tables>
   </databases>
   <databases xsi:type="typhonml:GraphDB" name="MoreStuff">
     <edges from="//@entities.12/@relations.0" to="//@entities.12/@relations.1" entity="//@entities.12"/>

@@ -1,8 +1,8 @@
 import user-review-product.xmi
-import Reviews.tdl
 import MoreStuff.tdl
 import Inventory.tdl
 import Stuff.tdl
+import Reviews.tdl
 import dbTypes.tdl
 containertype Docker
 clustertype DockerCompose
@@ -10,15 +10,6 @@ platformtype localhost
 platform platformName : localhost {
 	cluster clusterName : DockerCompose {
 		application Polystore {
-			container reviews : Docker {
-				deploys Reviews
-				ports {
-					target = 27017 ;
-					published = 27017 ;
-				}
-				uri = reviews:27017 ;
-			}
-			
 			container morestuff : Docker {
 				deploys MoreStuff
 				ports {
@@ -26,8 +17,12 @@ platform platformName : localhost {
 					published = 7687 ;
 				}
 				uri = morestuff:7687 ;
+				volumes {
+					volumeName = morestuffvolume ;
+					mountPath = /data ;
+					volumeType = volume ;
+				}
 			}
-			
 			container inventory : Docker {
 				deploys Inventory
 				ports {
@@ -35,8 +30,12 @@ platform platformName : localhost {
 					published = 3306 ;
 				}
 				uri = inventory:3306 ;
+				volumes {
+					volumeName = inventoryvolume ;
+					mountPath = /var/lib/mysql ;
+					volumeType = volume ;
+				}
 			}
-			
 			container stuff : Docker {
 				deploys Stuff
 				ports {
@@ -44,6 +43,27 @@ platform platformName : localhost {
 					published = 9042 ;
 				}
 				uri = stuff:9042 ;
+				volumes {
+					volumeName = stuffvolume ;
+					mountPath = /var/lib/cassandra ;
+					volumeType = volume ;
+				}
+			}
+			container reviews : Docker {
+				deploys Reviews
+				ports {
+					target = 27017 ;
+					published = 27017 ;
+				}
+				uri = reviews:27017 ;
+				volumes {
+					volumeName = reviewsvolume ;
+					mountPath = /data/db ;
+					volumeType = volume ;
+				}
+			}
+			volumes {
+				morestuffvolume inventoryvolume stuffvolume reviewsvolume
 			}
 		}
 	}

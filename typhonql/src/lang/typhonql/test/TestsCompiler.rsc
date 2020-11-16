@@ -161,12 +161,12 @@ void setup(PolystoreInstance p, bool doTest) {
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Item i select i.@id, i.shelf, i.product`);
 	  p.assertResultEquals("items were inserted", rs, <["i.@id", "i.shelf", "i.product"], [
-	    [U("tv1"), 1, U("tv")],
-	    [U("tv2"), 1, U("tv")],
-	    [U("tv3"), 3, U("tv")],
-	    [U("tv4"), 3, U("tv")],
-	    [U("radio1"), 2, U("radio")],
-	    [U("radio2"), 2, U("radio")]
+	    [U("tv1"), "1", U("tv")],
+	    [U("tv2"), "1", U("tv")],
+	    [U("tv3"), "3", U("tv")],
+	    [U("tv4"), "3", U("tv")],
+	    [U("radio1"), "2", U("radio")],
+	    [U("radio2"), "2", U("radio")]
 	  ]>);
 	  
 	  rs = p.runQuery((Request)`from Product p select p.inventory where p.@id == #tv`);
@@ -240,32 +240,32 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
 void testBasicAggregation(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select count(i.@id) as cnt group null`);
   p.assertResultEquals("items counted correctly", rs, <["cnt"], 
-    [[6]]>);
+    [["6"]]>);
 
   rs = p.runQuery((Request)`from Item i select sum(i.shelf) as cnt group null`);
   p.assertResultEquals("item shelves summed correctly", rs, <["cnt"], 
-    [[12]]>);
+    [["12"]]>);
     
   rs = p.runQuery((Request)`from Item i select count(i.@id) as cnt`);
   p.assertResultEquals("items counted w/o group-clause", rs, <["cnt"], 
-    [[6]]>);
+    [["6"]]>);
 
   // select `Item.shelf`, count(`Item.@id`) from Item group by `Item.shelf`;
   rs = p.runQuery((Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf`);
   p.assertResultEquals("shelf items counted correctly", rs, <["i.shelf", "numOfItems"], 
-    [[1, 2], [2, 2], [3,2]]>);
+    [["1", "2"], ["2", "2"], ["3","2"]]>);
 
 
     
   rs = p.runQuery((Request)`from Product p select p.@id, count(p.inventory) as numOfItems group p.@id`);  
   p.assertResultEquals("product inventory items counted correctly", rs, <["p.@id", "numOfItems"], 
-    [[U("tv"), 4], [U("radio"), 2]]>);
+    [[U("tv"), "4"], [U("radio"), "2"]]>);
     
   // TODO: let type checker test at as-clauses are present
   
   rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total where i.product == p group i.product`);
   p.assertResultEquals("item prices summed correctly", rs, <["i.product", "total"], 
-    [[U("tv"), 4 * 20], [U("radio"), 2 * 30]]>);
+    [[U("tv"), "<4 * 20>"], [U("radio"), "<2 * 30>"]]>);
     
   // todo: sum(i.product.price)? that needs changing expandNavigation normalization (no; because of lifting)
   // but it still does not work...
@@ -276,40 +276,39 @@ void testBasicAggregation(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
                            'where i.product == p group i.product having total \> 60`);
   p.assertResultEquals("item prices summed and larger than 60", rs, <["i.product", "total"], 
-    [[U("tv"), 4 * 20]]>);
-
+    [[U("tv"), "<4 * 20>"]]>);
     
 }
 
 void testLimit(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i.shelf limit 2`);
   p.assertResultEquals("shelves selected correctly with limit 2", rs, <["i.shelf"], 
-    [[2], [3]]>);
+    [["2"], ["3"]]>);
 
 
   rs = p.runQuery((Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf limit 2`);
   p.assertResultEquals("shelf items counted correctly with limit 2", rs, <["i.shelf", "numOfItems"], 
-    [[1, 2], [2, 2]]>);
+    [["1", "2"], ["2", "2"]]>);
 }
 
 void testLimitAndOrder(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i.shelf limit 2 order i.shelf`);
   p.assertResultEquals("shelves selected correctly limited and sorted", rs, <["i.shelf"], 
-    [[1], [1]]>);
+    [["1"], ["1"]]>);
 
   rs = p.runQuery((Request)`from Item i select i.shelf limit 2 order i.shelf desc`);
   p.assertResultEquals("shelves selected correctly limited and sorted in reverse", rs, <["i.shelf"], 
-    [[3], [3]]>);
+    [["3"], ["3"]]>);
 
   rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
                            'where i.product == p group i.product order total limit 1`);
   p.assertResultEquals("item prices summed, sorted, limited", rs, <["i.product", "total"], 
-    [[U("radio"), 2 * 30]]>);
+    [[U("radio"), "<2 * 30>"]]>);
   
   rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
                            'where i.product == p group i.product order total desc limit 1`);
   p.assertResultEquals("item prices summed, sorted in reverse, limited", rs, <["i.product", "total"], 
-    [[U("tv"), 4 * 20]]>);
+    [[U("tv"), "<4 * 20>"]]>);
   
   
   
@@ -319,21 +318,21 @@ void testLimitAndOrder(PolystoreInstance p) {
 void testOrdering(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i.shelf order i.shelf`);
   p.assertResultEquals("shelves correctly sorted", rs, <["i.shelf"], 
-      [[1], [1], [2], [2], [3], [3]]>);
+      [["1"], ["1"], ["2"], ["2"], ["3"], ["3"]]>);
 
   rs = p.runQuery((Request)`from Item i select i.shelf order i.shelf desc`);
   p.assertResultEquals("shelves correctly sorted in reverse", rs, <["i.shelf"], 
-      [[3], [3], [2], [2], [1], [1]]>);
+      [["3"], ["3"], ["2"], ["2"], ["1"], ["1"]]>);
 
   rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
                            'where i.product == p group i.product order total`);
   p.assertResultEquals("item prices sorted correctly", rs, <["i.product", "total"], 
-    [[U("tv"), 4 * 20], [U("radio"), 2 * 30]]>);
+    [[U("tv"), "<4 * 20>"], [U("radio"), "<2 * 30>"]]>);
  
   rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
                            'where i.product == p group i.product order total desc`);
   p.assertResultEquals("item prices sorted correctly in reverse", rs, <["i.product", "total"], 
-    [[U("radio"), 2 * 30], [U("tv"), 4 * 20]]>);
+    [[U("radio"), "<2 * 30>"], [U("tv"), "<4 * 20>"]]>);
   
 }
 
@@ -391,12 +390,12 @@ void testLoneVars(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i`);
   p.assertResultEquals("all features from Item retrieved", rs, <["i.picture", "i.shelf"]
     , [
-        [base64("aa"), 1],//, U("tv")],
-        [base64("bb"), 1],// U("tv")],
-        [base64("cc"), 3],//, U("tv")],
-        [base64("dd"), 3],// U("tv")],
-        [base64("ee"), 2],// U("radio")],
-        [base64("ff"), 2] // U("radio")]
+        [base64("aa"), "1"],//, U("tv")],
+        [base64("bb"), "1"],// U("tv")],
+        [base64("cc"), "3"],//, U("tv")],
+        [base64("dd"), "3"],// U("tv")],
+        [base64("ee"), "2"],// U("radio")],
+        [base64("ff"), "2"] // U("radio")]
     ]>);
   
   rs = p.runQuery((Request)`from User u select u`);
@@ -1183,6 +1182,41 @@ void test13(PolystoreInstance p) {
 }
 
 
+void testMariaDBFields(PolystoreInstance p) {
+    p.runUpdate((Request) `insert ReferenceTest { @id: #r1, r: 2}`);
+	p.runUpdate((Request) `insert EntitySmokeTest { @id: #e1, s: "Hoi", t: "Long", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-01-02$, dt: $2020-03-04T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)), ref: #r1 }`);
+	rs = p.runQuery((Request) `from EntitySmokeTest e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg, e.ref where e.@id == #e1`);
+	p.assertResultEquals("Expected values working", rs, <
+	   ["e.s", "e.t", "e.i", "e.r", "e.f",  "e.b", "e.d", "e.dt", "e.pt", "e.pg", "e.ref"],
+	   [["Hoi", "Long", "3", "12312312321", "20.001", true, "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))", U("r1")]]>);
+
+	p.runPreparedUpdate((Request) `insert EntitySmokeTest { @id: ??id, s: ??s, t: ??t, i: ??i, r: ??r, f: ??f, b: ??b, d: ??d, dt: ??dt, pt: ??pt, pg: ??pg, ref: ??ref }`,
+	   ["id", "s","t","i", "r","f", "b", "d", "dt", "pt", "pg", "ref"],
+	   ["uuid", "string", "string", "int", "bigint", "float", "bool", "date", "datetime", "point", "polygon", "uuid"],
+       [[U("e2"), "Hoi", "Long", "3", "12312312321", "20.001", "true", "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))", U("r1")]]
+	);
+	rs = p.runQuery((Request) `from EntitySmokeTest e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg, e.ref where e.@id == #e2`);
+	p.assertResultEquals("Expected values working", rs, <
+	   ["e.s", "e.t", "e.i", "e.r", "e.f",  "e.b", "e.d", "e.dt", "e.pt", "e.pg", "e.ref"],
+	   [["Hoi", "Long", "3", "12312312321", "20.001", true, "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))", U("r1")]]>);
+}
+void testMongoDBFields(PolystoreInstance p) {
+	p.runUpdate((Request) `insert EntitySmokeTest2 { @id: #e2, s: "Hoi", t: "Long", i: 3, r: 12312312321, f: 20.00, b: true, d: $2020-01-02$, dt: $2020-03-04T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);
+	rs = p.runQuery((Request) `from EntitySmokeTest2 e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg where e.@id == #e2`);
+	p.assertResultEquals("Expected values working", rs, <
+	   ["e.s", "e.t", "e.i", "e.r", "e.f",  "e.b", "e.d", "e.dt", "e.pt", "e.pg"],
+	   [["Hoi", "Long", "3", "12312312321", "20.001", true, "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))"]]>);
+	p.runPreparedUpdate((Request) `insert EntitySmokeTest2 { @id: ??id, s: ??s, t: ??t, i: ??i, r: ??r, f: ??f, b: ??b, d: ??d, dt: ??dt, pt: ??pt, pg: ??pg }`,
+	   ["id", "s","t","i", "r","f", "b", "d", "dt", "pt", "pg", "ref"],
+	   ["uuid", "string", "string", "int", "bigint", "float", "bool", "date", "datetime", "point", "polygon", "uuid"],
+       [[U("e2"), "Hoi", "Long", "3", "12312312321", "20.001", "true", "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))"]]
+	);
+	rs = p.runQuery((Request) `from EntitySmokeTest2 e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg where e.@id == #e2`);
+	p.assertResultEquals("Expected values working", rs, <
+	   ["e.s", "e.t", "e.i", "e.r", "e.f",  "e.b", "e.d", "e.dt", "e.pt", "e.pg"],
+	   [["Hoi", "Long", "3", "12312312321", "20.001", true, "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))"]]>);
+}
+
 TestExecuter executer(Log log = NO_LOG(), bool doTypeChecking = true) = initTest(setup, HOST, PORT, USER, PASSWORD, log = log, doTypeChecking = doTypeChecking);
 
 void runTest(void(PolystoreInstance) t, Log log = NO_LOG(), bool runSetup = true, bool runTestsInSetup = false, bool doTypeChecking = true) {
@@ -1224,6 +1258,9 @@ void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	  , testDeleteAllWithCascade
 	  , testDeleteKidsRemovesParentLinksSQLLocal
 	  , testDeleteKidsRemovesParentLinksSQLCross
+
+	  , testMariaDBFields
+	  , testMongoDBFields
 
 	  , testInsertManyXrefsSQLLocal
 	  , testInsertManyContainSQLtoExternal

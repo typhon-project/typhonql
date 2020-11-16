@@ -22,8 +22,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import org.bson.BsonTimestamp;
 import org.bson.Document;
-import org.bson.types.BSONTimestamp;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LinearRing;
@@ -117,9 +117,9 @@ public class MongoDBIterator implements ResultIterator {
 			// due to strange way dates & timestamps are stored in mogo, we swap them around
 			return ((Date)fromDB).toInstant();
 		}
-		else if (fromDB instanceof BSONTimestamp) {
-			 long seconds = ((BSONTimestamp) fromDB).getTime();
-			 int beforEpoch = ((BSONTimestamp) fromDB).getInc();
+		else if (fromDB instanceof BsonTimestamp) {
+			 long seconds = ((BsonTimestamp) fromDB).getTime();
+			 int beforEpoch = ((BsonTimestamp) fromDB).getInc();
 			 return Instant.ofEpochSecond(seconds * beforEpoch).atOffset(ZoneOffset.UTC).toLocalDate();
 		}
 		else if (fromDB instanceof String) {

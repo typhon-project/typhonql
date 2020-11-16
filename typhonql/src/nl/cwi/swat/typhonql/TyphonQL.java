@@ -245,6 +245,9 @@ public class TyphonQL {
         case "neo4j":
         	connectionType =tf.constructor(ts, adtType, "neoConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
         	break;
+        case "nlae":
+        	connectionType =tf.constructor(ts, adtType, "nlpConnection", tf.stringType(), "host", tf.integerType(), "port", tf.stringType(), "user", tf.stringType(), "password");
+        	break;
         }
         return vf.constructor(connectionType, vf.string(host), vf.integer(port), vf.string(user), vf.string(password));
 	}

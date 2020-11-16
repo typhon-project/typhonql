@@ -52,7 +52,7 @@ import util::Maybe;
 
 bool hasId({KeyVal ","}* kvs) = hasId([ kv | KeyVal kv <- kvs ]);
 
-bool hasId(list[KeyVal] kvs) = any((KeyVal)`@id: <Expr _>` <- kvs);
+bool hasId(list[KeyVal] kvs) = any((KeyVal)`@id: <UUID _>` <- kvs);
 
 bool hasIdPlaceHolder({KeyVal ","}* kvs) = any((KeyVal)`@id: <PlaceHolder _>` <- kvs); 
 
