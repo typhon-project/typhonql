@@ -65,7 +65,7 @@ public class Neo4JIterator implements ResultIterator {
 			return v.asBoolean();
 		}
 		else if (v.hasType(TYPES.FLOAT())) {
-			return v.asFloat();
+			return v.asDouble();
 		}
 		else if (v.hasType(TYPES.DATE())) {
 			return v.asLocalDate();
