@@ -41,7 +41,7 @@ syntax Agg
   | limitClause: "limit" Expr expr
   ;
   
-syntax Dir
+lexical Dir
   = "asc"
   | "desc"
   | /* asc */
