@@ -63,6 +63,10 @@
                                 <filters>
                                     <!-- extract our own jars from the general dependency layer to make docker pushes and pulls easier -->
                                     <filter>
+                                        <!-- remove our own bundle that we dont need in the server -->
+                                        <glob>**/bundle-typhonql*.jar</glob>
+                                    </filter>
+                                    <filter>
                                         <glob>**/typhonql*.jar</glob>
                                         <toLayer>typhonql-dep</toLayer>
                                     </filter>
