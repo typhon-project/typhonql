@@ -35,7 +35,7 @@
 				<configuration>
                     <skip>false</skip>
 					<from>
-						<image>gcr.io/distroless/java-debian10:8</image>
+						<image>gcr.io/distroless/java:8</image>
 					</from>
                     <container>
                         <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
