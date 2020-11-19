@@ -1186,33 +1186,33 @@ void testMariaDBFields(PolystoreInstance p) {
     p.runUpdate((Request) `insert ReferenceTest { @id: #r1, r: 2}`);
 	p.runUpdate((Request) `insert EntitySmokeTest { @id: #e1, s: "Hoi", t: "Long", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-01-02$, dt: $2020-03-04T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)), ref: #r1 }`);
 	rs = p.runQuery((Request) `from EntitySmokeTest e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg, e.ref where e.@id == #e1`);
-	p.assertResultEquals("Expected values working", rs, <
+	p.assertResultEquals("Working regular values", rs, <
 	   ["e.s", "e.t", "e.i", "e.r", "e.f",  "e.b", "e.d", "e.dt", "e.pt", "e.pg", "e.ref"],
 	   [["Hoi", "Long", "3", "12312312321", "20.001", true, "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))", U("r1")]]>);
 
 	p.runPreparedUpdate((Request) `insert EntitySmokeTest { @id: ??id, s: ??s, t: ??t, i: ??i, r: ??r, f: ??f, b: ??b, d: ??d, dt: ??dt, pt: ??pt, pg: ??pg, ref: ??ref }`,
 	   ["id", "s","t","i", "r","f", "b", "d", "dt", "pt", "pg", "ref"],
 	   ["uuid", "string", "string", "int", "bigint", "float", "bool", "date", "datetime", "point", "polygon", "uuid"],
-       [[U("e2"), "Hoi", "Long", "3", "12312312321", "20.001", "true", "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))", U("r1")]]
+       [[U("e2"), "Hoi", "Long", "3", "12312312321", "20.01", "true", "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))", U("r1")]]
 	);
 	rs = p.runQuery((Request) `from EntitySmokeTest e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg, e.ref where e.@id == #e2`);
-	p.assertResultEquals("Expected values working", rs, <
+	p.assertResultEquals("Working parameterized", rs, <
 	   ["e.s", "e.t", "e.i", "e.r", "e.f",  "e.b", "e.d", "e.dt", "e.pt", "e.pg", "e.ref"],
-	   [["Hoi", "Long", "3", "12312312321", "20.001", true, "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))", U("r1")]]>);
+	   [["Hoi", "Long", "3", "12312312321", "20.01", true, "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))", U("r1")]]>);
 }
 void testMongoDBFields(PolystoreInstance p) {
-	p.runUpdate((Request) `insert EntitySmokeTest2 { @id: #e2, s: "Hoi", t: "Long", i: 3, r: 12312312321, f: 20.00, b: true, d: $2020-01-02$, dt: $2020-03-04T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);
-	rs = p.runQuery((Request) `from EntitySmokeTest2 e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg where e.@id == #e2`);
-	p.assertResultEquals("Expected values working", rs, <
+	p.runUpdate((Request) `insert EntitySmokeTest2 { @id: #e1, s: "Hoi", t: "Long", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-01-02$, dt: $2020-03-04T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);
+	rs = p.runQuery((Request) `from EntitySmokeTest2 e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg where e.@id == #e1`);
+	p.assertResultEquals("Working regular values", rs, <
 	   ["e.s", "e.t", "e.i", "e.r", "e.f",  "e.b", "e.d", "e.dt", "e.pt", "e.pg"],
 	   [["Hoi", "Long", "3", "12312312321", "20.001", true, "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))"]]>);
 	p.runPreparedUpdate((Request) `insert EntitySmokeTest2 { @id: ??id, s: ??s, t: ??t, i: ??i, r: ??r, f: ??f, b: ??b, d: ??d, dt: ??dt, pt: ??pt, pg: ??pg }`,
-	   ["id", "s","t","i", "r","f", "b", "d", "dt", "pt", "pg", "ref"],
-	   ["uuid", "string", "string", "int", "bigint", "float", "bool", "date", "datetime", "point", "polygon", "uuid"],
+	   ["id", "s","t","i", "r","f", "b", "d", "dt", "pt", "pg"],
+	   ["uuid", "string", "string", "int", "bigint", "float", "bool", "date", "datetime", "point", "polygon"],
        [[U("e2"), "Hoi", "Long", "3", "12312312321", "20.001", "true", "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))"]]
 	);
 	rs = p.runQuery((Request) `from EntitySmokeTest2 e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg where e.@id == #e2`);
-	p.assertResultEquals("Expected values working", rs, <
+	p.assertResultEquals("Working parameterized", rs, <
 	   ["e.s", "e.t", "e.i", "e.r", "e.f",  "e.b", "e.d", "e.dt", "e.pt", "e.pg"],
 	   [["Hoi", "Long", "3", "12312312321", "20.001", true, "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))"]]>);
 }

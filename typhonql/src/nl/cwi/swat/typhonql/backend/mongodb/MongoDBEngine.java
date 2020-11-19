@@ -117,7 +117,7 @@ public class MongoDBEngine extends Engine {
 		if (obj == null) {
 			return "null";
 		}
-		if (obj instanceof Integer || obj instanceof Boolean || obj instanceof Double) {
+		if (obj instanceof Integer || obj instanceof Boolean || obj instanceof Double || obj instanceof Long) {
 			return String.valueOf(obj);
 		}
 		else if (obj instanceof String) {
@@ -129,11 +129,11 @@ public class MongoDBEngine extends Engine {
 		else if (obj instanceof LocalDate) {
 			// it's mixed around with instance, since timestamps only store seconds since epoch, which is fine for dates, but not so fine for tru timestamps
 			long epoch = ((LocalDate)obj).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
-			return "{\"$timestamp\": {\"t\":" + Math.abs(epoch) + "\"i\": "+ (epoch >= 0 ? "1" : "-1") + "}}";
+			return "{\"$timestamp\": {\"t\":" + Math.abs(epoch) + ", \"i\": "+ (epoch >= 0 ? "1" : "-1") + "}}";
 		}
 		else if (obj instanceof Instant) {
 			// it's mixed around with instance, since timestamps only store seconds since epoch, which is fine for dates, but not so fine for tru timestamps
-			return "{\"$date\": {\"$numberLong\":" + ((Instant)obj).toEpochMilli() + "}}";
+			return "{\"$date\": {\"$numberLong\":\"" + ((Instant)obj).toEpochMilli() + "\"}}";
 		}
 		else if (obj instanceof UUID) {
 			return "{ \"$binary\": {\"base64\": \"" + MakeUUID.uuidToBase64((UUID)obj) + "\", \"subType\": \"04\"}}";

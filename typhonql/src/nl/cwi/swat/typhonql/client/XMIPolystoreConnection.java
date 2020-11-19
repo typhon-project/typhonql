@@ -283,7 +283,7 @@ public class XMIPolystoreConnection {
 		qlValueMappers = new HashMap<>();
 		qlValueMappers.put("int",Integer::parseInt);
 		qlValueMappers.put("bigint",Long::parseLong);
-		qlValueMappers.put("float",Float::parseFloat);
+		qlValueMappers.put("float",Double::parseDouble);
 		qlValueMappers.put("string", s -> s);
 		qlValueMappers.put("bool", Boolean::valueOf);
 		qlValueMappers.put("text", s -> s);
@@ -323,6 +323,9 @@ public class XMIPolystoreConnection {
 	
 	
 	public static ExternalArguments buildExternalArguments(String[] columnNames, String[] columnTypes, String[][] matrix, Map<String, InputStream> blobs, boolean enforceNonNull) {
+        if (columnNames.length != columnTypes.length) {
+            throw new RuntimeException("Column names and column types do not have the same amount of entries");
+        }
 		@SuppressWarnings("unchecked")
 		Function<String, Object>[] mappers = new Function[columnTypes.length];
 		for (int m = 0; m < columnTypes.length; m++) {
@@ -340,6 +343,9 @@ public class XMIPolystoreConnection {
 		Object[][] values = new Object[matrix.length][];
 		for (int i =0; i < matrix.length; i++) {
 			String[] row = matrix[i];
+			if (row.length != mappers.length) {
+				throw new RuntimeException("The " + i + "th row doesn't contain the same amount of values as defined in the header (expected: " + mappers.length + " got: " + row.length + ")");
+			}
 			Object[] vs = new Object[row.length];
 			for (int j=0; j < row.length; j++) {
 				String val = row[j];
