@@ -35,7 +35,7 @@
 				<configuration>
                     <skip>false</skip>
 					<from>
-						<image>gcr.io/distroless/java:8</image>
+						<image>adoptopenjdk:8-jdk-hotspot</image>
 					</from>
                     <container>
                         <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
