@@ -414,31 +414,23 @@ void testLoneVars(PolystoreInstance p) {
   
   rs = p.runQuery((Request)`from User u select u`);
   p.assertResultEquals("all features from User retrieved", rs,
-      <["u.name", "u.billing$zipcode$nums","u.billing$street","u.billing$zipcode$letters",
-        "u.billing$location","u.address","u.created","u.billing$city","u.location"],[
-       ["Pablo","1234","Seventh","ab","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)"],
-       //,U("wish1"),
-       //    U("bio1"),{},U("rev1")],
-       //["1234","Seventh","ab","Pablo","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)"],
-       //,U("wish2"),
-       //    U("bio1"),{},U("rev1")],
-       //["4566","Bla","cd","Davy","POINT (20 30)","alsoThere","2020-01-02T15:24:00Z","Almere","POINT (20 30)"],
-       //,{},{},{},U("rev2")],
-       ["Davy","4566","Bla","cd","POINT (20 30)","alsoThere","2020-01-02T15:24:00Z","Almere","POINT (20 30)"]
-       //{},{},{},U("rev3")]
-       ]>
+      <["u.address","u.billing$city","u.billing$location","u.billing$street","u.billing$zipcode$letters",
+        "u.billing$zipcode$nums","u.created","u.location","u.name"],
+      
+       [["alsoThere","Ams","POINT (2 3)","Seventh","ab","1234","2020-01-02T11:24:00Z","POINT (2 3)","Pablo"],
+       ["alsoThere","Almere","POINT (20 30)","Bla","cd","4566","2020-01-02T15:24:00Z","POINT (20 30)","Davy"]]
+       >
        );
   
    
     
   rs = p.runQuery((Request)`from Review r select r`);
   p.assertResultEquals("all features from Review retrieved",  rs,
-    <["r.location","r.screenshot","r.content","r.posted"],
-    [["POINT (20 30)","eXk=","","2020-02-03T01:11:00Z"], //U("davy"),U("tv")],
-     ["POINT (2 3)","eHg=","Good TV","2020-02-03T01:11:00Z"], //U("pablo"),U("tv")],
-     ["POINT (3 2)","eno=","***","2020-02-03T01:11:00Z"] //U("davy"),U("radio")]
-     ]>);
-  
+    <["r.content","r.location","r.posted","r.screenshot"],
+    [["Good TV","POINT (2 3)","2020-02-03T01:11:00Z","eHg="],
+     ["","POINT (20 30)","2020-02-03T01:11:00Z","eXk="],
+     ["***","POINT (3 2)","2020-02-03T01:11:00Z","eno="]]>);
+    
     
   rs = p.runQuery((Request)`from Biography b select b`);
   p.assertResultEquals("all features from Biography retrieved", rs, <["b.content"]
@@ -448,17 +440,9 @@ void testLoneVars(PolystoreInstance p) {
    
   rs = p.runQuery((Request)`from User u, Biography b select u, b where u.biography == b`);
   p.assertResultEquals("all features of Pablo and his Biography retrieved", rs, 
-     <["u.name", "u.billing$zipcode$nums","u.billing$street","u.billing$zipcode$letters",
-       "u.billing$location","u.address","u.created","u.billing$city","u.location", "b.content"],
-       //"u.wishes","u.biography","u.Stuff__","u.reviews","b.content","b.user"],
-       [
-      ["Pablo", "1234","Seventh","ab","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)", "Chilean"]
-        //U("wish1"),U("bio1"),{},U("rev1"),
-        //   "Chilean",U("pablo")],
-      //["1234","Seventh","ab","Pablo","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)", "Chilean"]
-        //U("wish2"),U("bio1"),{},U("rev1"),
-        //  "Chilean",U("pablo")
-          ]>);
+     <["u.address","u.billing$city","u.billing$location","u.billing$street","u.billing$zipcode$letters",
+     "u.billing$zipcode$nums","u.created","u.location","u.name","b.content"],
+       [["alsoThere","Ams","POINT (2 3)","Seventh","ab","1234","2020-01-02T11:24:00Z","POINT (2 3)","Pablo","Chilean"]]>);
 }
 
 void testSelectFreetextAttributes(PolystoreInstance p) {

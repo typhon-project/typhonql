@@ -590,7 +590,7 @@ Request expandLoneVars(Request req, Schema s) {
     newRs = outer: for (Result r <- rs) {
       if ((Result)`<VId x>` := r) {
         ent = env["<x>"];
-        for (<ent, str name, _> <- s.attrs) {
+        for (str name <- sort(s.attrs[ent]<0>)) {
 	      Id f = [Id]name;
 	      append outer: (Result)`<VId x>.<Id f>`;
 	    }
