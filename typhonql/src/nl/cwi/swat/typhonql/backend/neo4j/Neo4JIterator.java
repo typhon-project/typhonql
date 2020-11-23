@@ -59,7 +59,7 @@ public class Neo4JIterator implements ResultIterator {
 			return v.asString();
 		}
 		else if (v.hasType(TYPES.INTEGER())) {
-			return v.asInt();
+			return v.asLong();
 		}
 		else if (v.hasType(TYPES.BOOLEAN())) {
 			return v.asBoolean();
