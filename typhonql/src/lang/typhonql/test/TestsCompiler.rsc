@@ -252,6 +252,16 @@ void testBasicMongoDBWhereClauses(PolystoreInstance p) {
 	rs = p.runQuery((Request)`from Review r select r.content where r.product == #radio || r.user == #pablo || r.location == #point(20.0 30.0)`);
 	p.assertResultEquals("using || works multiple times", rs, <["r.content"], [["***"], ["Good TV"], [""]]>);
 
+//p.runUpdateWithBlobs((Request) `insert Review { @id: #rev1, content: "Good TV", user: #pablo, product: #tv, posted: $2020-02-03T02:11:00+01:00$, location: #point(2.0 3.0), screenshot: #blob:s1 }`, (U("s1") : "xx"));
+//	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv, posted: $2020-02-03T02:11:00$, location: #point(20.0 30.0), screenshot: #blob:s2 }`, (U("s2") : "yy"));
+//	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio, posted: $2020-02-03T02:11:00$, location: #point(3.0 2.0), screenshot: #blob:s3 }`, (U("s3") : "zz"));
+	
+	rs = p.runQuery((Request)`from Review r select r.content where r.product == #radio || (r.user == #pablo && r.location == #point(20.0 30.0))`);
+	p.assertResultEquals("using && below || works ", rs, <["r.content"], [["***"]]>);
+
+	rs = p.runQuery((Request)`from Review r select r.content where (r.user == #pablo && r.location == #point(20.0 30.0) || r.product == #radio )`);
+	p.assertResultEquals("using && below || works (no short-circuit) ", rs, <["r.content"], [["***"]]>);
+
 }
 
 void testBasicAggregation(PolystoreInstance p) {

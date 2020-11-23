@@ -336,7 +336,7 @@ tuple[str, DBObject] expr2pattern((Expr)`<Expr lhs> || <Expr rhs>`, Ctx ctx) {
 tuple[str, DBObject] expr2pattern((Expr)`<Expr lhs> && <Expr rhs>`, Ctx ctx) {
   <ent, obj1> = expr2pattern(lhs, ctx);
   <ent, obj2> = expr2pattern(rhs, ctx);
-  return <en, object([<"$and", array([obj1, obj2])>])>;
+  return <ent, object([<"$and", array([obj1, obj2])>])>;
 }
 
 tuple[str, DBObject] expr2pattern((Expr)`(<Expr e>)`, Ctx ctx)
