@@ -685,6 +685,31 @@ Request canonicalizeRelations((Request)`<Query q>`, Schema s) {
 
 }
 
+Request flattenAndsToCommas((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ wheres>`) {
+  
+  list[Expr] ws = [];
+  
+  void flatten(Expr e) {
+    if ((Expr)`<Expr lhs> && <Expr rhs>` := e) {
+      flatten(lhs);
+      flatten(rhs);
+    }
+    else if ((Expr)`(<Expr x>)` := e) {
+      flatten(x);
+    }
+    else {
+      ws += [e];
+    }
+  }
+  
+  for (Expr w <- wheres) {
+    flatten(w);
+  }
+  
+  Query q = buildQuery([ b | Binding b <- bs ], [ r | Result r <- rs ], ws);
+  return (Request)`<Query q>`;
+}
+
 Query buildQuery(list[Binding] bs, list[Result] rs, list[Expr] ws) {
   Binding b0 = bs[0];
   Result r0 = rs[0];

@@ -237,6 +237,23 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
   setup(p, true);
 }
 
+void testBasicMongoDBWhereClauses(PolystoreInstance p) {
+  
+	rs = p.runQuery((Request)`from Review r select r.content where r.product == #tv, r.user == #davy`);
+	p.assertResultEquals("comma separated clauses both filter", rs, <["r.content"], [[""]]>);
+
+	rs = p.runQuery((Request)`from Review r select r.content where r.product == #tv && r.user == #davy`);
+	p.assertResultEquals("using && filters like comma", rs, <["r.content"], [[""]]>);
+
+
+	rs = p.runQuery((Request)`from Review r select r.content where r.product == #radio || r.user == #pablo`);
+	p.assertResultEquals("using || works", rs, <["r.content"], [["***"], ["Good TV"]]>);
+
+	rs = p.runQuery((Request)`from Review r select r.content where r.product == #radio || r.user == #pablo || r.location == #point(20.0 30.0)`);
+	p.assertResultEquals("using || works multiple times", rs, <["r.content"], [["***"], ["Good TV"], [""]]>);
+
+}
+
 void testBasicAggregation(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select count(i.@id) as cnt group null`);
   p.assertResultEquals("items counted correctly", rs, <["cnt"], 
@@ -644,6 +661,10 @@ void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
   p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", tags: [#fun, #social], availabilityRegion: #polygon((1.0 1.0)), productionDate: $2020-01-01$, price: 400}`);
   rs = p.runQuery((Request)`from Product p select p.name where p.tags == #fun`);
   p.assertResultEquals("insertManyXrefsSQLLocal", rs, <["p.name"], [["iPhone"]]>);
+}
+
+void testInsertManyContainSQLtoLocal(PolystoreInstance p) {
+
 }
 
 void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
@@ -1242,6 +1263,7 @@ void testDeleteAllSQLBasic(PolystoreInstance p) {
 void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	tests = 
 	  [ testBasicAggregation
+	  , testBasicMongoDBWhereClauses
 	  , testLimit
 	  , testLimitAndOrder
 	  , testOrdering

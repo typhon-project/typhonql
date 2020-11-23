@@ -84,7 +84,9 @@ Script request2script(Request r, Schema s, Log log = noLog) {
       }
          
       list[Place] order = orderPlaces(r, s);
-      r = expandNavigation(inferNlpLinks(inferKeyValLinks(expandLoneVars(addWhereIfAbsent(r), s), s), s), s);
+      r = addWhereIfAbsent(r);
+      r = flattenAndsToCommas(r);
+      r = expandNavigation(inferNlpLinks(inferKeyValLinks(expandLoneVars(r, s), s), s), s);
       r = explicitJoinsInReachability(r, s);
       r = eliminateCustomDataTypes(injectProperUUIDs(r), s);
       log("NORMALIZED: <r>");
