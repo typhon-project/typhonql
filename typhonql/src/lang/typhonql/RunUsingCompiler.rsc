@@ -86,7 +86,7 @@ list[str] runUpdate(Request r, Schema s, Schema sPlain, Session session, bool ru
 		// DDL updates from DML updates. Perhaps we should consider it
   		if (!isDDL(stmt)) {
             startScript = getNanoTime();
-            warning = "";
+            warnings = "";
             if (runChecker) {
                 warnings = validateQuery(r, sPlain, log);
                 if (warnings != "") {
@@ -102,7 +102,7 @@ list[str] runUpdate(Request r, Schema s, Schema sPlain, Session session, bool ru
             if (bench) {
                 println("BENCH: request, <endScript - startScript>, <endExecute - endScript>");
             }
-			return res + (warning != "" ? [] : [warning]);
+			return res + (warnings != "" ? [] : [warnings]);
   		}
   		else {
   			scr = request2script(r, s, log = log);
