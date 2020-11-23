@@ -65,11 +65,10 @@ public class NlpIterator implements ResultIterator {
 	public UUID getCurrentId(String label, String type) {
 		String simpleLabel = label.split("__")[2];
 		Integer i = columnHeaders.get(simpleLabel + ".@id");
-		if (i != null) {
-            String str = getCurrentResult().get(i).asText();
-            return UUID.fromString(str);
+		if (i == null) {
+			return null;
 		}
-		return null;
+        return UUID.fromString(getCurrentResult().get(i).asText());
 	}
 
 	@Override
@@ -81,7 +80,10 @@ public class NlpIterator implements ResultIterator {
 		TYPE type = TYPES.get(parts[1]+"$"+parts[2]);
 		String simpleLabel = label.split("__")[2];
 		String actualPath = name.replace("$", ".");
-		int i = columnHeaders.get(simpleLabel+"."+actualPath);
+		Integer i = columnHeaders.get(simpleLabel+"."+actualPath);
+		if (i == null) {
+			return null;
+		}
 		JsonNode node = getCurrentResult().get(i);
 		switch (type) {
 		case INTEGER:
