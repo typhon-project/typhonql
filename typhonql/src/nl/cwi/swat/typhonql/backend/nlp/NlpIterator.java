@@ -3,6 +3,7 @@ package nl.cwi.swat.typhonql.backend.nlp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -28,15 +29,15 @@ public class NlpIterator implements ResultIterator {
 	}
 	
 	private int index = -1;
-	private JsonNode records;
-	Map<String, Integer> columnHeaders;
+	private final JsonNode records;
+	private final Map<String, Integer> columnHeaders;
 	
 	public NlpIterator(JsonNode resultsNode) {
 		JsonNode header = resultsNode.get("header");
 		records = resultsNode.get("records");
 		
 		if (header == null || !header.isArray() || records == null || !records.isArray()) 
-			throwWrongFormatException();
+			throw new RuntimeException(MALFORMED_PAYLOAD_MESSAGE);	
 			
 		columnHeaders = new HashMap<String, Integer>();
 		for (int i = 0; i < header.size(); i++) {
@@ -44,10 +45,6 @@ public class NlpIterator implements ResultIterator {
 		}
 		
 		beforeFirst();
-	}
-
-	private void throwWrongFormatException() {
-		throw new RuntimeException(MALFORMED_PAYLOAD_MESSAGE);	
 	}
 
 	@Override
@@ -67,7 +64,7 @@ public class NlpIterator implements ResultIterator {
 	@Override
 	public UUID getCurrentId(String label, String type) {
 		String simpleLabel = label.split("__")[2];
-		int i = columnHeaders.get(simpleLabel + ".@id");
+		int i = Objects.requireNonNull(columnHeaders, "non init field?").get(simpleLabel + ".@id");
 		String str = getCurrentResult().get(i).asText();
 		return UUID.fromString(str);
 	}
