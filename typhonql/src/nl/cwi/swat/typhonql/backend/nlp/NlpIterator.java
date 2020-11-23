@@ -64,9 +64,12 @@ public class NlpIterator implements ResultIterator {
 	@Override
 	public UUID getCurrentId(String label, String type) {
 		String simpleLabel = label.split("__")[2];
-		int i = Objects.requireNonNull(columnHeaders, "non init field?").get(simpleLabel + ".@id");
-		String str = getCurrentResult().get(i).asText();
-		return UUID.fromString(str);
+		Integer i = columnHeaders.get(simpleLabel + ".@id");
+		if (i != null) {
+            String str = getCurrentResult().get(i).asText();
+            return UUID.fromString(str);
+		}
+		return null;
 	}
 
 	@Override
