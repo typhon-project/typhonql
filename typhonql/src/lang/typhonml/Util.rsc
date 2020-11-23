@@ -270,19 +270,113 @@ public str nlpRelation() = "NLP___";
 public str nlpCustomDataType(str entity, str field) = "NLP___<entity>_<field>";
 public bool isNlpCustomDataType(str name) = startsWith(name, "NLP___");
 
-public map[str, Attrs] customForNlpAnalysis = ( 
-	"SentimentAnalysis": {
-		<"SentimentAnalysis", "begin", "int">,
-		<"SentimentAnalysis", "end", "int">,
-		<"SentimentAnalysis", "Sentiment", "int">,
-		<"SentimentAnalysis", "SentimentLabel", "text">
-	}
-	,
-	"NamedEntityRecognition": {
-		<"NamedEntityRecognition", "begin", "int">,
-		<"NamedEntityRecognition", "end", "int">,
-		<"NamedEntityRecognition", "NamedEntity", "text">
-	});
+
+public map[str, Attrs] customForNlpAnalysis = (
+    "SentimentAnalysis": {
+        <"SentimentAnalysis", "Sentiment", "int">,
+        <"SentimentAnalysis", "SentimentLabel", "text">
+    },
+    "NamedEntityRecognition": {
+        <"NamedEntityRecognition", "begin", "int">,
+        <"NamedEntityRecognition", "end", "int">,
+        <"NamedEntityRecognition", "NamedEntity", "text">,
+        <"NamedEntityRecognition", "WordToken", "text">,
+        <"NamedEntityRecognition", "GeoCode", "point">
+    },
+    "Tokenisation": {
+        <"Tokenisation", "begin", "int">,
+        <"Tokenisation", "end", "int">,
+        <"Tokenisation", "Token", "text">
+    },
+    "SentenceSegmentation": {
+        <"SentenceSegmentation", "begin", "int">,
+        <"SentenceSegmentation", "end", "int">,
+        <"SentenceSegmentation", "Sentence", "text">
+    },
+    "ParagraphSegmentation": {
+        <"ParagraphSegmentation", "begin", "int">,
+        <"ParagraphSegmentation", "end", "int">,
+        <"ParagraphSegmentation", "Paragraph", "text">
+    },
+    "PhraseExtraction": {
+        <"PhraseExtraction", "begin", "int">,
+        <"PhraseExtraction", "end", "int">,
+        <"PhraseExtraction", "Token", "text">
+    },
+    "TermExtraction": {
+        <"TermExtraction", "begin", "int">,
+        <"TermExtraction", "end", "int">,
+        <"TermExtraction.TargetEntity", "begin", "int">,
+        <"TermExtraction.TargetEntity", "end", "int">,
+        <"TermExtraction.TargetEntity", "NamedEntity", "int">,
+        <"TermExtraction", "WeightedToken", "int">
+    },
+    "nGramExtraction": {
+        <"nGramExtraction", "begin", "int">,
+        <"nGramExtraction", "end", "int">,
+        <"nGramExtraction", "NgramType", "text">
+    },
+    "Chunking": {
+        <"Chunking", "begin", "int">,
+        <"Chunking", "end", "int">,
+        <"Chunking.TokenAnnotation", "begin", "int">,
+        <"Chunking.TokenAnnotation", "end", "int">,
+        <"Chunking.TokenAnnotation", "Token", "text">,
+        <"Chunking.PosAnnotation", "begin", "int">,
+        <"Chunking.PosAnnotation", "end", "int">,
+        <"Chunking.PosAnnotation", "PosTag", "text">,
+        <"Chunking.PosAnnotation", "PosValue", "text">,
+        <"Chunking", "Label", "text">
+    },
+    "Lemmatisation": {
+        <"Lemmatisation", "begin", "int">,
+        <"Lemmatisation", "end", "int">,
+        <"Lemmatisation", "Lemma", "text">
+    },
+    "Stemming": {
+        <"Stemming", "begin", "int">,
+        <"Stemming", "end", "int">,
+        <"Stemming", "Stem", "text">
+    },
+    "DependencyParsing": {
+        <"DependencyParsing", "begin", "int">,
+        <"DependencyParsing", "end", "int">,
+        <"DependencyParsing.SourceEntity", "begin", "int">,
+        <"DependencyParsing.SourceEntity", "end", "int">,
+        <"DependencyParsing.SourceEntity", "NamedEntity", "text">,
+        <"DependencyParsing.TargetEntity", "begin", "int">,
+        <"DependencyParsing.TargetEntity", "end", "int">,
+        <"DependencyParsing.TargetEntity", "NamedEntity", "text">,
+        <"DependencyParsing", "DependencyName", "text">
+    },
+    "RelationExtraction": {
+        <"RelationExtraction", "begin", "int">,
+        <"RelationExtraction", "end", "int">,
+        <"RelationExtraction.SourceEntity", "begin", "int">,
+        <"RelationExtraction.SourceEntity", "end", "int">,
+        <"RelationExtraction.SourceEntity", "NamedEntity", "text">,
+        <"RelationExtraction.TargetEntity", "begin", "int">,
+        <"RelationExtraction.TargetEntity", "end", "int">,
+        <"RelationExtraction.TargetEntity", "NamedEntity", "text">,
+        <"RelationExtraction", "RelationName", "text">
+    },
+    "CoreferenceResolution": {
+        <"CoreferenceResolution", "begin", "int">,
+        <"CoreferenceResolution", "end", "int">,
+        <"CoreferenceResolution.Antecedent", "begin", "int">,
+        <"CoreferenceResolution.Antecedent", "end", "int">,
+        <"CoreferenceResolution.Antecedent", "Token", "text">,
+        <"RelationExtraction.Anaphor", "begin", "int">,
+        <"RelationExtraction.Anaphor", "end", "int">,
+        <"RelationExtraction.Anaphor", "Token", "text">
+    },
+    "POSTagging": {
+        <"POSTagging", "begin", "int">,
+        <"POSTagging", "end", "int">,
+        <"POSTagging", "PosTag", "text">,
+        <"POSTagging", "PosValue", "text">
+    }
+);
 	
 public bool isFreeTextType(str ty) = startsWith(ty, "freetext");
   
