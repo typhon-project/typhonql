@@ -23,4 +23,5 @@ import io.usethesource.vallang.IExternalValue;
 
 public interface JsonSerializableResult extends IExternalValue {
 	void serializeJSON(OutputStream target) throws IOException;
+	void addWarnings(String warnings);
 }

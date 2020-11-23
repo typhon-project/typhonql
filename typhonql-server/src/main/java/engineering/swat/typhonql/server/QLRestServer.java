@@ -157,6 +157,7 @@ public class QLRestServer {
 
 	private static final byte[] RESULT_OK_MESSAGE = "{\"result\":\"ok\"}".getBytes(StandardCharsets.UTF_8);
 	private static JsonSerializableResult RESULT_OK = new JsonSerializableResult() {
+		public void addWarnings(String warnings) {};
 		
 		@Override
 		public Type getType() {
@@ -302,6 +303,10 @@ public class QLRestServer {
 	
 	private static JsonSerializableResult stringArray(String[] result) {
 		return new JsonSerializableResult() {
+			@Override
+			public void addWarnings(String warnings) {
+			}
+			
 			@Override
 			public Type getType() {
 				return null;

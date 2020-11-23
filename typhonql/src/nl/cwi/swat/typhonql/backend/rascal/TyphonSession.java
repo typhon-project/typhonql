@@ -217,6 +217,7 @@ public class TyphonSession implements Operations {
 		FunctionType hasAnyExternalArgumentsType = (FunctionType) aliasedTuple.getFieldType("hasAnyExternalArguments");
 		FunctionType hasMoreExternalArgumentsType = (FunctionType) aliasedTuple.getFieldType("hasMoreExternalArguments");
 		FunctionType nextExternalArgumentsType = (FunctionType) aliasedTuple.getFieldType("nextExternalArguments");
+		FunctionType reportType = (FunctionType) aliasedTuple.getFieldType("report");
 
 		// construct the session tuple
 		ResultStore store = new ResultStore(blobMap, externalArguments);
@@ -245,6 +246,7 @@ public class TyphonSession implements Operations {
 				makeHasAnyExternalArguments(store, state, hasAnyExternalArgumentsType, ctx),
 				makeHasMoreExternalArguments(store, state, hasMoreExternalArgumentsType, ctx),
 				makeNextExternalArguments(store, state, nextExternalArgumentsType, ctx),
+				makeReport(state, reportType, ctx),
 				mariaDBOperations.newSQLOperations(store, script, state, uuids, ctx, vf),
 				mongoOperations.newMongoOperations(store, script, state, uuids, ctx, vf),
 				cassandra.buildOperations(store, script, state, uuids, ctx, vf),
@@ -326,6 +328,14 @@ public class TyphonSession implements Operations {
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
+		});
+	}
+	
+	private ICallableValue makeReport(TyphonSessionState state, FunctionType funcType,
+			IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, funcType, args -> {
+			state.addWarnings(((IString)args[0]).getValue());
+			return ResultFactory.nothing();
 		});
 	}
 

@@ -35,6 +35,7 @@ alias Session = tuple[
 	bool () hasAnyExternalArguments,
 	bool () hasMoreExternalArguments,
 	void () nextExternalArguments,
+	void (str) report,
 	SQLOperations sql,
    	MongoOperations mongo,
    	CassandraOperations cassandra,

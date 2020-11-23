@@ -400,17 +400,17 @@ void testLoneVars(PolystoreInstance p) {
   
   rs = p.runQuery((Request)`from User u select u`);
   p.assertResultEquals("all features from User retrieved", rs,
-      <["u.name","u.billing$zipcode$nums","u.billing$street","u.billing$zipcode$letters",
+      <["u.billing$zipcode$nums","u.billing$street","u.billing$zipcode$letters","u.name",
         "u.billing$location","u.address","u.created","u.billing$city","u.location"],[
-       ["Pablo","1234","Seventh","ab","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)"],
+       ["1234","Seventh","ab","Pablo","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)"],
        //,U("wish1"),
        //    U("bio1"),{},U("rev1")],
-       ["Pablo","1234","Seventh","ab","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)"],
+       ["1234","Seventh","ab","Pablo","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)"],
        //,U("wish2"),
        //    U("bio1"),{},U("rev1")],
-       ["Davy","4566","Bla","cd","POINT (20 30)","alsoThere","2020-01-02T15:24:00Z","Almere","POINT (20 30)"],
+       ["4566","Bla","cd","Davy","POINT (20 30)","alsoThere","2020-01-02T15:24:00Z","Almere","POINT (20 30)"],
        //,{},{},{},U("rev2")],
-       ["Davy","4566","Bla","cd","POINT (20 30)","alsoThere","2020-01-02T15:24:00Z","Almere","POINT (20 30)"]
+       ["4566","Bla","cd","Davy","POINT (20 30)","alsoThere","2020-01-02T15:24:00Z","Almere","POINT (20 30)"]
        //{},{},{},U("rev3")]
        ]>
        );
@@ -433,19 +433,17 @@ void testLoneVars(PolystoreInstance p) {
    
   rs = p.runQuery((Request)`from User u, Biography b select u, b where u.biography == b`);
   p.assertResultEquals("all features of Pablo and his Biography retrieved", rs, 
-     <["u.name","u.billing$zipcode$nums","u.billing$street","u.billing$zipcode$letters",
+     <["u.billing$zipcode$nums","u.billing$street","u.billing$zipcode$letters","u.name",
        "u.billing$location","u.address","u.created","u.billing$city","u.location", "b.content"],
        //"u.wishes","u.biography","u.Stuff__","u.reviews","b.content","b.user"],
        [
-      ["Pablo","1234","Seventh","ab","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)", "Chilean"],
+      ["1234","Seventh","ab","Pablo","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)", "Chilean"],
         //U("wish1"),U("bio1"),{},U("rev1"),
         //   "Chilean",U("pablo")],
-      ["Pablo","1234","Seventh","ab","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)", "Chilean"]
+      ["1234","Seventh","ab","Pablo","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)", "Chilean"]
         //U("wish2"),U("bio1"),{},U("rev1"),
         //  "Chilean",U("pablo")
           ]>);
-  
-    
 }
 
 void testSelectFreetextAttributes(PolystoreInstance p) {
@@ -767,7 +765,7 @@ void testNeoReachability(PolystoreInstance p) {
 void testUpdateAttrNeo(PolystoreInstance p) {
   p.runUpdate((Request)`update Wish w where w.@id == #wish1 set {intensity: 3}`);
   rs = p.runQuery((Request)`from Wish w select w.@id, w.intensity where w.@id == #wish1`);
-  p.assertResultEquals("testUpdateAttrNeo", rs, <["w.@id", "w.intensity"], [[ U("wish1"), 3]]>);
+  p.assertResultEquals("testUpdateAttrNeo", rs, <["w.@id", "w.intensity"], [[ U("wish1"), "3"]]>);
 }
 
 void testUpdateSingleRefSQLMongo(PolystoreInstance p) {
@@ -867,12 +865,12 @@ void testUpdateSingleRefSQLMongo(PolystoreInstance p) {
 
 void testSelectViaSQLInverseLocal(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i.shelf where i.product == #tv`);
-  p.assertResultEquals("selectViaSQLInverseLocal", rs, <["i.shelf"], [[1], [1], [3], [3]]>);
+  p.assertResultEquals("selectViaSQLInverseLocal", rs, <["i.shelf"], [["1"], ["1"], ["3"], ["3"]]>);
 }
 
 void testSelectViaSQLKidLocal(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i, Product p select i.shelf where p.@id == #tv, p.inventory == i`);
-  p.assertResultEquals("selectViaSQLKidLocal", rs, <["i.shelf"], [[1], [1], [3], [3]]>);
+  p.assertResultEquals("selectViaSQLKidLocal", rs, <["i.shelf"], [["1"], ["1"], ["3"], ["3"]]>);
 }
 
 
@@ -989,7 +987,7 @@ void testInsertNeo(PolystoreInstance p) {
 	
   rs = p.runQuery((Request)`from Wish w select w.@id, w.intensity where w.@id ==#wish3`);
   p.assertResultEquals("items were inserted", rs, <["w.@id", "w.intensity"], [
-	    [U("wish3"), 7]
+	    [U("wish3"), "7"]
 	  ]>);
 }
 

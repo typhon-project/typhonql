@@ -572,7 +572,12 @@ void collect((Agg)`order <{Expr ","}+ vars> <Dir _>`, Collector c) {
 }
 
 void collect((Agg)`limit <Expr e>`, Collector c) {
-    collect(e, c);
+    if ((Expr)`<Int _>` := e) {
+        collect(e, c);
+    }
+    else {
+        c.report(error(e, "Limit only supports literal integer limits"));
+    }
 }
 
 /*******
@@ -596,7 +601,7 @@ void requireAttributesSet(Tree current, Tree typ, {KeyVal ","}* args, Collector 
         attrs = sch[s.getType(typ)]?();
         required = { k | k <- attrs, <entityType(_), _> !:= attrs[k] };
         missing = required - { "<k>" | k <- keysSet};
-        s.requireTrue(missing == {}, error(current, "%t is missing the following attributes: %v", typ, missing));
+        s.requireTrue(missing == {}, warning(current, "%t is missing the following attributes: %v", typ, missing));
     });
 }
 

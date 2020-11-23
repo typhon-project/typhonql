@@ -57,7 +57,7 @@ void runDDL(Request r, Schema s, Session session, Log log = noLog) {
   	}
 }
 
-void validateQuery(Tree t, Schema s, Log log) {
+str validateQuery(Tree t, Schema s, Log log) {
     m = checkQLTree(t, s);
     errorMessage = "";
     for (error(msg, at) <- m.messages) {
@@ -69,6 +69,14 @@ void validateQuery(Tree t, Schema s, Log log) {
     if (errorMessage != "") {
         throw errorMessage;
     }
+    str warnMessage = "";
+    for (warning(msg, at) <- m.messages) {
+        if (warnMessage != "") {
+            warnMessage += " & ";
+        }
+        warnMessage += "<msg> at offset <at.offset>";
+    }
+    return warnMessage;
 }
 
 list[str] runUpdate(Request r, Schema s, Schema sPlain, Session session, bool runChecker = true, Log log = noLog,
@@ -106,7 +114,10 @@ void runScriptForQuery(Request r, Schema sch, Schema schPlain, Session session,b
 	if ((Request) `from <{Binding ","}+ bs> select <{Result ","}+ selected> <Where? where> <Agg* aggs>` := r) {
         startScript = getNanoTime();
         if (runChecker) {
-            validateQuery(r, schPlain, log);
+            warnings = validateQuery(r, schPlain, log);
+            if (warnings != "") {
+                session.report(warnings);
+            }
         }
 		scr = request2script(r, sch, log = log);
         endScript = getNanoTime();

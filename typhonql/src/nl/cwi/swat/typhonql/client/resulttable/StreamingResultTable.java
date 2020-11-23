@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import io.usethesource.vallang.type.Type;
 import nl.cwi.swat.typhonql.client.JsonSerializableResult;
@@ -14,6 +15,8 @@ public class StreamingResultTable implements JsonSerializableResult {
 
 	private final List<String> columnNames;
 	private final Stream<Object[]> values;
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private String warnings = null;
 
 	public StreamingResultTable(List<String> columnNames, Stream<Object[]> values) {
 		this.columnNames = columnNames;
@@ -42,6 +45,11 @@ public class StreamingResultTable implements JsonSerializableResult {
 	@JsonIgnore
 	public Type getType() {
 		return TF.externalType(TF.valueType());
+	}
+	
+	@Override
+	public void addWarnings(String warnings) {
+		this.warnings = warnings;
 	}
 	
 	@Override
