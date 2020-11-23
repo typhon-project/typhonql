@@ -1247,6 +1247,7 @@ void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	  , testOrdering
 	  , testKeyValueFeatures
 	  , testCustomDataTypes
+	  , testDefaultAttrInsertion
 	  , testLoneVars
 	  , testInsertSingleValuedSQLCross
 	  , testInsertManyValuedSQLLocal
