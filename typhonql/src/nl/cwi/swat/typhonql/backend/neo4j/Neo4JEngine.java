@@ -88,7 +88,7 @@ public class Neo4JEngine extends Engine {
 		if (obj == null) {
 			return null;
 		}
-		if (obj instanceof Integer || obj instanceof Boolean || obj instanceof Double| obj instanceof String) {
+		if (obj instanceof Integer || obj instanceof Boolean || obj instanceof Double| obj instanceof String || obj instanceof Long) {
 			return String.valueOf(obj);
 		}
 		else if (obj instanceof UUID) {

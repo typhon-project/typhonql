@@ -56,7 +56,7 @@ str prettyAType(polygonType()) = "polygon";
 str prettyAType(boolType()) = "bool";
 str prettyAType(floatType()) = "float";
 str prettyAType(blobType()) = "blob";
-str prettyAType(freeTextType(nlps)) = "freetext[<intercalate(",", [n | n <- nlps])>]";
+str prettyAType(freeTextType(list[str] nlps)) = "freetext[<intercalate(",", [n | n <- nlps])>]";
 str prettyAType(dateType()) = "date";
 str prettyAType(dateTimeType()) = "datetime";
     
