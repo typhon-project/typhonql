@@ -120,7 +120,7 @@ Script request2script(Request r, Schema s, Log log = noLog) {
 	  return delete2script(r, s);
 
     case (Request)`insert <EId e> { <{KeyVal ","}* kvs> }`:
-       return insert2script(r, s); 
+       return insert2script(addDefaultsForOmittedAttrs(r, s), s); 
     
     default: 
       //throw "Unsupported request: `<r>`";

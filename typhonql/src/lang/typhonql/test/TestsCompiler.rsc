@@ -372,20 +372,17 @@ void testKeyValueFeatures(PolystoreInstance p) {
 
 }
 
-/*
 
-The below test fails, but the results seem equal...
-pected: <["i.shelf","i.product"],[
-  [2,"a398fb77-df76-3615-bdf5-7cd65fd0a7c5"], [2,"a398fb77-df76-3615-bdf5-7cd65fd0a7c5"],
-   [1,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"],[1,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"],
-  [3,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"],[3,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"]]>, 
-actual: <["i.shelf","i.product"],[
-  [2,"a398fb77-df76-3615-bdf5-7cd65fd0a7c5"], [2,"a398fb77-df76-3615-bdf5-7cd65fd0a7c5"],
-  [1,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"], [1,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"]]>
-  [3,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"], [3,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"],
+void testDefaultAttrInsertion(PolystoreInstance p) {
+  p.runUpdate((Request)`insert User { name: "Donald Trump" }`);
+  rs = p.runQuery((Request)`from User u select u where u.name == "Donald Trump"`);
+  p.assertResultEquals("default vals correctly inserted", rs, <
+    ["u.name","u.billing$zipcode$nums","u.billing$street","u.billing$zipcode$letters","u.billing$location","u.address","u.created","u.billing$city","u.location"], 
+    [["Donald Trump","","","","POINT (0 0)","","0001-12-29T23:00:00Z","","POINT (0 0)"]]>);
+  
+}
 
-*/
-
+// this is brittle! order of lone var expansion is not defined!
 void testLoneVars(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i`);
   p.assertResultEquals("all features from Item retrieved", rs, <["i.picture", "i.shelf"]
@@ -400,17 +397,17 @@ void testLoneVars(PolystoreInstance p) {
   
   rs = p.runQuery((Request)`from User u select u`);
   p.assertResultEquals("all features from User retrieved", rs,
-      <["u.billing$zipcode$nums","u.billing$street","u.billing$zipcode$letters","u.name",
+      <["u.name", "u.billing$zipcode$nums","u.billing$street","u.billing$zipcode$letters",
         "u.billing$location","u.address","u.created","u.billing$city","u.location"],[
-       ["1234","Seventh","ab","Pablo","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)"],
+       ["Pablo","1234","Seventh","ab","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)"],
        //,U("wish1"),
        //    U("bio1"),{},U("rev1")],
-       ["1234","Seventh","ab","Pablo","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)"],
+       //["1234","Seventh","ab","Pablo","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)"],
        //,U("wish2"),
        //    U("bio1"),{},U("rev1")],
-       ["4566","Bla","cd","Davy","POINT (20 30)","alsoThere","2020-01-02T15:24:00Z","Almere","POINT (20 30)"],
+       //["4566","Bla","cd","Davy","POINT (20 30)","alsoThere","2020-01-02T15:24:00Z","Almere","POINT (20 30)"],
        //,{},{},{},U("rev2")],
-       ["4566","Bla","cd","Davy","POINT (20 30)","alsoThere","2020-01-02T15:24:00Z","Almere","POINT (20 30)"]
+       ["Davy","4566","Bla","cd","POINT (20 30)","alsoThere","2020-01-02T15:24:00Z","Almere","POINT (20 30)"]
        //{},{},{},U("rev3")]
        ]>
        );
@@ -431,16 +428,17 @@ void testLoneVars(PolystoreInstance p) {
     , [["Chilean" /*, U("pablo")*/]]>);
 
    
+   
   rs = p.runQuery((Request)`from User u, Biography b select u, b where u.biography == b`);
   p.assertResultEquals("all features of Pablo and his Biography retrieved", rs, 
-     <["u.billing$zipcode$nums","u.billing$street","u.billing$zipcode$letters","u.name",
+     <["u.name", "u.billing$zipcode$nums","u.billing$street","u.billing$zipcode$letters",
        "u.billing$location","u.address","u.created","u.billing$city","u.location", "b.content"],
        //"u.wishes","u.biography","u.Stuff__","u.reviews","b.content","b.user"],
        [
-      ["1234","Seventh","ab","Pablo","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)", "Chilean"],
+      ["Pablo", "1234","Seventh","ab","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)", "Chilean"]
         //U("wish1"),U("bio1"),{},U("rev1"),
         //   "Chilean",U("pablo")],
-      ["1234","Seventh","ab","Pablo","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)", "Chilean"]
+      //["1234","Seventh","ab","Pablo","POINT (2 3)","alsoThere","2020-01-02T11:24:00Z","Ams","POINT (2 3)", "Chilean"]
         //U("wish2"),U("bio1"),{},U("rev1"),
         //  "Chilean",U("pablo")
           ]>);

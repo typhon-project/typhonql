@@ -418,7 +418,7 @@ Request expandNavigation(req:(Request)`from <{Binding ","}+ bs> select <{Result 
 
 
 void smokeCustoms() {
-  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product/user-review-product.xmi|);
+  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product.xmi|);
   Model m = xmiString2Model(xmi);
   Schema s = model2schema(m);
   
@@ -618,6 +618,63 @@ Request expandLoneVars(Request req, Schema s) {
   return req;
  
 }
+
+
+
+Request addDefaultsForOmittedAttrs((Request)`insert <Obj obj>`, Schema s) {
+ str ent = "<obj.entity>";
+ 
+ for (<ent, str attr, str typ> <- s.attrs) {
+   if ((KeyVal)`<Id x>: <Expr _>` <- obj.keyVals, "<x>" == attr) {
+     continue;
+   }
+   else {
+     Expr def = type2Default(typ);
+     Id x = [Id]attr;
+     KeyVal kv = (KeyVal)`<Id x>: <Expr def>`;
+     if ((Obj)`<EId e> {<{KeyVal ","}* kvs>}` := obj) {
+       obj = (Obj)`<EId e> {<{KeyVal ","}* kvs>, <KeyVal kv>}`;
+     }
+     else {
+       throw "Bad object: <obj>";
+     }
+   }
+ }
+
+ return (Request)`insert <Obj obj>`;
+} 
+
+
+void smokeDefaultInsertion() {
+  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product.xmi|);
+  Model m = xmiString2Model(xmi);
+  Schema s = model2schema(m);
+  
+  req = (Request)`insert User {}`;
+  println(addDefaultsForOmittedAttrs(req, s));
+
+}
+
+
+
+Expr type2Default("int") = (Expr)`0`;
+Expr type2Default("bigint") = (Expr)`0`;
+Expr type2Default("float") = (Expr)`0.0`;
+
+Expr type2Default(/string/) = (Expr)`""`;
+Expr type2Default(/freetext/) = (Expr)`""`;
+Expr type2Default("text") = (Expr)`""`;
+
+Expr type2Default("date") = (Expr)`$0001-01-01$`; 
+Expr type2Default("datetime") = (Expr)`$0001-01-01T00:00:00.000+01:00$`;
+
+Expr type2Default("point") = (Expr)`#point(0.0 0.0)`; 
+Expr type2Default("polygon") = (Expr)`#polygon()`;
+
+default Expr type2Default(str t) {
+  throw "No default value for primitive type `<t>`";
+}
+
 
 
 Request idifyEntities((Request)`<Query q>`, Schema s) {
