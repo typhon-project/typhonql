@@ -102,7 +102,7 @@ list[str] runUpdate(Request r, Schema s, Schema sPlain, Session session, bool ru
             if (bench) {
                 println("BENCH: request, <endScript - startScript>, <endExecute - endScript>");
             }
-			return res + (warnings != "" ? [] : [warnings]);
+			return res + (warnings != "" ? [warnings] : []);
   		}
   		else {
   			scr = request2script(r, s, log = log);
