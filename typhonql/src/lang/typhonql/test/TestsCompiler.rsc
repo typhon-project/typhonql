@@ -97,9 +97,9 @@ void setup(PolystoreInstance p, bool doTest) {
 	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv, posted: $2020-02-03T02:11:00$, location: #point(20.0 30.0), screenshot: #blob:s2 }`, (U("s2") : "yy"));
 	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio, posted: $2020-02-03T02:11:00$, location: #point(3.0 2.0), screenshot: #blob:s3 }`, (U("s3") : "zz"));
 	
-	p.runUpdate((Request)`insert Comment { review: #rev1, comment: "I agree" }`);
-	p.runUpdate((Request)`insert Comment { review: #rev2, comment: "please write something" }`);
-	p.runUpdate((Request)`insert Comment { review: #rev2, comment: "dude, this is lazy" }`);
+	p.runUpdate((Request)`insert Comment { @id: #c1, review: #rev1, comment: "I agree" }`);
+	p.runUpdate((Request)`insert Comment { @id: #c2, review: #rev2, comment: "please write something" }`);
+	p.runUpdate((Request)`insert Comment { @id: #c3, review: #rev2, comment: "dude, this is lazy" }`);
 	
 	
 	if (doTest) {
@@ -117,7 +117,13 @@ void setup(PolystoreInstance p, bool doTest) {
 	  p.assertResultEquals("reviews obtained from user", rs, <["u.reviews"], [[U("rev1")], [U("rev2")], [U("rev3")]]>);
 	  
 	  rs = p.runQuery((Request)`from Review r select r.@id, r.comments`);
-	  p.assertResultEquals("comments obtained from review", rs, <["r.@id", "r.comments"], []>);
+	  p.assertResultEquals("comments obtained from review", rs, <["r.@id", "r.comments"], 
+	     [
+	       [U("rev1"), [U("c1")]],
+	       [U("rev2"), [U("c2"), U("c3")]],
+	       [U("rev3"), {}]
+	     ]
+	     >);
 	}
 	
 	

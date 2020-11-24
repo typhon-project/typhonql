@@ -45,6 +45,7 @@ import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import groovy.lang.ListWithDefault;
 import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
@@ -377,6 +378,11 @@ public class TyphonSession implements Operations {
 		}
 		else if (c.isTextual()) {
 			return vf.string(c.asText());
+		}
+		else if (c.isArray()) {
+			IListWriter lst = vf.listWriter();
+			c.elements().forEachRemaining(x -> lst.append(toIValue(x)));
+			return lst.done();
 		}
 		else {
 			throw new RuntimeException("Cannot convert " + c + " into an IValue");
