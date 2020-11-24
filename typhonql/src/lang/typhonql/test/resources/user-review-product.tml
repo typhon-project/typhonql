@@ -15,6 +15,12 @@ entity Review {
 	posted: datetime
 	product -> Product[1]
 	user -> User[1]
+	comments :-> Comment."Comment.review"[0..*]
+}
+
+entity Comment {
+	comment: text
+	review -> Review."Review.comments"[1]
 }
 
 entity Product {
@@ -153,6 +159,7 @@ keyvaluedb Stuff {
 documentdb Reviews {
 	collections {
 		Review : Review
+		Comment: Comment
 		Biography : Biography
 		Category: Category
 		Evaluation: Evaluation
