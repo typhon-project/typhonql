@@ -377,6 +377,18 @@ public map[str, Attrs] customForNlpAnalysis = (
         <"POSTagging", "PosValue", "text">
     }
 );
+
+str mapFunc("int") = "JsonNode::asLong";
+str mapFunc("text") = "JsonNode::asText";
+str mapFunc("point") = "n -\> readWKT(n.asText())";
+
+str generateLookupTable() {
+    res = "";
+    for (k <- customForNlpAnalysis, <n, f, t> <- customForNlpAnalysis[k]) {
+        res += "\nResultMapper.put(\"<n>$<f>\", <mapFunc(t)>);";
+    }
+    return res;
+}
 	
 public bool isFreeTextType(str ty) = startsWith(ty, "freetext");
   
