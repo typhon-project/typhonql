@@ -116,6 +116,7 @@ str getDeleteJson(NExpr id, str entity) {
 }
 
 str ppId(nLiteral(uuid, "uuid")) = uuid;
+str ppId(nPlaceholder(str name)) = "${<name>}";
 default str ppId(NExpr e) {
 	throw "Wrong expresion <e> instead of identifier";
 }
