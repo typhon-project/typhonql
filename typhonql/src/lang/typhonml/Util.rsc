@@ -382,13 +382,21 @@ str mapFunc("int") = "JsonNode::asLong";
 str mapFunc("text") = "JsonNode::asText";
 str mapFunc("point") = "n -\> readWKT(n.asText())";
 
-str generateLookupTable() {
-    res = "";
+void generateLookupTable() {
     for (k <- customForNlpAnalysis, <n, f, t> <- customForNlpAnalysis[k]) {
-        res += "\nResultMapper.put(\"<n>$<f>\", <mapFunc(t)>);";
+        println("ResultMapper.put(\"<n>$<f>\", <mapFunc(t)>);");
     }
-    return res;
 }
+
+void printMarkdownTable() {
+    println("| Analysis | Fieldname | type |");
+    println("|-----|----|----|");
+    for (k <- customForNlpAnalysis, <n, f, t> <- customForNlpAnalysis[k]) {
+        println("| <k> | <n>.<f> | <t> |");
+    }
+}
+
+
 	
 public bool isFreeTextType(str ty) = startsWith(ty, "freetext");
   
