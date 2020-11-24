@@ -418,8 +418,9 @@ void testDefaultAttrInsertion(PolystoreInstance p) {
   p.runUpdate((Request)`insert User { name: "Donald Trump" }`);
   rs = p.runQuery((Request)`from User u select u where u.name == "Donald Trump"`);
   p.assertResultEquals("default vals correctly inserted", rs, <
-    ["u.name","u.billing$zipcode$nums","u.billing$street","u.billing$zipcode$letters","u.billing$location","u.address","u.created","u.billing$city","u.location"], 
-    [["Donald Trump","","","","POINT (0 0)","","0001-12-29T23:00:00Z","","POINT (0 0)"]]>);
+    ["u.address","u.billing$city","u.billing$location","u.billing$street","u.billing$zipcode$letters",
+       "u.billing$zipcode$nums","u.created","u.location","u.name"],
+    [["","","POINT (0 0)","","","","0001-12-29T23:00:00Z","POINT (0 0)","Donald Trump"]]>);
   
 }
 
