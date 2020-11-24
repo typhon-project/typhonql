@@ -157,6 +157,89 @@ In other words, if a sequence of containment relations alternatingly cross multi
 the cascade is only performed for the first relation.
 
 
+## NLP
+
+If the type of a field is `freetext` you have extra subfields available during select queries. Nothing special happens during insertion, but depending on the configered nlp analysis for this field, you have extra fields available. The table below lists all of the custom fields.
+
+
+| Analysis | Fieldname | type |
+|-----|----|----|
+| PhraseExtraction | PhraseExtraction.Token | text |
+| PhraseExtraction | PhraseExtraction.end | int |
+| PhraseExtraction | PhraseExtraction.begin | int |
+| POSTagging | POSTagging.end | int |
+| POSTagging | POSTagging.begin | int |
+| POSTagging | POSTagging.PosTag | text |
+| POSTagging | POSTagging.PosValue | text |
+| RelationExtraction | RelationExtraction.TargetEntity.NamedEntity | text |
+| RelationExtraction | RelationExtraction.RelationName | text |
+| RelationExtraction | RelationExtraction.TargetEntity.begin | int |
+| RelationExtraction | RelationExtraction.TargetEntity.end | int |
+| RelationExtraction | RelationExtraction.end | int |
+| RelationExtraction | RelationExtraction.begin | int |
+| RelationExtraction | RelationExtraction.SourceEntity.NamedEntity | text |
+| RelationExtraction | RelationExtraction.SourceEntity.end | int |
+| RelationExtraction | RelationExtraction.SourceEntity.begin | int |
+| nGramExtraction | nGramExtraction.NgramType | text |
+| nGramExtraction | nGramExtraction.begin | int |
+| nGramExtraction | nGramExtraction.end | int |
+| ParagraphSegmentation | ParagraphSegmentation.end | int |
+| ParagraphSegmentation | ParagraphSegmentation.begin | int |
+| ParagraphSegmentation | ParagraphSegmentation.Paragraph | text |
+| Tokenisation | Tokenisation.Token | text |
+| Tokenisation | Tokenisation.end | int |
+| Tokenisation | Tokenisation.begin | int |
+| TermExtraction | TermExtraction.end | int |
+| TermExtraction | TermExtraction.WeightedToken | int |
+| TermExtraction | TermExtraction.TargetEntity.NamedEntity | int |
+| TermExtraction | TermExtraction.begin | int |
+| TermExtraction | TermExtraction.TargetEntity.begin | int |
+| TermExtraction | TermExtraction.TargetEntity.end | int |
+| Chunking | Chunking.begin | int |
+| Chunking | Chunking.end | int |
+| Chunking | Chunking.PosAnnotation.PosValue | text |
+| Chunking | Chunking.PosAnnotation.end | int |
+| Chunking | Chunking.TokenAnnotation.begin | int |
+| Chunking | Chunking.TokenAnnotation.end | int |
+| Chunking | Chunking.PosAnnotation.PosTag | text |
+| Chunking | Chunking.PosAnnotation.begin | int |
+| Chunking | Chunking.TokenAnnotation.Token | text |
+| Chunking | Chunking.Label | text |
+| NamedEntityRecognition | NamedEntityRecognition.NamedEntity | text |
+| NamedEntityRecognition | NamedEntityRecognition.begin | int |
+| NamedEntityRecognition | NamedEntityRecognition.GeoCode | point |
+| NamedEntityRecognition | NamedEntityRecognition.WordToken | text |
+| NamedEntityRecognition | NamedEntityRecognition.end | int |
+| Stemming | Stemming.begin | int |
+| Stemming | Stemming.end | int |
+| Stemming | Stemming.Stem | text |
+| Lemmatisation | Lemmatisation.begin | int |
+| Lemmatisation | Lemmatisation.end | int |
+| Lemmatisation | Lemmatisation.Lemma | text |
+| DependencyParsing | DependencyParsing.DependencyName | text |
+| DependencyParsing | DependencyParsing.TargetEntity.NamedEntity | text |
+| DependencyParsing | DependencyParsing.TargetEntity.begin | int |
+| DependencyParsing | DependencyParsing.TargetEntity.end | int |
+| DependencyParsing | DependencyParsing.begin | int |
+| DependencyParsing | DependencyParsing.SourceEntity.begin | int |
+| DependencyParsing | DependencyParsing.SourceEntity.end | int |
+| DependencyParsing | DependencyParsing.end | int |
+| DependencyParsing | DependencyParsing.SourceEntity.NamedEntity | text |
+| SentenceSegmentation | SentenceSegmentation.Sentence | text |
+| SentenceSegmentation | SentenceSegmentation.begin | int |
+| SentenceSegmentation | SentenceSegmentation.end | int |
+| SentimentAnalysis | SentimentAnalysis.SentimentLabel | text |
+| SentimentAnalysis | SentimentAnalysis.Sentiment | int |
+| CoreferenceResolution | RelationExtraction.Anaphor.begin | int |
+| CoreferenceResolution | RelationExtraction.Anaphor.Token | text |
+| CoreferenceResolution | RelationExtraction.Anaphor.end | int |
+| CoreferenceResolution | CoreferenceResolution.Antecedent.end | int |
+| CoreferenceResolution | CoreferenceResolution.begin | int |
+| CoreferenceResolution | CoreferenceResolution.Antecedent.begin | int |
+| CoreferenceResolution | CoreferenceResolution.end | int |
+| CoreferenceResolution | CoreferenceResolution.Antecedent.Token | text |
+
+
 # TyphonQL by Example
 
 ## Introduction
