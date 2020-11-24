@@ -255,10 +255,7 @@
   </databases>
   <databases xsi:type="typhonml:RelationalDB" name="Inventory">
     <tables name="UserDB" entity="//@entities.10">
-      <indexSpec name="UserNameIndex">
-        <attributes href="/typhonql/src/lang/typhonql/test/resources/user-review-product.tml#|54"/>
-        <attributes href="/typhonql/src/lang/typhonql/test/resources/user-review-product.tml#|55"/>
-      </indexSpec>
+      <indexSpec name="UserNameIndex" attributes="//@entities.10/@attributes.0 //@entities.10/@attributes.3"/>
     </tables>
     <tables name="ProductDB" entity="//@entities.2"/>
     <tables name="TagDB" entity="//@entities.5"/>
@@ -267,39 +264,19 @@
     <tables name="CompanyDB" entity="//@entities.14"/>
     <tables name="FoundationDB" entity="//@entities.15"/>
     <tables name="DatatypesTable" entity="//@entities.16">
-      <indexSpec name="dtIndex">
-        <attributes href="/typhonql/src/lang/typhonql/test/resources/user-review-product.tml#|63"/>
-      </indexSpec>
-      <idSpec>
-        <attributes href="/typhonql/src/lang/typhonql/test/resources/user-review-product.tml#|64"/>
-      </idSpec>
+      <indexSpec name="dtIndex" attributes="//@entities.16/@attributes.0"/>
+      <idSpec attributes="//@entities.16/@attributes.0"/>
     </tables>
     <tables name="ReferTable" entity="//@entities.17">
-      <indexSpec name="refIndex">
-        <attributes href="/typhonql/src/lang/typhonql/test/resources/user-review-product.tml#|66"/>
-      </indexSpec>
-      <idSpec>
-        <attributes href="/typhonql/src/lang/typhonql/test/resources/user-review-product.tml#|67"/>
-      </idSpec>
+      <indexSpec name="refIndex" attributes="//@entities.17/@attributes.0"/>
+      <idSpec attributes="//@entities.17/@attributes.0"/>
     </tables>
   </databases>
   <databases xsi:type="typhonml:GraphDB" name="MoreStuff">
-    <edges entity="//@entities.13">
-      <from href="/typhonql/src/lang/typhonql/test/resources/user-review-product.tml#|69"/>
-      <to href="/typhonql/src/lang/typhonql/test/resources/user-review-product.tml#|70"/>
-    </edges>
-    <edges entity="//@entities.12">
-      <from href="/typhonql/src/lang/typhonql/test/resources/user-review-product.tml#|72"/>
-      <to href="/typhonql/src/lang/typhonql/test/resources/user-review-product.tml#|73"/>
-    </edges>
-    <edges entity="//@entities.6">
-      <from href="/typhonql/src/lang/typhonql/test/resources/user-review-product.tml#|75"/>
-      <to href="/typhonql/src/lang/typhonql/test/resources/user-review-product.tml#|76"/>
-    </edges>
-    <edges entity="//@entities.9">
-      <from href="/typhonql/src/lang/typhonql/test/resources/user-review-product.tml#|78"/>
-      <to href="/typhonql/src/lang/typhonql/test/resources/user-review-product.tml#|79"/>
-    </edges>
+    <edges from="//@entities.13/@relations.0" to="//@entities.13/@relations.1" entity="//@entities.13"/>
+    <edges from="//@entities.12/@relations.0" to="//@entities.12/@relations.1" entity="//@entities.12"/>
+    <edges from="//@entities.6/@relations.0" to="//@entities.6/@relations.1" entity="//@entities.6"/>
+    <edges from="//@entities.9/@relations.0" to="//@entities.9/@relations.1" entity="//@entities.9"/>
   </databases>
   <customDataTypes name="address">
     <elements xsi:type="typhonml:SimpleDataType" name="street">

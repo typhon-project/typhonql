@@ -172,7 +172,7 @@ relationaldb Inventory {
 		table {
 			UserDB : User
 			index UserNameIndex {
-				attributes (name, location)
+				attributes ('User.name', 'User.location')
 			}
 		}
 		table {
@@ -186,16 +186,16 @@ relationaldb Inventory {
 		table{
  			DatatypesTable : EntitySmokeTest
  			index dtIndex{
-				attributes ('s')
+				attributes ("EntitySmokeTest.s")
 			}
-			idSpec ('s')
+			idSpec ("EntitySmokeTest.s")
 		}
   		table{
  			ReferTable : ReferenceTest
  			 index refIndex{
-				attributes ('r')
+				attributes ("ReferenceTest.r")
 			}
-			idSpec ('r')
+			idSpec ("ReferenceTest.r")
 		}
 	}
 }
@@ -203,20 +203,20 @@ relationaldb Inventory {
 graphdb MoreStuff {
 	edges {
 		edge Wish {
-			from user
-			to product
+			from "Wish.user"
+			to "Wish.product"
 		},
 		edge Concordance {
-			from source
-			to target
+			from "Concordance.source"
+			to "Concordance.target"
 		},
 		edge Synonym {
-			from source
-			to target
+			from "Synonym.source"
+			to "Synonym.target"
 		},
 		edge Occurrence {
-			from word
-			to evaluation
+			from "Occurrence.word"
+			to "Occurrence.evaluation"
 		}	
 	}
 }
