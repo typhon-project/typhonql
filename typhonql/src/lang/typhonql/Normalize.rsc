@@ -44,7 +44,9 @@ default Request addWhereIfAbsent(Request r) = r;
 
 
 void smokeNormalize() {
-  s = schema({
+  s = schema(
+  { "Person", "Review", "Comment", "Reply" },
+  {
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Review", \one(), "user", "reviews", \zero_many(), "Person", false>,
     <"Review", \one(), "comment", "owner", \zero_many(), "Comment", true>,
@@ -71,6 +73,7 @@ void smokeNormalize() {
 
 void smokeKeyValInf() {
   s = schema(
+  { "User", "Review", "Product", "User", "Tag", "User__Stuff", "User__MoreStuff", "Category", "Biography", "Review", "Item" },
   {
     <"Review",\one(),"user","reviews",zero_many(),"User",false>,
     <"Product",zero_many(),"tags","tags^",zero_one(),"Tag",false>,
@@ -144,6 +147,32 @@ void smokeKeyValInf() {
   
 }
 
+bool isFreeTextType(str ty) = startsWith(ty, "freetext");
+
+rel[str, str] getFreeTypeAnalyses(str ty) = 
+	{<analysis[0..leftBracketPos], analysis[(leftBracketPos+1)..-1]> | analysis <- split(", ", csv), leftBracketPos := findFirst(analysis, "[")}
+	when csv := ty[9..-1];
+	
+rel[str, str] getFreeTypeAnalyses(str ent, str f, Schema s) {
+    // return the list of processes associated with a free text attribute
+    if (<ent, f, ty> <- s.attrs, isFreeTextType(ty))
+    	return getFreeTypeAnalyses(ty);
+   	return {};
+} 	
+
+bool isFreeTextAttr(str ent, str f, Schema s) {
+    // return the list of processes associated with a free text attribute
+    if (<ent, f, ty> <- s.attrs, isFreeTextType(ty))
+    	return true;
+   	return false;
+} 
+
+bool hasFreeTextAttr(str ent, Schema s) {
+    // return the list of processes associated with a free text attribute
+    if (<ent, f, ty> <- s.attrs, isFreeTextType(ty))
+    	return true;
+   	return false;
+} 
 
 list[str] isKeyValAttr(str ent, str f, Schema s) {
     // return the inferred entity role if f is a key val attribute
@@ -166,9 +195,15 @@ Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result 
       return src;
     }
     str via = "<ids[0]>";
+    str nlpEnt = nlpEntity(src);
+    
     if (<src, Cardinality _, via,  str _, Cardinality _, str trg, _> <- s.rels) {
       return inferTarget(trg, ids[1..]);
     }
+    // Ignoring NLP
+    else if (<src, via, ty> <- s.attrs, isFreeTextType(ty)) {
+      return src;
+    } 
     else {
       throw "Invalid role `<via>` for entity <src>";
     }
@@ -191,7 +226,6 @@ Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result 
     }
     return memo[key];
   }
-  
   
   // NB: empty, because they are rewritten, so added later
   list[Result] newResults = [];
@@ -217,6 +251,71 @@ Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result 
       if ([str role, str kvEntity] := isKeyValAttr(src, "<f>", s)) {
         VId kvX = newBinding(kvEntity, "<x>.<fs>", (Expr)`<VId x>.<{Id "."}+ fs>`);
         insert (Expr)`<VId kvX>.<Id f>`;
+        /*
+          add binding: kvEntity kvVar
+          add where:  kvVar.@id == x.<fs>.@id
+          replace with: kvVar.f
+        */
+      }
+    }
+  }
+  
+  if ((Request)`from <{Binding ","}+ _> select <{Result ","}+ rs> where <{Expr ","}+ ws>` := req) {
+    newResults = [ r | Result r <- rs ] + newResults;
+    newWheres = [ w | Expr w <- ws ] + newWheres;
+  }
+  
+  Query newQuery = buildQuery(newBindings, newResults, newWheres);
+  return (Request)`<Query newQuery>`;
+}
+
+Request inferNlpLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
+  // rewrite x.f -> x.A__B.f if f is an attribute that is mapped from keyVal
+  Env env = queryEnv(bs);
+ 
+  int varId = 0;
+  map[str, VId] memo = ();
+  list[Binding] newBindings = [ b | Binding b <- bs ];
+  
+  VId newBinding(str entity, str path, Expr whereRhs) {
+    str key = "<entity>/<path>";
+    if (key notin memo) {
+      str x = "<uncapitalize(entity)>_<varId>__<path>";
+      varId += 1;
+      VId var = [VId]x;
+      memo[key] = var;
+      EId ent = [EId]entity;
+      newBindings += [(Binding)`<EId ent> <VId var>`]; 
+      newWheres += [(Expr)`<VId var>.@id == <Expr whereRhs>`];
+    }
+    return memo[key];
+  }
+  
+  
+  // NB: empty, because they are rewritten, so added later
+  list[Result] newResults = [];
+  list[Expr] newWheres = [];
+  
+  req = visit (req) {
+    case (Expr)`<VId x>.@id`: {
+      str src = env["<x>"];
+      if (hasFreeTextAttr(src, s)) {
+        str tgt = nlpEntity(src);
+     	Id nlpRel = [Id] nlpRelation();
+        VId nlpX = newBinding(tgt, "<x>", (Expr)`<VId x>.<Id nlpRel>`);
+        insert (Expr)`<VId nlpX>.@id`;
+      }
+    }
+  
+    case (Expr)`<VId x>.<Id f>.<{Id "."}+ fs>`: {
+      str src = env["<x>"];
+      if (isFreeTextAttr(src, "<f>", s)) {
+        
+     	analyses = getFreeTypeAnalyses(src, "<f>", s);
+     	str tgt = nlpEntity(src);
+     	Id nlpRel = [Id] nlpRelation();
+        VId nlpX = newBinding(tgt, "<x>", (Expr)`<VId x>.<Id nlpRel>`);
+        insert (Expr)`<VId nlpX>.<Id f>.<Id fs>`;
         /*
           add binding: kvEntity kvVar
           add where:  kvVar.@id == x.<fs>.@id
@@ -319,7 +418,7 @@ Request expandNavigation(req:(Request)`from <{Binding ","}+ bs> select <{Result 
 
 
 void smokeCustoms() {
-  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product/user-review-product.xmi|);
+  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product.xmi|);
   Model m = xmiString2Model(xmi);
   Schema s = model2schema(m);
   
@@ -472,7 +571,7 @@ Request injectProperUUIDs(Request req) {
 }
 
 void smokeLoneVarExpansion() {
-  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product/user-review-product.xmi|);
+  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product.xmi|);
   Model m = xmiString2Model(xmi);
   Schema s = model2schema(m);
   
@@ -491,12 +590,8 @@ Request expandLoneVars(Request req, Schema s) {
     newRs = outer: for (Result r <- rs) {
       if ((Result)`<VId x>` := r) {
         ent = env["<x>"];
-        for (<ent, str name, _> <- s.attrs) {
+        for (str name <- sort(s.attrs[ent]<0>)) {
 	      Id f = [Id]name;
-	      append outer: (Result)`<VId x>.<Id f>`;
-	    }
-        for (<ent, _, role, _, _, _, _> <- s.rels) {
-	      Id f = [Id]role;
 	      append outer: (Result)`<VId x>.<Id f>`;
 	    }
       }
@@ -525,12 +620,94 @@ Request expandLoneVars(Request req, Schema s) {
 }
 
 
+
+Request addDefaultsForOmittedAttrs((Request)`insert <Obj obj>`, Schema s) {
+ str ent = "<obj.entity>";
+ 
+ for (<ent, str attr, str typ> <- s.attrs) {
+   if ((KeyVal)`<Id x>: <Expr _>` <- obj.keyVals, "<x>" == attr) {
+     continue;
+   }
+   else {
+     Expr def = type2Default(typ);
+     Id x = [Id]attr;
+     KeyVal kv = (KeyVal)`<Id x>: <Expr def>`;
+     if ((Obj)`<EId e> {<{KeyVal ","}* kvs>}` := obj) {
+       obj = (Obj)`<EId e> {<{KeyVal ","}* kvs>, <KeyVal kv>}`;
+     }
+     else {
+       throw "Bad object: <obj>";
+     }
+   }
+ }
+
+ return (Request)`insert <Obj obj>`;
+} 
+
+
+void smokeDefaultInsertion() {
+  str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product.xmi|);
+  Model m = xmiString2Model(xmi);
+  Schema s = model2schema(m);
+  
+  req = (Request)`insert User {}`;
+  println(addDefaultsForOmittedAttrs(req, s));
+
+}
+
+
+
+Expr type2Default("int") = (Expr)`0`;
+Expr type2Default("bigint") = (Expr)`0`;
+Expr type2Default("float") = (Expr)`0.0`;
+
+Expr type2Default(/string/) = (Expr)`""`;
+Expr type2Default(/freetext/) = (Expr)`""`;
+Expr type2Default("text") = (Expr)`""`;
+
+Expr type2Default("date") = (Expr)`$0001-01-01$`; 
+Expr type2Default("datetime") = (Expr)`$0001-01-01T00:00:00.000+01:00$`;
+
+Expr type2Default("point") = (Expr)`#point(0.0 0.0)`; 
+Expr type2Default("polygon") = (Expr)`#polygon()`;
+
+default Expr type2Default(str t) {
+  throw "No default value for primitive type `<t>`";
+}
+
+
+
 Request idifyEntities((Request)`<Query q>`, Schema s) {
 
 }
 
 Request canonicalizeRelations((Request)`<Query q>`, Schema s) {
 
+}
+
+Request flattenAndsToCommas((Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ wheres>`) {
+  
+  list[Expr] ws = [];
+  
+  void flatten(Expr e) {
+    if ((Expr)`<Expr lhs> && <Expr rhs>` := e) {
+      flatten(lhs);
+      flatten(rhs);
+    }
+    else if ((Expr)`(<Expr x>)` := e) {
+      flatten(x);
+    }
+    else {
+      ws += [e];
+    }
+  }
+  
+  for (Expr w <- wheres) {
+    flatten(w);
+  }
+  
+  Query q = buildQuery([ b | Binding b <- bs ], [ r | Result r <- rs ], ws);
+  return (Request)`<Query q>`;
 }
 
 Query buildQuery(list[Binding] bs, list[Result] rs, list[Expr] ws) {

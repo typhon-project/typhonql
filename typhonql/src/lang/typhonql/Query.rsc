@@ -19,10 +19,13 @@ module lang::typhonql::Query
 extend lang::typhonql::Expr;
 
 syntax Query 
-  = from: "from" {Binding ","}+ bindings "select" {Result ","}+ selected Where? where GroupBy? groupBy OrderBy? orderBy;
+  = from: "from" {Binding ","}+ bindings "select" {Result ","}+ selected 
+      Where? where 
+      Agg* aggClauses;
+      
 
 syntax Result 
-  = aliassed: Expr!obj!lst expr "as" Id attr
+  = aliassed: Expr!obj!lst expr "as" VId attr
   | normal: Expr expr // only entity path is allowed, but we don't check
   ;
 
@@ -30,11 +33,27 @@ syntax Binding = variableBinding: EId entity VId var;
   
 syntax Where = whereClause: "where" {Expr ","}+ clauses;
 
-syntax GroupBy = groupClause: "group" {Expr ","}+ exprs Having? having;
 
-syntax Having = havingClause: "having" {Expr ","}+ clauses;
-
-syntax OrderBy = orderClause: "order" {Expr ","}+ exprs;
+syntax Agg
+  = groupClause: "group" {Expr ","}+ exprs
+  | havingClause: "having" {Expr ","}+ exprs
+  | orderClause: "order" {Expr ","}+ exprs Dir dir
+  | limitClause: "limit" Expr expr
+  ;
+  
+lexical Dir
+  = "asc"
+  | "desc"
+  | /* asc */
+  ;
+  
+//syntax GroupBy = groupClause: "group" {Expr ","}+ exprs Having? having;
+//
+//syntax Having = havingClause: "having" {Expr ","}+ clauses;
+//
+//syntax OrderBy = orderClause: "order" {Expr ","}+ exprs;
+//
+//syntax Limit = limitClause: "limit" Expr expr;
   
 alias Env = map[str var, str entity];
 

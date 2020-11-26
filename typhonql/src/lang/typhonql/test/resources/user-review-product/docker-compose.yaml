@@ -1,41 +1,61 @@
 version: '3.7'
 
 services:
+  morestuff:
+    image: neo4j:latest
+    environment:
+      NEO4J_AUTH: neo4j/8g6iZFQhwyAVtB5N
+      NEO4J_dbms_security_procedures_unrestricted: apoc.
+      NEO4J_apoc_import_file_enabled: 'true'
+      NEO4J_apoc_export_file_enabled: 'true'
+      NEO4J_apoc_import_file_use__neo4j__config: 'true'
+      NEO4JLABS_PLUGINS: '["apoc"]'
+    volumes:
+      - type: volume
+        source: morestuffvolume
+        target: /data
+    ports:
+      - target: 7687
+        published: 7687
+    mem_limit: 2g
+  inventory:
+    image: mariadb:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: XeNnEybEFjSe5aLy
+    volumes:
+      - type: volume
+        source: inventoryvolume
+        target: /var/lib/mysql
+    ports:
+      - target: 3306
+        published: 3306
+    mem_limit: 512m
+  stuff:
+    image: cassandra:latest
+    environment:
+      MAX_HEAP_SIZE: 600M
+      HEAP_NEWSIZE: 200M
+    volumes:
+      - type: volume
+        source: stuffvolume
+        target: /var/lib/cassandra
+    ports:
+      - target: 9042
+        published: 9042
+    mem_limit: 700m
   reviews:
     image: mongo:latest
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: LciPZmCUQjR1Jp1Y
+    volumes:
+      - type: volume
+        source: reviewsvolume
+        target: /data/db
     ports:
       - target: 27017
         published: 27017
-  morestuff:
-    image: neo4j:latest
-    environment:
-      NEO4J_AUTH: neo4j/8g6iZFQhwyAVtB5N
-      NEO4J_dbms_security_procedures_unrestricted: apoc.*
-      NEO4J_apoc_import_file_enabled: 'true'
-      NEO4J_apoc_export_file_enabled: 'true'
-      NEO4J_apoc_import_file_use__neo4j__config: 'true'
-      NEO4JLABS_PLUGINS: '["apoc"]'
-    ports:
-      - target: 7687
-        published: 7687
-  inventory:
-    image: mariadb:latest
-    environment:
-      MYSQL_ROOT_PASSWORD: XeNnEybEFjSe5aLy
-    ports:
-      - target: 3306
-        published: 3306
-  stuff:
-    image: cassandra:latest
-    environment:
-      MAX_HEAP_SIZE: 700M
-      HEAP_NEWSIZE: 300M
-    ports:
-      - target: 9042
-        published: 9042
+    mem_limit: 512m
   polystore-mongo:
     image: mongo:latest
     environment:
@@ -44,10 +64,12 @@ services:
       MONGO_INITDB_DATABASE: admin
     volumes:
       - ./models/:/docker-entrypoint-initdb.d
+    mem_limit: 256m
   typhon-polystore-service:
     image: clms/typhon-polystore-api:latest
-    ports: 
-      - "127.0.0.1:8080:8080"
+    ports:
+      - target: 8080
+        published: 8080
     entrypoint:
       - wait-for-it
       - polystore-mongo:27017
@@ -59,18 +81,42 @@ services:
       - /app/resources:/app/classes:/app/libs/*
       - com.clms.typhonapi.Application
     restart: always
+    mem_limit: 256m
   polystore-ui:
     image: clms/typhon-polystore-ui:latest
-    environment:
-      API_PORT: 8080
-      API_HOST: typhon-polystore-service
-    depends_on: 
+    depends_on:
       - typhon-polystore-service
     ports:
-      - target: 8400
+      - target: 4200
         published: 4200
+    mem_limit: 256m
   typhonql-server:
-    image: swatengineering/typhonql-server:dev
+    image: swatengineering/typhonql-server
     environment:
-      TZ: Europe/Amsterdam
+      TZ: Europe/Berlin
     restart: always
+    mem_limit: 2G
+  nlaeDEV:
+    image: ehudev/nlae-rest-api-sim:latest
+    depends_on:
+      - elasticsearchDEV
+    ports:
+      - target: 8080
+        published: 8081
+    mem_limit: 512m
+  elasticsearchDEV:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.8.1
+    environment:
+      ES_JAVA_OPTS: '-Xms256m -Xmx512m'
+      discovery.type: single-node
+    volumes:
+      - esdata1:/usr/share/elasticsearch/data
+    mem_limit: 1G
+
+volumes:
+  morestuffvolume:
+  inventoryvolume:
+  stuffvolume:
+  reviewsvolume:
+  esdata1:
+

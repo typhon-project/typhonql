@@ -80,13 +80,20 @@ str pp(DropOption::restrict()) = "restrict";
 str pp(DropOption::cascade()) = "cascade";
 
 // Alter
-
+str pp(addConstraint(c:index(_, _, _)))
+  = "add 
+    '<pp(c)>";
+   
 str pp(addConstraint(TableConstraint c))
   = "add constraint 
-    '<pp(c)>";
+    '<pp(c)>"
+  when index(_, _, _) !:= c;
     
 str pp(dropConstraint(str name))
   = "drop constraint <q(name)>";
+  
+str pp(dropIndex(str name))
+  = "drop index <q(name)>";  
     
 str pp(addColumn(column(str name, ColumnType \type, list[ColumnConstraint] constraints)))
   = "add <q(name)> <pp(\type)>";
@@ -105,6 +112,14 @@ str pp(as(str t, str x)) = "<q(t)> as <q(x)>";
 str pp(leftOuterJoin(As left, As right, SQLExpr on))
   = "<pp(left)> left outer join <pp(right)> on <pp(on)>";
 
+str pp(leftOuterJoin(As left, list[As] rights, list[SQLExpr] ons)) {
+  str s = pp(left);
+  for (int i <- [0..size(rights)]) {
+    s += " left outer join <pp(rights[i])>";
+    s += " on <pp(ons[i])>";
+  }
+  return s;
+}
 // Set
 
 str pp(\set(str c, SQLExpr e)) = "<q(c)> = <pp(e)>";
@@ -133,9 +148,9 @@ str pp(like(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) like (<pp(rhs)>)";
 str pp(or(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) or (<pp(rhs)>)"; 
 str pp(and(SQLExpr lhs, SQLExpr rhs)) = "(<pp(lhs)>) and (<pp(rhs)>)";
 str pp(notIn(SQLExpr arg, list[Value] vals)) 
-  = "(<pp(arg)>) not in (<intercalate(", ", [ pp(v) | Value v <- vals])>)";
-str pp(\in(SQLExpr arg, list[Value] vals)) 
-  = "(<pp(arg)>) in (<intercalate(", ", [ pp(v) | Value v <- vals])>)";
+  = "(<pp(arg)>) not in (<intercalate(", ", [ pp(v) | SQLExpr v <- vals])>)";
+str pp(\in(SQLExpr arg, list[SQLExpr] vals)) 
+  = "(<pp(arg)>) in (<intercalate(", ", [ pp(v) | SQLExpr v <- vals])>)";
 
 str pp(fun(str name, vals)) = "<name>(<intercalate(", ", [pp(v) | v <- vals])>)";
 

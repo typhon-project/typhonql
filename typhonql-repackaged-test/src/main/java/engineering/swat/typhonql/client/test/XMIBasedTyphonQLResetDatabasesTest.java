@@ -26,7 +26,7 @@ import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 public class XMIBasedTyphonQLResetDatabasesTest {
 	
 	private static String HOST = "localhost";
-	private static int PORT = 8082;
+	private static int PORT = 8080;
 	private static String USER = "admin";
 	private static String PASSWORD = "admin1@";
 	
@@ -36,7 +36,11 @@ public class XMIBasedTyphonQLResetDatabasesTest {
 		List<DatabaseInfo> infos = PolystoreAPIHelper.readConnectionsInfo(HOST, PORT,
 				USER, PASSWORD);
 		
+		System.err.println(infos);
+		
+		
 		String xmiString = PolystoreAPIHelper.readHttpModel(HOST, PORT, USER, PASSWORD);
+		System.err.println(xmiString);
 
 		XMIPolystoreConnection conn = new XMIPolystoreConnection();
 		

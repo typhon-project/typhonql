@@ -41,6 +41,7 @@ data Set
 data Alter
   = addConstraint(TableConstraint constraint)
   | dropConstraint(str constraintName)
+  | dropIndex(str indexName)
   | addColumn(Column column)
   | dropColumn(str columnName)
   | renameColumn(Column column, str newName)
@@ -69,8 +70,8 @@ data SQLExpr
   | like(SQLExpr lhs, SQLExpr rhs) 
   | or(SQLExpr lhs, SQLExpr rhs) 
   | and(SQLExpr lhs, SQLExpr rhs) 
-  | notIn(SQLExpr arg, list[Value] vals)
-  | \in(SQLExpr arg, list[Value] vals)
+  | notIn(SQLExpr arg, list[SQLExpr] vals)
+  | \in(SQLExpr arg, list[SQLExpr] vals)
   | fun(str name, list[SQLExpr] args)
   ;
 
@@ -78,6 +79,7 @@ data SQLExpr
 data As
   = as(str table, str name)
   | leftOuterJoin(As left, As right, SQLExpr on)
+  | leftOuterJoin(As left, list[As] rights, list[SQLExpr] ons)
   ;
 
 data Clause

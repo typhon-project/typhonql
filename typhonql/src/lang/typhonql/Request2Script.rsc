@@ -30,6 +30,7 @@ import lang::typhonql::Update2Script;
 import lang::typhonql::Delete2Script;
 import lang::typhonql::Query2Script;
 import lang::typhonql::DDL2Script;
+import lang::typhonql::Aggregation;
 
 
 import lang::typhonql::relational::SQL;
@@ -49,6 +50,7 @@ import lang::typhonql::util::Log;
 
 import IO;
 import List;
+import util::Maybe;
 
 /*
 
@@ -74,14 +76,33 @@ Script request2script(Request r, Schema s, Log log = noLog) {
 
   switch (r) {
 
-    case (Request)`<Query _>`: {
+    case (Request)`<Query q>`: {
+      Maybe[Request] maybeAgg = Maybe::nothing();
+      if (hasAggregation(q)) {
+        // NB: we're hard updating r here...
+        <r, maybeAgg> = extractAggregation(r);
+      }
+         
       list[Place] order = orderPlaces(r, s);
-      r = expandNavigation(inferKeyValLinks(expandLoneVars(addWhereIfAbsent(r), s), s), s);
+      r = addWhereIfAbsent(r);
+      r = flattenAndsToCommas(r);
+      r = expandNavigation(inferNlpLinks(inferKeyValLinks(expandLoneVars(r, s), s), s), s);
       r = explicitJoinsInReachability(r, s);
+      r = eliminateCustomDataTypes(injectProperUUIDs(r), s);
       log("NORMALIZED: <r>");
       Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) 
          | Place p <- order, hitsBackend(r, p, s)]);
-      scr.steps += [read(results2paths(r.qry.selected, queryEnv(r.qry), s))];
+       
+      list[Path] paths = results2paths(r.qry.selected, queryEnv(r.qry), s);
+         
+      if (just(aggReq:(Request)`<Query agg>`) := maybeAgg) {
+        list[str] finalCols = results2colNames(agg.selected, queryEnv(agg), s);
+        
+        scr.steps += [javaRead("<aggregationPkg()>.<aggregationClassName()>", aggregation2java(aggReq), paths, finalCols)];   
+      }
+      else {
+        scr.steps += [read(paths)];
+      }
       return scr;
     }
 
@@ -101,7 +122,7 @@ Script request2script(Request r, Schema s, Log log = noLog) {
 	  return delete2script(r, s);
 
     case (Request)`insert <EId e> { <{KeyVal ","}* kvs> }`:
-       return insert2script(r, s); 
+       return insert2script(addDefaultsForOmittedAttrs(r, s), s); 
     
     default: 
       //throw "Unsupported request: `<r>`";
@@ -112,7 +133,9 @@ Script request2script(Request r, Schema s, Log log = noLog) {
 
 
 void smokeScript() {
-  s = schema({
+  s = schema(
+  { "Review", "Person", "Comment", "SomeStuff", "Cash", "Reply" },
+  {
     <"Person", zero_many(), "reviews", "user", \one(), "Review", true>,
     <"Person", zero_many(), "cash", "owner", \one(), "Cash", true>,
     <"Person", \one(), "SomeStuff__", "", \one(), "SomeStuff", true>,
@@ -122,6 +145,7 @@ void smokeScript() {
   }, {
     <"Person", "name", "text">,
     <"Person", "age", "int">,
+    <"Item", "shelf", "int">,
     <"SomeStuff", "photo", "text">,
     <"SomeStuff", "bitcoin", "text">,
     <"Cash", "amount", "int">,
@@ -133,6 +157,7 @@ void smokeScript() {
     <<cassandra(), "Stuff">, "SomeStuff">,
     <<sql(), "Inventory">, "Person">,
     <<sql(), "Inventory">, "Cash">,
+    <<sql(), "Inventory">, "Item">,
     <<mongodb(), "Reviews">, "Review">,
     <<mongodb(), "Reviews">, "Comment">
   }
@@ -275,5 +300,20 @@ void smokeScript() {
   smokeIt((Request)`from Person p select p.photo, p.bitcoin where p == #victor`);
 
   smokeIt((Request)`update Person p where u.@id == #pablo set {photo: "MOUSTACHE"}`);
+  
+  smokeIt((Request)`from Person u, Review r
+                   'select u.name, count(r.@id) as rc
+                   'where u.reviews == r.@id
+                   'group u.name having rc \> 2`);
+                         
+                         
+
+  smokeIt((Request)`from Person u, Review r
+                 'select u.name, u.age, count(r.@id) as rc
+                 'where u.reviews == r.@id
+                 'group u.age, u.name having rc \> 2 || rc \< 0`);
+                         
     
+  smokeIt((Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf`);
+  
 }

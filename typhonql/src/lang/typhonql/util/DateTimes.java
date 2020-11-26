@@ -1,6 +1,8 @@
 package lang.typhonql.util;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
@@ -28,16 +30,20 @@ public class DateTimes {
 	}
 	
 	private static OffsetDateTime toOffsetDateTime(IDateTime dt) {
-		return OffsetDateTime.of(
-				dt.getYear(),
-				dt.getMonthOfYear(),
-				dt.getDayOfMonth(),
-				dt.getHourOfDay(),
-				dt.getMinuteOfHour(),
-				dt.getSecondOfMinute(),
-				(int)TimeUnit.MILLISECONDS.toNanos(dt.getMillisecondsOfSecond()),
-				ZoneOffset.ofHoursMinutes(dt.getTimezoneOffsetHours(), dt.getTimezoneOffsetMinutes())
-		);
+		if (dt.isDateTime()) {
+            return OffsetDateTime.of(
+                    dt.getYear(),
+                    dt.getMonthOfYear(),
+                    dt.getDayOfMonth(),
+                    dt.getHourOfDay(),
+                    dt.getMinuteOfHour(),
+                    dt.getSecondOfMinute(),
+                    (int)TimeUnit.MILLISECONDS.toNanos(dt.getMillisecondsOfSecond()),
+                    ZoneOffset.ofHoursMinutes(dt.getTimezoneOffsetHours(), dt.getTimezoneOffsetMinutes())
+            );
+		}
+		return LocalDate.of(dt.getYear(), dt.getMonthOfYear(), dt.getDayOfMonth()).atTime(OffsetTime.of(0, 0, 0, 0, ZoneOffset.UTC));
+		
 	}
 	
 	public IString printUTCDateTime(IDateTime dt, IString format) {

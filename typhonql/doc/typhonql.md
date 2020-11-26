@@ -40,7 +40,7 @@ TyphonQL supports the following literal (constant) expressions:
 - Dates:  `$2020-03-31$`
 - Date and time values:  `$2020-03-31T18:08:28.477+00:00$`
 - Geographical points: `#point(23.4 343.34)`
-- Polygons: `#polygon((0.1 1.0, 2.0 0.0, 3.0 3.0, 0.1 1.0))`;
+- Polygons: `#polygon((23.4 343.34), (2.0 0.0))`;
 - Null (indicating absence of a reference or value): `null`
 - Blob-pointers: `#blob:2ed99a8e-5259-4efd-8cb4-66748d52e8a1`
 
@@ -78,22 +78,26 @@ To be implemented:
 ### Geographical expressions
 
 
-
 ```notTyphonQL
 pt1 = point(1.3,2.5)
 pt2 = point(3.5,4.6)
 pg1 = polygon([
-  [point(0, 0), pt1, point(1,1), pt2, point(0,0)]
+  [point(0,0), pt1], 
+  [pt1, point(1,1)], 
+  [point(1,1), pt2], 
+  [pt2, point(0,0)]
 ])
 pg2 = polygon([
-  [point(3,0), pt1, point(2,2), pt2, point(3,2)]
+  [point(3,0), pt1], 
+  [pt1, point(2,2)], 
+  [point(2,2), pt2], 
+  [pt2, point(3,2)]
 ])
 ```
-*(note: pseudo QL syntax to make it a bit more readable)*
 
 distance in meters:
   
-- two points: `distance(pt1, pt2)` 
+- two points: `distance(pt1, pt2)` (better idea for a infix operator are welcome, but it looked a bit strange to me)
 - one point and closest edge of polygon: `distance(pt1, pg2)`
 
 containment:
@@ -104,24 +108,8 @@ overlap:
 - polygon partially overlaps another polygon: `pg1 & pg2`
 
 
-*note*: on mongodb backends distance is limited to the where query and only in presence of a comparison operator. Cassandra and neo4j don't support geo operations.
+*note*: on mongodb backends distance is limited to the where query and only in presence of a comparision operator. 
 
-### Graph expressions
-If two entities are related to each other through an entity stored in a graph database, it is possible to use the reachability expression:
-
-`entity1 -[edgeEntity, lower..upper]-> entity2`
-
-- `entity1` and `entity2` are the ids of entities that can be stored in any backend
-- `edgeEntity` is the id of the entity stored as an edge in a graph database
-- `lower` and `upper` are expressions that represents the bounds for the _number of hops_ one wants to execute from `entity1`. By ommiting one or both of them, we get different semantics explained through the following examples.
-
-Example 1:  `person1 -[friendOf, 2..3]-> person2` -> Find friends of `person1` using at least 2 jumps and at most 3 jumps. Notice that this expression will ignore the direct friends of `person1`.
-
-Example 2:  `person1 -[friendOf, 1..]-> person2` -> Find friends of `person1` using at least 1 jump, without constraining how many jumps can be used.
-
-Example 3:  `person1 -[friendOf, ..3]-> person2` -> Find friends of `person1` using at most 3 jumps. By default the lower limit would be 1.
-
-Example 4:  `person1 -[friendOf]-> person2` -> Find friends of `person1` using at least 1 jumps and without constraining the number of jumps. This expression computes the transitive closure of `friendOf` for the set `{ person1 }`.
 
 ### Blobs
 
@@ -168,13 +156,89 @@ Cascading delete of contained object is currently limited to one hop across data
 In other words, if a sequence of containment relations alternatingly cross multiple database back-ends
 the cascade is only performed for the first relation.
 
-### Date time & timezones
 
-Every datebase handles date-time, time zones and time offsets differently. For typhon ql we picked a scheme that would be correct for most use cases, and we could support for all of the backends.
+## NLP
 
-We store and normalize all date times in UTC/Zulu time zone. If you send a date time with an offset, we apply that offset and store it in UTC time. If you send a date time without an offset, we use the time zone of the QL server (that is configurable via the `TZ` environment flag) to translate it to UTC.
+If the type of a field is `freetext` you have extra subfields available during select queries. Nothing special happens during insertion, but depending on the configered nlp analysis for this field, you have extra fields available. The table below lists all of the custom fields.
 
-On querying a date-time field, you will always get back the UTC version. Client libraries can use that to convert it back to a display format if required. If you are dealing with an application with multiple time zones, it's a good idea to store the zone id (like `Europe/Amsterdam`) in a separate field next to the date-time.
+
+| Analysis | Fieldname | type |
+|-----|----|----|
+| PhraseExtraction | PhraseExtraction.Token | text |
+| PhraseExtraction | PhraseExtraction.end | int |
+| PhraseExtraction | PhraseExtraction.begin | int |
+| POSTagging | POSTagging.end | int |
+| POSTagging | POSTagging.begin | int |
+| POSTagging | POSTagging.PosTag | text |
+| POSTagging | POSTagging.PosValue | text |
+| RelationExtraction | RelationExtraction.TargetEntity.NamedEntity | text |
+| RelationExtraction | RelationExtraction.RelationName | text |
+| RelationExtraction | RelationExtraction.TargetEntity.begin | int |
+| RelationExtraction | RelationExtraction.TargetEntity.end | int |
+| RelationExtraction | RelationExtraction.end | int |
+| RelationExtraction | RelationExtraction.begin | int |
+| RelationExtraction | RelationExtraction.SourceEntity.NamedEntity | text |
+| RelationExtraction | RelationExtraction.SourceEntity.end | int |
+| RelationExtraction | RelationExtraction.SourceEntity.begin | int |
+| nGramExtraction | nGramExtraction.NgramType | text |
+| nGramExtraction | nGramExtraction.begin | int |
+| nGramExtraction | nGramExtraction.end | int |
+| ParagraphSegmentation | ParagraphSegmentation.end | int |
+| ParagraphSegmentation | ParagraphSegmentation.begin | int |
+| ParagraphSegmentation | ParagraphSegmentation.Paragraph | text |
+| Tokenisation | Tokenisation.Token | text |
+| Tokenisation | Tokenisation.end | int |
+| Tokenisation | Tokenisation.begin | int |
+| TermExtraction | TermExtraction.end | int |
+| TermExtraction | TermExtraction.WeightedToken | int |
+| TermExtraction | TermExtraction.TargetEntity.NamedEntity | int |
+| TermExtraction | TermExtraction.begin | int |
+| TermExtraction | TermExtraction.TargetEntity.begin | int |
+| TermExtraction | TermExtraction.TargetEntity.end | int |
+| Chunking | Chunking.begin | int |
+| Chunking | Chunking.end | int |
+| Chunking | Chunking.PosAnnotation.PosValue | text |
+| Chunking | Chunking.PosAnnotation.end | int |
+| Chunking | Chunking.TokenAnnotation.begin | int |
+| Chunking | Chunking.TokenAnnotation.end | int |
+| Chunking | Chunking.PosAnnotation.PosTag | text |
+| Chunking | Chunking.PosAnnotation.begin | int |
+| Chunking | Chunking.TokenAnnotation.Token | text |
+| Chunking | Chunking.Label | text |
+| NamedEntityRecognition | NamedEntityRecognition.NamedEntity | text |
+| NamedEntityRecognition | NamedEntityRecognition.begin | int |
+| NamedEntityRecognition | NamedEntityRecognition.GeoCode | point |
+| NamedEntityRecognition | NamedEntityRecognition.WordToken | text |
+| NamedEntityRecognition | NamedEntityRecognition.end | int |
+| Stemming | Stemming.begin | int |
+| Stemming | Stemming.end | int |
+| Stemming | Stemming.Stem | text |
+| Lemmatisation | Lemmatisation.begin | int |
+| Lemmatisation | Lemmatisation.end | int |
+| Lemmatisation | Lemmatisation.Lemma | text |
+| DependencyParsing | DependencyParsing.DependencyName | text |
+| DependencyParsing | DependencyParsing.TargetEntity.NamedEntity | text |
+| DependencyParsing | DependencyParsing.TargetEntity.begin | int |
+| DependencyParsing | DependencyParsing.TargetEntity.end | int |
+| DependencyParsing | DependencyParsing.begin | int |
+| DependencyParsing | DependencyParsing.SourceEntity.begin | int |
+| DependencyParsing | DependencyParsing.SourceEntity.end | int |
+| DependencyParsing | DependencyParsing.end | int |
+| DependencyParsing | DependencyParsing.SourceEntity.NamedEntity | text |
+| SentenceSegmentation | SentenceSegmentation.Sentence | text |
+| SentenceSegmentation | SentenceSegmentation.begin | int |
+| SentenceSegmentation | SentenceSegmentation.end | int |
+| SentimentAnalysis | SentimentAnalysis.SentimentLabel | text |
+| SentimentAnalysis | SentimentAnalysis.Sentiment | int |
+| CoreferenceResolution | RelationExtraction.Anaphor.begin | int |
+| CoreferenceResolution | RelationExtraction.Anaphor.Token | text |
+| CoreferenceResolution | RelationExtraction.Anaphor.end | int |
+| CoreferenceResolution | CoreferenceResolution.Antecedent.end | int |
+| CoreferenceResolution | CoreferenceResolution.begin | int |
+| CoreferenceResolution | CoreferenceResolution.Antecedent.begin | int |
+| CoreferenceResolution | CoreferenceResolution.end | int |
+| CoreferenceResolution | CoreferenceResolution.Antecedent.Token | text |
+
 
 # TyphonQL by Example
 
@@ -297,7 +361,7 @@ Selecting all users:
 ```
 from User u select u
 ```
-This will return the identities of all users.
+This will return all the attributes of all users (but *excluding* references to other entities).
 
 Selecting specific attributes of users:
 ```
@@ -326,7 +390,61 @@ from User u, Product p, Review r select u.name, p.name
 ```
 
 Note the use of "==" even for many-valued references.
-You may wonder why not use the `x in y` operator for
+You may wonder why not use the `x in y` operator for "joining" on collections; this has to do
+with how relational back-ends deal with multiplicity and would complicate the implementation
+considerably.
+
+### Aggregation Support
+
+TyphonQL currently supports the usual aggregation operators `count`, `sum`, `max`, `min`, and `avg`,
+to be used in combination with the group-construct.
+
+For instance, to count the number of reviews per user:
+```
+from User u 
+select u.name, count(u.reviews) as revCount
+group u.name
+```
+
+_NB_: *ALL* aggregation expressions (e.g. `count(u.reviews)`) need to be aliased with a variable name using "as".
+
+If you want to consider the whole entity as the only group you may omit the "group"-clause, e.g.:
+```
+from User u 
+select count(u.@id) as cnt
+```
+Counts the number of unique users.
+
+Aggregated values can be constrained using the having-clause:
+```
+from User u 
+select u.name, count(u.reviews) as revCount
+group u.name
+having revCount > 5
+```
+This selects all users (and their review counts) that have written more than five reviews.
+
+The aggregation component of TyphonQL also supports limit- and order-clauses for, respectively, limiting the size of 
+the result set, and sorting it. These can be used in combination with aggregation (group-by) or without.
+
+For instance:
+```
+from User u 
+select u.name, count(u.reviews) as revCount
+group u.name
+order revCount desc
+```
+sorts the previous query in descending order by review count.
+The "desc" modifier can also be omitted, in which case it amounts to using "asc" for ascending order.
+
+To get the most prolific reviewer, one could write:
+```
+from User u 
+select u.name, count(u.reviews) as revCount
+group u.name
+order revCount desc
+limit 1
+```
 
 
 ## Manipulating Data
@@ -452,93 +570,11 @@ update User u where u.@id == ??param
   set { cards +: [#a129feec-4b92-4ab2-9ef5-d276a7566f56] }
 ``` 
 
-## HTTP API
+## Miscellaneous
+ 
 
-To execute queries outside of the TyphonQL IDE, the Typhon Polystore offers an HTTP API. This section describes how to invoke it, we only describe the section of the Polystore API related to TyphonQL.
-
-### Reset Database
-
-In case you need to start from fresh: 
-
-`GET http://polystore-api/api/resetdatabases`
-
-### Select queries
-
-Post the query as a json object to: 
-
-`POST http://polystore-api/api/query`
-
-Body: 
-
-```json
-{
-  "query": "from User u select u"
-}
-```
-
-Note that you have to make sure to correctly encode is as a json string, any language with a json library will take care of this.
-
-### Insert/Update/Delete queries
-
-Post the command as a json object to:
-
-`POST http://polystore-api/api/update`
-
-Body:
-
-```json
-{
-  "query": "insert User { name : \"John\", age: 35 }"
-}
-```
-
-#### Inserting/updating blobs 
-If you want to insert a new blob, you have to send along the contents of the blob separately from the query.
+ 
+ 
 
 
-```json
-{
-  "query": "update User u where u.name==\"John\" set { image: #blob:ecbbb3c4-6c5f-4ef0-bce4-58b847a82222 }",
-  "blobs": {
-    "ecbbb3c4-6c5f-4ef0-bce4-58b847a82222": "eW91IGdldCBhIGNvb2tpZQ==" // base64 encode of the blob contents
-  }
-}
-```
 
-#### Parameterized queries
-
-For both ease of writing and performance, it's possible to generate send a single query, where placeholders will be replaced by a list of bindings. This makes it possible to send multiple queries in a single command.
-
-
-```json
-{
-  "query": "insert User { @id: ??id, name: ??uname, age: ??uage }",
-  "parameterNames": ["id", "uname", "uage"],
-  "parameterTypes": ["uuid", "string", "int"],
-  "boundValues": [
-    ["beefc0b2-0393-4b73-951c-7243ee849275", "John Smith", "20"],
-    ["52001d98-05f2-4832-b653-6077a4db05a7", "Smith John", "1"]
-  ]
-}
-```
-
-Some remarks about this api:
-
-- You have to give the names for the parameters, their typhon types, and then a 2d __string__ array, with rows that are bound to the parameters, in the same order.
-- The syntax of the values is the same as the output of a query. You do not have to encode the values as QL literals (for example, a uuid doesn't have to be prefixed with `#`, and a string doesn't require double escaping).
-- Valid types are:
-  - `int`
-  - `bigint`
-  - `float`
-  - `string`
-  - `bool`
-  - `text`
-  - `uuid`
-  - `date`
-  - `datetime`
-  - `point`
-  - `polygon`
-  - `blob` (for these you _do_ have to use the ql literal: `#blob:uuid...`)
-- You can combine this with the blobs field.
-- Any json libary should be able to generate these objects
-- We encode numbers as string, since json only supports doubles

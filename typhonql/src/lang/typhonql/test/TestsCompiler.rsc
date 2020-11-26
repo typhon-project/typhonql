@@ -97,6 +97,11 @@ void setup(PolystoreInstance p, bool doTest) {
 	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv, posted: $2020-02-03T02:11:00$, location: #point(20.0 30.0), screenshot: #blob:s2 }`, (U("s2") : "yy"));
 	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio, posted: $2020-02-03T02:11:00$, location: #point(3.0 2.0), screenshot: #blob:s3 }`, (U("s3") : "zz"));
 	
+	p.runUpdate((Request)`insert Comment { @id: #c1, review: #rev1, comment: "I agree" }`);
+	p.runUpdate((Request)`insert Comment { @id: #c2, review: #rev2, comment: "please write something" }`);
+	p.runUpdate((Request)`insert Comment { @id: #c3, review: #rev2, comment: "dude, this is lazy" }`);
+	
+	
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Review r select r.@id, r.content, r.user, r.product`);
 	  p.assertResultEquals("reviews were inserted", rs, <["r.@id", "r.content", "r.user", "r.product"], 
@@ -110,6 +115,15 @@ void setup(PolystoreInstance p, bool doTest) {
 
 	  rs = p.runQuery((Request)`from User u select u.reviews`);
 	  p.assertResultEquals("reviews obtained from user", rs, <["u.reviews"], [[U("rev1")], [U("rev2")], [U("rev3")]]>);
+	  
+	  rs = p.runQuery((Request)`from Review r select r.@id, r.comments`);
+	  p.assertResultEquals("comments obtained from review", rs, <["r.@id", "r.comments"], 
+	     [
+	       [U("rev1"), [U("c1")]],
+	       [U("rev2"), [U("c2"), U("c3")]],
+	       [U("rev3"), {}]
+	     ]
+	     >);
 	}
 	
 	
@@ -161,12 +175,12 @@ void setup(PolystoreInstance p, bool doTest) {
 	if (doTest) {
 	  rs = p.runQuery((Request)`from Item i select i.@id, i.shelf, i.product`);
 	  p.assertResultEquals("items were inserted", rs, <["i.@id", "i.shelf", "i.product"], [
-	    [U("tv1"), 1, U("tv")],
-	    [U("tv2"), 1, U("tv")],
-	    [U("tv3"), 3, U("tv")],
-	    [U("tv4"), 3, U("tv")],
-	    [U("radio1"), 2, U("radio")],
-	    [U("radio2"), 2, U("radio")]
+	    [U("tv1"), "1", U("tv")],
+	    [U("tv2"), "1", U("tv")],
+	    [U("tv3"), "3", U("tv")],
+	    [U("tv4"), "3", U("tv")],
+	    [U("radio1"), "2", U("radio")],
+	    [U("radio2"), "2", U("radio")]
 	  ]>);
 	  
 	  rs = p.runQuery((Request)`from Product p select p.inventory where p.@id == #tv`);
@@ -209,6 +223,26 @@ void setup(PolystoreInstance p, bool doTest) {
 	}
 	
 	
+	p.runUpdate((Request) `insert Company { @id: #ibm, name: "IBM", mission: "Be better", vision: "Forever"}`);
+    
+    p.runUpdate((Request) `insert Foundation { @id: #wwf, name: "WWF", mission: "Better world", vision: "We are the world"}`);
+    p.runUpdate((Request) `insert Foundation { @id: #greenpeace, name: "Greenpeace", mission: "Green peace", vision: "Peace should be green"}`);
+    
+    if (doTest) {
+  		rs = p.runQuery((Request)`from Company c select c.@id, c.mission`);
+  		p.assertResultEquals("company was inserted", rs, <["c.@id", "c.mission"], [
+	    	[U("ibm"), "Be better"]]>);
+	    
+	    // Not done for now because NLAE gets stuck with NER
+	    rs = p.runQuery((Request)`from Foundation f select f.@id`);
+	    p.assertResultEquals("foundation was inserted", rs, <["f.@id", "f.mission"], [
+	    	[U("wwf"), "Better world"],
+	    	[U("greenpeace"), "Green peace"]]>); 
+	} 
+}
+
+void resetDatabases(PolystoreInstance p) {
+	p.resetDatabases();
 }
 
 void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
@@ -216,6 +250,133 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
   p.resetDatabases();
   setup(p, true);
 }
+
+void testBasicMongoDBWhereClauses(PolystoreInstance p) {
+  
+	rs = p.runQuery((Request)`from Review r select r.content where r.product == #tv, r.user == #davy`);
+	p.assertResultEquals("comma separated clauses both filter", rs, <["r.content"], [[""]]>);
+
+	rs = p.runQuery((Request)`from Review r select r.content where r.product == #tv && r.user == #davy`);
+	p.assertResultEquals("using && filters like comma", rs, <["r.content"], [[""]]>);
+
+
+	rs = p.runQuery((Request)`from Review r select r.content where r.product == #radio || r.user == #pablo`);
+	p.assertResultEquals("using || works", rs, <["r.content"], [["***"], ["Good TV"]]>);
+
+	rs = p.runQuery((Request)`from Review r select r.content where r.product == #radio || r.user == #pablo || r.location == #point(20.0 30.0)`);
+	p.assertResultEquals("using || works multiple times", rs, <["r.content"], [["***"], ["Good TV"], [""]]>);
+
+//p.runUpdateWithBlobs((Request) `insert Review { @id: #rev1, content: "Good TV", user: #pablo, product: #tv, posted: $2020-02-03T02:11:00+01:00$, location: #point(2.0 3.0), screenshot: #blob:s1 }`, (U("s1") : "xx"));
+//	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv, posted: $2020-02-03T02:11:00$, location: #point(20.0 30.0), screenshot: #blob:s2 }`, (U("s2") : "yy"));
+//	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio, posted: $2020-02-03T02:11:00$, location: #point(3.0 2.0), screenshot: #blob:s3 }`, (U("s3") : "zz"));
+	
+	rs = p.runQuery((Request)`from Review r select r.content where r.product == #radio || (r.user == #pablo && r.location == #point(20.0 30.0))`);
+	p.assertResultEquals("using && below || works ", rs, <["r.content"], [["***"]]>);
+
+	rs = p.runQuery((Request)`from Review r select r.content where (r.user == #pablo && r.location == #point(20.0 30.0) || r.product == #radio )`);
+	p.assertResultEquals("using && below || works (no short-circuit) ", rs, <["r.content"], [["***"]]>);
+
+}
+
+void testBasicAggregation(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from Item i select count(i.@id) as cnt group null`);
+  p.assertResultEquals("items counted correctly", rs, <["cnt"], 
+    [["6"]]>);
+
+  rs = p.runQuery((Request)`from Item i select sum(i.shelf) as cnt group null`);
+  p.assertResultEquals("item shelves summed correctly", rs, <["cnt"], 
+    [["12"]]>);
+    
+  rs = p.runQuery((Request)`from Item i select count(i.@id) as cnt`);
+  p.assertResultEquals("items counted w/o group-clause", rs, <["cnt"], 
+    [["6"]]>);
+
+  // select `Item.shelf`, count(`Item.@id`) from Item group by `Item.shelf`;
+  rs = p.runQuery((Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf`);
+  p.assertResultEquals("shelf items counted correctly", rs, <["i.shelf", "numOfItems"], 
+    [["1", "2"], ["2", "2"], ["3","2"]]>);
+
+
+    
+  rs = p.runQuery((Request)`from Product p select p.@id, count(p.inventory) as numOfItems group p.@id`);  
+  p.assertResultEquals("product inventory items counted correctly", rs, <["p.@id", "numOfItems"], 
+    [[U("tv"), "4"], [U("radio"), "2"]]>);
+    
+  // TODO: let type checker test at as-clauses are present
+  
+  rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total where i.product == p group i.product`);
+  p.assertResultEquals("item prices summed correctly", rs, <["i.product", "total"], 
+    [[U("tv"), "<4 * 20>"], [U("radio"), "<2 * 30>"]]>);
+    
+  // todo: sum(i.product.price)? that needs changing expandNavigation normalization (no; because of lifting)
+  // but it still does not work...
+  //rs = p.runQuery((Request)`from Item i select i.product, sum(i.product.price) as total group i.product`);
+  //p.assertResultEquals("item prices summed correctly thru navigation", rs, <["i.product", "total"], 
+  //  [[U("tv"), 4 * 20], [U("radio"), 2 * 30]]>);
+
+  rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
+                           'where i.product == p group i.product having total \> 60`);
+  p.assertResultEquals("item prices summed and larger than 60", rs, <["i.product", "total"], 
+    [[U("tv"), "<4 * 20>"]]>);
+    
+}
+
+void testLimit(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from Item i select i.shelf limit 2`);
+  p.assertResultEquals("shelves selected correctly with limit 2", rs, <["i.shelf"], 
+    [["2"], ["3"]]>);
+
+
+  rs = p.runQuery((Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf limit 2`);
+  p.assertResultEquals("shelf items counted correctly with limit 2", rs, <["i.shelf", "numOfItems"], 
+    [["1", "2"], ["2", "2"]]>);
+}
+
+void testLimitAndOrder(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from Item i select i.shelf limit 2 order i.shelf`);
+  p.assertResultEquals("shelves selected correctly limited and sorted", rs, <["i.shelf"], 
+    [["1"], ["1"]]>);
+
+  rs = p.runQuery((Request)`from Item i select i.shelf limit 2 order i.shelf desc`);
+  p.assertResultEquals("shelves selected correctly limited and sorted in reverse", rs, <["i.shelf"], 
+    [["3"], ["3"]]>);
+
+  rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
+                           'where i.product == p group i.product order total limit 1`);
+  p.assertResultEquals("item prices summed, sorted, limited", rs, <["i.product", "total"], 
+    [[U("radio"), "<2 * 30>"]]>);
+  
+  rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
+                           'where i.product == p group i.product order total desc limit 1`);
+  p.assertResultEquals("item prices summed, sorted in reverse, limited", rs, <["i.product", "total"], 
+    [[U("tv"), "<4 * 20>"]]>);
+  
+  
+  
+}
+
+
+void testOrdering(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from Item i select i.shelf order i.shelf`);
+  p.assertResultEquals("shelves correctly sorted", rs, <["i.shelf"], 
+      [["1"], ["1"], ["2"], ["2"], ["3"], ["3"]]>);
+
+  rs = p.runQuery((Request)`from Item i select i.shelf order i.shelf desc`);
+  p.assertResultEquals("shelves correctly sorted in reverse", rs, <["i.shelf"], 
+      [["3"], ["3"], ["2"], ["2"], ["1"], ["1"]]>);
+
+  rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
+                           'where i.product == p group i.product order total`);
+  p.assertResultEquals("item prices sorted correctly", rs, <["i.product", "total"], 
+    [[U("tv"), "<4 * 20>"], [U("radio"), "<2 * 30>"]]>);
+ 
+  rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
+                           'where i.product == p group i.product order total desc`);
+  p.assertResultEquals("item prices sorted correctly in reverse", rs, <["i.product", "total"], 
+    [[U("radio"), "<2 * 30>"], [U("tv"), "<4 * 20>"]]>);
+  
+}
+
 
 void testMultiVarOccurencesMapToSamePlaceholder(PolystoreInstance p) {
   rs = p.runQuery((Request)`from User u, Review r select u.name where u.name == "Pablo",
@@ -252,36 +413,101 @@ void testKeyValueFeatures(PolystoreInstance p) {
 
 }
 
-/*
 
-The below test fails, but the results seem equal...
-pected: <["i.shelf","i.product"],[
-  [2,"a398fb77-df76-3615-bdf5-7cd65fd0a7c5"], [2,"a398fb77-df76-3615-bdf5-7cd65fd0a7c5"],
-   [1,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"],[1,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"],
-  [3,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"],[3,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"]]>, 
-actual: <["i.shelf","i.product"],[
-  [2,"a398fb77-df76-3615-bdf5-7cd65fd0a7c5"], [2,"a398fb77-df76-3615-bdf5-7cd65fd0a7c5"],
-  [1,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"], [1,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"]]>
-  [3,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"], [3,"c9a1fdac-6e08-3dd8-9e71-73244f34d7b3"],
+void testDefaultAttrInsertion(PolystoreInstance p) {
+  p.runUpdate((Request)`insert User { name: "Donald Trump" }`);
+  rs = p.runQuery((Request)`from User u select u where u.name == "Donald Trump"`);
+  p.assertResultEquals("default vals correctly inserted", rs, <
+    ["u.address","u.billing$city","u.billing$location","u.billing$street","u.billing$zipcode$letters",
+       "u.billing$zipcode$nums","u.created","u.location","u.name"],
+    [["","","POINT (0 0)","","","","0001-12-29T23:00:00Z","POINT (0 0)","Donald Trump"]]>);
+  
+}
 
-*/
-
+// this is brittle! order of lone var expansion is not defined!
 void testLoneVars(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i`);
-  p.assertEquals("all features from item retrieved", <rs<0>, {*rs<1>}>, <["i.picture", "i.shelf", "i.product"]
-    , {
-        [base64("aa"), 1, U("tv")],
-        [base64("bb"), 1, U("tv")],
-        [base64("cc"), 3, U("tv")],
-        [base64("dd"), 3, U("tv")],
-        [base64("ee"), 2, U("radio")],
-        [base64("ff"), 2, U("radio")]
-    }>);
+  p.assertResultEquals("all features from Item retrieved", rs, <["i.picture", "i.shelf"]
+    , [
+        [base64("aa"), "1"],//, U("tv")],
+        [base64("bb"), "1"],// U("tv")],
+        [base64("cc"), "3"],//, U("tv")],
+        [base64("dd"), "3"],// U("tv")],
+        [base64("ee"), "2"],// U("radio")],
+        [base64("ff"), "2"] // U("radio")]
+    ]>);
+  
+  rs = p.runQuery((Request)`from User u select u`);
+  p.assertResultEquals("all features from User retrieved", rs,
+      <["u.address","u.billing$city","u.billing$location","u.billing$street","u.billing$zipcode$letters",
+        "u.billing$zipcode$nums","u.created","u.location","u.name"],
+      
+       [["alsoThere","Ams","POINT (2 3)","Seventh","ab","1234","2020-01-02T11:24:00Z","POINT (2 3)","Pablo"],
+       ["alsoThere","Almere","POINT (20 30)","Bla","cd","4566","2020-01-02T15:24:00Z","POINT (20 30)","Davy"]]
+       >
+       );
+  
+   
+    
+  rs = p.runQuery((Request)`from Review r select r`);
+  p.assertResultEquals("all features from Review retrieved",  rs,
+    <["r.content","r.location","r.posted","r.screenshot"],
+    [["Good TV","POINT (2 3)","2020-02-03T01:11:00Z","eHg="],
+     ["","POINT (20 30)","2020-02-03T01:11:00Z","eXk="],
+     ["***","POINT (3 2)","2020-02-03T01:11:00Z","eno="]]>);
+    
     
   rs = p.runQuery((Request)`from Biography b select b`);
-  p.assertEquals("all features from biography retrieved", rs, <["b.content", "b.user"]
-    , [["Chilean", U("pablo")]]>);
-    
+  p.assertResultEquals("all features from Biography retrieved", rs, <["b.content"]
+    , [["Chilean" /*, U("pablo")*/]]>);
+
+   
+   
+  rs = p.runQuery((Request)`from User u, Biography b select u, b where u.biography == b`);
+  p.assertResultEquals("all features of Pablo and his Biography retrieved", rs, 
+     <["u.address","u.billing$city","u.billing$location","u.billing$street","u.billing$zipcode$letters",
+     "u.billing$zipcode$nums","u.created","u.location","u.name","b.content"],
+       [["alsoThere","Ams","POINT (2 3)","Seventh","ab","1234","2020-01-02T11:24:00Z","POINT (2 3)","Pablo","Chilean"]]>);
+}
+
+void testSelectFreetextAttributes(PolystoreInstance p) {
+  rs = p.runQuery((Request) `from Company c select c.@id, c.mission, c.mission.SentimentAnalysis.Sentiment where c.mission.SentimentAnalysis.Sentiment \>= 1 && c.vision.SentimentAnalysis.Sentiment \>= 2`);
+  
+  // We do not know yet the expected result
+  //p.assertResultEquals("company retrieved", rs, <["c.@id"], [
+  //	    [U("ibm"), "Be better", 1]]>); 
+                        
+}
+
+void testSelectFreetextAttributes2(PolystoreInstance p) {
+  rs = p.runQuery((Request) `from Foundation f select f.@id, f.mission, f.mission.SentimentAnalysis.Sentiment where f.mission.SentimentAnalysis.begin \>= 1 && f.mission.NamedEntityRecognition.begin \>= 2`);
+  // We do not know yet the expected result
+  //p.assertResultEquals("foundation retrieved", rs, <["f.@id"], [
+  //    [U("ibm"), "Better world", 1]]>); 
+                        
+}
+
+void testSelectFreetextAttributes3(PolystoreInstance p) {
+  rs = p.runQuery((Request) `from Foundation f select f.@id, f.mission, f.mission.SentimentAnalysis.Sentiment, f.mission.NamedEntityRecognition.NamedEntity where f.mission.SentimentAnalysis.begin \>= 1 && f.mission.NamedEntityRecognition.begin \>= 2`);
+  println(rs);
+  // We do not know yet the expected result
+  //p.assertResultEquals("foundation retrieved", rs, <["f.@id"], [
+  //    [U("ibm"), "Better world", 1]]>); 
+                        
+}
+void testInsertFreetextAttributes(PolystoreInstance p) {
+	p.runUpdate((Request) `insert Company { @id: #ibm, name: "IBM", mission: "Be better", vision: "Forever"}`);
+   	
+   	rs = p.runQuery((Request)`from Company c select c.@id, c.mission`);
+  	p.assertResultEquals("company was inserted", rs, <["c.@id", "c.mission"], [
+	    	[U("ibm"), "Be better"]]>);
+	 
+}
+
+void testDeleteFreetextAttributes(PolystoreInstance p) {
+    p.runUpdate((Request) `delete Company c where c.@id == #ibm`);
+	rs = p.runQuery((Request) `from Company c select c.@id where  c.@id == #ibm`);
+	p.assertResultEquals("company (with free text attribtues) deleted", rs, <["c.@id"], []>);
 }
 
 void testCustomDataTypes(PolystoreInstance p) {
@@ -446,6 +672,10 @@ void testInsertManyXrefsSQLLocal(PolystoreInstance p) {
   p.assertResultEquals("insertManyXrefsSQLLocal", rs, <["p.name"], [["iPhone"]]>);
 }
 
+void testInsertManyContainSQLtoLocal(PolystoreInstance p) {
+
+}
+
 void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
   p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, posted: $2020-11-22T23:55:00$, location: #point(1.0 1.0), screenshot: #blob:s4 }`, (U("s4") : "uu"));
   p.runUpdate((Request)`insert Product {@id: #iphone, name: "iPhone", description: "Apple", reviews: [#newReview], availabilityRegion: #polygon((1.0 1.0)), price: 400, productionDate: $2001-01-01$}`);
@@ -465,6 +695,30 @@ void testInsertManyContainSQLtoExternal(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Product p, Review r select r.content where p.@id == #iphone, p.reviews == r`);
   
   p.assertResultEquals("InsertManyContainSQLtoExternal", rs, <["r.content"], [["expensive"]]>);
+}
+
+void testInsertWithNullSQL(PolystoreInstance p) {
+  // No description 
+  p.runUpdate((Request)`insert Product {@id: #wine, name: "Aliwen", productionDate:  $2020-04-14$, availabilityRegion: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)), price: 150}`);
+  rs = p.runQuery((Request)`from Product p select p.@id, p.description where p.@id == #wine`);
+  p.assertResultEquals("testInsertWithNullSQL", rs, <["p.@id", "p.description"], [[U("wine"), {}]]>);
+
+}
+
+void testInsertWithNullNeo(PolystoreInstance p) {
+  // No description 
+  p.runUpdate((Request)`insert Wish {@id: #wish3, user: #davy, product: #tv}`);
+  rs = p.runQuery((Request)`from Wish w select w.@id, w.intensity where w.@id == #wish3`);
+  p.assertResultEquals("testInsertWithNullNeo", rs, <["w.@id", "w.intensity"], [[U("wish3"), {}]]>);
+
+}
+
+void testInsertWithNullMongo(PolystoreInstance p) {
+  // No description 
+  p.runUpdate((Request)`insert Biography { @id: #bio2, user: #davy }`);
+  rs = p.runQuery((Request)`from Biography b select b.@id, b.content where b.@id == #bio2`);
+  p.assertResultEquals("testInsertWithNullMongo", rs, <["b.@id", "b.content"], [[U("bio2"), {}]]>);
+
 }
 
 void testInsertSQLNeo(PolystoreInstance p) {
@@ -539,7 +793,7 @@ void testNeoReachability(PolystoreInstance p) {
 void testUpdateAttrNeo(PolystoreInstance p) {
   p.runUpdate((Request)`update Wish w where w.@id == #wish1 set {intensity: 3}`);
   rs = p.runQuery((Request)`from Wish w select w.@id, w.intensity where w.@id == #wish1`);
-  p.assertResultEquals("testUpdateAttrNeo", rs, <["w.@id", "w.intensity"], [[ U("wish1"), 3]]>);
+  p.assertResultEquals("testUpdateAttrNeo", rs, <["w.@id", "w.intensity"], [[ U("wish1"), "3"]]>);
 }
 
 void testUpdateSingleRefSQLMongo(PolystoreInstance p) {
@@ -639,12 +893,12 @@ void testUpdateSingleRefSQLMongo(PolystoreInstance p) {
 
 void testSelectViaSQLInverseLocal(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select i.shelf where i.product == #tv`);
-  p.assertResultEquals("selectViaSQLInverseLocal", rs, <["i.shelf"], [[1], [1], [3], [3]]>);
+  p.assertResultEquals("selectViaSQLInverseLocal", rs, <["i.shelf"], [["1"], ["1"], ["3"], ["3"]]>);
 }
 
 void testSelectViaSQLKidLocal(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i, Product p select i.shelf where p.@id == #tv, p.inventory == i`);
-  p.assertResultEquals("selectViaSQLKidLocal", rs, <["i.shelf"], [[1], [1], [3], [3]]>);
+  p.assertResultEquals("selectViaSQLKidLocal", rs, <["i.shelf"], [["1"], ["1"], ["3"], ["3"]]>);
 }
 
 
@@ -680,7 +934,7 @@ void testGISonNeo(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Concordance c select c.@id where c.location in #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0))`);
   p.assertResultEquals("testGISonNeoLiteralPolygonRhs", rs, <["c.@id"], [[U("Pablo")]]>);
 
-  rs = p.runQuery((Request)`Concordance c select c.@id where c.location in c.availabilityRegion`);
+  rs = p.runQuery((Request)`from Concordance c select c.@id where c.location in c.availabilityRegion`);
   p.assertResultEquals("testGISonNeoJoin", rs, <["c.@id"], [[U("Pablo")]]>);
 
 
@@ -761,7 +1015,7 @@ void testInsertNeo(PolystoreInstance p) {
 	
   rs = p.runQuery((Request)`from Wish w select w.@id, w.intensity where w.@id ==#wish3`);
   p.assertResultEquals("items were inserted", rs, <["w.@id", "w.intensity"], [
-	    [U("wish3"), 7]
+	    [U("wish3"), "7"]
 	  ]>);
 }
 
@@ -861,7 +1115,7 @@ void testPreparedUpdatesSimpleMongoWithRefs(PolystoreInstance p) {
 						  [
 						   ["Awful TV", U("tv"), U("pablo"), "2020-01-02T12:22:00Z"],
 				           ["Excellent TV", U("tv"), U("davy"), "2020-01-02T12:22:00Z" ]]);
-	rs = p.runQuery((Request) `from Review r select r.content, r.user, r.product, r.posted, where r.product = #tv`);		    
+	rs = p.runQuery((Request) `from Review r select r.content, r.user, r.product, r.posted where r.product = #tv`);		    
 	p.assertResultEquals("prepared insert statement on mongo with references (simple)", rs,   
 		<["r.content","r.user","r.product", "r.posted"],
 		[["Good TV", U("pablo"), U("tv"), "2020-01-02T12:22:00Z"],
@@ -954,18 +1208,54 @@ void test13(PolystoreInstance p) {
 }
 
 
-TestExecuter executer(Log log = NO_LOG()) = initTest(setup, HOST, PORT, USER, PASSWORD, log = log);
+void testMariaDBFields(PolystoreInstance p) {
+    p.runUpdate((Request) `insert ReferenceTest { @id: #r1, r: 2}`);
+	p.runUpdate((Request) `insert EntitySmokeTest { @id: #e1, s: "Hoi", t: "Long", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-01-02$, dt: $2020-03-04T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)), ref: #r1 }`);
+	rs = p.runQuery((Request) `from EntitySmokeTest e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg, e.ref where e.@id == #e1`);
+	p.assertResultEquals("Working regular values", rs, <
+	   ["e.s", "e.t", "e.i", "e.r", "e.f",  "e.b", "e.d", "e.dt", "e.pt", "e.pg", "e.ref"],
+	   [["Hoi", "Long", "3", "12312312321", "20.001", true, "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))", U("r1")]]>);
 
-void runTest(void(PolystoreInstance) t, Log log = NO_LOG(), bool runTestsInSetup = false) {
-	 executer(log = log).runTest(t, runTestsInSetup); 
+	p.runPreparedUpdate((Request) `insert EntitySmokeTest { @id: ??id, s: ??s, t: ??t, i: ??i, r: ??r, f: ??f, b: ??b, d: ??d, dt: ??dt, pt: ??pt, pg: ??pg, ref: ??ref }`,
+	   ["id", "s","t","i", "r","f", "b", "d", "dt", "pt", "pg", "ref"],
+	   ["uuid", "string", "string", "int", "bigint", "float", "bool", "date", "datetime", "point", "polygon", "uuid"],
+       [[U("e2"), "Hoi", "Long", "3", "12312312321", "20.01", "true", "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))", U("r1")]]
+	);
+	rs = p.runQuery((Request) `from EntitySmokeTest e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg, e.ref where e.@id == #e2`);
+	p.assertResultEquals("Working parameterized", rs, <
+	   ["e.s", "e.t", "e.i", "e.r", "e.f",  "e.b", "e.d", "e.dt", "e.pt", "e.pg", "e.ref"],
+	   [["Hoi", "Long", "3", "12312312321", "20.01", true, "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))", U("r1")]]>);
+}
+void testMongoDBFields(PolystoreInstance p) {
+	p.runUpdate((Request) `insert EntitySmokeTest2 { @id: #e1, s: "Hoi", t: "Long", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-01-02$, dt: $2020-03-04T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);
+	rs = p.runQuery((Request) `from EntitySmokeTest2 e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg where e.@id == #e1`);
+	p.assertResultEquals("Working regular values", rs, <
+	   ["e.s", "e.t", "e.i", "e.r", "e.f",  "e.b", "e.d", "e.dt", "e.pt", "e.pg"],
+	   [["Hoi", "Long", "3", "12312312321", "20.001", true, "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))"]]>);
+	p.runPreparedUpdate((Request) `insert EntitySmokeTest2 { @id: ??id, s: ??s, t: ??t, i: ??i, r: ??r, f: ??f, b: ??b, d: ??d, dt: ??dt, pt: ??pt, pg: ??pg }`,
+	   ["id", "s","t","i", "r","f", "b", "d", "dt", "pt", "pg"],
+	   ["uuid", "string", "string", "int", "bigint", "float", "bool", "date", "datetime", "point", "polygon"],
+       [[U("e2"), "Hoi", "Long", "3", "12312312321", "20.001", "true", "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))"]]
+	);
+	rs = p.runQuery((Request) `from EntitySmokeTest2 e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg where e.@id == #e2`);
+	p.assertResultEquals("Working parameterized", rs, <
+	   ["e.s", "e.t", "e.i", "e.r", "e.f",  "e.b", "e.d", "e.dt", "e.pt", "e.pg"],
+	   [["Hoi", "Long", "3", "12312312321", "20.001", true, "2020-01-02", "2020-03-04T12:04:44Z", "POINT (0.2 0.4)", "POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))"]]>);
 }
 
-void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG(), bool runTestsInSetup = false) {
-	executer(log = log).runTests(ts, runTestsInSetup); 
+TestExecuter executer(Log log = NO_LOG(), bool doTypeChecking = true) = initTest(setup, HOST, PORT, USER, PASSWORD, log = log, doTypeChecking = doTypeChecking);
+
+void runTest(void(PolystoreInstance) t, Log log = NO_LOG(), bool runSetup = true, bool runTestsInSetup = false, bool doTypeChecking = true) {
+	 executer(log = log, doTypeChecking = doTypeChecking).runTest(t, runSetup, runTestsInSetup); 
+}
+
+void runTests(list[void(PolystoreInstance)] ts, Log log = NO_LOG(), bool runTestsInSetup = false, bool doTypeChecking = true) {
+	executer(log = log, doTypeChecking = doTypeChecking).runTests(ts, runTestsInSetup); 
 }
 
 Schema fetchSchema() {
-	return executer().fetchSchema();
+	Schema s = executer().fetchSchema();
+	return s;
 }
 
 void printSchema() {
@@ -981,8 +1271,14 @@ void testDeleteAllSQLBasic(PolystoreInstance p) {
 
 void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	tests = 
-	  [ testKeyValueFeatures
+	  [ testBasicAggregation
+	  , testBasicMongoDBWhereClauses
+	  , testLimit
+	  , testLimitAndOrder
+	  , testOrdering
+	  , testKeyValueFeatures
 	  , testCustomDataTypes
+	  , testDefaultAttrInsertion
 	  , testLoneVars
 	  , testInsertSingleValuedSQLCross
 	  , testInsertManyValuedSQLLocal
@@ -990,6 +1286,9 @@ void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	  , testDeleteAllWithCascade
 	  , testDeleteKidsRemovesParentLinksSQLLocal
 	  , testDeleteKidsRemovesParentLinksSQLCross
+
+	  , testMariaDBFields
+	  , testMongoDBFields
 
 	  , testInsertManyXrefsSQLLocal
 	  , testInsertManyContainSQLtoExternal
@@ -1042,7 +1341,7 @@ void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	  , test12
 	  , test13
 	];
-	runTests(tests, log = log, runTestsInSetup = runTestsInSetup);
+	runTests(tests, log = log, runTestsInSetup = runTestsInSetup, doTypeChecking = false);
 }
 
 void runNeoTests(Log log = NO_LOG()) {

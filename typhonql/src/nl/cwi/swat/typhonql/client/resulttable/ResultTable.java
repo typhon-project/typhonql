@@ -19,23 +19,21 @@ package nl.cwi.swat.typhonql.client.resulttable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
-import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
-import io.usethesource.vallang.IExternalValue;
 import io.usethesource.vallang.type.Type;
 import nl.cwi.swat.typhonql.client.JsonSerializableResult;
 
 
 public class ResultTable implements JsonSerializableResult {
-
-
-				
 	private final List<String> columnNames;
 	private final List<List<Object>> values;
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private String warnings = null;
 	
 	public ResultTable(List<String> columnNames, List<List<Object>> values) {
 		this.columnNames = columnNames;
@@ -62,6 +60,16 @@ public class ResultTable implements JsonSerializableResult {
 	@JsonIgnore
 	public void serializeJSON(OutputStream target) throws IOException {
 		QLSerialization.mapper.writeValue(target, this);
+	}
+	
+	@Override
+	public void addWarnings(String warnings) {
+		if (this.warnings == null) {
+			this.warnings = warnings;
+		}
+		else {
+			this.warnings += "\n" + warnings;
+		}
 	}
 	
 	

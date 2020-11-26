@@ -1,4 +1,5 @@
 /********************************************************************************
+
 * Copyright (c) 2018-2020 CWI & Swat.engineering 
 *
 * This program and the accompanying materials are made available under the
@@ -44,6 +45,7 @@ import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import groovy.lang.ListWithDefault;
 import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
@@ -60,6 +62,10 @@ import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.Runner;
 import nl.cwi.swat.typhonql.backend.cassandra.CassandraOperations;
+import nl.cwi.swat.typhonql.backend.mariadb.MariaDBOperations;
+import nl.cwi.swat.typhonql.backend.mongodb.MongoOperations;
+import nl.cwi.swat.typhonql.backend.neo4j.Neo4JOperations;
+import nl.cwi.swat.typhonql.backend.nlp.NlpOperations;
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
@@ -100,7 +106,7 @@ public class TyphonSession implements Operations {
 				XMIPolystoreConnection.buildExternalArguments(
 						toStringArray(columnNames),
 						toStringArray(columnTypes),
-						toStringMatrix(values), Collections.emptyMap());
+						toStringMatrix(values), Collections.emptyMap(), true);
 		return newSessionWrapper(connections, fileMap, Optional.of(externalArguments), ctx).getTuple();
 	}
 	
@@ -149,7 +155,7 @@ public class TyphonSession implements Operations {
 			String value = ((IString)cur.getValue()).getValue();
 			actualBlobMap.put(key, new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8)));
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, actualBlobMap, externalArguments, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, nlpConnections, actualBlobMap, externalArguments, ctx);
 	}
 
 	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, Map<String, InputStream> blobMap, Optional<ExternalArguments> externalArguments, IEvaluatorContext ctx) {
@@ -179,12 +185,12 @@ public class TyphonSession implements Operations {
 				throw new RuntimeException("Missing type: " + db.getDbms());
 			}
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, blobMap, externalArguments, ctx);
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, nlpConnections, blobMap, externalArguments, ctx);
 	}
 
 	private SessionWrapper newSessionWrapper(Map<String, ConnectionData> mariaDbConnections,
 			Map<String, ConnectionData> mongoConnections, Map<String, ConnectionData> cassandraConnections, 
-			Map<String, ConnectionData> neoConnections, Map<String, InputStream> blobMap, 
+			Map<String, ConnectionData> neoConnections, Map<String, ConnectionData> nlpConnections, Map<String, InputStream> blobMap, 
 			Optional<ExternalArguments> externalArguments, IEvaluatorContext ctx) {
 		// checkIsNotInitialized();
 		// borrow the type store from the module, so we don't have to build the function
@@ -212,6 +218,7 @@ public class TyphonSession implements Operations {
 		FunctionType hasAnyExternalArgumentsType = (FunctionType) aliasedTuple.getFieldType("hasAnyExternalArguments");
 		FunctionType hasMoreExternalArgumentsType = (FunctionType) aliasedTuple.getFieldType("hasMoreExternalArguments");
 		FunctionType nextExternalArgumentsType = (FunctionType) aliasedTuple.getFieldType("nextExternalArguments");
+		FunctionType reportType = (FunctionType) aliasedTuple.getFieldType("report");
 
 		// construct the session tuple
 		ResultStore store = new ResultStore(blobMap, externalArguments);
@@ -223,12 +230,13 @@ public class TyphonSession implements Operations {
 		MongoOperations mongoOperations = new MongoOperations(mongoConnections);
 		CassandraOperations cassandra = new CassandraOperations(cassandraConnections);
 		Neo4JOperations neo = new Neo4JOperations(neoConnections);
+		NlpOperations nlp = new NlpOperations(nlpConnections);
 		state.addOpperations(mariaDBOperations);
 		state.addOpperations(mongoOperations);
 		state.addOpperations(cassandra);
 		state.addOpperations(neo);
+		state.addOpperations(nlp);
 		
-
 		return new SessionWrapper(vf.tuple(makeGetResult(state, getResultType, ctx),
 				makeGetJavaResult(state, getJavaResultType, ctx),
 				makeReadAndStore(store, script, state, readAndStoreType, ctx),
@@ -239,10 +247,12 @@ public class TyphonSession implements Operations {
 				makeHasAnyExternalArguments(store, state, hasAnyExternalArgumentsType, ctx),
 				makeHasMoreExternalArguments(store, state, hasMoreExternalArgumentsType, ctx),
 				makeNextExternalArguments(store, state, nextExternalArgumentsType, ctx),
+				makeReport(state, reportType, ctx),
 				mariaDBOperations.newSQLOperations(store, script, state, uuids, ctx, vf),
 				mongoOperations.newMongoOperations(store, script, state, uuids, ctx, vf),
 				cassandra.buildOperations(store, script, state, uuids, ctx, vf),
-				neo.newNeo4JOperations(store, script, state, uuids, ctx, vf)
+				neo.newNeo4JOperations(store, script, state, uuids, ctx, vf),
+				nlp.newNlpOperations(store, script, state, uuids, ctx, vf)
 				), state);
 	}
 
@@ -321,6 +331,14 @@ public class TyphonSession implements Operations {
 			}
 		});
 	}
+	
+	private ICallableValue makeReport(TyphonSessionState state, FunctionType funcType,
+			IEvaluatorContext ctx) {
+		return makeFunction(ctx, state, funcType, args -> {
+			state.addWarnings(((IString)args[0]).getValue());
+			return ResultFactory.nothing();
+		});
+	}
 
 	private IValue parseTable(byte[] json) {
 		try {
@@ -360,6 +378,11 @@ public class TyphonSession implements Operations {
 		}
 		else if (c.isTextual()) {
 			return vf.string(c.asText());
+		}
+		else if (c.isArray()) {
+			IListWriter lst = vf.listWriter();
+			c.elements().forEachRemaining(x -> lst.append(toIValue(x)));
+			return lst.done();
 		}
 		else {
 			throw new RuntimeException("Cannot convert " + c + " into an IValue");

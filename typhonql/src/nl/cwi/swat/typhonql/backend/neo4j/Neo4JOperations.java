@@ -1,4 +1,4 @@
-package nl.cwi.swat.typhonql.backend.rascal;
+package nl.cwi.swat.typhonql.backend.neo4j;
 
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -34,7 +34,10 @@ import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Closables;
 import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultStore;
-import nl.cwi.swat.typhonql.backend.neo4j.Neo4JEngine;
+import nl.cwi.swat.typhonql.backend.rascal.ConnectionData;
+import nl.cwi.swat.typhonql.backend.rascal.Operations;
+import nl.cwi.swat.typhonql.backend.rascal.Path;
+import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 
 public class Neo4JOperations implements Operations, AutoCloseable {
 

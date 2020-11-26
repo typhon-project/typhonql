@@ -55,10 +55,10 @@ str neopp(nSet(list[NeoSetItem] setItems))
   = "set <intercalate(", ", [neopp(i) | i <- setItems])>";
   
 str neopp(nSetEquals(str variable, NeoExpr expr))
-  = "<variable> = <neopp(expr)>";
+  = "<q(variable)> = <neopp(expr)>";
   
 str neopp(nSetPlusEquals(str variable, NeoExpr expr))
-  = "<variable> += <neopp(expr)>";  
+  = "<q(variable)> += <neopp(expr)>";  
   
 str neopp(nPattern(nodePattern, rels))
 	= "<neopp(nodePattern)><intercalate(" ", [neopp(r) | r <- rels])>";
@@ -76,10 +76,6 @@ str neopp(nProperty(str name, NeoExpr expr))
 str neopp(nCreate(str t, list[str] ps, list[NeoExpr] vs))
   = "create (n:<q(t)> { <intercalate(", ", [ "<q(ps[i])> : <neopp(vs[i])>" | i <- [0..size(ps)]])> })";
   
-// Set
-
-str neopp(nSet(str c, NeoExpr e)) = "<q(c)> = <neopp(e)>";
-
 
 // NeoExpr
 

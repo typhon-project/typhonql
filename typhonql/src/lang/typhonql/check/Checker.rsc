@@ -56,7 +56,7 @@ str prettyAType(polygonType()) = "polygon";
 str prettyAType(boolType()) = "bool";
 str prettyAType(floatType()) = "float";
 str prettyAType(blobType()) = "blob";
-str prettyAType(freeTextType(nlps)) = "freetext[<intercalate(",", [n | n <- nlps])>]";
+str prettyAType(freeTextType(list[str] nlps)) = "freetext[<intercalate(",", [n | n <- nlps])>]";
 str prettyAType(dateType()) = "date";
 str prettyAType(dateTimeType()) = "datetime";
     
@@ -76,6 +76,15 @@ bool qlSubType(bigIntType(), floatType()) = true;
 bool qlSubType(stringType(), textType()) = true;
 bool qlSubType(textType(), stringType()) = true;
 
+bool qlSubType(freeTextType(_), stringType()) = true;
+bool qlSubType(stringType(), freeTextType(_)) = true;
+
+bool qlSubType(userDefinedType(name), stringType()) = true
+	when isNlpCustomDataType(name);
+	
+bool qlSubType(stringType(), userDefinedType(name)) = true
+	when isNlpCustomDataType(name);
+
 bool qlSubType(uuidType(), entityType(_)) = true;
 
 bool qlSubType(voidType(), _) = true;
@@ -92,6 +101,7 @@ data TypePalConfig(CheckerMLSchema mlSchema = <(), {}>);
  data IdRole
     = tableRole()
     | fieldRole()
+    | aliasRole()
     ;
  
 
@@ -114,7 +124,7 @@ void collect(current:(Expr)`<VId var>`, Collector c) {
 }
 
 void collect(VId current, Collector c) {
-    c.use(current, {tableRole()});
+    c.use(current, {tableRole(), aliasRole()});
 }
 
 void collect(current:(Expr)`<PlaceHolder p>`, Collector c) {
@@ -194,7 +204,7 @@ void collectKeyVal({KeyVal ","}* keyVals, EId entity, Collector c) {
 
 void collectKeyVal(current:(KeyVal)`@id : <Expr val>`, EId entity, Collector c) {
     collect(val, c);
-    c.requireEqual(uuidType(), val, error(current, "Expected uuid but got %t", val));
+    c.requireComparable(uuidType(), val, error(current, "Expected uuid but got %t", val));
 }
 
 void collectKeyVal(current:(KeyVal)`<Id key> : <Expr val>`, EId entity, Collector c) {
@@ -323,7 +333,25 @@ void collectBuildinFunction(Tree current, (VId)`distance`, list[Expr] args, Coll
     }
 }
 
-default void collectBuildinFunction(Tree current, _, _, Collector c) {
+set[str] aggregationFunctions = { "count", "sum", "max", "min", "avg"};
+
+default void collectBuildinFunction(Tree current, VId functionName, list[Expr] args, Collector c) {
+    if ("<functionName>" in aggregationFunctions) {
+        if ([singleArg] := args) {
+            switch (functionName) {
+                case (VId)`count`: c.fact(current, intType()); 
+                case (VId)`avg`: c.fact(current, floatType());
+                default: c.fact(current, singleArg);
+            }
+            collect(singleArg, c);
+            if ((VId)`count` !:= functionName) {
+                c.require("type should be countable", current, args, void (Solver s) {
+                    s.requireTrue(s.getType(singleArg) in {intType(), floatType()}, error(singleArg, "Expected float of int type, but got: %t", singleArg));
+                });
+            }
+            return;
+        }
+    }
     c.report(error(current, "Unknown buildin function"));
 }
 
@@ -485,7 +513,7 @@ void collectEntityType(EId entityName, Collector c) {
     }
     else {
         c.calculate("error", entityName, [], AType (Solver s) {
-            s.report(error(entityName, "Missing model in the typepal configuration"));
+            s.report(error(entityName, "Missing %v in the typepal configuration", "<entityName>"));
             return voidType();
         });
     }
@@ -496,23 +524,23 @@ void collectEntityType(EId entityName, Collector c) {
 /** Query **/
 /***********/
 
-void collect(current:(Query)`from <{Binding ","}+ bindings> select <{Result ","}+ selected> <Where? where> <GroupBy? groupBy> <OrderBy? orderBy>`, Collector c) {
+void collect(current:(Query)`from <{Binding ","}+ bindings> select <{Result ","}+ selected> <Where? where> <Agg* aggs>`, Collector c) {
     c.enterScope(current);
     collect(bindings, selected, c);
     if (w <- where) {
         collect(w, c);
     }
-    if (g <- groupBy) {
-        collect(g, c);
-    }
-    if (ob <- orderBy) {
-        collect(ob, c);
+    for (Agg a <- aggs) {
+      collect(a, c);
     }
     c.leaveScope(current);
 }
 
 void collect(Result current, Collector c) {
     collect(current.expr, c);
+    if (current is aliassed) {
+        c.define("<current.attr>", aliasRole(), current.attr, defType(current.expr));
+    }
 }
 
 void collect(current:(Binding)`<EId entity> <VId name>`, Collector c) {
@@ -528,22 +556,28 @@ void collect((Where)`where <{Expr ","}+ clauses>`, Collector c) {
     }
 }
 
-void collect((GroupBy)`group <{Expr ","}+ vars> <Having? having>`, Collector c) {
+void collect((Agg)`group <{Expr ","}+ vars>`, Collector c) {
     collect(vars, c);
-    if (h <- having) {
-        collect(h, c);
-    }
 }
 
-void collect((Having)`having <{Expr ","}+ clauses>`, Collector c) {
+void collect((Agg)`having <{Expr ","}+ clauses>`, Collector c) {
     collect(clauses, c);
     for (cl <- clauses) {
         c.requireEqual(boolType(), cl, error(cl, "Having expects a boolean expression"));
     }
 }
 
-void collect((OrderBy)`order <{Expr ","}+ vars>`, Collector c) {
+void collect((Agg)`order <{Expr ","}+ vars> <Dir _>`, Collector c) {
     collect(vars, c);
+}
+
+void collect((Agg)`limit <Expr e>`, Collector c) {
+    if ((Expr)`<Int _>` := e) {
+        collect(e, c);
+    }
+    else {
+        c.report(error(e, "Limit only supports literal integer limits"));
+    }
 }
 
 /*******
@@ -567,7 +601,7 @@ void requireAttributesSet(Tree current, Tree typ, {KeyVal ","}* args, Collector 
         attrs = sch[s.getType(typ)]?();
         required = { k | k <- attrs, <entityType(_), _> !:= attrs[k] };
         missing = required - { "<k>" | k <- keysSet};
-        s.requireTrue(missing == {}, error(current, "%t is missing the following attributes: %v", typ, missing));
+        s.requireTrue(missing == {}, warning(current, "%t is missing the following attributes: %v", typ, missing));
     });
 }
 
@@ -707,13 +741,24 @@ CheckerMLSchema convertModel(Schema mlSchema) {
     fields = ( entityType(tpn) : 
         (
           (fn : <(ftp in mlSchema.customs<from>) ? userDefinedType(ftp) : calcMLType(ftp), \one()> | <fn, ftp> <- mlSchema.attrs[tpn])
+        //+ (fn : <entityType(nlpEntity(tpn)), \one()> | <fn, ftp> <- mlSchema.attrs[tpn], isFreeTextType(ftp))
+        + (fn: <userDefinedType(nlpCustomDataType(tpn, fn)), \one()>
+    	|  <fn, ftp> <- mlSchema.attrs[tpn], isFreeTextType(ftp))
         + (fr : <entityType(to), fc> | <fc, fr, _, _, to, _> <- mlSchema.rels[tpn])
         + (tr : <entityType(from), tc> | <from, _, _, tr, tc, tpn, _> <- mlSchema.rels)) // inverse roles
     | tpn <- entities(mlSchema)
     ) + (userDefinedType(tpn) : 
-        (fn : <(ftp in mlSchema.customs<from>) ? userDefinedType(ftp) : calcMLType(ftp), \one()> | <fn, ftp> <- mlSchema.customs[tpn]) 
+        (fn : <(ftp in mlSchema.customs<from>) ? userDefinedType(ftp) : calcMLType(ftp), \one()> | <fn, ftp> <- mlSchema.customs[tpn])   
     | tpn <- mlSchema.customs<from>
-    );
+    ) + (userDefinedType(tpn) :
+    	(fn : <calcMLType(ftp), \one()> |  <actualName, fn, ftp> <- customForNlpAnalysis[tpn])
+    | tpn <-  customForNlpAnalysis
+    ) + (userDefinedType(nlpCustomDataType(tpn, fn)) :
+       (an: <userDefinedType(an), \one()> | <an, wf> <- getFreeTypeAnalyses(ftp))
+        | tpn <- entities(mlSchema), <fn, ftp> <- mlSchema.attrs[tpn], isFreeTextType(ftp)
+    )
+    ;
+    
     graphEdges = {
         <
             fields[entityType(ent)][frm]<0>,

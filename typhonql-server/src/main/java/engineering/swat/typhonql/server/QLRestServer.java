@@ -157,6 +157,7 @@ public class QLRestServer {
 
 	private static final byte[] RESULT_OK_MESSAGE = "{\"result\":\"ok\"}".getBytes(StandardCharsets.UTF_8);
 	private static JsonSerializableResult RESULT_OK = new JsonSerializableResult() {
+		public void addWarnings(String warnings) {};
 		
 		@Override
 		public Type getType() {
@@ -173,6 +174,7 @@ public class QLRestServer {
 		// should always be there
 		public String xmi;
 		public List<DatabaseInfo> databaseInfo;
+		public boolean validate = false;
 
 		// depends on the command which one is filled in or not
 		public String query;
@@ -198,6 +200,7 @@ public class QLRestServer {
 				else {
 					result = new RestArguments();
 				}
+				logger.trace("Parsed args: {}", result);
 				result.xmi = xmi;
 				result.databaseInfo = mapper.readValue(databaseInfo, new TypeReference<List<DatabaseInfo>>() {});
 				logger.trace("Received arguments: {}", result);
@@ -224,6 +227,7 @@ public class QLRestServer {
 							: "")
 					+ ((boundRows != null) ? ("boundRows: " + boundRows.length + "\n") : "") 
 					+ ((blobs != null) ? "blobs: " + blobs.keySet() + "\n" : "")
+					+ "validate: " + validate + "\n"
 					+ "xmi: " + xmi + "\n"
 					+ "databaseInfo" + databaseInfo + "}";
 		}
@@ -271,8 +275,9 @@ public class QLRestServer {
 			throw new IOException("Missing query parameter in post body");
 		}
 		logger.trace("Running query: {}", args.query);
-		return engine.executeQuery(args.xmi, args.databaseInfo, args.query);
+		return engine.executeQuery(args.xmi, args.databaseInfo, args.query, args.validate);
 	}
+
 
 	private static JsonSerializableResult handleCommand(XMIPolystoreConnection engine, RestArguments args, HttpServletRequest r)
 			throws IOException {
@@ -288,16 +293,20 @@ public class QLRestServer {
                 throw new IOException("Mismatch between length of parameter names and parameter types");
             }
             return stringArray(engine.executePreparedUpdate(args.xmi, args.databaseInfo, args.blobs, args.query,
-                    args.parameterNames, args.parameterTypes, args.boundRows));
+                    args.parameterNames, args.parameterTypes, args.boundRows, args.validate));
 			
 		}
 		else {
-            return stringArray(engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.query));
+            return stringArray(engine.executeUpdate(args.xmi, args.databaseInfo, args.blobs, args.query, args.validate));
 		}
 	}
 	
 	private static JsonSerializableResult stringArray(String[] result) {
 		return new JsonSerializableResult() {
+			@Override
+			public void addWarnings(String warnings) {
+			}
+			
 			@Override
 			public Type getType() {
 				return null;

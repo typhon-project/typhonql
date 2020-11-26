@@ -42,6 +42,7 @@ data Call
   | mongo(MongoCall mongo) 
   | cassandra(CassandraCall cassandra)
   | neo(NeoCall neo)
+  | nlp(NlpCall nlp)
   ;
   
 data CassandraCall
@@ -61,6 +62,12 @@ data NeoCall
   | executeNeoUpdate(str dbName, str stat)
   ;
   
+data NlpCall
+  = process(str json)
+  | delete(str json)
+  | query(str json)
+  ;
+  
 data MongoCall
   = find(str dbName, str coll, str query)
   | find(str dbName, str coll, str query, str proj)
@@ -70,7 +77,8 @@ data MongoCall
   | deleteOne(str dbName, str coll, str query)
   | deleteMany(str dbName, str coll, str query)
   | createCollection(str dbName, str coll)
-  | createIndex(str dbName, str coll, str keys)
+  | createIndex(str dbName, str coll, str indexName, str keys)
+  | dropIndex(str dbName, str coll, str indexName)
   | renameCollection(str dbName, str coll, str newName)
   | dropCollection(str dbName, str coll)
   | dropDatabase(str dbName)
@@ -140,14 +148,17 @@ str runScriptAux(Script scr, Session session, Schema schema) {
       case step(str r, mongo(createCollection(str db, str coll)), Bindings ps):
         session.mongo.createCollection(db, coll); 
 
-      case step(str r, mongo(createIndex(str db, str coll, str keys)), Bindings ps):
-        session.mongo.createIndex(db, coll, keys); 
+      case step(str r, mongo(createIndex(str db, str coll, str indexName, str keys)), Bindings ps):
+        session.mongo.createIndex(db, coll, indexName, keys); 
 
       //case step(str r, mongo(createIndex(str db, str coll, lrel[str selector, str index] selectors)), Bindings ps):
       //  session.mongo.createIndex(db, coll, selectors); 
         
       case step(str r, mongo(dropCollection(str db, str coll)), Bindings ps):
         session.mongo.dropCollection(db, coll); 
+        
+      case step(str r, mongo(dropIndex(str db, str coll, str indexName)), Bindings ps):
+        session.mongo.dropIndex(db, coll, indexName); 
         
       case step(str r, mongo(dropDatabase(str db)), Bindings ps):
         session.mongo.dropDatabase(db);   
@@ -160,6 +171,15 @@ str runScriptAux(Script scr, Session session, Schema schema) {
         
       case step(str r, neo(executeNeoUpdate(str db, str q)), Bindings ps):
         session.neo.executeUpdate(db, q, ps);
+        
+      case step(str r, nlp(process(str json)), Bindings ps):
+      	session.nlp.process(json, ps);
+      	
+      case step(str r, nlp(delete(str json)), Bindings ps):
+      	session.nlp.delete(json, ps);
+      
+      case step(str r, nlp(query(str json)), Bindings ps):
+      	session.nlp.query(json, ps, s.signature);	
       
       case newId(str var): {
         result = session.newId(var);

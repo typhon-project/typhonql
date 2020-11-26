@@ -17,15 +17,13 @@
 package nl.cwi.swat.typhonql.backend.mongodb;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import org.bson.BsonTimestamp;
 import org.bson.Document;
-import org.bson.types.BSONTimestamp;
-import org.bson.types.Binary;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LinearRing;
@@ -38,7 +36,6 @@ import com.mongodb.client.MongoIterable;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 
-import lang.typhonql.util.MakeUUID;
 import nl.cwi.swat.typhonql.backend.ResultIterator;
 
 public class MongoDBIterator implements ResultIterator {
@@ -120,9 +117,9 @@ public class MongoDBIterator implements ResultIterator {
 			// due to strange way dates & timestamps are stored in mogo, we swap them around
 			return ((Date)fromDB).toInstant();
 		}
-		else if (fromDB instanceof BSONTimestamp) {
-			 long seconds = ((BSONTimestamp) fromDB).getTime();
-			 int beforEpoch = ((BSONTimestamp) fromDB).getInc();
+		else if (fromDB instanceof BsonTimestamp) {
+			 long seconds = ((BsonTimestamp) fromDB).getTime();
+			 int beforEpoch = ((BsonTimestamp) fromDB).getInc();
 			 return Instant.ofEpochSecond(seconds * beforEpoch).atOffset(ZoneOffset.UTC).toLocalDate();
 		}
 		else if (fromDB instanceof String) {

@@ -146,15 +146,24 @@ tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding
   // mapping collection name to methods (i.e. `find`)
   map[str, CollMethod] result = ( paths["<e>"].root : find(object([]), object([<"_id", \value(1)>])) | (Binding)`<EId e> <VId x>` <- bs );
   
-  void addConstraint(str ent, <str path, DBObject val>) {
+  void addConstraint(str ent, object([<str opOrPath, DBObject val>])) {
     // todo: if the path is already in props, create $and obj 
     prePath = paths[ent].path;
     if (prePath != []) {
-      result[paths[ent].root].query.props += [<"<intercalate(".", paths[ent].path)>.<path>", val>];
+      if (opOrPath in {"$or", "$and", "$not"}) {
+        throw "BUG: trying to interpret boolean connective as path";
+      }
+      path = "<intercalate(".", paths[ent].path)>.<opOrPath>";
     }
-    else {
-      result[paths[ent].root].query.props += [<path, val>];
-    }
+    //if (result[paths[ent].root].query.props == []) {
+      result[paths[ent].root].query.props += [<opOrPath, val>];
+    //}
+    //else if ([<str p, DBObject constraint>] := result[paths[ent].root].query.props, p != "$and") { // make $and
+    //  result[paths[ent].root].query.props = [<"$and", array([object([<p, constraint>]), object([<path, val>])])>];
+    //}
+    //else if ([<"$and", array(list[DBObject] constraints)>] := result[paths[ent].root].query.props) { 
+    //  result[paths[ent].root].query.props = [<"$and", array([*constraints, object([<path, val>])])>];
+    //}
   }
   
   
@@ -295,8 +304,8 @@ tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding
 
       default: {
         if ((Expr)`true` !:= e) {
-          <ent, prop> = expr2pattern(e, ctx);
-          addConstraint(ent, prop);
+          <ent, obj> = expr2pattern(e, ctx);
+          addConstraint(ent, obj);
         }   
       }
     }
@@ -310,57 +319,72 @@ tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding
 }
 
 
-tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> #join <Expr rhs>`, Ctx ctx)
+tuple[str, DBObject] expr2pattern((Expr)`<Expr lhs> #join <Expr rhs>`, Ctx ctx)
   = expr2pattern((Expr)`<Expr lhs> == <Expr rhs>`, ctx);
   
-tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> == <Expr rhs>`, Ctx ctx)
-  = <ent, <path, expr2obj(other, ctx)>> 
+tuple[str, DBObject] expr2pattern((Expr)`<Expr lhs> == <Expr rhs>`, Ctx ctx)
+  = <ent, object([<path, expr2obj(other, ctx)>])> 
   when
     <str ent, str path, Expr other> := split(lhs, rhs, ctx);
+
+tuple[str, DBObject] expr2pattern((Expr)`<Expr lhs> || <Expr rhs>`, Ctx ctx) {
+  <ent, obj1> = expr2pattern(lhs, ctx);
+  <ent, obj2> = expr2pattern(rhs, ctx);
+  return <ent, object([<"$or", array([obj1, obj2])>])>;
+}
+
+tuple[str, DBObject] expr2pattern((Expr)`<Expr lhs> && <Expr rhs>`, Ctx ctx) {
+  <ent, obj1> = expr2pattern(lhs, ctx);
+  <ent, obj2> = expr2pattern(rhs, ctx);
+  return <ent, object([<"$and", array([obj1, obj2])>])>;
+}
+
+tuple[str, DBObject] expr2pattern((Expr)`(<Expr e>)`, Ctx ctx)
+  = expr2pattern(e, ctx);
     
-tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> != <Expr rhs>`, Ctx ctx)
+tuple[str, DBObject] expr2pattern((Expr)`<Expr lhs> != <Expr rhs>`, Ctx ctx)
   = makeComparison("$ne", lhs, rhs, ctx);
 
-tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> \> <Expr rhs>`, Ctx ctx)
+tuple[str, DBObject] expr2pattern((Expr)`<Expr lhs> \> <Expr rhs>`, Ctx ctx)
   = makeComparison("$gt", lhs, rhs, ctx);
 
-tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> \< <Expr rhs>`, Ctx ctx)
+tuple[str, DBObject] expr2pattern((Expr)`<Expr lhs> \< <Expr rhs>`, Ctx ctx)
   = makeComparison("$lt", lhs, rhs, ctx);
 
-tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> \>= <Expr rhs>`, Ctx ctx)
+tuple[str, DBObject] expr2pattern((Expr)`<Expr lhs> \>= <Expr rhs>`, Ctx ctx)
   = makeComparison("$gte", lhs, rhs, ctx);
 
-tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> \<= <Expr rhs>`, Ctx ctx)
+tuple[str, DBObject] expr2pattern((Expr)`<Expr lhs> \<= <Expr rhs>`, Ctx ctx)
   = makeComparison("$lte", lhs, rhs, ctx);
 
-tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> in <Expr rhs>`, Ctx ctx) {
+tuple[str, DBObject] expr2pattern((Expr)`<Expr lhs> in <Expr rhs>`, Ctx ctx) {
   <ent, path, other> = split(lhs, rhs, ctx);
-  return <ent, <path, object([
+  return <ent, object([<path, object([
             <"$geoWithin", object([
                 <"$geometry", expr2obj(other, ctx)>
             ])>
-        ])>>; 
+        ])>])>; 
 }
   
-tuple[str, Prop] expr2pattern((Expr)`<Expr lhs> & <Expr rhs>`, Ctx ctx) {
+tuple[str, DBObject] expr2pattern((Expr)`<Expr lhs> & <Expr rhs>`, Ctx ctx) {
    <ent, path, other> = split(lhs, rhs, ctx);
-   return <ent, <path, object([
+   return <ent, object([<path, object([
             <"$geoIntersects", object([
                 <"$geometry", expr2obj(other, ctx)>
             ])>
-        ])>>;
+        ])>])>;
 }
 
 // TODO: &&, ||, in, like
 
-default tuple[str, Prop] expr2pattern(Expr e, Ctx ctx) { 
+default tuple[str, DBObject] expr2pattern(Expr e, Ctx ctx) { 
   throw "Unsupported expression: <e>"; 
 }
 
 
   
-tuple[str, Prop] makeComparison(str op, Expr lhs, Expr rhs, Ctx ctx) 
-  = <ent, <path, object([<op, expr2obj(other, ctx)>])>> 
+tuple[str, DBObject] makeComparison(str op, Expr lhs, Expr rhs, Ctx ctx) 
+  = <ent, object([<path, object([<op, expr2obj(other, ctx)>])>])> 
   when !isGeoDistanceCall(lhs), !isGeoDistanceCall(rhs),
     <str ent, str path, Expr other> := split(lhs, rhs, ctx);
 
@@ -383,13 +407,13 @@ str translateOp("$lt") = "$maxDistance";
 str translateOp("$lte") = "$maxDistance";
 default str translateOp(str op) { throw "<op> not supported for distance clause, only \<, \<=, \>, and \>= are supported"; }
 
-tuple[str, Prop] makeComparison(str op, Expr lhs, Expr rhs, Ctx ctx) 
-    = <ent, <path, object([
+tuple[str, DBObject] makeComparison(str op, Expr lhs, Expr rhs, Ctx ctx) 
+    = <ent, object([<path, object([
         <"$nearSphere", object([
             <"$geometry", expr2obj(other, ctx)>, 
             <translateOp(op), expr2obj(other2, ctx)>
             ])>
-      ])>>
+      ])>])>
     when isGeoDistanceCall(lhs) || isGeoDistanceCall(rhs),
         <<str ent, str path, Expr other>, Expr other2> := distanceSplit(lhs, rhs, ctx);
     

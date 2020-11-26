@@ -22,7 +22,16 @@
 			<plugin>
 				<groupId>com.google.cloud.tools</groupId>
 				<artifactId>jib-maven-plugin</artifactId>
-				<version>1.8.0</version>
+				<version>2.6.0</version>
+                <!-- 1. have extension classes available on Jib's runtime classpath -->
+                <dependencies>
+                    <dependency>
+                        <groupId>com.google.cloud.tools</groupId>
+                        <artifactId>jib-layer-filter-extension-maven</artifactId>
+                        <version>0.1.0</version>
+                    </dependency>
+                </dependencies>
+
 				<configuration>
                     <skip>false</skip>
 					<from>
@@ -47,6 +56,24 @@
                             <password>${env.REGISTRY_PASSWORD}</password>
                         </auth>
 					</to>
+                    <pluginExtensions>
+                        <pluginExtension>
+                            <implementation>com.google.cloud.tools.jib.maven.extension.layerfilter.JibLayerFilterExtension</implementation>
+                            <configuration implementation="com.google.cloud.tools.jib.maven.extension.layerfilter.Configuration">
+                                <filters>
+                                    <!-- extract our own jars from the general dependency layer to make docker pushes and pulls easier -->
+                                    <filter>
+                                        <!-- remove our own bundle that we dont need in the server -->
+                                        <glob>**/bundle-typhonql*.jar</glob>
+                                    </filter>
+                                    <filter>
+                                        <glob>**/typhonql*.jar</glob>
+                                        <toLayer>typhonql-dep</toLayer>
+                                    </filter>
+                                </filters>
+                            </configuration>
+                        </pluginExtension>
+                    </pluginExtensions>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -62,6 +89,12 @@
             <groupId>org.rascalmpl</groupId>
             <artifactId>rascal</artifactId>
             <version>0.18.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.rascalmpl</groupId>
+            <artifactId>typepal</artifactId>
+            <version>0.4.10</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>engineering.swat.typhon</groupId>

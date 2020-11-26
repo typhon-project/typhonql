@@ -1,8 +1,11 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
+import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -17,11 +20,26 @@ import nl.cwi.swat.typhonql.backend.Runner;
 
 public class JavaOperation  {
 
+	
 	public static void compileAndAggregate(ResultStore store, TyphonSessionState state,
 			List<Consumer<List<Record>>> script, Map<String, UUID> uuids, String className,
 			String classBody, List<Path> paths, List<String> columnNames) {
-		List<String> commandline = Arrays.asList(new String[] {"-proc:none", "-cp", System.getProperty("java.class.path")});
-		JavaCompiler<JavaOperationImplementation> javaCompiler = new JavaCompiler<JavaOperationImplementation>(JavaOperation.class.getClassLoader(), null, commandline);
+		List<String> commandLine = new ArrayList<>();
+		commandLine.add("-proc:none");
+		commandLine.add("-cp");
+		String cpFull = System.getProperty("java.class.path");
+		ClassLoader cl = JavaOperation.class.getClassLoader();
+		if (cl instanceof URLClassLoader) {
+			for (URL u: ((URLClassLoader)cl).getURLs()) {
+				try {
+					cpFull += (cpFull.isEmpty() ? "" : System.getProperty("path.separator")) + new File(u.getFile()).getAbsolutePath();
+				} catch (Exception e) {
+				}
+			}
+		}
+		commandLine.add(cpFull);
+		
+		JavaCompiler<JavaOperationImplementation> javaCompiler = new JavaCompiler<JavaOperationImplementation>(JavaOperation.class.getClassLoader(), null, commandLine);
 		try {
 			Class<JavaOperationImplementation> result = javaCompiler.compile(className, classBody, null, JavaOperationImplementation.class);
 			Constructor<JavaOperationImplementation> ctr = result.getConstructor(ResultStore.class, TyphonSessionState.class, Map.class);

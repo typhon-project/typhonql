@@ -57,8 +57,8 @@ str pp(\value(datetime d)) {
     epoch = epochMilliSeconds(d);
     if (onlyDate(d)) {
         return pp(object([<"$timestamp", object([
-            <"t", \value("<round(epoch / 1000)>")>,
-            <"i", \value("<epoch >= 0 ? 1 : -1>")>
+            <"t", \value(round(epoch / 1000))>,
+            <"i", \value(epoch >= 0 ? 1 : -1)>
             ])
        >]));
     }

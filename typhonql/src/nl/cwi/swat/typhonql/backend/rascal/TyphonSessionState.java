@@ -19,9 +19,10 @@ package nl.cwi.swat.typhonql.backend.rascal;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.datastax.oss.driver.shaded.guava.common.base.Strings;
+
 import nl.cwi.swat.typhonql.backend.Closables;
 import nl.cwi.swat.typhonql.client.JsonSerializableResult;
-import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class TyphonSessionState implements AutoCloseable {
 	
@@ -31,6 +32,7 @@ public class TyphonSessionState implements AutoCloseable {
 	private final List<AutoCloseable> operations = new ArrayList<>();
 	
 	private final List<Runnable> delayedTasks = new ArrayList<>();
+	private String warnings = "";
 
 
 	@Override
@@ -46,6 +48,9 @@ public class TyphonSessionState implements AutoCloseable {
 
 	public void setResult(JsonSerializableResult result) {
 		this.result = result;
+		if (!Strings.isNullOrEmpty(warnings)) {
+			this.result.addWarnings(warnings);
+		}
 	}
 
 	public boolean isFinalized() {
@@ -63,5 +68,9 @@ public class TyphonSessionState implements AutoCloseable {
 	public void flush() {
 		delayedTasks.forEach(Runnable::run);
 		delayedTasks.clear();
+	}
+
+	public void addWarnings(String warnings) {
+		this.warnings = Strings.nullToEmpty(warnings);
 	}
 }

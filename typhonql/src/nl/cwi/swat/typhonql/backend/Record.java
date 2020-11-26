@@ -35,4 +35,9 @@ public class Record {
 		return objects.get(f);
 	}
 	
+	@Override
+	public String toString() {
+		return "record(" + objects + ")";
+	}
+	
 }

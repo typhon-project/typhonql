@@ -100,7 +100,8 @@ public class Runner {
 	}
 	
 	public static void executeUpdates(List<Consumer<List<Record>>> script) {
-		script.get(0).accept(new ArrayList<Record>());
+		if (script.size() >= 1)
+			script.get(0).accept(new ArrayList<Record>());
 	}
 
 	private static ResultTable toResultTable(List<Path> paths, List<List<Record>> result) {

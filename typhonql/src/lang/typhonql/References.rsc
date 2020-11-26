@@ -131,7 +131,7 @@ list[Step] removeFromJunction(str dbName, str from, str fromRole, str to, str to
            sql(executeStatement(dbName, 
              pp(delete(tbl,
                [ where([equ(column(tbl, junctionFkName(from, fromRole)), src),
-                    \in(column(tbl, junctionFkName(to, toRole)), [ trg.val | SQLExpr trg <- trgs ])]) ])))), params) ];
+                    \in(column(tbl, junctionFkName(to, toRole)), [ trg | SQLExpr trg <- trgs ])]) ])))), params) ];
 }
 
 list[Step] cascadeViaJunction(str dbName, str from, str fromRole, str to, str toRole, SQLExpr src, Bindings params) {
@@ -162,7 +162,7 @@ list[Step] insertObjectPointer(str dbName, str coll, str role, Cardinality card,
       step(dbName, mongo( 
          findAndUpdateOne(dbName, coll,
           pp(object([<"_id", subject>])), 
-          pp(object([<"$addToSet", object([<role, array([ trg ])>])>])))), params)
+          pp(object([<"$addToSet", object([<role, trg>])>])))), params)
           ];
   }
   return [
@@ -179,7 +179,7 @@ list[Step] insertObjectPointers(str dbName, str coll, str role, Cardinality card
       step(dbName, mongo( 
          findAndUpdateOne(dbName, coll,
           pp(object([<"_id", subject>])), 
-          pp(object([<"$addToSet", object([<role, array([ trg | DBObject trg <- targets ])>])>])))), params)
+          pp(object([<"$addToSet", object([<role, object([<"$each", array([ trg | DBObject trg <- targets ])>])>])>])))), params)
           ];
 }
 

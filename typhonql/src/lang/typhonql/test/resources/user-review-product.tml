@@ -15,7 +15,14 @@ entity Review {
 	posted: datetime
 	product -> Product[1]
 	user -> User[1]
+	comments :-> Comment."Comment.review"[0..*]
 }
+
+entity Comment {
+	comment: text
+	review -> Review."Review.comments"[1]
+}
+
 entity Product {
 	name : string[256]
 	description : string[256]
@@ -97,6 +104,53 @@ entity Wish {
 	product -> Product[1]
 }
 
+entity Company {
+	name: string[256]
+	mission: freetext[SentimentAnalysis[eng_spa]]
+	vision: freetext[SentimentAnalysis[eng_fr]]
+}
+
+entity Foundation {
+	name: string[256]
+	mission: freetext[SentimentAnalysis[eng_spa], NamedEntityRecognition[eng_ner]]
+	vision: freetext[SentimentAnalysis[eng_fr]]
+}
+
+
+entity EntitySmokeTest {
+	s : string[20]
+	t : text
+	i : int
+	r : bigint
+	f : float
+	b : bool
+	d : date
+	dt : datetime
+	pt : point
+	pg : polygon
+	ref -> ReferenceTest[1]
+}
+entity ReferenceTest {
+	r : int
+}
+
+
+entity EntitySmokeTest2 {
+	s : string[20]
+	t : text
+	i : int
+	r : bigint
+	f : float
+	b : bool
+	d : date
+	dt : datetime
+	pt : point
+	pg : polygon
+}
+
+
+
+
 keyvaluedb Stuff {
 	elements {
 		User { userKey -> ("User.photoURL", "User.avatarURL") } 
@@ -105,9 +159,11 @@ keyvaluedb Stuff {
 documentdb Reviews {
 	collections {
 		Review : Review
+		Comment: Comment
 		Biography : Biography
 		Category: Category
 		Evaluation: Evaluation
+		DataTypeTest2: EntitySmokeTest
 	}
 }
 
@@ -116,7 +172,7 @@ relationaldb Inventory {
 		table {
 			UserDB : User
 			index UserNameIndex {
-				attributes (name, location)
+				attributes ('User.name', 'User.location')
 			}
 		}
 		table {
@@ -125,26 +181,42 @@ relationaldb Inventory {
 		table { TagDB: Tag }
 		table { ItemDB: Item }
 		table { WordDB : Word }
+		table { CompanyDB : Company }
+		table { FoundationDB : Foundation }
+		table{
+ 			DatatypesTable : EntitySmokeTest
+ 			index dtIndex{
+				attributes ("EntitySmokeTest.s")
+			}
+			idSpec ("EntitySmokeTest.s")
+		}
+  		table{
+ 			ReferTable : ReferenceTest
+ 			 index refIndex{
+				attributes ("ReferenceTest.r")
+			}
+			idSpec ("ReferenceTest.r")
+		}
 	}
 }
 
 graphdb MoreStuff {
 	edges {
 		edge Wish {
-			from user
-			to product
+			from "Wish.user"
+			to "Wish.product"
 		},
 		edge Concordance {
-			from source
-			to target
+			from "Concordance.source"
+			to "Concordance.target"
 		},
 		edge Synonym {
-			from source
-			to target
+			from "Synonym.source"
+			to "Synonym.target"
 		},
 		edge Occurrence {
-			from word
-			to evaluation
+			from "Occurrence.word"
+			to "Occurrence.evaluation"
 		}	
 	}
 }

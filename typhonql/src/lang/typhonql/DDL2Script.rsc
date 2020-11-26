@@ -25,7 +25,6 @@ import lang::typhonql::TDBC;
 import lang::typhonql::Order;
 import lang::typhonql::Normalize;
 
-
 import lang::typhonql::util::Log;
 
 import lang::typhonql::relational::SQL;
@@ -37,6 +36,15 @@ import lang::typhonql::relational::SchemaToSQL;
 
 import lang::typhonql::mongodb::Query2Mongo;
 import lang::typhonql::mongodb::DBCollection;
+
+import lang::typhonql::cassandra::CQL;
+import lang::typhonql::cassandra::Schema2CQL;
+import lang::typhonql::cassandra::CQL2Text;
+
+import lang::typhonql::neo4j::Neo;
+import lang::typhonql::neo4j::Neo2Text;
+import lang::typhonql::neo4j::NeoUtil;
+
 
 import IO;
 import List;
@@ -64,6 +72,11 @@ Script createEntity(p:<mongodb(), str dbName>, str entity, Schema s, Log log = n
 	return script([step(dbName, mongo(createCollection(dbName, entity)), ())]);
 }
 
+Script createEntity(p:<neo4j(), str dbName>, str entity, Schema s, Log log = noLog) {
+	// Neo4j is schemaless
+	return [];
+}
+
 default Script createEntity(p:<db, str dbName>, str entity, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
 }
@@ -81,10 +94,46 @@ Script createAttribute(p:<sql(), str dbName>, str entity, str attribute, str ty,
 }
 
 Script createAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
-	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "{}", "{$set: { \"<attribute>\" : null}}"));
-	return script([step(dbName, call, ())]);
+	return script([]);
 }
+
+Script createAttribute(p:<neo4j(), str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
+	return script([]);
+}
+
+Script ddl2scriptAux((Request) `create <EId eId>.<Id attribute> : <Type ty> forKV <Id kvDb>`, Schema s, Log log = noLog) {
+  if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+  	str originalEntity = "<eId>";
+  	str db = "<kvDb>";
+  	str role = keyValRole(db, originalEntity);
+  	str kvEntity = keyValEntity(db, originalEntity);
+  
+    CQLColumnDefinition primaryKeyCol =
+       cColumnDef(cTyphonId(kvEntity), cUUID(), primaryKey=true);
+  	CQLColumnDefinition attributeCol =
+  		cColumnDef(cColName(kvEntity, "<attribute>"), type2cql("<ty>"));
+  	CQLColumnDefinition relCol = cColumnDef(cColName(kvEntity, role), cUUID());
+  	
+   	steps = [step(db, cassandra(cExecuteGlobalStatement(db, "USE \"<kvDb>\";")), ())];
+  
+  	if (<q:<cassandra(), db>, kvEntity> <- s.placement) {
+  		CQLStat cqlStat = cAlterTable(cTableName(kvEntity),  cAdd([attributeCol]));
+  		steps += step(db, cassandra(cExecuteGlobalStatement(db, pp(cqlStat))), ());
+  	} else {
+    	CQLStat cqlStat = cCreateTable(cTableName(kvEntity), [primaryKeyCol, attributeCol, relCol]); 
+    	steps += step(db, cassandra(cExecuteGlobalStatement(db, pp(cqlStat))), ());
+    	Script relScript1 = createEntity(p, kvEntity, s, log = log);
+    	steps += relScript1.steps;
+    	Script relScript2 = createRelation(p, originalEntity, role, kvEntity, \one(), true, Maybe::nothing(), s, log = log);
+  		steps += relScript2.steps;
+  	}
+   
+    iprintln(steps);
+  	return script(steps);
+  }
+  throw "Not found entity <eId>";
+}
+
 
 default Script createAttribute(p:<db, str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
@@ -111,7 +160,8 @@ Script createRelation(p:<sql(), str dbName>, str entity, str relation, str targe
  	
  	//processRelation(entity, fromCard, fromRole, toRole, toCard, targetEntity, containment);
  	Cardinality toCard = zero_one();
- 	str inverseName = "<relation>^";
+ 	//str inverseName = "<relation>^";
+ 	str inverseName = "";
  	if (just(iname) := inverse) {
  		if (r:<targetEntity, Cardinality c, iname, _, _, _, _> <- schema.rels) { 
         	toCard = c;
@@ -129,9 +179,11 @@ Script createRelation(p:<sql(), str dbName>, str entity, str relation, str targe
 }
 
 Script createRelation(p:<mongodb(), str dbName>, str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
-	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "{}", "{$set: { \"<relation>\" : null}}"));
-	return script([step(dbName, call, ())]);
+	return script([]);
+}
+
+Script createRelation(p:<neo4j(), str dbName>, str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
+	return script([]);
 }
 
 default Script createRelation(p:<db, str dbName>,  str entity, str relation, str targetEntity, Cardinality fromCard, bool containment, Maybe[str] inverse, Schema s, Log log = noLog) {
@@ -154,15 +206,57 @@ Script dropEntity(p:<mongodb(), str dbName>, str entity, Schema s, Log log = noL
 	return script([step(dbName, mongo(dropCollection(dbName, entity)), ())]);
 }
 
+Script dropEntity(p:<neo4j(), str dbName>, str entity, Schema s, Log log = noLog) {
+	
+	list[Step] steps = [step(dbName, neo(executeNeoUpdate(dbName, 
+		neopp(
+			nMatchUpdate(
+		    	just(
+		    		nMatch(
+		    			[
+		    				nPattern(nNodePattern("__n1", [], []),
+		    		    		[nRelationshipPattern(nDoubleArrow(), "__r1", entity, [], nNodePattern("__n2", [], []))]
+		    		    	)], [])),
+				nDetachDelete([nVariable("__r1")]), 
+				[nLit(nBoolean(true))])))), ())];
+				
+	// remove only if the vertices can participate in other graph kind of relations
+	verticesForEntity = {*vertex | <entity, _, _, _, _, vertex, _> <- s.rels};
+	verticesForOthers = {*vertex | <e, _, _, _, _, vertex, _> <- s.rels, <<neo4j(), _>, e> <- s.placement, e!=entity};
+	
+	toRemove = verticesForEntity - verticesForOthers;
+	
+    for (e <- toRemove) {
+    	steps += [step(dbName, neo(executeNeoUpdate(dbName, 
+		neopp(
+			nMatchUpdate(
+		    	just(
+		    		nMatch(
+		    			[
+		    				nPattern(nNodePattern("__n1", [e], []),[])], [])),
+				nDetachDelete([nVariable("__n1")]), 
+				[nLit(nBoolean(true))])))), ())];
+	}
+	
+	return script(steps);
+}
+
 default Script dropEntity(p:<db, str dbName>, str entity, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
 }
 
 Script ddl2scriptAux((Request) `drop attribute <EId eId>.<Id attribute>`, Schema s, Log log = noLog) {
-  if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
-	return dropAttribute(p, entity, "<attribute>", s, log = log);
+  str att = "<attribute>";
+  str entity = "<eId>";
+  
+  if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>", <entity, att, _> <- s.attrs) {
+    return dropAttribute(p, entity, "<attribute>", s, log = log);
   }
-  throw "Not found entity <eId>";
+  else if (<q:<cassandra(), kvBackend>, kvEntity> <- s.placement, kvEntity := keyValEntity(kvBackend, entity)) {
+  	return dropAttribute(q, kvEntity, "<attribute>", s, log = log);
+  }
+  else
+  	throw "Not found entity <eId>";
 }
 
 Script dropAttribute(p:<sql(), str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
@@ -174,6 +268,26 @@ Script dropAttribute(p:<mongodb(), str dbName>, str entity, str attribute, Schem
 	Call call = mongo(
 				findAndUpdateMany(dbName, entity, "{}", "{$unset: { \"<attribute>\" : 1}}"));
 	return script([step(dbName, call, ())]);
+}
+
+Script dropAttribute(p:<neo4j(), str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
+	Call call = 
+	 neo(executeNeoUpdate(dbName, 
+		neopp(
+		 \nMatchUpdate(
+  			just(nMatch
+  				([nPattern(nNodePattern("__n1", [], []), [nRelationshipPattern(nDoubleArrow(), "__r1",  entity, [], nNodePattern("__n2", [], []))])], [])),
+			nSet([nSetPlusEquals("__r1", nMapLit((graphPropertyName("<attribute>", entity) : nLit(nNull()))))]),
+			[nLit(nBoolean(true))]))));
+	
+	return script([step(dbName, call, ())]);
+}
+
+Script dropAttribute(p:<cassandra(), str db>, str entity, str attribute, Schema s, Log log = noLog) {
+	steps = [step(db, cassandra(cExecuteGlobalStatement(db, "USE \"<db>\";")), ())];
+	CQLStat cqlStat = cAlterTable(cTableName(entity),  cDrop([cColName(entity, "<attribute>")]));
+	steps += step(db, cassandra(cExecuteGlobalStatement(db, pp(cqlStat))), ());
+    return script(steps);
 }
 
 default Script dropAttribute(p:<db, str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
@@ -222,6 +336,10 @@ Script dropRelation(p:<mongodb(), str dbName>, str entity, str relation, str to,
 	}
 }
 
+Script dropRelation(p:<neo4j(), str dbName>, str entity, str relation, str to, str toRole, bool containment, Schema s, Log log = noLog) {
+
+}
+
 default Script dropRelation(p:<db, str dbName>,  str entity, str relation, str to, str toRole, bool containment, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
 }
@@ -246,6 +364,14 @@ Script renameEntity(p:<mongodb(), str dbName>, str entity, str newName, Schema s
   	}
   	throw "Not found entity <eId>";
 }
+
+Script renameEntity(p:<neo4j(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
+	if (<p:<db, dbName>, eId> <- s.placement, entity == eId) {
+		return script([step(dbName, mongo(renameCollection(dbName, entity, newName)), ())]);
+  	}
+  	throw "Not found entity <eId>";
+}
+
 
 default Script renameEntity(p:<db, str dbName>, str entity, str newName, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
@@ -272,6 +398,10 @@ Script renameAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str
 	Call call = mongo(
 				findAndUpdateMany(dbName, entity, "{}", "{ $rename : { \"<attribute>\" : \"<newName>\" }}"));
 	return script([step(dbName, call, ())]);
+}
+
+Script renameAttribute(p:<neo4j(), str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
+
 }
 
 default Script renameAttribute(p:<db, str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
@@ -301,9 +431,56 @@ Script renameRelation(p:<mongodb(), str dbName>, str entity, str relation, str n
 	return script([step(dbName, call, ())]);
 }
 
+Script renameRelation(p:<neo4j(), str dbName>, str entity, str relation, str newName, Schema s, Log log = noLog) {
+	
+}
+
 default Script renameRelation(p:<db, str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
 	throw "Unrecognized backend: <db>";
 }
+
+Script ddl2scriptAux((Request) `create index <Id indexName> for <EId eId>.{ <{Id ","}+ attrs> }`, Schema s, Log log = noLog) {
+  if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+	return createIndex(p, entity, "<entity>_<indexName>", ["<a>" |Id a <- attrs], s, log = log);
+  }
+  throw "Not found entity <eId>";
+}
+
+Script createIndex(p:<sql(), str dbName>, str entity, str indexName, list[str] attributes, Schema s, Log log = noLog) {
+	TableConstraint index = index(indexName, regular(), [columnName(attr, entity) | attr <- attributes]);
+	SQLStat stat = alterTable(tableName(entity), [addConstraint(index)]);
+	return script([step(dbName, sql(executeStatement(dbName, pp(stat))), ())]);
+}
+
+Script createIndex(p:<mongodb(), str dbName>, str entity, str indexName, list[str] attributes, Schema s, Log log = noLog) {
+	stp = step(dbName, mongo(createIndex(dbName, entity, indexName, "{ <intercalate(", ",["\"<attrOrRef>\": 1"| str attrOrRef <- attributes])>}")), ());
+	return script([stp]);
+}
+
+Script ddl2scriptAux((Request) `drop index <EId eId>.<Id indexName>`, Schema s, Log log = noLog) {
+  if (<p:<db, dbName>, entity> <- s.placement, entity == "<eId>") {
+	return dropIndex(p, entity, "<entity>_<indexName>", s, log = log);
+  }
+  throw "Not found entity <eId>";
+}
+
+Script dropIndex(p:<sql(), str dbName>, str entity, str indexName, Schema s, Log log = noLog) {
+	SQLStat stat = alterTable(tableName(entity), [Alter::dropIndex(indexName)]);
+	return script([step(dbName, sql(executeStatement(dbName, pp(stat))), ())]);
+}
+
+Script dropIndex(p:<mongodb(), str dbName>, str entity, str indexName, Schema s, Log log = noLog) {
+	println(indexName);
+	stp = step(dbName, mongo(dropIndex(dbName, entity, indexName)), ());
+	return script([stp]);
+
+}
+
+default Script createIndex(p:<db, str dbName>, str entity, str indexName, list[str] attributes, Schema s, Log log = noLog) {
+	throw "Unrecognized backend: <db>";
+}
+
+
 
 Cardinality toCardinality("1", "*") = one_many();
 Cardinality toCardinality("0", "*") = zero_many();
