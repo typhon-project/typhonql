@@ -658,6 +658,14 @@ For both ease of writing and performance, it's possible to generate send a singl
 }
 ```
 
+### Type checker
+
+If you encounter problems with your queries, you can turn on the same typechecker that is running inside the IDE. Add `"validate" : true` to your request to run it.
+
+Type check errors (like non-existing fields) become a 500 error (with an error message). Warnings show up along side the resulting json object. To not break the interface of the insert/update/delete API, the warnings are printed as entries of the result array.
+
+### Remarks
+
 Some remarks about this api:
 
 - You have to give the names for the parameters, their typhon types, and then a 2d __string__ array, with rows that are bound to the parameters, in the same order.
