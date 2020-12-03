@@ -202,7 +202,7 @@ public class NlpEngine extends Engine {
 			node = MAPPER.readTree(query);
 			if (!values.isEmpty()) {
 		    	String originalId =node.get("id").asText();
-		    	String id = originalId.substring(2, originalId.length());
+		    	String id = originalId.substring(2, originalId.length() - 3);
 		    	logger.debug("Id value: {} (from: {})", id, originalId);
 		    	Object value = values.get(id);
 		    	if (value != null) {
@@ -210,7 +210,7 @@ public class NlpEngine extends Engine {
 		    		((ObjectNode)node).replace("id", TextNode.valueOf(Objects.toString(value)));
 		    	}
 		    }
-		    return replaceInQueryJson(MAPPER.writeValueAsString(node), values);
+		    return MAPPER.writeValueAsString(node);
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException("Error processing Json when processing NLP request", e);
 		}
