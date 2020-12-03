@@ -194,7 +194,7 @@ public class NlpEngine extends Engine {
 		logger.debug("Replacing parameters in: {} to: {} (from: {})", query, serialized, values);
 		return new StringSubstitutor(serialized).replace(query);
 	}
-
+	
 	protected String replaceInUpdateJson(String query, Map<String, Object> values) {
 	    JsonNode node;
 		try {
@@ -202,7 +202,7 @@ public class NlpEngine extends Engine {
 			node = MAPPER.readTree(query);
 			if (!values.isEmpty()) {
 		    	String originalId =node.get("id").asText();
-		    	String id = originalId.substring(2, originalId.length() - 3);
+		    	String id = originalId.substring(2, originalId.length() - 1);
 		    	logger.debug("Id value: {} (from: {})", id, originalId);
 		    	Object value = values.get(id);
 		    	if (value != null) {
