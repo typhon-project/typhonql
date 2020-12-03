@@ -75,11 +75,11 @@ public class NlpEngine extends Engine {
 	private final String password;
 	
 	
-	private static Map<String,String> serialize(Map<String, Object> values) {
+	private static Map<String,String> serializeExpression(Map<String, Object> values) {
 		return values.entrySet().stream()
 				.collect(Collectors.toMap(
 						Entry::getKey, 
-						e -> serialize(e.getValue())
+						e -> serializeExpression(e.getValue())
 					)
 				);
 	}
@@ -97,11 +97,11 @@ public class NlpEngine extends Engine {
 		return "{\"literal\": {\"value\": \""+ value +"\", \"type\" : \""+ type +"\"}}";
 	}
 	
-	private static String serialize(Object obj) {
+	private static String serializeExpression(Object obj) {
 		if (obj == null) {
 			return literal("null", "null");
 		}
-		else if (obj instanceof Integer) {
+		else if (obj instanceof Integer || obj instanceof Long) {
 			return literal(obj.toString(), "int");
 		}
 		else if (obj instanceof Boolean) { 
@@ -114,14 +114,9 @@ public class NlpEngine extends Engine {
 			throw new RuntimeException("Geo type not known by NLP engine");
 		}
 		else if (obj instanceof LocalDate) {
-			// it's mixed around with instance, since timestamps only store seconds since epoch, which is fine for dates, but not so fine for tru timestamps
-			//long epoch = ((LocalDate)obj).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
-			//return "{\"$timestamp\": {\"t\":" + Math.abs(epoch) + "\"i\": "+ (epoch >= 0 ? "1" : "-1") + "}}";\
 			throw new RuntimeException("LocalDate type not known by NLP engine");
 		}
 		else if (obj instanceof Instant) {
-			// it's mixed around with instance, since timestamps only store seconds since epoch, which is fine for dates, but not so fine for tru timestamps
-			//return "{\"$date\": {\"$numberLong\":" + ((Instant)obj).toEpochMilli() + "}}";
 			throw new RuntimeException("Instant type not known by NLP engine");
 		}
 		else if (obj instanceof UUID) {
@@ -131,7 +126,17 @@ public class NlpEngine extends Engine {
 		else
 			throw new RuntimeException("Query executor does not know how to serialize object of type " +obj.getClass());
 	}
-
+	
+	
+	private static Map<String, String> serializeCommandValues(Map<String, Object> values) {
+		HashMap<String, String> result = new HashMap<>();
+		values.forEach((k,v)-> {
+			if (v instanceof String || v instanceof UUID) {
+				result.put(k, "\"" + v.toString() + "\"");
+			}
+		});
+		return result;
+	}
 	
 	public void process(String query, Map<String, Binding> bindings) {
 		new UpdateExecutor(store, script, uuids, bindings, () -> "NLP process: " + query) {
@@ -154,17 +159,7 @@ public class NlpEngine extends Engine {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				String json = replaceInQueryJson(query, values);
-				/*try {
-					ThreadSafeImpulseConsole.INSTANCE.getWriter().write(values+"\n");
-					ThreadSafeImpulseConsole.INSTANCE.getWriter().write(json+"\n");
-					ThreadSafeImpulseConsole.INSTANCE.getWriter().flush();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}*/
-
 				String r = doPost("queryTextAnalytics", json);
-				
 				try {
 					JsonNode resultsNode = MAPPER.readTree(r);
 					return new NlpIterator(resultsNode);
@@ -190,30 +185,16 @@ public class NlpEngine extends Engine {
 	}
 	
 	private String replaceInQueryJson(String query, Map<String, Object> values) {
-		Map<String, String> serialized = serialize(values);
-		logger.debug("Replacing parameters in: {} to: {} (from: {})", query, serialized, values);
+		Map<String, String> serialized = serializeExpression(values);
+		logger.trace("Replacing parameters in: {} to: {} (from: {})", query, serialized, values);
 		return new StringSubstitutor(serialized).replace(query);
 	}
+
 	
 	protected String replaceInUpdateJson(String query, Map<String, Object> values) {
-	    JsonNode node;
-		try {
-			logger.debug("Replacing id paramter in: {} to: {}", query, values);
-			node = MAPPER.readTree(query);
-			if (!values.isEmpty()) {
-		    	String originalId =node.get("id").asText();
-		    	String id = originalId.substring(2, originalId.length() - 1);
-		    	logger.debug("Id value: {} (from: {})", id, originalId);
-		    	Object value = values.get(id);
-		    	if (value != null) {
-		    		logger.debug("Mapped {} to {}, replacing", id, value);
-		    		((ObjectNode)node).replace("id", TextNode.valueOf(Objects.toString(value)));
-		    	}
-		    }
-		    return MAPPER.writeValueAsString(node);
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException("Error processing Json when processing NLP request", e);
-		}
+		Map<String, String> serialized = serializeCommandValues(values);
+		logger.trace("Replacing parameters in: {} to: {} (from: {})", query, serialized, values);
+		return new StringSubstitutor(serialized).replace(query);
 	}
 	
 	private String doPost(String path, String body) {
@@ -248,23 +229,9 @@ public class NlpEngine extends Engine {
 			if (responseBody == null) {
 				return null;
 			}
-            String encoding = StandardCharsets.UTF_8.name();
-            Header responseEncoding = responseBody.getContentEncoding();
-            if (responseEncoding != null) {
-            	String targetEncoding = responseEncoding.getValue();
-            	if (targetEncoding == null || "".equals(targetEncoding)) {
-            		logger.debug("Got empty encoding, so assuming utf8");
-            	}
-            	else if (!Charset.isSupported(targetEncoding)){
-            		logger.debug("Unknown charset: {}", targetEncoding);
-            	}
-            	else {
-            		encoding =targetEncoding;
-            	}
-            }
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             responseBody.writeTo(baos);
-            String result = baos.toString(encoding);
+            String result = baos.toString(getEncoding(responseBody));
             logger.debug("Got NLP response: {}", result);
             return result; 
 		} catch (IOException e1) {
@@ -273,6 +240,23 @@ public class NlpEngine extends Engine {
 		}
 		
 		
+	}
+
+	private String getEncoding(HttpEntity responseBody) {
+		Header responseEncoding = responseBody.getContentEncoding();
+		if (responseEncoding != null) {
+			String targetEncoding = responseEncoding.getValue();
+			if (targetEncoding == null || "".equals(targetEncoding)) {
+				logger.debug("Got empty encoding, so assuming utf8");
+			}
+			else if (!Charset.isSupported(targetEncoding)){
+				logger.debug("Unknown charset: {}", targetEncoding);
+			}
+			else {
+				return targetEncoding;
+			}
+		}
+		return StandardCharsets.UTF_8.name();
 	}
 
 	public static void main(String[] args) throws SQLException {

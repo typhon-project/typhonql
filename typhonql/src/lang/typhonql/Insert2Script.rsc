@@ -211,14 +211,20 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   for (KeyVal kv <- kvs, isFreeTextAttr(entity, kv has key ? "<kv.key>" : "@id", s)) {
   	str attr = "<kv.key>";
     Expr val = kv.\value;
-    if ((Expr) `<Str string>` := val) {
+    str sVal = "";
+    if ((Expr)`<PlaceHolder ph>` := val) {
+        sVal = "${<ph.name>}";
+    }
+    else if ((Expr) `<Str string>` := val) {
+        sVal = "<string.contents>"; 
+    }
+    if (sVal != "") {
     	analyses = getFreeTypeAnalyses(entity, kv has key ? "<kv.key>" : "@id", s);
-    	str json = getProcessJson(nlpMe, entity, attr, "<string.contents>", analyses);
-    	//println(json);
+    	str json = getProcessJson(nlpMe, entity, attr, sVal, analyses);
     	addSteps([step("nlae", nlp(process(json)), myParams)]);
     }
     else
-    	throw "Expression for a freetext attribute can only be a string literal";
+    	throw "Expression for a freetext attribute can only be a string literal (or a parameterized value)";
   } 
   
   
