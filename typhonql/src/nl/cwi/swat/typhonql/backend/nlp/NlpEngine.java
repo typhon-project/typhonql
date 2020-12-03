@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -20,6 +22,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.text.StringSubstitutor;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScope;
@@ -34,6 +37,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.locationtech.jts.geom.Geometry;
 //import org.rascalmpl.eclipse.util.ThreadSafeImpulseConsole;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -58,6 +63,7 @@ import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 
 public class NlpEngine extends Engine {
+	private static final Logger logger = LoggerFactory.getLogger(NlpEngine.class);
 	
 	public static final String NLP_REPOSITORY = "nlae";
 	private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -211,6 +217,7 @@ public class NlpEngine extends Engine {
 		} catch (URISyntaxException e) {
 			throw new RuntimeException("Malformed URI to call NLAE");
 		}
+		logger.debug("Preparing NLP to {} containing: {}", uri, body);
 		HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
 		if (user != null && password != null) {
 			CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
@@ -221,40 +228,45 @@ public class NlpEngine extends Engine {
 		HttpPost httpPost = new HttpPost(uri);
 		httpPost.setEntity(new StringEntity(body, ContentType.APPLICATION_JSON));
 		
-		CloseableHttpResponse response1;
-		try {
-			response1 = httpClient.execute(httpPost);
-
-		} catch (IOException e1) {
-			throw new RuntimeException("Problem connecting with NLAE: " + e1.getMessage());
-		}
-		
-		if (response1.getStatusLine() != null) {
-			if (response1.getStatusLine().getStatusCode() != HttpStatus.SC_OK)
-				throw new RuntimeException("Problem with the HTTP connection to the NLAE: Status was " + response1.getStatusLine().getStatusCode());
-		}
-		
-		HttpEntity entity1 = response1.getEntity();
-		if (entity1 == null)
-			return null;
-		else {
-			try {
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				entity1.writeTo(baos);
-				String s = new String(baos.toByteArray());
-				return s;
-			} catch (IOException e) {
-				e.printStackTrace();
-				throw new RuntimeException("Problem reading from HTTP resource: " + e.getMessage());
-			} finally {
-				try {
-					response1.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-					throw new RuntimeException("Problem closing HTTP resource:" + e.getMessage());
+		logger.debug("Sending request", httpPost);
+		try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+			if (response.getStatusLine() != null) {
+				int status = response.getStatusLine().getStatusCode();
+				if (status != HttpStatus.SC_OK) {
+					logger.error("NLP engine returned error: {}", response.getStatusLine());
+					throw new RuntimeException("Problem with the HTTP connection to the NLAE: Status was " + status);
 				}
 			}
+
+			HttpEntity responseBody = response.getEntity();
+			if (responseBody == null) {
+				return null;
+			}
+            String encoding = StandardCharsets.UTF_8.name();
+            Header responseEncoding = responseBody.getContentEncoding();
+            if (responseEncoding != null) {
+            	String targetEncoding = responseEncoding.getValue();
+            	if (targetEncoding == null || "".equals(targetEncoding)) {
+            		logger.debug("Got empty encoding, so assuming utf8");
+            	}
+            	else if (!Charset.isSupported(targetEncoding)){
+            		logger.debug("Unknown charset: {}", targetEncoding);
+            	}
+            	else {
+            		encoding =targetEncoding;
+            	}
+            }
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            responseBody.writeTo(baos);
+            String result = baos.toString(encoding);
+            logger.debug("Got NLP response: {}", result);
+            return result; 
+		} catch (IOException e1) {
+			logger.error("Failure to send data to nlp", e1);
+			throw new RuntimeException("Problem connecting with NLAE", e1);
 		}
+		
+		
 	}
 
 	public static void main(String[] args) throws SQLException {
