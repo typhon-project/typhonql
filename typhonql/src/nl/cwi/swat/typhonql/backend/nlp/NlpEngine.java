@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -190,21 +191,26 @@ public class NlpEngine extends Engine {
 	
 	private String replaceInQueryJson(String query, Map<String, Object> values) {
 		Map<String, String> serialized = serialize(values);
+		logger.debug("Replacing parameters in: {} to: {} (from: {})", query, serialized, values);
 		return new StringSubstitutor(serialized).replace(query);
 	}
 
 	protected String replaceInUpdateJson(String query, Map<String, Object> values) {
 	    JsonNode node;
 		try {
+			logger.debug("Replacing id paramter in: {} to: {}", query, values);
 			node = MAPPER.readTree(query);
 			if (!values.isEmpty()) {
 		    	String originalId =node.get("id").asText();
 		    	String id = originalId.substring(2, originalId.length());
-		    	if (values.containsKey(id)) {
-		    		((ObjectNode)node).replace("id", TextNode.valueOf((String) values.get("id")));
+		    	logger.debug("Id value: {} (from: {})", id, originalId);
+		    	Object value = values.get(id);
+		    	if (value != null) {
+		    		logger.debug("Mapped {} to {}, replacing", id, value);
+		    		((ObjectNode)node).replace("id", TextNode.valueOf(Objects.toString(value)));
 		    	}
 		    }
-		    return MAPPER.writeValueAsString(node);
+		    return replaceInQueryJson(MAPPER.writeValueAsString(node), values);
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException("Error processing Json when processing NLP request", e);
 		}
