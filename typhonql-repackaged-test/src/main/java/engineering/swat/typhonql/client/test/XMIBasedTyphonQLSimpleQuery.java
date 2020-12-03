@@ -32,7 +32,7 @@ public class XMIBasedTyphonQLSimpleQuery {
 	private static String USER = "admin";
 	private static String PASSWORD = "admin1@";
 	
-	public static void main(String[] args) throws IOException, URISyntaxException {
+	public static void main(String[] args) throws IOException, URISyntaxException, InterruptedException {
 		
 		
 		List<DatabaseInfo> infos = PolystoreAPIHelper.readConnectionsInfo(HOST, PORT,
@@ -55,8 +55,27 @@ public class XMIBasedTyphonQLSimpleQuery {
 		//ResultTable rt = conn.executeQuery(xmiString, infos, "from Product p, Review r select r.content where p.reviews == r, p.@id == #tv");
 		//CommandResult rt = conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "update User u where u.@id == #davy set {photoURL: \"other\", name: \"Landman\"}");
 		conn.resetDatabases(xmiString, infos);
-		conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "insert EntitySmokeTest2 { @id: #e1, s: \"Hoi\", t: \"Long\", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-01-02$, dt: $2020-03-04T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }", true);
-		JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from EntitySmokeTest2 e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg", true);
+		//conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "insert EntitySmokeTest2 { @id: #e1, s: \"Hoi\", t: \"Long\", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-01-02$, dt: $2020-03-04T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }", true);
+		//JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from EntitySmokeTest2 e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg", true);
+		/*
+		 * {
+   "query": "insert RawTextWarnings {ew:??ew, timeStamp: $2020-12-01T12:12:14.567+00:00$}",
+    "parameterNames":["ew"],
+    "parameterTypes" : ["string"],
+    "boundValues": [["Starkes Gewitter mit Starkregen (Stufe Orange) in Berlin eins twei drei"]]
+}
+		 */
+		
+		String[] res = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert RawTextWarnings {ew:??ew, timeStamp: $2020-12-01T12:12:14.567+00:00$}",
+				new String[] { "ew" },
+				new String[] { "string" },
+				new String[][] { new String[] { "Starkes Sonne mit Starkregen (Stufe Rote) in Berlin eins twei drei" }}
+		, true);
+		System.out.println(res);
+		Thread.sleep(5000);
+		JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from RawTextWarnings u\n" + 
+				"select u.@id, u.ew, u.ew.NamedEntityRecognition.WordToken\n" + 
+				"where u.ew.NamedEntityRecognition.NamedEntity == \"WEATHER_EVENT\"", true);
 
 		System.out.println(rt);
 		rt.serializeJSON(System.out);

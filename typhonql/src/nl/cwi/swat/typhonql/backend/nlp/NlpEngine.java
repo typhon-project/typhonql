@@ -132,7 +132,7 @@ public class NlpEngine extends Engine {
 		HashMap<String, String> result = new HashMap<>();
 		values.forEach((k,v)-> {
 			if (v instanceof String || v instanceof UUID) {
-				result.put(k, "\"" + v.toString() + "\"");
+				result.put(k, v.toString());
 			}
 		});
 		return result;
