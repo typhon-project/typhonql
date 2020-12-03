@@ -651,7 +651,7 @@ For both ease of writing and performance, it's possible to generate send a singl
   "query": "insert User { @id: ??id, name: ??uname, age: ??uage }",
   "parameterNames": ["id", "uname", "uage"],
   "parameterTypes": ["uuid", "string", "int"],
-  "boundValues": [
+  "boundRows": [
     ["beefc0b2-0393-4b73-951c-7243ee849275", "John Smith", "20"],
     ["52001d98-05f2-4832-b653-6077a4db05a7", "Smith John", "1"]
   ]
