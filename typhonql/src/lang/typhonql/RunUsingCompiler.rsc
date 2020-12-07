@@ -243,7 +243,7 @@ value listEntities(str entity, str whereClause, str limit, str sortBy, str xmiSt
 Request parseRequest(str src) {
     try {
         return [Request]src;
-    } catch parseError(loc of): {
+    } catch ParseError(loc of): {
         throw "Error parsing:\n<src>\nposition: <of.begin> -- <of.end>";
     }
 }
