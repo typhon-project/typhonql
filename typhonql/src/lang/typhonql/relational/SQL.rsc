@@ -88,6 +88,7 @@ data Clause
   | having(list[SQLExpr] exprs)
   | orderBy(list[SQLExpr] exprs, Dir dir)
   | limit(SQLExpr expr)
+  | offset(SQLExpr expr)
   ; 
   
 data Dir

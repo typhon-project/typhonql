@@ -442,7 +442,7 @@ having revCount > 5
 ```
 This selects all users (and their review counts) that have written more than five reviews.
 
-The aggregation component of TyphonQL also supports limit- and order-clauses for, respectively, limiting the size of 
+The aggregation component of TyphonQL also supports limit-, offset-, and order-clauses for, respectively, limiting the size of 
 the result set, and sorting it. These can be used in combination with aggregation (group-by) or without.
 
 For instance:
@@ -455,13 +455,14 @@ order revCount desc
 sorts the previous query in descending order by review count.
 The "desc" modifier can also be omitted, in which case it amounts to using "asc" for ascending order.
 
-To get the most prolific reviewer, one could write:
+To get the second most prolific reviewer, one could write:
 ```
 from User u 
 select u.name, count(u.reviews) as revCount
 group u.name
 order revCount desc
 limit 1
+offset 1
 ```
 
 

@@ -286,6 +286,9 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     '       <if ((Agg)`order <{Expr ","}+ flds> <Dir dir>` <- q.aggClauses) {> 
     '       .sorted(<comparator([ f | Expr f <- flds], rs, dir, "java.lang.Object[]", fld2javaWithAggregation)>)
     '       <}>
+    '       <if ((Agg)`offset <Int i>` <- q.aggClauses) {>
+    '       .skip(<i>)
+    '       <}>
     '       <if ((Agg)`limit <Int i>` <- q.aggClauses) {>
     '       .limit(<i>)
     '       <}>;
@@ -294,6 +297,9 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     '       <if ((Agg)`order <{Expr ","}+ flds> <Dir dir>` <- q.aggClauses) {>
     '         .sorted(<comparator([ f | Expr f <- flds], rs, dir, "nl.cwi.swat.typhonql.backend.Record", fld2javaNoAggregation)>) 
     '       <}> 
+    '       <if ((Agg)`offset <Int i>` <- q.aggClauses) {>
+    '         .skip(<i>)
+    '       <}>
     '       <if ((Agg)`limit <Int i>` <- q.aggClauses) {>
     '         .limit(<i>)
     '       <}>

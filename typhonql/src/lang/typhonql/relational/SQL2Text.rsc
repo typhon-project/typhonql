@@ -167,6 +167,7 @@ str pp(having(list[SQLExpr] es)) = "having <intercalate(", ", [ pp(e) | SQLExpr 
 str pp(orderBy(list[SQLExpr] es, Dir d)) = "order by <intercalate(", ", [ pp(e) | SQLExpr e <- es ])> <pp(d)>"; 
 
 str pp(limit(SQLExpr e)) = "limit <pp(e)>"; 
+str pp(offset(SQLExpr e)) = "offset <pp(e)>"; 
 
 // Dir
 

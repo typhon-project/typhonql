@@ -72,6 +72,7 @@ data NeoClause
   | nHaving(list[NeoExpr] exprs)
   | nOrderBy(list[NeoExpr] exprs, NeoDir dir)
   | nLimit(NeoExpr expr)
+  | nOffset(NeoExpr expr)
   ; 
   
 data NeoDir

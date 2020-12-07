@@ -580,6 +580,15 @@ void collect((Agg)`limit <Expr e>`, Collector c) {
     }
 }
 
+void collect((Agg)`offset <Expr e>`, Collector c) {
+    if ((Expr)`<Int _>` := e) {
+        collect(e, c);
+    }
+    else {
+        c.report(error(e, "Offset only supports literal integer offsets"));
+    }
+}
+
 /*******
  * DML *
  *******/

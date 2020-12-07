@@ -34,6 +34,7 @@ data CQLStat
       list[CQLOrderBy] orderBy=[], 
       CQLExpr perPartitionLimit=cTerm(cInteger(-1)),
       CQLExpr limit=cTerm(cInteger(-1)),
+      CQLExpr offset=cTerm(cInteger(0)),
       bool allowFiltering=false, 
       bool distinct=false, 
       bool json=false)

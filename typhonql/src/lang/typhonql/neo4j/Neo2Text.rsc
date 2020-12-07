@@ -134,6 +134,7 @@ str neopp(nHaving(list[NeoExpr] es)) = "having <intercalate(", ", [ neopp(e) | N
 str neopp(nOrderBy(list[NeoExpr] es, Dir d)) = "order by <intercalate(", ", [ neopp(e) | NeoExpr e <- es ])> <neopp(d)>"; 
 
 str neopp(nLimit(NeoExpr e)) = "limit <neopp(e)>"; 
+str neopp(nOffset(NeoExpr e)) = "offset <neopp(e)>"; 
 
 // Dir
 

@@ -39,6 +39,7 @@ syntax Agg
   | havingClause: "having" {Expr ","}+ exprs
   | orderClause: "order" {Expr ","}+ exprs Dir dir
   | limitClause: "limit" Expr expr
+  | offsetClause: "offset" Expr expr
   ;
   
 lexical Dir
