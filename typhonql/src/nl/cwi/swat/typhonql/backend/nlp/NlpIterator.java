@@ -80,7 +80,8 @@ public class NlpIterator implements ResultIterator {
 		ResultMapper.put("Chunking$Label", JsonNode::asText);
 		ResultMapper.put("NamedEntityRecognition$NamedEntity", JsonNode::asText);
 		ResultMapper.put("NamedEntityRecognition$begin", JsonNode::asLong);
-		ResultMapper.put("NamedEntityRecognition$GeoCode", n -> readWKT(n.asText()));
+		//ResultMapper.put("NamedEntityRecognition$GeoCode", n -> readWKT(n.asText()));
+		ResultMapper.put("NamedEntityRecognition$GeoCode", JsonNode::asText);
 		ResultMapper.put("NamedEntityRecognition$WordToken", JsonNode::asText);
 		ResultMapper.put("NamedEntityRecognition$end", JsonNode::asLong);
 		ResultMapper.put("Stemming$begin", JsonNode::asLong);
