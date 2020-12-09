@@ -69,6 +69,7 @@ str pp(cSelect(list[CQLSelectClause] selectClauses, str tableName, list[CQLExpr]
       orderBy=list[CQLOrderBy] orderBy, 
       perPartitionLimit=CQLExpr perPartitionLimit,
       limit=CQLExpr limit,
+      offset=CQLExpr offset,
       allowFiltering=bool allowFiltering, 
       distinct=bool distinct, 
       json=bool json)) {
@@ -103,6 +104,10 @@ str pp(cSelect(list[CQLSelectClause] selectClauses, str tableName, list[CQLExpr]
 
   if (limit != cTerm(cInteger(-1))) {
     s += " LIMIT <pp(limit)>";
+  }
+
+  if (offset != cTerm(cInteger(0))) {
+    s += " OFFSET <pp(offset)>";
   }
 
   if (allowFiltering) {
