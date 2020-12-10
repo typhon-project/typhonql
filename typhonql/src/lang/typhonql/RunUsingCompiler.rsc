@@ -32,6 +32,7 @@ import ParseTree;
 import lang::typhonql::util::Log;
 import util::Benchmark;
 import Exception;
+import util::Memo;
 
 import IO;
 import Set;
@@ -240,6 +241,7 @@ value listEntities(str entity, str whereClause, str limit, str sortBy, str xmiSt
   return listEntities(entity, whereClause, limit, sortBy, s, sPlain, session, log = log);
 }
 
+@memo={maximumSize(50), expireAfter(hours=1)}
 Request parseRequest(str src) {
     try {
         return parse(#Request, src, |external:///|);

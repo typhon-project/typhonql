@@ -26,14 +26,12 @@ import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -47,12 +45,19 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
+import org.rascalmpl.ast.QualifiedName;
+import org.rascalmpl.eclipse.nature.RascalMonitor;
+import org.rascalmpl.interpreter.ConsoleRascalMonitor;
 import org.rascalmpl.interpreter.Evaluator;
 import org.rascalmpl.interpreter.control_exceptions.Throw;
+import org.rascalmpl.interpreter.env.Environment;
 import org.rascalmpl.interpreter.env.GlobalEnvironment;
 import org.rascalmpl.interpreter.env.ModuleEnvironment;
 import org.rascalmpl.interpreter.load.StandardLibraryContributor;
+import org.rascalmpl.interpreter.result.ICallableValue;
+import org.rascalmpl.interpreter.result.Result;
 import org.rascalmpl.interpreter.staticErrors.StaticError;
+import org.rascalmpl.interpreter.utils.Names;
 import org.rascalmpl.interpreter.utils.RascalManifest;
 import org.rascalmpl.library.util.PathConfig;
 import org.rascalmpl.uri.URIResolverRegistry;
@@ -68,6 +73,7 @@ import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.io.StandardTextWriter;
+import io.usethesource.vallang.type.Type;
 import nl.cwi.swat.typhonql.backend.Engine;
 import nl.cwi.swat.typhonql.backend.ExternalArguments;
 import nl.cwi.swat.typhonql.backend.rascal.SessionWrapper;
@@ -151,16 +157,41 @@ public class XMIPolystoreConnection {
 		});
 	}
 	
+	private static IValue call(Evaluator eval, String name, String module, Map<String, IValue> kwArgs, IValue ...args) {
+        Environment oldEnv = eval.getCurrentEnvt();
+        try {
+            ModuleEnvironment modEnv = eval.getHeap().getModule(module);
+            QualifiedName qualifiedName = Names.toQualifiedName(name, modEnv.getLocation());
+            ICallableValue func = (ICallableValue)modEnv.getVariable(qualifiedName);
+            Type[] types = new Type[args.length];
+
+            int i = 0;
+            for (IValue v : args) {
+                types[i++] = v.getType();
+            }
+            eval.setCurrentEnvt(modEnv);
+            Result<IValue> result = eval.call(new ConsoleRascalMonitor(), func, types, args, kwArgs);
+            if (result != null) {
+            	return result.getValue();
+            }
+            return null;
+        }
+        finally {
+            eval.setCurrentEnvt(oldEnv);
+        }
+	}
+
+
 	
 	public JsonSerializableResult executeQuery(String xmiModel, List<DatabaseInfo> connections, String query, boolean runChecker) {
-		return sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> 
-            (JsonSerializableResult) evaluator.call("runQueryAndGetJava", 
+		return sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> {
+            return (JsonSerializableResult) call(evaluator, "runQueryAndGetJava", 
                 "lang::typhonql::RunUsingCompiler",
                 Collections.emptyMap(),
                 VF.string(query), 
                 VF.string(xmiModel),
-                session.getTuple())
-		);
+                session.getTuple());
+		});
 	}
 	
 	private static void throwRascalMessage(PrintWriter errorPrinter, Throw e, StandardTextWriter valuePrinter) {
@@ -220,7 +251,7 @@ public class XMIPolystoreConnection {
 	
 	private IValue evaluateUpdate(String xmiModel, List<DatabaseInfo> connections, Map<String, InputStream> blobMap, String update, boolean runChecker) {
 		return sessionCall(connections, blobMap, (session, evaluator) -> 
-			evaluator.call("runUpdate", 
+			 call(evaluator,"runUpdate", 
 				"lang::typhonql::RunUsingCompiler",
                 Collections.singletonMap("runChecker", VF.bool(runChecker)),
 				VF.string(update), 
@@ -238,7 +269,7 @@ public class XMIPolystoreConnection {
 			columnsWriter.append(VF.string(column));
 		}
         return sessionCall(connections, blobMap, Optional.of(externalArguments), (session, evaluator) -> 
-        	evaluator.call("runUpdate", 
+        	call(evaluator, "runUpdate", 
                     "lang::typhonql::RunUsingCompiler",
                     Collections.singletonMap("runChecker", VF.bool(runChecker)),
                     VF.string(preparedStatement),
