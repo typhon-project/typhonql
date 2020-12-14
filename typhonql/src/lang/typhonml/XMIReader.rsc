@@ -23,6 +23,7 @@ import lang::ecore::Refs;
 import lang::typhonml::Util;
 
 import IO;
+import util::Memo;
 import Node;
 import Type;
 import String;
@@ -90,8 +91,10 @@ void smokeTest3() {
 
 Model loadTyphonML(loc l) = xmiString2Model(readFile(l));
 
+@memo=expireAfter(hours=1)
 Model xmiString2Model(str s) = xmiNode2Model(readXML(s, fullyQualify=true));
 
+@memo=expireAfter(hours=1)
 Schema loadSchemaFromXMI(str s, bool normalize=true) = model2schema(m, normalize=normalize)
 	when Model m := xmiString2Model(s);
 

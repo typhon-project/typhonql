@@ -72,13 +72,21 @@ public class XMIBasedTyphonQLSimpleQuery {
 				new String[][] { new String[] { "Starkes Sonne mit Starkregen (Stufe Rote) in Berlin eins twei drei" }}
 		, true);
 		System.out.println(res);
+		res = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert RawTextWarnings {ew:??ew, timeStamp: $2020-12-01T12:12:14.567+00:00$}",
+				new String[] { "ew" },
+				new String[] { "string" },
+				new String[][] { new String[] { "Starkes Sonne mit Starkregen (Stufe Rote) in Berlin eins twei drei" }}
+		, true);
+		System.out.println(res);
 		Thread.sleep(5000);
+		/*
 		JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from RawTextWarnings u\n" + 
 				"select u.@id, u.ew, u.ew.NamedEntityRecognition.WordToken\n" + 
 				"where u.ew.NamedEntityRecognition.NamedEntity == \"WEATHER_EVENT\"", true);
 
 		System.out.println(rt);
 		rt.serializeJSON(System.out);
+		*/
 
 	}
 }

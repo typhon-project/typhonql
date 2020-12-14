@@ -680,6 +680,7 @@ DBObject obj2dbObj((Expr)`[<{PlaceHolderOrUUID ","}* refs>]`)
 DBObject obj2dbObj((Expr)`<Bool b>`) = \value("<b>" == "true");
 
 DBObject obj2dbObj((Expr)`<Int n>`) = \value(toInt("<n>"));
+DBObject obj2dbObj((Expr)`-<Int n>`) = \value(toInt("-<n>"));
 
 DBObject obj2dbObj((Expr)`<PlaceHolder p>`) = placeholder(name="<p>"[2..]);
 
@@ -704,6 +705,7 @@ DBObject seg2array((Segment)`(<{XY ","}* xys>)`)
 
 
 DBObject obj2dbObj((Expr)`<Real r>`) = \value(toReal("<r>"));
+DBObject obj2dbObj((Expr)`-<Real r>`) = \value(toReal("-<r>"));
 
 DBObject obj2dbObj((Expr)`<Str x>`) = \value(unescapeQLString(x));
   
