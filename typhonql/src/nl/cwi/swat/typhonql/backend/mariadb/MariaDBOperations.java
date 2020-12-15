@@ -85,7 +85,7 @@ public class MariaDBOperations implements Operations, AutoCloseable {
 	}
 	
 	private static Connection getConnection(ConnectionData cd, String dbName) throws SQLException {
-		return DriverManager.getConnection("jdbc:mariadb://" + cd.getHost() + ":" + cd.getPort() + "/" + dbName + "?user=" + cd.getUser() + "&password=" + cd.getPassword());
+		return DriverManager.getConnection("jdbc:mariadb://" + cd.getHost() + ":" + cd.getPort() + "/" + dbName + "?user=" + cd.getUser() + "&password=" + cd.getPassword()+"&rewriteBatchedStatements=true");
 	}
 
 	private ICallableValue makeExecuteQuery(BiFunction<String, Boolean, MariaDBEngine> getEngine, TyphonSessionState state, FunctionType executeType, IEvaluatorContext ctx,

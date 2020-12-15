@@ -49,11 +49,12 @@ import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 public class MariaDBEngine extends Engine {
 
 	private final Supplier<Connection> connection;
-	private final Map<String, PreparedStatementArgs> preparedQueries = new HashMap<>();
+	private final Map<String, PreparedStatementArgs> preparedQueries;
 
 	public MariaDBEngine(ResultStore store, TyphonSessionState state, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, Supplier<Connection> sqlConnection) {
 		super(store, state, script, uuids);
 		this.connection = sqlConnection;
+		preparedQueries = state.getFromCache(MariaDBEngine.class.getCanonicalName(), s -> new HashMap<String, PreparedStatementArgs>());
 	}
 
 	private PreparedStatement prepareQuery(String query, List<String> vars, Set<String> blobs, Set<String> geometries) throws SQLException {
@@ -150,7 +151,7 @@ public class MariaDBEngine extends Engine {
 				}
 			}
 
-		}.scheduleSelect(resultId);
+		}.scheduleSelect(resultId); 
 	}
 
 

@@ -40,7 +40,7 @@ public class XMIBasedTyphonQLSimpleQuery {
 		
 		String xmiString = PolystoreAPIHelper.readHttpModel(HOST, PORT, USER, PASSWORD);
 		//System.err.println(xmiString);
-		//System.err.println(infos);
+		System.err.println(infos);
 
 		XMIPolystoreConnection conn = new XMIPolystoreConnection();
 		
@@ -66,6 +66,37 @@ public class XMIBasedTyphonQLSimpleQuery {
 }
 		 */
 		
+		long start = System.currentTimeMillis();
+		String[] res = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert GIPP_F {type:??t, version:??v, gipp_filename:??f, pid:??p}",
+				new String[] { "t", "v", "f", "p" },
+				new String[] { "string", "string", "string", "int" },
+				new String[][] { 
+					new String[] { "TGPP232", "001", "llkasdhkjashdkjahd jkhasd kjsad", "1" },
+					new String[] { "TGPP324", "001", "llkasdhkjashdkjahd jkhasd kjsad", "2" },
+					new String[] { "TGPP422", "001", "llkasdhkjashdkjahd jkhasd kjsad", "3" }
+			}
+		, true);
+		long stop = System.currentTimeMillis();
+		System.out.println("First run: " + (stop - start));
+
+		
+		for (int i = 10; i <= 100000; i *= 10) {
+			String[][] params = new String[i][];
+			for (int j = 0; j < i; j++) {
+				params[j] = new String[] { "TPGHH" + j, "001", "GASFD-123123-hakjsdhksad-012312321" + i + "-a-" + j, "" + j};
+			}
+			
+            start = System.currentTimeMillis();
+            res = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert GIPP_F {type:??t, version:??v, gipp_filename:??f, pid:??p}",
+                    new String[] { "t", "v", "f", "p" },
+                    new String[] { "string", "string", "string", "int" },
+                    params
+            , false);
+            stop = System.currentTimeMillis();
+            long time = (stop - start);
+            System.out.println(String.format("- Perf %-5d took: %-6dms speed: %-4.1f ms per record = %-4.1f records per second", i, time, time / (double)i, 1000 * (i / (double) time)));
+		}
+		/*
 		String[] res = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert RawTextWarnings {ew:??ew, timeStamp: $2020-12-01T12:12:14.567+00:00$}",
 				new String[] { "ew" },
 				new String[] { "string" },
