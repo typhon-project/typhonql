@@ -36,10 +36,12 @@ NeoValue evalNeoExpr((Expr)`<VId v>`) { throw "Variable still in expression"; }
 NeoValue evalNeoExpr((Expr)`<Str s>`) = nText(unescapeQLString(s));
 
 NeoValue evalNeoExpr((Expr)`<Int n>`) = nInteger(toInt("<n>"));
+NeoValue evalNeoExpr((Expr)`-<Int n>`) = nInteger(toInt("-<n>"));
 
 NeoValue evalNeoExpr((Expr)`<Bool b>`) = nBoolean("<b>" == "true");
 
 NeoValue evalNeoExpr((Expr)`<Real r>`) = nDecimal(toReal("<r>"));
+NeoValue evalNeoExpr((Expr)`-<Real r>`) = nDecimal(toReal("-<r>"));
 
 NeoValue evalNeoExpr((Expr)`#point(<Real x> <Real y>)`) = nPoint(toReal("<x>"), toReal("<y>"));
 
