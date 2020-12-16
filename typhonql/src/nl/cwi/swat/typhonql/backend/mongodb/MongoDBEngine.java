@@ -22,7 +22,9 @@ import java.io.StringWriter;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -64,6 +66,7 @@ import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 public class MongoDBEngine extends Engine {
 	private final MongoDatabase db;
 	private GridFSBucket gridBucket = null;
+	private final Map<String, DelayedInserts> bulkInserts;
 	
 	private GridFSBucket getGridFS() {
 		if (gridBucket == null) {
@@ -75,6 +78,13 @@ public class MongoDBEngine extends Engine {
 	public MongoDBEngine(ResultStore store, TyphonSessionState state, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, MongoDatabase db) {
 		super(store, state, script, uuids);
 		this.db = db;
+		bulkInserts = state.getFromCache(MongoDBEngine.class.getCanonicalName(), s -> {
+			Map<String, DelayedInserts> result = new HashMap<>();
+            state.addDelayedTask(() -> {
+                result.values().forEach(DelayedInserts::execute);
+            });
+            return result;
+		});
 	}
 
 	public void executeFind(String resultId, String collectionName, String query, Map<String, Binding> bindings, List<Path> signature) {
@@ -222,7 +232,15 @@ public class MongoDBEngine extends Engine {
 	}
 
 	public void executeInsertOne(String dbName, String collectionName, String doc, Map<String, Binding> bindings) {
-		scheduleUpdate(collectionName, doc, bindings, MongoCollection<Document>::insertOne);
+		scheduleUpdate(collectionName, doc, bindings, (c, d) -> {
+			if (store.hasExternalArguments()) {
+				bulkInserts.computeIfAbsent(collectionName, n -> new DelayedInserts(c))
+					.schedule(d);
+			}
+			else {
+				c.insertOne(d);
+			}
+		});
 	}
 	
 	public void executeFindAndUpdateOne(String dbName, String collectionName, String query, String update, Map<String, Binding> bindings) {
@@ -265,6 +283,23 @@ public class MongoDBEngine extends Engine {
 	public void executeDropIndex(String collectionName, String indexName) {
 		scheduleGlobalUpdate(d -> d.getCollection(collectionName).dropIndex(indexName));
 		
+	}
+	
+	private static class DelayedInserts {
+		private final List<Document> documents = new ArrayList<>();
+		private final MongoCollection<Document> target;
+		
+		public DelayedInserts(MongoCollection<Document> target) {
+			this.target = target;
+		}
+		
+		public void execute() {
+			target.insertMany(documents);
+		}
+		
+		public void schedule(Document doc) {
+			documents.add(doc);
+		}
 	}
 
 
