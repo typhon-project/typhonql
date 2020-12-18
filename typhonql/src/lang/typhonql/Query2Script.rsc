@@ -145,8 +145,6 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s,
     params += initialParams;
     // hack
     
-    println("AGG: <aggReq>");
-    
     return [step(dbName, sql(executeQuery(dbName, pp(sqlStat))), params
       , signature=
           filterForBackend(results2pathsWithAggregation(aggReq.qry.selected, queryEnvAndDyn(aggReq.qry), s)

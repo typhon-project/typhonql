@@ -94,7 +94,6 @@ Script request2script(Request r, Schema s, Log log = noLog) {
 
 	  Script scr = script([]);
 	  
-	  //println("ORDER: <order>");
 	  if ([p:<DB::sql(), _>] := order, just(Request aggReq) := maybeAgg) {
 	    // strictly SQL 
 	    scr = script(compileQuery(r, p, s, log = log, agg = maybeAgg));
@@ -117,9 +116,6 @@ Script request2script(Request r, Schema s, Log log = noLog) {
         }
         
       }
-      
-      //iprintln(scr);
-	  
       
        
       return scr;

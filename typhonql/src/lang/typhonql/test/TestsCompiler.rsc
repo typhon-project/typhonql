@@ -278,7 +278,7 @@ void testBasicMongoDBWhereClauses(PolystoreInstance p) {
 
 }
 
-void testBasicAggregation(PolystoreInstance p) {
+void testBasicAggregationNativeSQL(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select count(i.@id) as cnt group null`);
   p.assertResultEquals("items counted correctly", rs, <["cnt"], 
     [["6"]]>);
@@ -1292,7 +1292,7 @@ void testDeleteAllSQLBasic(PolystoreInstance p) {
 
 void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	tests = 
-	  [ testBasicAggregation
+	  [ testBasicAggregationNativeSQL
 	  , testBasicMongoDBWhereClauses
 	  , testLimit
 	  , testLimitAndOrder

@@ -376,7 +376,7 @@ tuple[SQLStat, Bindings] select2sql(q:(Query)`from <{Binding ","}+ bs> select <{
     q.clauses = [];
   }
   
-  println("BEFORE aggregation: <q>");
+  //println("BEFORE aggregation: <q>");
   // println("PARAMS: <params>");
   return <weave(q, ctx), params>;
 }
