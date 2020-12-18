@@ -92,17 +92,19 @@ SQLStat weaveAggregation(
   // so we append based on existing sql exprs that
   // we find by position (we need the original because
   // of the aliasing)
-  for (int i <- [0..size(rLst)]) {
-    if ((Result)`<VId f>(<Expr arg>) as <VId x>` := rLst[i]) {
-      Path path = exp2path(arg, env, ctx.schema)[0];
-      SQLExpr org = query.exprs[i];
-      str theAlias = "<path.var>.<path.entityType>.<x>";
-      ctx.addAggAlias("<x>", SQLExpr::var(theAlias)); 
+  for ((Result)`<VId f>(<Expr arg>) as <VId x>` <- rs) {
+      // because of side-effects of expr2sql we cannot as of now compare
+      // the actual expressions, so we compare the names given to the results (using "as")
+      // to find the original expression.
+      if (SQLExpr org <- query.exprs, expr2sql(arg, ctx).name == org.arg.name) {
+        Path path = exp2path(arg, env, ctx.schema)[0];
+        str theAlias = "<path.var>.<path.entityType>.<x>";
+        ctx.addAggAlias("<x>", SQLExpr::var(theAlias)); 
       
-      // note: append
-      query.exprs += [named(fun(agg2sql(f), [org is named ? org.arg : org])
-        , theAlias)];
-    }
+        // note: append
+        query.exprs += [named(fun(agg2sql(f), [org is named ? org.arg : org])
+          , theAlias)];
+       }
   }
   
   
