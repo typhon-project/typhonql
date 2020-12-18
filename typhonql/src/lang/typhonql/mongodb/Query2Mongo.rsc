@@ -155,15 +155,15 @@ tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding
       }
       path = "<intercalate(".", paths[ent].path)>.<opOrPath>";
     }
-    //if (result[paths[ent].root].query.props == []) {
+    if (result[paths[ent].root].query.props == []) {
       result[paths[ent].root].query.props += [<opOrPath, val>];
-    //}
-    //else if ([<str p, DBObject constraint>] := result[paths[ent].root].query.props, p != "$and") { // make $and
-    //  result[paths[ent].root].query.props = [<"$and", array([object([<p, constraint>]), object([<path, val>])])>];
-    //}
-    //else if ([<"$and", array(list[DBObject] constraints)>] := result[paths[ent].root].query.props) { 
-    //  result[paths[ent].root].query.props = [<"$and", array([*constraints, object([<path, val>])])>];
-    //}
+    }
+    else if ([<str p, DBObject constraint>] := result[paths[ent].root].query.props, p != "$and") { // make $and
+      result[paths[ent].root].query.props = [<"$and", array([object([<p, constraint>]), object([<opOrPath, val>])])>];
+    }
+    else if ([<"$and", array(list[DBObject] constraints)>] := result[paths[ent].root].query.props) { 
+      result[paths[ent].root].query.props = [<"$and", array([*constraints, object([<opOrPath, val>])])>];
+    }
   }
   
   
