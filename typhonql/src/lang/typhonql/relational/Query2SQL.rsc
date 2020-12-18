@@ -89,11 +89,24 @@ SQLStat weaveAggregation(
   
   // just add the aggregation ops (worst case we also produce the
   // the attribute/ref that is aggregated upon
-  for ((Result)`<VId f>(<Expr arg>) as <VId x>` <- rs) {
-    Path path = exp2path(arg, env, ctx.schema)[0];
-    query.exprs += [named(fun(agg2sql(f), [expr2sql(arg, ctx)])
-     , "<path.var>.<path.entityType>.<x>")];
+  // the appending interacts with expr2sql, creating new
+  // variables of non-existing tables (e.g. inventory$1),
+  // so we append based on existing sql exprs that
+  // we find by position (we need the original because
+  // of the aliasing)
+  for (int i <- [0..size(rLst)]) {
+    if ((Result)`<VId f>(<Expr arg>) as <VId x>` := rLst[i]) {
+      Path path = exp2path(arg, env, ctx.schema)[0];
+      SQLExpr org = query.exprs[i];
+      // note: append
+      query.exprs += [named(fun(agg2sql(f)
+         , [org is named ? org.arg : org])
+         , "<path.var>.<path.entityType>.<x>")];
+      //query.exprs += [named(fun(agg2sql(f), [expr2sql(arg, ctx)])
+      // , "<path.var>.<path.entityType>.<x>")];
+    }
   }
+  
   
   //alias Path = tuple[str dbName, str var, str entityType, list[str] path];
   
@@ -342,6 +355,7 @@ tuple[SQLStat, Bindings] select2sql(q:(Query)`from <{Binding ","}+ bs> select <{
     q.clauses = [];
   }
   
+  println("BEFORE aggregation: <q>");
   // println("PARAMS: <params>");
   return <weave(q, ctx), params>;
 }
