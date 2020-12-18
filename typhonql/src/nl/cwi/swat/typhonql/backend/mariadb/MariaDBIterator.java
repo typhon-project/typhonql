@@ -100,7 +100,7 @@ public class MariaDBIterator implements ResultIterator {
 				return b;
 			}
 		}
-        System.err.println("Mark not supported so cannot gues blob type");
+        System.err.println("Mark not supported so cannot guess blob type");
 		return b;
 		
 	}
