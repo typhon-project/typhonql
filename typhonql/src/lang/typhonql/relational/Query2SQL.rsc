@@ -87,9 +87,7 @@ SQLStat weaveAggregation(
   
   Env env = queryEnv(bs);
   
-  // just add the aggregation ops (worst case we also produce the
-  // the attribute/ref that is aggregated upon
-  // the appending interacts with expr2sql, creating new
+  // we cannot use  expr2sql, because it creates new
   // variables of non-existing tables (e.g. inventory$1),
   // so we append based on existing sql exprs that
   // we find by position (we need the original because
@@ -98,12 +96,12 @@ SQLStat weaveAggregation(
     if ((Result)`<VId f>(<Expr arg>) as <VId x>` := rLst[i]) {
       Path path = exp2path(arg, env, ctx.schema)[0];
       SQLExpr org = query.exprs[i];
+      str theAlias = "<path.var>.<path.entityType>.<x>";
+      ctx.addAggAlias("<x>", SQLExpr::var(theAlias)); 
+      
       // note: append
-      query.exprs += [named(fun(agg2sql(f)
-         , [org is named ? org.arg : org])
-         , "<path.var>.<path.entityType>.<x>")];
-      //query.exprs += [named(fun(agg2sql(f), [expr2sql(arg, ctx)])
-      // , "<path.var>.<path.entityType>.<x>")];
+      query.exprs += [named(fun(agg2sql(f), [org is named ? org.arg : org])
+        , theAlias)];
     }
   }
   
@@ -151,6 +149,9 @@ alias Ctx
       void(As) addFrom,
       void(str, As, SQLExpr) addLeftOuterJoin,
       void(SQLExpr) addResult,
+      void(str, SQLExpr) addAggAlias,
+      SQLExpr(str) getAlias,
+      bool(str) isAlias,
       str(str, Param) getParam,
       Schema schema,
       Env env,
@@ -232,6 +233,21 @@ tuple[SQLStat, Bindings] select2sql(q:(Query)`from <{Binding ","}+ bs> select <{
     q.exprs += [e];
   }
   
+  map[str, SQLExpr] aliases = ();
+  
+  void addAggAlias(str name, SQLExpr al) {
+    aliases[name] = al;
+  }
+  
+  bool isAlias(str name) {
+    return name in aliases;
+  }
+  
+  
+  SQLExpr getAlias(str name) {
+    return aliases[name];
+  }
+  
   int _vars = -1;
   int vars() {
     return _vars += 1;
@@ -274,6 +290,9 @@ tuple[SQLStat, Bindings] select2sql(q:(Query)`from <{Binding ","}+ bs> select <{
      addFrom,
      addLeftOuterJoin,
      addResult,
+     addAggAlias,
+     getAlias,
+     isAlias,
      getParam,
      s,
      env,
@@ -367,8 +386,13 @@ str varForTarget(Id f, int i) = "<f>$<i>";
 str varForJunction(Id f, int i) = "junction_<f>$<i>";
 
 
-SQLExpr expr2sql(e:(Expr)`<VId x>`, Ctx ctx, Log log = noLog)
-  = expr2sql((Expr)`<VId x>.@id`, ctx);
+SQLExpr expr2sql(e:(Expr)`<VId x>`, Ctx ctx, Log log = noLog) {
+  str var = "<x>";
+  if (ctx.isAlias(var)) {
+    return ctx.getAlias(var);
+  }
+  return expr2sql((Expr)`<VId x>.@id`, ctx);
+}
 
 
 SQLExpr expr2sql(e:(Expr)`<VId x>.@id`, Ctx ctx, Log log = noLog) {

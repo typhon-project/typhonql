@@ -152,6 +152,9 @@ str pp(notIn(SQLExpr arg, list[Value] vals))
 str pp(\in(SQLExpr arg, list[SQLExpr] vals)) 
   = "(<pp(arg)>) in (<intercalate(", ", [ pp(v) | SQLExpr v <- vals])>)";
 
+str pp(var(str name))
+  = "`<name>`";
+
 str pp(fun(str name, vals)) = "<name>(<intercalate(", ", [pp(v) | v <- vals])>)";
 
 str pp(SQLExpr::placeholder(name = str name)) = "${<name>}";

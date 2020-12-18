@@ -52,6 +52,7 @@ data SQLExpr
   = column(str table, str name) // NB: always qualified
   | column(str name) // only for use in update
   | lit(Value val)
+  | var(str name)
   | named(SQLExpr arg, str as) // select p.name as x1
   | placeholder(str name = "") // for representing ? or :name 
   | not(SQLExpr arg) 
