@@ -280,32 +280,32 @@ void testBasicMongoDBWhereClauses(PolystoreInstance p) {
 
 void testBasicAggregationNativeSQL(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select count(i.@id) as cnt group null`);
-  p.assertResultEquals("items counted correctly", rs, <["cnt"], 
+  p.assertResultEquals("items counted correctly", rs, <["i.cnt"], 
     [["6"]]>);
 
   rs = p.runQuery((Request)`from Item i select sum(i.shelf) as cnt group null`);
-  p.assertResultEquals("item shelves summed correctly", rs, <["cnt"], 
+  p.assertResultEquals("item shelves summed correctly", rs, <["i.cnt"], 
     [["12"]]>);
     
   rs = p.runQuery((Request)`from Item i select count(i.@id) as cnt`);
-  p.assertResultEquals("items counted w/o group-clause", rs, <["cnt"], 
+  p.assertResultEquals("items counted w/o group-clause", rs, <["i.cnt"], 
     [["6"]]>);
 
   // select `Item.shelf`, count(`Item.@id`) from Item group by `Item.shelf`;
   rs = p.runQuery((Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf`);
-  p.assertResultEquals("shelf items counted correctly", rs, <["i.shelf", "numOfItems"], 
+  p.assertResultEquals("shelf items counted correctly", rs, <["i.shelf", "i.numOfItems"], 
     [["1", "2"], ["2", "2"], ["3","2"]]>);
 
 
     
   rs = p.runQuery((Request)`from Product p select p.@id, count(p.inventory) as numOfItems group p.@id`);  
-  p.assertResultEquals("product inventory items counted correctly", rs, <["p.@id", "numOfItems"], 
+  p.assertResultEquals("product inventory items counted correctly", rs, <["p.@id", "p.numOfItems"], 
     [[U("tv"), "4"], [U("radio"), "2"]]>);
     
   // TODO: let type checker test at as-clauses are present
   
   rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total where i.product == p group i.product`);
-  p.assertResultEquals("item prices summed correctly", rs, <["i.product", "total"], 
+  p.assertResultEquals("item prices summed correctly", rs, <["i.product", "p.total"], 
     [[U("tv"), "<4 * 20>"], [U("radio"), "<2 * 30>"]]>);
     
   // todo: sum(i.product.price)? that needs changing expandNavigation normalization (no; because of lifting)
@@ -316,7 +316,7 @@ void testBasicAggregationNativeSQL(PolystoreInstance p) {
 
   rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
                            'where i.product == p group i.product having total \> 60`);
-  p.assertResultEquals("item prices summed and larger than 60", rs, <["i.product", "total"], 
+  p.assertResultEquals("item prices summed and larger than 60", rs, <["i.product", "p.total"], 
     [[U("tv"), "<4 * 20>"]]>);
     
 }
@@ -328,7 +328,7 @@ void testLimit(PolystoreInstance p) {
 
 
   rs = p.runQuery((Request)`from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf limit 2`);
-  p.assertResultEquals("shelf items counted correctly with limit 2", rs, <["i.shelf", "numOfItems"], 
+  p.assertResultEquals("shelf items counted correctly with limit 2", rs, <["i.shelf", "i.numOfItems"], 
     [["1", "2"], ["2", "2"]]>);
 }
 
@@ -343,12 +343,12 @@ void testLimitAndOrder(PolystoreInstance p) {
 
   rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
                            'where i.product == p group i.product order total limit 1`);
-  p.assertResultEquals("item prices summed, sorted, limited", rs, <["i.product", "total"], 
+  p.assertResultEquals("item prices summed, sorted, limited", rs, <["i.product", "p.total"], 
     [[U("radio"), "<2 * 30>"]]>);
   
   rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
                            'where i.product == p group i.product order total desc limit 1`);
-  p.assertResultEquals("item prices summed, sorted in reverse, limited", rs, <["i.product", "total"], 
+  p.assertResultEquals("item prices summed, sorted in reverse, limited", rs, <["i.product", "p.total"], 
     [[U("tv"), "<4 * 20>"]]>);
   
   
@@ -367,12 +367,12 @@ void testOrdering(PolystoreInstance p) {
 
   rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
                            'where i.product == p group i.product order total`);
-  p.assertResultEquals("item prices sorted correctly", rs, <["i.product", "total"], 
+  p.assertResultEquals("item prices sorted correctly", rs, <["i.product", "p.total"], 
     [[U("tv"), "<4 * 20>"], [U("radio"), "<2 * 30>"]]>);
  
   rs = p.runQuery((Request)`from Item i, Product p select i.product, sum(p.price) as total 
                            'where i.product == p group i.product order total desc`);
-  p.assertResultEquals("item prices sorted correctly in reverse", rs, <["i.product", "total"], 
+  p.assertResultEquals("item prices sorted correctly in reverse", rs, <["i.product", "p.total"], 
     [[U("radio"), "<2 * 30>"], [U("tv"), "<4 * 20>"]]>);
   
 }
