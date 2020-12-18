@@ -920,6 +920,7 @@ void testSQLDatetimeCompare(PolystoreInstance p) {
 void testMongoDatetimeCompare(PolystoreInstance p) {
   p.runUpdate((Request) `insert EntitySmokeTest2 { @id: #e1, s: "Hoi", t: "Long", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-11-13$, dt: $2020-11-15T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);
   p.runUpdate((Request) `insert EntitySmokeTest2 { @id: #e2, s: "Hoi", t: "Long", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-11-14$, dt: $2020-11-16T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);
+  p.runUpdate((Request) `insert EntitySmokeTest2 { @id: #e3, s: "Hoi", t: "Long", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-11-12$, dt: $2020-11-13T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);
   rs = p.runQuery((Request)`from EntitySmokeTest2 e select e.@id, e.d where e.d \> $2020-11-12$ && e.d \< $2020-11-14$`);
   p.assertResultEquals("sqlDateCompare", rs, <["e.@id", "e.d"], [[U("e1"), "2020-11-13"]]>);
 
