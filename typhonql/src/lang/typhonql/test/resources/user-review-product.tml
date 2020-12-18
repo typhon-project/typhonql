@@ -163,7 +163,7 @@ documentdb Reviews {
 		Biography : Biography
 		Category: Category
 		Evaluation: Evaluation
-		DataTypeTest2: EntitySmokeTest
+		DataTypeTest2: EntitySmokeTest2
 	}
 }
 

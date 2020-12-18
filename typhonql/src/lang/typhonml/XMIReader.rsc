@@ -91,10 +91,10 @@ void smokeTest3() {
 
 Model loadTyphonML(loc l) = xmiString2Model(readFile(l));
 
-@memo=expireAfter(hours=1)
+@memo={expireAfter(hours=1),maximumSize(1000)}
 Model xmiString2Model(str s) = xmiNode2Model(readXML(s, fullyQualify=true));
 
-@memo=expireAfter(hours=1)
+@memo={expireAfter(hours=1),maximumSize(1000)}
 Schema loadSchemaFromXMI(str s, bool normalize=true) = model2schema(m, normalize=normalize)
 	when Model m := xmiString2Model(s);
 
@@ -105,6 +105,7 @@ Omissions for now:
  - evolution operators
  - database types other than document and relation
 }
+@memo={expireAfter(hours=1),maximumSize(1000)}
 Model xmiNode2Model(node n) {
   Realm realm = newRealm();
 

@@ -17,7 +17,10 @@
 package nl.cwi.swat.typhonql.backend.rascal;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 import com.datastax.oss.driver.shaded.guava.common.base.Strings;
 
@@ -33,6 +36,7 @@ public class TyphonSessionState implements AutoCloseable {
 	
 	private final List<Runnable> delayedTasks = new ArrayList<>();
 	private String warnings = "";
+	private final Map<String, Object> cache =new HashMap<>();
 
 
 	@Override
@@ -72,5 +76,10 @@ public class TyphonSessionState implements AutoCloseable {
 
 	public void addWarnings(String warnings) {
 		this.warnings = Strings.nullToEmpty(warnings);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public <T> T getFromCache(String key, Function<String, T> ifEmpty) {
+		return (T) cache.computeIfAbsent(key, ifEmpty);
 	}
 }

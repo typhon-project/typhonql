@@ -40,7 +40,7 @@ public class XMIBasedTyphonQLSimpleQuery {
 		
 		String xmiString = PolystoreAPIHelper.readHttpModel(HOST, PORT, USER, PASSWORD);
 		//System.err.println(xmiString);
-		//System.err.println(infos);
+		System.err.println(infos);
 
 		XMIPolystoreConnection conn = new XMIPolystoreConnection();
 		
@@ -65,7 +65,56 @@ public class XMIBasedTyphonQLSimpleQuery {
     "boundValues": [["Starkes Gewitter mit Starkregen (Stufe Orange) in Berlin eins twei drei"]]
 }
 		 */
+	
+		/*
+		 * tity INSPIRE {
+	id : int
+    file_id: string[50]
+    language: string[10]
+    character_set: string[50]
+    hierarchy_level: string[50]
+    date_stamp: date
+    metadata_standard_name: string[50]
+    metadata_standard_version: string[50]
+    rs_id: string[100]
+    rs_code_space: string[100]
+    spatial_resolution: int
+		 */
+		long start = System.currentTimeMillis();
+		String[] res = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert INSPIRE {"
+				+ "id: ??i, file_id: ??f, language: ??l, character_set: ??c, hierarchy_level: ??h,"
+				+ "date_stamp: ??d, metadata_standard_name: ??mn, metadata_standard_version: ??mv, "
+				+ "rs_id: ??ri, rs_code_space: ??rs, spatial_resolution: ??sr}",
+				new String[] { "i", "f", "l", "c", "h", "d", "mn", "mv", "ri", "rs", "sr" },
+				new String[] { "int", "string", "string", "string", "string", "date", "string", "string", "string", "string", "int" },
+				new String[][] { 
+					new String[] { "1", "file+ee", "nl-EN", "UTF-8", "ee1", "2020-11-22", "asdjhjksad", "23", "asdasdahsdhjkasd", "ass3", "340" },
+			}
+		, true);
+		long stop = System.currentTimeMillis();
+		System.out.println("First run: " + (stop - start));
+
 		
+		for (int i = 10; i <= 100000; i *= 10) {
+			String[][] params = new String[i][];
+			for (int j = 0; j < i; j++) {
+				params[j] = new String[] { "" + j, "file+ee" + i + "-" + j, "nl-EN", "UTF-8", "ee" + i, "2020-11-" + (i % 30), "asdjhjksad" + j, "" + j, "asdasdahsdhjkasd" + i, "ass3" +i, "" + (j+i) };
+			}
+			
+            start = System.currentTimeMillis();
+            conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert INSPIRE {"
+				+ "id: ??i, file_id: ??f, language: ??l, character_set: ??c, hierarchy_level: ??h,"
+				+ "date_stamp: ??d, metadata_standard_name: ??mn, metadata_standard_version: ??mv, "
+				+ "rs_id: ??ri, rs_code_space: ??rs, spatial_resolution: ??sr}",
+				new String[] { "i", "f", "l", "c", "h", "d", "mn", "mv", "ri", "rs", "sr" },
+				new String[] { "int", "string", "string", "string", "string", "date", "string", "string", "string", "string", "int" },
+                    params
+            , false);
+            stop = System.currentTimeMillis();
+            long time = (stop - start);
+            System.out.println(String.format("- Rows %-5d took: %-6dms speed: %-4.1f ms per record = %-4.1f records per second", i, time, time / (double)i, 1000 * (i / (double) time)));
+		}
+		/*
 		String[] res = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert RawTextWarnings {ew:??ew, timeStamp: $2020-12-01T12:12:14.567+00:00$}",
 				new String[] { "ew" },
 				new String[] { "string" },

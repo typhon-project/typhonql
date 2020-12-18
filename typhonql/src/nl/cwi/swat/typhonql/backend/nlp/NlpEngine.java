@@ -16,9 +16,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -44,8 +47,6 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Engine;
@@ -73,6 +74,25 @@ public class NlpEngine extends Engine {
 	private final int port;
 	private final String user;
 	private final String password;
+	
+	private static ExecutorService backgroundTask = createFixedTimeoutExecutorService(10, 1, TimeUnit.MINUTES);
+
+	/**
+	 * Creates an executor service with a fixed pool size, that will time 
+	 * out after a certain period of inactivity.
+	 * 
+	 * @param poolSize The core- and maximum pool size
+	 * @param keepAliveTime The keep alive time
+	 * @param timeUnit The time unit
+	 * @return The executor service
+	 */
+	public static ExecutorService createFixedTimeoutExecutorService(
+			int poolSize, long keepAliveTime, TimeUnit timeUnit) {
+		ThreadPoolExecutor e = new ThreadPoolExecutor(poolSize, poolSize,
+						keepAliveTime, timeUnit, new LinkedBlockingQueue<Runnable>());
+		e.allowCoreThreadTimeOut(true);
+		return e;
+	}
 	
 	
 	private static Map<String,String> serializeExpression(Map<String, Object> values) {
@@ -147,9 +167,7 @@ public class NlpEngine extends Engine {
                 
                 // TODO this is a workaround to overcome the fact that
                 // the NLP engine is blocking
-                Thread t = new Thread(() -> doPost("processText", json));
-                t.setDaemon(true);
-				t.start();	
+                backgroundTask.execute(() -> doPost("processText", json));
             }
 		}.scheduleUpdate();	
 	}

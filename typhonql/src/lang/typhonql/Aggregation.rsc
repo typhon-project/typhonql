@@ -422,6 +422,7 @@ str having2cond((Expr)`<Expr lhs> || <Expr rhs>`)
   = "<havingOps()>.or(<having2cond(lhs)>, <having2cond(rhs)>)";
 
 str having2cond((Expr)`<Int n>`) = "<n>";
+str having2cond((Expr)`-<Int n>`) = "-<n>";
 
 str having2cond((Expr)`<Str s>`) = "<s>";
 
