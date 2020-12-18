@@ -81,6 +81,7 @@ public class MariaDBIterator implements ResultIterator {
 		columnMapperFuncs.put(ColumnType.FLOAT.getSqlType(), ResultSet::getDouble);
 		columnMapperFuncs.put(ColumnType.GEOMETRY.getSqlType(), (r, i) -> blobOrGeo(r.getBinaryStream(i)));
 		columnMapperFuncs.put(ColumnType.INTEGER.getSqlType(), ResultSet::getInt);
+		columnMapperFuncs.put(ColumnType.DECIMAL.getSqlType(), ResultSet::getInt);
 		columnMapperFuncs.put(ColumnType.NULL.getSqlType(), (r, i) -> null);
 		columnMapperFuncs.put(ColumnType.STRING.getSqlType(), ResultSet::getString);
 		columnMapperFuncs.put(Types.CHAR, ResultSet::getString);
