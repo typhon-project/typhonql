@@ -22,6 +22,8 @@ import lang::typhonql::Order;
 import lang::typhonql::Script;
 import lang::typhonql::Session;
 
+import lang::typhonql::Query2Script;
+
 import lang::typhonql::relational::SQL;
 import lang::typhonql::relational::SQL2Text;
 import lang::typhonql::relational::Util;
@@ -85,16 +87,15 @@ SQLStat weaveAggregation(
   
   Env env = queryEnv(bs);
   
-  for (Result r <- rs) {
-    for (int i <- [0..size(query.exprs)]) {
-      if ((Result)`<VId f>(<Expr arg>) as <VId x>` := r) {
-         if (expr2sql(arg, ctx) == query.exprs[i].arg) { 
-           query.exprs[i] = named(fun(agg2sql(f), [expr2sql(arg, ctx)])
-             , "<x>"); // TODO: produce entity.var.x here
-         }
-      }
-    }
+  // just add the aggregation ops (worst case we also produce the
+  // the attribute/ref that is aggregated upon
+  for ((Result)`<VId f>(<Expr arg>) as <VId x>` <- rs) {
+    Path path = exp2path(arg, env, ctx.schema)[0];
+    query.exprs += [named(fun(agg2sql(f), [expr2sql(arg, ctx)])
+     , "<path.var>.<path.entityType>.<x>")];
   }
+  
+  //alias Path = tuple[str dbName, str var, str entityType, list[str] path];
   
   for (Agg agg <- aggs) {
     switch (agg) {
