@@ -907,6 +907,26 @@ void testSQLDateEquals(PolystoreInstance p) {
   p.assertResultEquals("sqlDateEquals", rs, <["p.name", "p.productionDate"], [["Radio", "2020-04-13"],["TV", "2020-04-13"]]>);
 }
 
+void testSQLDatetimeCompare(PolystoreInstance p) {
+  p.runUpdate((Request) `insert EntitySmokeTest { @id: #e1, s: "Hoi", t: "Long", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-11-13$, dt: $2020-11-15T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);
+  p.runUpdate((Request) `insert EntitySmokeTest { @id: #e2, s: "Hoi", t: "Long", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-11-14$, dt: $2020-11-16T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);
+  rs = p.runQuery((Request)`from EntitySmokeTest e select e.@id, e.d where e.d \> $2020-11-12$ && e.d \< $2020-11-14$`);
+  p.assertResultEquals("sqlDateCompare", rs, <["e.@id", "e.d"], [[U("e1"), "2020-11-13"]]>);
+
+  rs = p.runQuery((Request)`from EntitySmokeTest e select e.@id, e.dt where e.dt \> $2020-11-15T00:00:00Z$ && e.dt \< $2020-11-16T00:00:00Z$`);
+  p.assertResultEquals("sqlDatetimeCompare", rs, <["e.@id", "e.dt"], [[U("e1"), "2020-11-15T12:04:44Z"]]>);
+}
+
+void testMongoDatetimeCompare(PolystoreInstance p) {
+  p.runUpdate((Request) `insert EntitySmokeTest2 { @id: #e1, s: "Hoi", t: "Long", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-11-13$, dt: $2020-11-15T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);
+  p.runUpdate((Request) `insert EntitySmokeTest2 { @id: #e2, s: "Hoi", t: "Long", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-11-14$, dt: $2020-11-16T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }`);
+  rs = p.runQuery((Request)`from EntitySmokeTest2 e select e.@id, e.d where e.d \> $2020-11-12$ && e.d \< $2020-11-14$`);
+  p.assertResultEquals("sqlDateCompare", rs, <["e.@id", "e.d"], [[U("e1"), "2020-11-13"]]>);
+
+  rs = p.runQuery((Request)`from EntitySmokeTest2 e select e.@id, e.dt where e.dt \> $2020-11-15T00:00:00Z$ && e.dt \< $2020-11-16T00:00:00Z$`);
+  p.assertResultEquals("sqlDatetimeCompare", rs, <["e.@id", "e.dt"], [[U("e1"), "2020-11-15T12:04:44Z"]]>);
+}
+
 
 void testGISonSQL(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Product p select p.name where #point(2.0 3.0) in p.availabilityRegion`);
