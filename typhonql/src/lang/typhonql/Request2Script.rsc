@@ -90,19 +90,38 @@ Script request2script(Request r, Schema s, Log log = noLog) {
       r = explicitJoinsInReachability(r, s);
       r = eliminateCustomDataTypes(injectProperUUIDs(r), s);
       log("NORMALIZED: <r>");
-      Script scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) 
-         | Place p <- order, hitsBackend(r, p, s)]);
-       
-      list[Path] paths = results2paths(r.qry.selected, queryEnv(r.qry), s);
+      
+
+	  Script scr = script([]);
+	  
+	  //println("ORDER: <order>");
+	  if ([p:<DB::sql(), _>] := order, just(Request aggReq) := maybeAgg) {
+	    // strictly SQL 
+	    scr = script(compileQuery(r, p, s, log = log, agg = maybeAgg));
+	    list[Path] paths = results2pathsWithAggregation(aggReq.qry.selected, queryEnv(aggReq.qry), s);
+	    scr.steps += [read(paths)]; 
+	  }
+	  else {
+	    scr = script([ *compileQuery(restrict(r, p, order, s), p, s, log = log) 
+          | Place p <- order, hitsBackend(r, p, s)]);
+          
+        list[Path] paths = results2paths(r.qry.selected, queryEnv(r.qry), s);
          
-      if (just(aggReq:(Request)`<Query agg>`) := maybeAgg) {
-        list[str] finalCols = results2colNames(agg.selected, queryEnv(agg), s);
+        if (just(aggReq:(Request)`<Query agg>`) := maybeAgg) {
+          list[str] finalCols = results2colNames(agg.selected, queryEnv(agg), s);
         
-        scr.steps += [javaRead("<aggregationPkg()>.<aggregationClassName()>", aggregation2java(aggReq), paths, finalCols)];   
+          scr.steps += [javaRead("<aggregationPkg()>.<aggregationClassName()>", aggregation2java(aggReq), paths, finalCols)];   
+        }
+        else {
+          scr.steps += [read(paths)];
+        }
+        
       }
-      else {
-        scr.steps += [read(paths)];
-      }
+      
+      //iprintln(scr);
+	  
+      
+       
       return scr;
     }
 

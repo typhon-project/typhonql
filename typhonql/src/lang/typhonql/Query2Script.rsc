@@ -47,6 +47,7 @@ import lang::typhonql::nlp::Nlp;
 
 import lang::typhonql::util::Log;
 
+import util::Maybe;
 import IO;
 import List;
 import String;
@@ -67,6 +68,17 @@ str result2colName((Result)`<Expr e> as <VId x>`) = "<x>";
 str expr2colName((Expr)`<VId x>.@id`) = "<x>.@id";
 
 str expr2colName((Expr)`<VId x>.<Id f>`) = "<x>.<f>";
+
+list[Path] results2pathsWithAggregation({Result ","}+ rs, Env env, Schema s)
+  = [ *result2pathWithAggregation(r, env, s) | Result r <- rs ];
+
+list[Path] result2pathWithAggregation((Result)`<Expr e>`, Env env, Schema s)
+  = exp2path(e, env, s);
+
+list[Path] result2pathWithAggregation((Result)`<VId agg>(<Expr e>) as <VId x>`, Env env, Schema s)
+  = [<dbName, var, ent, ["<x>"]>]
+  when
+    [<str dbName, str var, str ent, list[str] _>] := exp2path(e, env, s);
     
 
 list[Path] results2paths({Result ","}+ rs, Env env, Schema s)
@@ -114,26 +126,50 @@ list[Path] filterForBackend(list[Path] paths, Place p)
   = [ path | Path path <- paths, path.dbName == p.name ];
 
 
-Where getWhere((Query)`from <{Binding ","}+ _> select <{Result ","}+ _> <Where w>`)
+Where getWhere((Query)`from <{Binding ","}+ _> select <{Result ","}+ _> <Where w> <Agg* _>`)
   = w;
 
-list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = ()) {
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s, 
+       Log log = noLog, map[str, Param] initialParams = (), Maybe[Request] agg = Maybe::nothing()) {
   //r = expandNavigation(addWhereIfAbsent(r), s);
   log("COMPILING2SQL: <r>");
-  <sqlStat, params> = compile2sql(r, s, p);
-  params += initialParams;
-  // hack
-
-  if (sqlStat.exprs == []) {
-    return [];
+  
+  SQLStat sqlStat = select([], [], [where([])]);;
+  map[str, Param] params = ();
+  
+  // agg being not nothing implies this is strictly on the current back-end
+  if (just(Request aggReq) := agg) {
+    <sqlStat, params> = compile2sql(r, s, p, weave = SQLStat(SQLStat stat,  lang::typhonql::relational::Query2SQL::Ctx ctx) {
+       return weaveAggregation(aggReq, stat, ctx);
+    });
+    params += initialParams;
+    // hack
+    
+    println("AGG: <aggReq>");
+    
+    return [step(dbName, sql(executeQuery(dbName, pp(sqlStat))), params
+      , signature=
+          filterForBackend(results2pathsWithAggregation(aggReq.qry.selected, queryEnvAndDyn(aggReq.qry), s)
+            +  where2paths(getWhere(aggReq.qry), queryEnvAndDyn(aggReq.qry), s), p))];
   }
-  return [step(dbName, sql(executeQuery(dbName, pp(sqlStat))), params
-     , signature=
-         filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s)
-           +  where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];
+  else {
+    <sqlStat, params> = compile2sql(r, s, p);
+  
+    params += initialParams;
+    // hack
+
+    if (sqlStat.exprs == []) {
+      return [];
+    }
+    return [step(dbName, sql(executeQuery(dbName, pp(sqlStat))), params
+      , signature=
+          filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s)
+            +  where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];
+  }
+  
 }
 
-list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = ()) {
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = (), Maybe[Request] agg = Maybe::nothing()) {
   log("COMPILING2Mongo: <r>");
   <methods, params> = compile2mongo(r, s, p);
   params += initialParams;
@@ -147,7 +183,7 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schem
   return [];
 }
 
-list[Step] compileQuery(r:(Request)`<Query q>`, p:<cassandra(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = ()) {
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<cassandra(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = (), Maybe[Request] agg = Maybe::nothing()) {
   log("COMPILING2CQL: <r>");
   
   <cqlStat, params> = compile2cql(r, s, p);
@@ -163,7 +199,7 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<cassandra(), str dbName>, Sch
            +  where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];
 }
 
-list[Step] compileQuery(r:(Request)`<Query q>`, p:<neo4j(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = ()) {
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<neo4j(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = (), Maybe[Request] agg = Maybe::nothing()) {
   log("COMPILING2neo4j: <r>");
   <neoStat, params> = compile2neo(r, s, p);
   params += initialParams;
@@ -178,7 +214,7 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<neo4j(), str dbName>, Schema 
            +  where2paths(getWhere(q), queryEnvAndDyn(q), s), p))];
 }
 
-list[Step] compileQuery(r:(Request)`<Query q>`, p:<nlp(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = ()) {
+list[Step] compileQuery(r:(Request)`<Query q>`, p:<nlp(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = (), Maybe[Request] agg = Maybe::nothing()) {
   log("COMPILING2NLP: <r>");
   
   <nlpStat, params> = compile2nlp(r, s, p);

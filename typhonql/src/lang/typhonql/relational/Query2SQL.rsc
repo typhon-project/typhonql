@@ -72,6 +72,65 @@ from
 
 */
 
+
+alias SQLAggWeaver = SQLStat(SQLStat, Ctx);
+
+SQLStat noAgg(SQLStat q, Ctx ctx) = q; 
+
+SQLStat weaveAggregation(
+  agg:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> 
+           'where true <Agg* aggs>`, SQLStat query, Ctx ctx) {
+           
+  list[Result] rLst = [ r | Result r <- rs ];
+  
+  Env env = queryEnv(bs);
+  
+  for (Result r <- rs) {
+    for (int i <- [0..size(query.exprs)]) {
+      if ((Result)`<VId f>(<Expr arg>) as <VId x>` := r) {
+         if (expr2sql(arg, ctx) == query.exprs[i].arg) { 
+           query.exprs[i] = named(fun(agg2sql(f), [expr2sql(arg, ctx)])
+             , "<x>"); // TODO: produce entity.var.x here
+         }
+      }
+    }
+  }
+  
+  for (Agg agg <- aggs) {
+    switch (agg) {
+      case (Agg)`group null`: 
+        ;
+      case (Agg)`group <{Expr ","}+ gs>`:
+        query.clauses += [ groupBy([ expr2sql(g, ctx) | Expr g <- gs ]) ];
+  	  case (Agg)`having <{Expr ","}+ hs>`:
+        query.clauses += [ having([ expr2sql(h, ctx) | Expr h <- hs ]) ];
+  	  case (Agg)`order <{Expr ","}+ os> <Dir dir>`:
+        query.clauses += [ orderBy([ expr2sql(or, ctx) | Expr or <- os ], dir2dir(dir)) ];
+  	  case (Agg)`limit <Expr l>`:
+  	    query.clauses += [ limit(expr2sql(l, ctx)) ];
+  	  case (Agg)`offset <Expr n>`:
+  	    query.clauses += [ offset(expr2sql(n, ctx)) ];
+    }
+  }
+  
+  return query;
+}
+
+lang::typhonql::relational::SQL::Dir dir2dir((Dir)``) = asc();
+lang::typhonql::relational::SQL::Dir dir2dir((Dir)`asc`) = asc();
+lang::typhonql::relational::SQL::Dir dir2dir((Dir)`desc`) = desc();
+
+
+str agg2sql((VId)`count`) = "count";
+str agg2sql((VId)`sum`) = "sum";
+str agg2sql((VId)`avg`) = "avg";
+str agg2sql((VId)`min`) = "min";
+str agg2sql((VId)`max`) = "max";
+ 
+default str agg2sql(VId x) {
+  throw "Cannot convert aggregation function <x> to SQL";
+}
+
 alias Ctx
   = tuple[
       void(SQLExpr) addWhere,
@@ -87,11 +146,12 @@ alias Ctx
    ];
 
 
-tuple[SQLStat, Bindings] compile2sql((Request)`<Query q>`, Schema s, Place p, Log log = noLog)
-  = select2sql(q, s, p, log = log);
+tuple[SQLStat, Bindings] compile2sql((Request)`<Query q>`, Schema s, Place p, Log log = noLog, SQLAggWeaver weave = noAgg)
+  = select2sql(q, s, p, log = log, weave = weave);
 
-tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s, Place p, Log log = noLog) 
-  = select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, p, log = log);
+tuple[SQLStat, Bindings] select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s, Place p
+                           , Log log = noLog, SQLAggWeaver weave = noAgg) 
+  = select2sql((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, p, log = log, weave = weave);
 
 /*
 
@@ -107,7 +167,7 @@ Steps to compile to SQL
 
 */
 tuple[SQLStat, Bindings] select2sql(q:(Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`
-  , Schema s, Place p, Log log = noLog) {
+  , Schema s, Place p, Log log = noLog, SQLAggWeaver weave = noAgg) {
 
   // println(q);
   SQLStat q = select([], [], [where([])]);
@@ -282,7 +342,7 @@ tuple[SQLStat, Bindings] select2sql(q:(Query)`from <{Binding ","}+ bs> select <{
   }
   
   // println("PARAMS: <params>");
-  return <q, params>;
+  return <weave(q, ctx), params>;
 }
 
 
