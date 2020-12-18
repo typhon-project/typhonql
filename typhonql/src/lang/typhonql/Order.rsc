@@ -251,7 +251,7 @@ list[Place] orderPlaces(Request req, Schema s) {
     return w1.weight > w2.weight; 
   });
   
-  return sortedWeights<place>; 
+  return [ p | <Place p, int w> <- sortedWeights, w > 0 ]; 
 }
 
 @doc{Filterweight assigns a number to a query indicating how often an entity
@@ -265,7 +265,8 @@ is supposed to be arbitrary.
 }
 int filterWeight((Request)`<Query q>`, Place p, Schema s) {
   Env env = queryEnv(q);
-  return ( 0 | it + filterWeight(e, p, env, s) | /Where w := q, Expr e <- w.clauses );
+  return ( 0 | it + filterWeight(e, p, env, s) | /Where w := q, Expr e <- w.clauses )
+    + ( 0 | it + filterWeight(e, p, env, s) | (Result)`<Expr e>` <- q.selected );
 }
 
 int filterWeight(Expr e, Place p, map[str, str] env, Schema s)
