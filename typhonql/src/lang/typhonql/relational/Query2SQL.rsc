@@ -120,7 +120,13 @@ SQLStat weaveAggregation(
         query.clauses += [ having([ expr2sql(h, ctx) | Expr h <- hs ]) ];
   	  case (Agg)`order <{Expr ","}+ os> <Dir dir>`:
         query.clauses += [ orderBy([ expr2sql(or, ctx) | Expr or <- os ], dir2dir(dir)) ];
-  	  case (Agg)`limit <Expr l>`:
+    }
+  }
+  
+  // limit etc should be at the end in SQL.
+  for (Agg agg <- aggs) {
+    switch (agg) {
+      case (Agg)`limit <Expr l>`:
   	    query.clauses += [ limit(expr2sql(l, ctx)) ];
   	  case (Agg)`offset <Expr n>`:
   	    query.clauses += [ offset(expr2sql(n, ctx)) ];
