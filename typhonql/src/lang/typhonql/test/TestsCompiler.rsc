@@ -278,6 +278,17 @@ void testBasicMongoDBWhereClauses(PolystoreInstance p) {
 
 }
 
+void testBasicAggregationNonNative(PolystoreInstance p) {
+	rs = p.runQuery((Request)`from Review r select count(r.@id) as reviewCount`);
+	p.assertResultEquals("reviews counted correctly", rs, <["r.reviewCount"],
+	  [["3"]]>);
+
+	rs = p.runQuery((Request)`from Review r select r.user, count(r.@id) as reviewCount group r.user`);
+	p.assertResultEquals("reviews counted grouped by user", rs, <["r.user", "r.reviewCount"],
+	  [[U("davy"), "2"], 
+	   [U("pablo"), "1"]]>);
+}
+
 void testBasicAggregationNativeSQL(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Item i select count(i.@id) as cnt group null`);
   p.assertResultEquals("items counted correctly", rs, <["i.cnt"], 
@@ -1293,6 +1304,7 @@ void testDeleteAllSQLBasic(PolystoreInstance p) {
 void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	tests = 
 	  [ testBasicAggregationNativeSQL
+	  , testBasicAggregationNonNative
 	  , testBasicMongoDBWhereClauses
 	  , testLimit
 	  , testLimitAndOrder

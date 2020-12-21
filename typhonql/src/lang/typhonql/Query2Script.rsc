@@ -61,9 +61,12 @@ Env queryEnvAndDyn({Binding ","}+ bs)
 list[str] results2colNames({Result ","}+ rs, Env env, Schema s)
   = [ result2colName(r) | Result r <- rs ];
 
-str result2colName((Result)`<Expr e>`) = expr2colName(e);
+str result2colName((Result)`<VId _>(<Expr e>) as <VId x>`) 
+  = "<ent>.<x>" 
+  when
+    /^<ent:[a-zA-Z0-9_]*>\./ := expr2colName(e);
 
-str result2colName((Result)`<Expr e> as <VId x>`) = "<x>";
+default str result2colName((Result)`<Expr e>`) = expr2colName(e);
 
 str expr2colName((Expr)`<VId x>.@id`) = "<x>.@id";
 
