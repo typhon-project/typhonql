@@ -1,0 +1,50 @@
+
+customdatatype address {
+	street: string[32],
+	number: string[8],
+	zipcode: string[32],
+	city: string[32]
+}
+
+entity Customer {
+	name : string[32]
+	age: int
+	payment: string[32]
+	address: address
+	orders -> Order."Order.customer"[0..*]
+}
+
+entity Product {
+	name : string[32]
+	description : string[256]
+	
+	orders -> Order."Order.products"[0..*]
+	reviews :-> Review."Review.product"[0..*]
+}
+
+entity Order {
+	created : datetime
+	products -> Product."Product.orders"[0..*]
+	customer -> Customer."Customer.orders"[1]
+}
+
+entity Review {
+	content : text 
+	product -> Product."Product.reviews"[1]
+}
+
+
+relationaldb ECommerce {
+  tables {
+	table { OrderTbl : Order }
+	table { 
+	  CustomerTbl : Customer
+	  index nameIdx { attributes ("Customer.name") }
+	}
+	table { ProductTbl : Product }
+  }
+}
+
+documentdb Social {
+	collections { Reviews : Review }
+}
