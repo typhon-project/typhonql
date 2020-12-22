@@ -39,7 +39,7 @@ relationaldb ECommerce {
 	table { OrderTbl : Order }
 	table { 
 	  CustomerTbl : Customer
-	  index nameIdx { attributes ("Customer.name") }
+	  index nameIdx { attributes (name) }
 	}
 	table { ProductTbl : Product }
   }
