@@ -74,7 +74,7 @@ str pp(mUuid(val)) = pp(object([
 
 str pp(null()) = "null";
 
-str pp(placeholder(name = str x)) = "${<x>}";
+str pp(placeholder(name = str x)) = "\"${<x>}\"";
 
 str pp(<str f, DBObject v>) = "\"<f>\": <pp(v)>";  
   

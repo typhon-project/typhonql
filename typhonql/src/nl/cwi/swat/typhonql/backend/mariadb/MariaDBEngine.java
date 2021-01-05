@@ -34,6 +34,8 @@ import java.util.regex.Matcher;
 
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKBWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import lang.typhonql.util.MakeUUID;
 import nl.cwi.swat.typhonql.backend.Binding;
@@ -47,14 +49,14 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 
 public class MariaDBEngine extends Engine {
-
+	private static final Logger logger = LoggerFactory.getLogger(MariaDBEngine.class);
 	private final Supplier<Connection> connection;
 	private final Map<String, PreparedStatementArgs> preparedQueries;
 
 	public MariaDBEngine(ResultStore store, TyphonSessionState state, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, Supplier<Connection> sqlConnection) {
 		super(store, state, script, uuids);
 		this.connection = sqlConnection;
-		preparedQueries = state.getFromCache(MariaDBEngine.class.getCanonicalName(), s -> new HashMap<String, PreparedStatementArgs>());
+		preparedQueries = state.getFromCache(MariaDBEngine.class.getName(), s -> new HashMap<String, PreparedStatementArgs>());
 	}
 
 	private PreparedStatement prepareQuery(String query, List<String> vars, Set<String> blobs, Set<String> geometries) throws SQLException {
@@ -122,6 +124,7 @@ public class MariaDBEngine extends Engine {
         		PreparedStatement stm = preparedQuery.statement;
         		state.addDelayedTask(() -> {
 					try {
+						logger.debug("Executing: {}", stm);
 						stm.executeBatch();
 					} catch (SQLException e) {
 						throw new RuntimeException(e);

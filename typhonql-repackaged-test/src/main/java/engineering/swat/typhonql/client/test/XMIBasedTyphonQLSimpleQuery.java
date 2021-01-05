@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.JsonSerializableResult;
@@ -54,7 +55,9 @@ public class XMIBasedTyphonQLSimpleQuery {
 		//ResultTable rt = conn.executeQuery(xmiString, infos, "from Product p select p.name");
 		//ResultTable rt = conn.executeQuery(xmiString, infos, "from Product p, Review r select r.content where p.reviews == r, p.@id == #tv");
 		//CommandResult rt = conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "update User u where u.@id == #davy set {photoURL: \"other\", name: \"Landman\"}");
-		conn.resetDatabases(xmiString, infos);
+
+		//conn.resetDatabases(xmiString, infos);
+
 		//conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "insert EntitySmokeTest2 { @id: #e1, s: \"Hoi\", t: \"Long\", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-01-02$, dt: $2020-03-04T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }", true);
 		//JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from EntitySmokeTest2 e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg", true);
 		/*
@@ -82,13 +85,13 @@ public class XMIBasedTyphonQLSimpleQuery {
 		 */
 		long start = System.currentTimeMillis();
 		String[] res = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert INSPIRE {"
-				+ "id: ??i, file_id: ??f, language: ??l, character_set: ??c, hierarchy_level: ??h,"
+				+ "file_id: ??f, language: ??l, character_set: ??c, hierarchy_level: ??h,"
 				+ "date_stamp: ??d, metadata_standard_name: ??mn, metadata_standard_version: ??mv, "
 				+ "rs_id: ??ri, rs_code_space: ??rs, spatial_resolution: ??sr}",
-				new String[] { "i", "f", "l", "c", "h", "d", "mn", "mv", "ri", "rs", "sr" },
-				new String[] { "int", "string", "string", "string", "string", "date", "string", "string", "string", "string", "int" },
+				new String[] { "f", "l", "c", "h", "d", "mn", "mv", "ri", "rs", "sr" },
+				new String[] { "string", "string", "string", "string", "date", "string", "string", "string", "string", "int" },
 				new String[][] { 
-					new String[] { "1", "file+ee", "nl-EN", "UTF-8", "ee1", "2020-11-22", "asdjhjksad", "23", "asdasdahsdhjkasd", "ass3", "340" },
+					new String[] { "file+ee", "nl-EN", "UTF-8", "ee1", "2020-11-22", "asdjhjksad", "23", "asdasdahsdhjkasd", "ass3", "340" },
 			}
 		, true);
 		long stop = System.currentTimeMillis();
@@ -98,22 +101,64 @@ public class XMIBasedTyphonQLSimpleQuery {
 		for (int i = 10; i <= 100000; i *= 10) {
 			String[][] params = new String[i][];
 			for (int j = 0; j < i; j++) {
-				params[j] = new String[] { "" + j, "file+ee" + i + "-" + j, "nl-EN", "UTF-8", "ee" + i, "2020-11-" + (i % 30), "asdjhjksad" + j, "" + j, "asdasdahsdhjkasd" + i, "ass3" +i, "" + (j+i) };
+				params[j] = new String[] { "file+ee" + i + "-" + j, "nl-EN", "UTF-8", "ee" + i, "2020-11-" + (i % 30), "asdjhjksad" + j, "" + j, "asdasdahsdhjkasd" + i, "ass3" +i, "" + (j+i) };
 			}
 			
             start = System.currentTimeMillis();
             conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert INSPIRE {"
-				+ "id: ??i, file_id: ??f, language: ??l, character_set: ??c, hierarchy_level: ??h,"
+				+ "file_id: ??f, language: ??l, character_set: ??c, hierarchy_level: ??h,"
 				+ "date_stamp: ??d, metadata_standard_name: ??mn, metadata_standard_version: ??mv, "
 				+ "rs_id: ??ri, rs_code_space: ??rs, spatial_resolution: ??sr}",
-				new String[] { "i", "f", "l", "c", "h", "d", "mn", "mv", "ri", "rs", "sr" },
-				new String[] { "int", "string", "string", "string", "string", "date", "string", "string", "string", "string", "int" },
+				new String[] { "f", "l", "c", "h", "d", "mn", "mv", "ri", "rs", "sr" },
+				new String[] { "string", "string", "string", "string", "date", "string", "string", "string", "string", "int" },
                     params
             , false);
             stop = System.currentTimeMillis();
             long time = (stop - start);
             System.out.println(String.format("- Rows %-5d took: %-6dms speed: %-4.1f ms per record = %-4.1f records per second", i, time, time / (double)i, 1000 * (i / (double) time)));
 		}
+
+		/*
+		entity GIPP_F {
+			type: string[50]
+			version: string[10]
+			gipp_filename: string[100]
+			mtd_msi -> MTD_MSI[1]
+		}
+		*/
+		/*
+		long start = System.currentTimeMillis();
+		String[] res = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert GIPP_F {"
+				+ "type: ??t, version: ??v, gipp_filename: ??g, mtd_msi: ??i }",
+				new String[] { "t", "v", "g", "i"},
+				new String[] { "string", "string", "string", "uuid" },
+				new String[][] { 
+					new String[] { "tp", "vasasd2", "asdasd-sadasd-33-dd", UUID.randomUUID().toString() },
+			}
+		, true);
+		long stop = System.currentTimeMillis();
+		System.out.println("First run: " + (stop - start));
+
+		
+		for (int i = 10; i <= 100000; i *= 10) {
+			String[][] params = new String[i][];
+			for (int j = 0; j < i; j++) {
+                params[j] = new String[] { "tp" + i + "-" + j, "vasasd2", "asdasd-sadasd-" + j + "-" + i, UUID.randomUUID().toString() };
+			}
+			
+            start = System.currentTimeMillis();
+            conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert GIPP_F {"
+                    + "type: ??t, version: ??v, gipp_filename: ??g, mtd_msi: ??i }",
+                    new String[] { "t", "v", "g", "i"},
+                    new String[] { "string", "string", "string", "uuid" },
+                    params
+            , false);
+            stop = System.currentTimeMillis();
+            long time = (stop - start);
+            System.out.println(String.format("- Rows %-5d took: %-6dms speed: %-4.1f ms per record = %-4.1f records per second", i, time, time / (double)i, 1000 * (i / (double) time)));
+		}
+		*/
+		
 		/*
 		String[] res = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert RawTextWarnings {ew:??ew, timeStamp: $2020-12-01T12:12:14.567+00:00$}",
 				new String[] { "ew" },
