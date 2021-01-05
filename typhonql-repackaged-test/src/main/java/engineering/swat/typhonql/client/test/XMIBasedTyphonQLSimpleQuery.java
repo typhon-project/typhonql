@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import nl.cwi.swat.typhonql.client.DatabaseInfo;
 import nl.cwi.swat.typhonql.client.JsonSerializableResult;
@@ -116,6 +117,48 @@ public class XMIBasedTyphonQLSimpleQuery {
             long time = (stop - start);
             System.out.println(String.format("- Rows %-5d took: %-6dms speed: %-4.1f ms per record = %-4.1f records per second", i, time, time / (double)i, 1000 * (i / (double) time)));
 		}
+
+		/*
+		entity GIPP_F {
+			type: string[50]
+			version: string[10]
+			gipp_filename: string[100]
+			mtd_msi -> MTD_MSI[1]
+		}
+		*/
+		/*
+		long start = System.currentTimeMillis();
+		String[] res = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert GIPP_F {"
+				+ "type: ??t, version: ??v, gipp_filename: ??g, mtd_msi: ??i }",
+				new String[] { "t", "v", "g", "i"},
+				new String[] { "string", "string", "string", "uuid" },
+				new String[][] { 
+					new String[] { "tp", "vasasd2", "asdasd-sadasd-33-dd", UUID.randomUUID().toString() },
+			}
+		, true);
+		long stop = System.currentTimeMillis();
+		System.out.println("First run: " + (stop - start));
+
+		
+		for (int i = 10; i <= 100000; i *= 10) {
+			String[][] params = new String[i][];
+			for (int j = 0; j < i; j++) {
+                params[j] = new String[] { "tp" + i + "-" + j, "vasasd2", "asdasd-sadasd-" + j + "-" + i, UUID.randomUUID().toString() };
+			}
+			
+            start = System.currentTimeMillis();
+            conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert GIPP_F {"
+                    + "type: ??t, version: ??v, gipp_filename: ??g, mtd_msi: ??i }",
+                    new String[] { "t", "v", "g", "i"},
+                    new String[] { "string", "string", "string", "uuid" },
+                    params
+            , false);
+            stop = System.currentTimeMillis();
+            long time = (stop - start);
+            System.out.println(String.format("- Rows %-5d took: %-6dms speed: %-4.1f ms per record = %-4.1f records per second", i, time, time / (double)i, 1000 * (i / (double) time)));
+		}
+		*/
+		
 		/*
 		String[] res = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert RawTextWarnings {ew:??ew, timeStamp: $2020-12-01T12:12:14.567+00:00$}",
 				new String[] { "ew" },

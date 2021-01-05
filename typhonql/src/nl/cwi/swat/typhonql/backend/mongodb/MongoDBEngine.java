@@ -29,13 +29,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import org.apache.commons.text.StringSubstitutor;
@@ -66,8 +64,15 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.GridFSDownloadStream;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.InsertManyOptions;
+import com.mongodb.client.model.InsertOneModel;
+import com.mongodb.client.model.UpdateManyModel;
+import com.mongodb.client.model.UpdateOneModel;
+import com.mongodb.client.model.WriteModel;
+import com.mongodb.internal.operation.SyncOperations;
+import com.mongodb.operation.FindAndUpdateOperation;
 
 import lang.typhonql.util.MakeUUID;
 import nl.cwi.swat.typhonql.backend.Binding;
@@ -84,7 +89,7 @@ public class MongoDBEngine extends Engine {
 
 	private final MongoDatabase db;
 	private GridFSBucket gridBucket = null;
-	private final Map<String, DelayedInserts> bulkInserts;
+	private final Map<String, DelayedWrites> delayedWrites;
 	private final Map<String, BsonDocumentTemplate> parsedDocuments;
 	
 	private GridFSBucket getGridFS() {
@@ -97,10 +102,10 @@ public class MongoDBEngine extends Engine {
 	public MongoDBEngine(ResultStore store, TyphonSessionState state, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, MongoDatabase db) {
 		super(store, state, script, uuids);
 		this.db = db;
-		bulkInserts = state.getFromCache(MongoDBEngine.class.getName(), s -> {
-			Map<String, DelayedInserts> result = new HashMap<>();
+		delayedWrites = state.getFromCache(MongoDBEngine.class.getName(), s -> {
+			Map<String, DelayedWrites> result = new HashMap<>();
             state.addDelayedTask(() -> {
-                result.values().forEach(DelayedInserts::execute);
+                result.values().forEach(DelayedWrites::execute);
             });
             return result;
 		});
@@ -294,8 +299,7 @@ public class MongoDBEngine extends Engine {
 	public void executeInsertOne(String dbName, String collectionName, String doc, Map<String, Binding> bindings) {
 		scheduleUpdate(collectionName, doc, bindings, (c, d) -> {
 			if (store.hasExternalArguments()) {
-				bulkInserts.computeIfAbsent(collectionName, n -> new DelayedInserts(c))
-					.schedule(d);
+				getDelayed(collectionName, c).schedule(new InsertOneModel<>(d));
 			}
 			else {
 				c.insertOne(d);
@@ -303,12 +307,30 @@ public class MongoDBEngine extends Engine {
 		});
 	}
 	
+	private DelayedWrites getDelayed(String collectionName, MongoCollection<BsonDocument> col) {
+		return delayedWrites.computeIfAbsent(collectionName, n -> new DelayedWrites(col));
+	}
+	
 	public void executeFindAndUpdateOne(String dbName, String collectionName, String query, String update, Map<String, Binding> bindings) {
-		executeFilteredUpdate(collectionName, query, update, bindings, MongoCollection<BsonDocument>::findOneAndUpdate);
+		executeFilteredUpdate(collectionName, query, update, bindings, (c, f, d) -> {
+			if (store.hasExternalArguments()) {
+				getDelayed(collectionName, c).schedule(new UpdateOneModel<>(f, d));
+			}
+			else {
+				c.findOneAndUpdate(f, d);
+			}
+		});
 	}
 	
 	public void executeFindAndUpdateMany(String dbName, String collectionName, String query, String update, Map<String, Binding> bindings) {
-		executeFilteredUpdate(collectionName, query, update, bindings, MongoCollection<BsonDocument>::updateMany);
+		executeFilteredUpdate(collectionName, query, update, bindings, (c, f, d) -> {
+			if (store.hasExternalArguments()) {
+				getDelayed(collectionName, c).schedule(new UpdateManyModel<>(f, d));
+			}
+			else {
+				c.updateMany(f, d);
+			}
+		});
 	}
 	
 	public void executeDeleteOne(String dbName, String collectionName, String query, Map<String, Binding> bindings) {
@@ -345,6 +367,28 @@ public class MongoDBEngine extends Engine {
 		
 	}
 	
+	private static class DelayedWrites {
+		private final List<WriteModel<BsonDocument>> scheduled = new ArrayList<>();
+		private final MongoCollection<BsonDocument> target;
+		private SyncOperations<BsonDocument> operations;
+
+		
+		public DelayedWrites(MongoCollection<BsonDocument> target) {
+			this.target = target;
+			operations = new SyncOperations<>(target.getNamespace(), BsonDocument.class, 
+					target.getReadPreference(), target.getCodecRegistry(), target.getReadConcern(), 
+					target.getWriteConcern(), true, false);
+		}
+		
+		public void execute() {
+			target.bulkWrite(scheduled);
+		}
+		
+		public void schedule(WriteModel<BsonDocument> op) {
+			scheduled.add(op);
+		}
+	}
+
 	private static class DelayedInserts {
 		private final List<BsonDocument> documents = new ArrayList<>();
 		private final MongoCollection<BsonDocument> target;
