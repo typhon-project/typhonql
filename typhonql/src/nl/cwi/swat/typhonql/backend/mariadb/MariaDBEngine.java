@@ -54,7 +54,7 @@ public class MariaDBEngine extends Engine {
 	public MariaDBEngine(ResultStore store, TyphonSessionState state, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, Supplier<Connection> sqlConnection) {
 		super(store, state, script, uuids);
 		this.connection = sqlConnection;
-		preparedQueries = state.getFromCache(MariaDBEngine.class.getCanonicalName(), s -> new HashMap<String, PreparedStatementArgs>());
+		preparedQueries = state.getFromCache(MariaDBEngine.class.getName(), s -> new HashMap<String, PreparedStatementArgs>());
 	}
 
 	private PreparedStatement prepareQuery(String query, List<String> vars, Set<String> blobs, Set<String> geometries) throws SQLException {
