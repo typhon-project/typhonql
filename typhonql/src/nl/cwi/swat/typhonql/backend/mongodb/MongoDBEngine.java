@@ -25,17 +25,33 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import org.apache.commons.text.StringSubstitutor;
+import org.bson.BsonArray;
+import org.bson.BsonBinary;
+import org.bson.BsonBoolean;
+import org.bson.BsonDateTime;
+import org.bson.BsonDocument;
+import org.bson.BsonDocumentWrapper;
+import org.bson.BsonDouble;
+import org.bson.BsonInt32;
+import org.bson.BsonInt64;
+import org.bson.BsonNull;
+import org.bson.BsonString;
+import org.bson.BsonTimestamp;
+import org.bson.BsonValue;
 import org.bson.Document;
 import org.locationtech.jts.geom.Geometry;
 import org.wololo.jts2geojson.GeoJSONWriter;
@@ -51,6 +67,7 @@ import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.GridFSDownloadStream;
 import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.InsertManyOptions;
 
 import lang.typhonql.util.MakeUUID;
 import nl.cwi.swat.typhonql.backend.Binding;
@@ -64,9 +81,11 @@ import nl.cwi.swat.typhonql.backend.rascal.Path;
 import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 
 public class MongoDBEngine extends Engine {
+
 	private final MongoDatabase db;
 	private GridFSBucket gridBucket = null;
 	private final Map<String, DelayedInserts> bulkInserts;
+	private final Map<String, BsonDocumentTemplate> parsedDocuments;
 	
 	private GridFSBucket getGridFS() {
 		if (gridBucket == null) {
@@ -85,6 +104,7 @@ public class MongoDBEngine extends Engine {
             });
             return result;
 		});
+		parsedDocuments = state.getFromCache(MongoDBEngine.class.getCanonicalName() + "$docs", s -> new HashMap<String, BsonDocumentTemplate>());
 	}
 
 	public void executeFind(String resultId, String collectionName, String query, Map<String, Binding> bindings, List<Path> signature) {
@@ -153,6 +173,43 @@ public class MongoDBEngine extends Engine {
 			throw new RuntimeException("Query executor does not know how to serialize object of type " +obj.getClass());
 	}
 
+	private BsonValue serializeBSON(Object obj) {
+		if (obj == null) {
+			return new BsonNull();
+		}
+		if (obj instanceof Integer) {
+			return new BsonInt32((int) obj);
+		}
+		if (obj instanceof Long) {
+			return new BsonInt64((long) obj);
+		}
+		if (obj instanceof Double) {
+			return new BsonDouble((double) obj);
+		}
+		if (obj instanceof Boolean) {
+			return new BsonBoolean((boolean) obj);
+		}
+		if (obj instanceof String) {
+			return new BsonString((String) obj);
+		}
+		if (obj instanceof Geometry) {
+			return BsonDocumentWrapper.parse(new GeoJSONWriter().write((Geometry)obj).toString());
+		}
+		else if (obj instanceof LocalDate) {
+			// it's mixed around with instance, since timestamps only store seconds since epoch, which is fine for dates, but not so fine for tru timestamps
+			return new BsonTimestamp(((LocalDate)obj).atStartOfDay().toEpochSecond(ZoneOffset.UTC));
+		}
+		else if (obj instanceof Instant) {
+			// it's mixed around with instance, since timestamps only store seconds since epoch, which is fine for dates, but not so fine for tru timestamps
+			return new BsonDateTime(((Instant)obj).toEpochMilli());
+		}
+		else if (obj instanceof UUID) {
+			return new BsonBinary((UUID)obj);
+		}
+		else
+			throw new RuntimeException("Query executor does not know how to serialize object of type " +obj.getClass());
+	}
+
 	private static String encodeJsonString(String obj) {
 		try {
 			StringWriter result = new StringWriter();
@@ -164,12 +221,12 @@ public class MongoDBEngine extends Engine {
 			throw new RuntimeException("Not supposed to fail with writing to a string writer", e);
 		}
 	}
+	
+	
 
-	protected static Document resolveQuery(ResultStore store, Supplier<GridFSBucket> gridFs, String query, Map<String, Object> values) {
-		String resultQuery = new StringSubstitutor(serialize(values)).replace(query);
-		Matcher m = BLOB_UUID.matcher(resultQuery);
-		while (m.find()) {
-			String blobName = m.group(1);
+	protected BsonDocument resolveQuery(ResultStore store, Supplier<GridFSBucket> gridFs, String query, Map<String, Object> values) {
+		BsonDocumentTemplate result = parsedDocuments.computeIfAbsent(query, this::createBsonTemplate);
+		return result.apply(s -> serializeBSON(values.get(s)), blobName -> {
 			InputStream blob = store.getBlob(blobName);
 			if (blob != null) {
 				// a new blob so we have to create it as well
@@ -185,18 +242,21 @@ public class MongoDBEngine extends Engine {
                         throw new RuntimeException("Referenced blob: " + blobName + " is not supplied and doesn't exist yet", e);
 				}
 			}
-		}
-		
-		return Document.parse(resultQuery);
+		});
 	}
 	
-	private void scheduleUpdate(String collectionName, String doc, Map<String, Binding> bindings, BiConsumer<MongoCollection<Document>, Document> operation) {
+	private BsonDocumentTemplate createBsonTemplate(String query) {
+		return new BsonDocumentTemplate(BsonDocumentWrapper.asBsonDocument(Document.parse(query), db.getCodecRegistry()));
+	}
+	
+
+	private void scheduleUpdate(String collectionName, String doc, Map<String, Binding> bindings, BiConsumer<MongoCollection<BsonDocument>, BsonDocument> operation) {
 		new UpdateExecutor(store, script, uuids, bindings, () -> "Mongo update" + doc) {
 			
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
-				MongoCollection<Document> coll = db.getCollection(collectionName);
-				Document parsedQuery = resolveQuery(store, () -> getGridFS(), doc, values);
+				MongoCollection<BsonDocument> coll = db.getCollection(collectionName, BsonDocument.class);
+				BsonDocument parsedQuery = resolveQuery(store, () -> getGridFS(), doc, values);
 				operation.accept(coll, parsedQuery);
 			}
 		}.scheduleUpdate();
@@ -209,14 +269,14 @@ public class MongoDBEngine extends Engine {
         void accept(T t, U u, V v);
 
     }
-	private void executeFilteredUpdate(String collectionName, String filter, String doc, Map<String, Binding> bindings, TriConsumer<MongoCollection<Document>, Document, Document> operation) {
+	private void executeFilteredUpdate(String collectionName, String filter, String doc, Map<String, Binding> bindings, TriConsumer<MongoCollection<BsonDocument>, BsonDocument, BsonDocument> operation) {
 		new UpdateExecutor(store, script, uuids, bindings, () -> "Mongo: " + doc + " filter:" + filter) {
 			
 			@Override
 			protected void performUpdate(Map<String, Object> values) {
-				MongoCollection<Document> coll = db.getCollection(collectionName);
-				Document parsedFilter = resolveQuery(store, () -> getGridFS(), filter, values);
-				Document parsedQuery = resolveQuery(store, () -> getGridFS(),doc, values);
+				MongoCollection<BsonDocument> coll = db.getCollection(collectionName, BsonDocument.class);
+				BsonDocument parsedFilter = resolveQuery(store, () -> getGridFS(), filter, values);
+				BsonDocument parsedQuery = resolveQuery(store, () -> getGridFS(),doc, values);
 				operation.accept(coll, parsedFilter, parsedQuery);
 			}
 		}.scheduleUpdate();
@@ -244,19 +304,19 @@ public class MongoDBEngine extends Engine {
 	}
 	
 	public void executeFindAndUpdateOne(String dbName, String collectionName, String query, String update, Map<String, Binding> bindings) {
-		executeFilteredUpdate(collectionName, query, update, bindings, MongoCollection<Document>::findOneAndUpdate);
+		executeFilteredUpdate(collectionName, query, update, bindings, MongoCollection<BsonDocument>::findOneAndUpdate);
 	}
 	
 	public void executeFindAndUpdateMany(String dbName, String collectionName, String query, String update, Map<String, Binding> bindings) {
-		executeFilteredUpdate(collectionName, query, update, bindings, MongoCollection<Document>::updateMany);
+		executeFilteredUpdate(collectionName, query, update, bindings, MongoCollection<BsonDocument>::updateMany);
 	}
 	
 	public void executeDeleteOne(String dbName, String collectionName, String query, Map<String, Binding> bindings) {
-		scheduleUpdate(collectionName, query, bindings, MongoCollection<Document>::deleteOne);
+		scheduleUpdate(collectionName, query, bindings, MongoCollection<BsonDocument>::deleteOne);
 	}
 	
 	public void executeDeleteMany(String dbName, String collectionName, String query, Map<String, Binding> bindings) {
-		scheduleUpdate(collectionName, query, bindings, MongoCollection<Document>::deleteMany);
+		scheduleUpdate(collectionName, query, bindings, MongoCollection<BsonDocument>::deleteMany);
 	}
 	
 	public void executeCreateCollection(String dbName, String collectionName) {
@@ -286,21 +346,79 @@ public class MongoDBEngine extends Engine {
 	}
 	
 	private static class DelayedInserts {
-		private final List<Document> documents = new ArrayList<>();
-		private final MongoCollection<Document> target;
+		private final List<BsonDocument> documents = new ArrayList<>();
+		private final MongoCollection<BsonDocument> target;
 		
-		public DelayedInserts(MongoCollection<Document> target) {
+		public DelayedInserts(MongoCollection<BsonDocument> target) {
 			this.target = target;
 		}
 		
 		public void execute() {
-			target.insertMany(documents);
+			target.insertMany(documents, new InsertManyOptions().bypassDocumentValidation(true).ordered(false));
 		}
 		
-		public void schedule(Document doc) {
+		public void schedule(BsonDocument doc) {
 			documents.add(doc);
 		}
 	}
 
 
+	private static class BsonDocumentTemplate {
+
+		private final BsonDocument template;
+
+		public BsonDocumentTemplate(BsonDocument template) {
+			this.template = template;
+		}
+		
+		private static BsonValue replace(BsonValue v, Function<String, BsonValue> serializer, Consumer<String> blobHandler) {
+			if (v.isString()) {
+				Matcher param = QL_PARAMS.matcher(v.asString().getValue());
+				if (param.find()) {
+					v = serializer.apply(param.group(1));
+				}
+				if (v.isString()) { // it might have changed again due to the apply before
+                    param = BLOB_UUID.matcher(v.asString().getValue());
+                    if (param.find()) {
+                        blobHandler.accept(param.group(1));
+                    }
+				}
+			}
+			else if (v.isDocument()) {
+				replaceDocument(v.asDocument(), serializer, blobHandler);
+			}
+			else if (v.isArray()) {
+				replaceArray(v.asArray(), serializer, blobHandler);
+			}
+			return v;
+		}
+		
+		private static void replaceArray(BsonArray ar, Function<String, BsonValue> serializer, Consumer<String> blobHandler) {
+			for (int i = 0; i < ar.size(); i++) {
+				BsonValue v = ar.get(i);
+				BsonValue newV = replace(v, serializer, blobHandler);
+				if (v != newV) {
+					ar.set(i, newV);
+				}
+			}
+		}
+		
+		private static void replaceDocument(BsonDocument root, Function<String, BsonValue> serializer, Consumer<String> blobHandler) {
+			Iterator<Entry<String, BsonValue>> entries = root.entrySet().iterator();
+			while (entries.hasNext()) {
+				Entry<String, BsonValue> entry = entries.next();
+				BsonValue v = entry.getValue();
+				BsonValue newV = replace(v, serializer, blobHandler);
+				if (v != newV) {
+					entry.setValue(newV);
+				}
+			}
+		}
+		
+		public BsonDocument apply(Function<String, BsonValue> serializer, Consumer<String> blobHandler) {
+			BsonDocument root = template.clone();
+			replaceDocument(root, serializer, blobHandler);
+			return root;
+		}
+	}
 }

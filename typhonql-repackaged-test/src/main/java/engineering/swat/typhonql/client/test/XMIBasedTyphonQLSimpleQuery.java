@@ -54,7 +54,9 @@ public class XMIBasedTyphonQLSimpleQuery {
 		//ResultTable rt = conn.executeQuery(xmiString, infos, "from Product p select p.name");
 		//ResultTable rt = conn.executeQuery(xmiString, infos, "from Product p, Review r select r.content where p.reviews == r, p.@id == #tv");
 		//CommandResult rt = conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "update User u where u.@id == #davy set {photoURL: \"other\", name: \"Landman\"}");
-		conn.resetDatabases(xmiString, infos);
+
+		//conn.resetDatabases(xmiString, infos);
+
 		//conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "insert EntitySmokeTest2 { @id: #e1, s: \"Hoi\", t: \"Long\", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-01-02$, dt: $2020-03-04T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }", true);
 		//JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from EntitySmokeTest2 e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg", true);
 		/*
@@ -82,13 +84,13 @@ public class XMIBasedTyphonQLSimpleQuery {
 		 */
 		long start = System.currentTimeMillis();
 		String[] res = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert INSPIRE {"
-				+ "id: ??i, file_id: ??f, language: ??l, character_set: ??c, hierarchy_level: ??h,"
+				+ "file_id: ??f, language: ??l, character_set: ??c, hierarchy_level: ??h,"
 				+ "date_stamp: ??d, metadata_standard_name: ??mn, metadata_standard_version: ??mv, "
 				+ "rs_id: ??ri, rs_code_space: ??rs, spatial_resolution: ??sr}",
-				new String[] { "i", "f", "l", "c", "h", "d", "mn", "mv", "ri", "rs", "sr" },
-				new String[] { "int", "string", "string", "string", "string", "date", "string", "string", "string", "string", "int" },
+				new String[] { "f", "l", "c", "h", "d", "mn", "mv", "ri", "rs", "sr" },
+				new String[] { "string", "string", "string", "string", "date", "string", "string", "string", "string", "int" },
 				new String[][] { 
-					new String[] { "1", "file+ee", "nl-EN", "UTF-8", "ee1", "2020-11-22", "asdjhjksad", "23", "asdasdahsdhjkasd", "ass3", "340" },
+					new String[] { "file+ee", "nl-EN", "UTF-8", "ee1", "2020-11-22", "asdjhjksad", "23", "asdasdahsdhjkasd", "ass3", "340" },
 			}
 		, true);
 		long stop = System.currentTimeMillis();
@@ -98,16 +100,16 @@ public class XMIBasedTyphonQLSimpleQuery {
 		for (int i = 10; i <= 100000; i *= 10) {
 			String[][] params = new String[i][];
 			for (int j = 0; j < i; j++) {
-				params[j] = new String[] { "" + j, "file+ee" + i + "-" + j, "nl-EN", "UTF-8", "ee" + i, "2020-11-" + (i % 30), "asdjhjksad" + j, "" + j, "asdasdahsdhjkasd" + i, "ass3" +i, "" + (j+i) };
+				params[j] = new String[] { "file+ee" + i + "-" + j, "nl-EN", "UTF-8", "ee" + i, "2020-11-" + (i % 30), "asdjhjksad" + j, "" + j, "asdasdahsdhjkasd" + i, "ass3" +i, "" + (j+i) };
 			}
 			
             start = System.currentTimeMillis();
             conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert INSPIRE {"
-				+ "id: ??i, file_id: ??f, language: ??l, character_set: ??c, hierarchy_level: ??h,"
+				+ "file_id: ??f, language: ??l, character_set: ??c, hierarchy_level: ??h,"
 				+ "date_stamp: ??d, metadata_standard_name: ??mn, metadata_standard_version: ??mv, "
 				+ "rs_id: ??ri, rs_code_space: ??rs, spatial_resolution: ??sr}",
-				new String[] { "i", "f", "l", "c", "h", "d", "mn", "mv", "ri", "rs", "sr" },
-				new String[] { "int", "string", "string", "string", "string", "date", "string", "string", "string", "string", "int" },
+				new String[] { "f", "l", "c", "h", "d", "mn", "mv", "ri", "rs", "sr" },
+				new String[] { "string", "string", "string", "string", "date", "string", "string", "string", "string", "int" },
                     params
             , false);
             stop = System.currentTimeMillis();
