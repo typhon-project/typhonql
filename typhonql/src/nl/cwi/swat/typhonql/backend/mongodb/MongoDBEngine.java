@@ -163,7 +163,8 @@ public class MongoDBEngine extends Engine {
 		}
 		else if (obj instanceof LocalDate) {
 			// it's mixed around with instance, since timestamps only store seconds since epoch, which is fine for dates, but not so fine for tru timestamps
-			return new BsonTimestamp(((LocalDate)obj).atStartOfDay().toEpochSecond(ZoneOffset.UTC));
+			long epoch = ((LocalDate)obj).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+			return new BsonTimestamp((int)Math.abs(epoch), epoch >= 0? 1 : -1);
 		}
 		else if (obj instanceof Instant) {
 			// it's mixed around with instance, since timestamps only store seconds since epoch, which is fine for dates, but not so fine for tru timestamps
