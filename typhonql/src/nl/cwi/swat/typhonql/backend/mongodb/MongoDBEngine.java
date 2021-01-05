@@ -132,51 +132,12 @@ public class MongoDBEngine extends Engine {
 	}
 
 	private FindIterable<Document> buildFind(String collectionName, String query, Map<String, Object> values) {
-		StringSubstitutor sub = new StringSubstitutor(serialize(values));
-		String resolvedQuery = sub.replace(query);
+		BsonDocumentTemplate result = parsedDocuments.computeIfAbsent(query, this::createBsonTemplate);
+		Document pattern = Document.parse(result.apply(s -> serializeBSON(values.get(s)), blobName -> { }).toJson());
 		MongoCollection<Document> coll = db.getCollection(collectionName);
-		Document pattern = Document.parse(resolvedQuery);
 		return coll.find(pattern);
 	}
 
-	private static Map<String,String> serialize(Map<String, Object> values) {
-		return values.entrySet().stream()
-				.collect(Collectors.toMap(
-						Entry::getKey, 
-						e -> serialize(e.getValue())
-					)
-				);
-	}
-
-	private static String serialize(Object obj) {
-		if (obj == null) {
-			return "null";
-		}
-		if (obj instanceof Integer || obj instanceof Boolean || obj instanceof Double || obj instanceof Long) {
-			return String.valueOf(obj);
-		}
-		else if (obj instanceof String) {
-			return encodeJsonString((String) obj);
-		}
-		else if (obj instanceof Geometry) {
-			return new GeoJSONWriter().write((Geometry)obj).toString();
-		}
-		else if (obj instanceof LocalDate) {
-			// it's mixed around with instance, since timestamps only store seconds since epoch, which is fine for dates, but not so fine for tru timestamps
-			long epoch = ((LocalDate)obj).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
-			return "{\"$timestamp\": {\"t\":" + Math.abs(epoch) + ", \"i\": "+ (epoch >= 0 ? "1" : "-1") + "}}";
-		}
-		else if (obj instanceof Instant) {
-			// it's mixed around with instance, since timestamps only store seconds since epoch, which is fine for dates, but not so fine for tru timestamps
-			return "{\"$date\": {\"$numberLong\":\"" + ((Instant)obj).toEpochMilli() + "\"}}";
-		}
-		else if (obj instanceof UUID) {
-			return "{ \"$binary\": {\"base64\": \"" + MakeUUID.uuidToBase64((UUID)obj) + "\", \"subType\": \"04\"}}";
-			
-		}
-		else
-			throw new RuntimeException("Query executor does not know how to serialize object of type " +obj.getClass());
-	}
 
 	private BsonValue serializeBSON(Object obj) {
 		if (obj == null) {
