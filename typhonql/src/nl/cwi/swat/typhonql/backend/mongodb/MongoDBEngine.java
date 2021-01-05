@@ -97,14 +97,14 @@ public class MongoDBEngine extends Engine {
 	public MongoDBEngine(ResultStore store, TyphonSessionState state, List<Consumer<List<Record>>> script, Map<String, UUID> uuids, MongoDatabase db) {
 		super(store, state, script, uuids);
 		this.db = db;
-		bulkInserts = state.getFromCache(MongoDBEngine.class.getCanonicalName(), s -> {
+		bulkInserts = state.getFromCache(MongoDBEngine.class.getName(), s -> {
 			Map<String, DelayedInserts> result = new HashMap<>();
             state.addDelayedTask(() -> {
                 result.values().forEach(DelayedInserts::execute);
             });
             return result;
 		});
-		parsedDocuments = state.getFromCache(MongoDBEngine.class.getCanonicalName() + "$docs", s -> new HashMap<String, BsonDocumentTemplate>());
+		parsedDocuments = state.getFromCache(MongoDBEngine.class.getName() + "$docs", s -> new HashMap<String, BsonDocumentTemplate>());
 	}
 
 	public void executeFind(String resultId, String collectionName, String query, Map<String, Binding> bindings, List<Path> signature) {
@@ -373,15 +373,15 @@ public class MongoDBEngine extends Engine {
 		
 		private static BsonValue replace(BsonValue v, Function<String, BsonValue> serializer, Consumer<String> blobHandler) {
 			if (v.isString()) {
-				Matcher param = QL_PARAMS.matcher(v.asString().getValue());
-				if (param.find()) {
-					v = serializer.apply(param.group(1));
+				String s = v.asString().getValue();
+				if (s.startsWith("${")) {
+					v = serializer.apply(s.substring(2, s.length() - 1));
 				}
 				if (v.isString()) { // it might have changed again due to the apply before
-                    param = BLOB_UUID.matcher(v.asString().getValue());
-                    if (param.find()) {
-                        blobHandler.accept(param.group(1));
-                    }
+					s = v.asString().getValue();
+					if (s.startsWith("#blob:")) {
+						blobHandler.accept(s.substring("#blob:".length()));
+					}
 				}
 			}
 			else if (v.isDocument()) {
