@@ -4,3 +4,4 @@ dbtype MariaDB {
 dbtype Mongo {
 	default image = mongo:latest;
 }
+ 
