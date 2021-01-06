@@ -1,0 +1,5 @@
+database ECommerce : MariaDB {
+	environment {
+		MYSQL_ROOT_PASSWORD = admin ;
+	}
+}

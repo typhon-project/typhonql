@@ -1,0 +1,25 @@
+import MyCommerce.xmi
+import ECommerce.tdl
+import Social.tdl
+import dbTypes.tdl
+containertype Docker
+clustertype DockerCompose
+platformtype localhost
+platform platformName : localhost {
+	cluster clusterName : DockerCompose {
+		application Polystore {
+			container ecommerce : Docker {
+				deploys ECommerce
+				ports {
+					target = 3306 ;
+				}
+			}
+			container social : Docker {
+				deploys Social
+				ports {
+					target = 27017 ;
+				}
+			}
+		}
+	}
+}
