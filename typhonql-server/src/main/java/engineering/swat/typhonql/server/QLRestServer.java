@@ -238,11 +238,15 @@ public class QLRestServer {
 		@Override
 		public Map<String, InputStream> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
 			Map<String, InputStream> result = new HashMap<>();
-			JsonToken current = p.currentToken();
+			JsonToken current = p.nextToken();
 			while (!current.isStructEnd()) {
-				String fieldName = p.nextFieldName();
-				byte[] encodedBytes = p.nextValue().asByteArray();
+				assert current == JsonToken.FIELD_NAME;
+				String fieldName = p.currentName();
+				current = p.nextValue();
+				assert current == JsonToken.VALUE_STRING;
+				byte[] encodedBytes = p.getValueAsString().getBytes(StandardCharsets.ISO_8859_1);
 				result.put(fieldName, Base64.getDecoder().wrap(new ByteArrayInputStream(encodedBytes)));
+				current = p.nextToken();
 			}
 			return result;
 		}
