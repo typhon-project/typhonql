@@ -22,8 +22,8 @@ insert Customer {
 }
 
 
-// A simple query
-from Customer c select c.name, c.age, c.address
+// A simple query (NB. c.address is not allowed!?!?!)
+from Customer c select c.name, c.age, c.address.street
 
 
 insert Product {
@@ -41,8 +41,6 @@ insert Order {
 }
 
 
-
-// Insertion with link to other entity
 
 insert Customer {
   @id: #jane,
