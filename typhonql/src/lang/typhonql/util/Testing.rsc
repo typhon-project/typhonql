@@ -64,6 +64,8 @@ alias PolystoreInstance =
 		list[str](Request req, Schema s) runDDLForSchema,
 		list[str](Request req, list[str] columnNames, list[str] columnTypes, list[list[str]] vs)
 			runPreparedUpdate,
+		list[str](Request req, list[str] columnNames, list[str] columnTypes, list[list[str]] vs, map[str,str] blobMap)
+			runPreparedUpdateWithBlobs,
 		Schema() fetchSchema,
 		void() printSchema,
 		void (str testName, value actual, value expected) assertEquals,
@@ -179,8 +181,15 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	};
 	list[str](Request req, list[str] columnNames, list[str] columnTypes, list[list[str]] vs) 
 		myRunPreparedUpdate = list[str](Request req, list[str] columnNames, list[str] columnTypes, list[list[str]] vs) {
-        checkRequest(req);
 	    ses = newSessionWithArguments(connections, columnNames, columnTypes, vs); 
+		result = runUpdateInTest(req, sch, schPlain, ses, log);
+		ses.done();
+		return result;
+	};
+
+	myRunPreparedUpdateBlobs = list[str](Request req, list[str] columnNames, list[str] columnTypes, list[list[str]] vs, map[str, str] blobMap) {
+        checkRequest(req);
+	    ses = newSessionWithArguments(connections, columnNames, columnTypes, vs, blobMap = blobMap); 
 		result = runUpdateInTest(req, sch, schPlain, ses, log);
 		ses.done();
 		return result;
@@ -209,7 +218,7 @@ TestExecuter initTest(void(PolystoreInstance, bool) setup, str host, str port, s
 	PolystoreInstance proxy = <myResetStats, myGetStats, mySetStat,
 		myResetDatabases, myStartSession, 
 		myCloseSession, myRunQuery, myRunQueryForSchema,
-		myRunUpdate, myRunUpdateBlobs, myRunUpdateForSchema, myRunDDL, myRunDDLForSchema, myRunPreparedUpdate, 
+		myRunUpdate, myRunUpdateBlobs, myRunUpdateForSchema, myRunDDL, myRunDDLForSchema, myRunPreparedUpdate, myRunPreparedUpdateBlobs,
 		myFetchSchema, myPrintSchema,  myAssertEquals, myAssertResultEquals,
 		myAssertException>;
 		

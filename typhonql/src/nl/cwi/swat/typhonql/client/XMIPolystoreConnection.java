@@ -74,6 +74,7 @@ import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.io.StandardTextWriter;
 import io.usethesource.vallang.type.Type;
+import nl.cwi.swat.typhonql.backend.AnnotatedInputStream;
 import nl.cwi.swat.typhonql.backend.Engine;
 import nl.cwi.swat.typhonql.backend.ExternalArguments;
 import nl.cwi.swat.typhonql.backend.rascal.SessionWrapper;
@@ -339,14 +340,13 @@ public class XMIPolystoreConnection {
 	
 	private static  Function<String, Object> blobMapper(Map<String, InputStream> source) {
 		return s -> {
-			Matcher blobUuid = Engine.BLOB_UUID.matcher(s);
-			if (blobUuid.find()) {
-				String blobName = blobUuid.group(1);
+			if (s.startsWith(Engine.BLOB_PREFIX)) {
+				String blobName = s.substring(Engine.BLOB_PREFIX.length());
 				InputStream result = source.get(blobName); 
 				if (result == null) {
 					throw new RuntimeException("Referenced blob: " + blobName + " is not supplied");
 				}
-				return result;
+				return new AnnotatedInputStream(s, result);
 			}
 			throw new RuntimeException("Invalid blob uuid: " + s);
 		};

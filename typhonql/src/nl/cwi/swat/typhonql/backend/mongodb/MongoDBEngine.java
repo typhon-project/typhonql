@@ -18,7 +18,6 @@ package nl.cwi.swat.typhonql.backend.mongodb;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -30,13 +29,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-import org.apache.commons.text.StringSubstitutor;
 import org.bson.BsonArray;
 import org.bson.BsonBinary;
 import org.bson.BsonBoolean;
@@ -52,10 +53,10 @@ import org.bson.BsonTimestamp;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.locationtech.jts.geom.Geometry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.wololo.jts2geojson.GeoJSONWriter;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.mongodb.MongoGridFSException;
 import com.mongodb.MongoNamespace;
 import com.mongodb.client.FindIterable;
@@ -64,7 +65,6 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.GridFSDownloadStream;
-import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.InsertManyOptions;
 import com.mongodb.client.model.InsertOneModel;
@@ -72,9 +72,8 @@ import com.mongodb.client.model.UpdateManyModel;
 import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.internal.operation.SyncOperations;
-import com.mongodb.operation.FindAndUpdateOperation;
 
-import lang.typhonql.util.MakeUUID;
+import nl.cwi.swat.typhonql.backend.AnnotatedInputStream;
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Engine;
 import nl.cwi.swat.typhonql.backend.QueryExecutor;
@@ -82,15 +81,20 @@ import nl.cwi.swat.typhonql.backend.Record;
 import nl.cwi.swat.typhonql.backend.ResultIterator;
 import nl.cwi.swat.typhonql.backend.ResultStore;
 import nl.cwi.swat.typhonql.backend.UpdateExecutor;
+import nl.cwi.swat.typhonql.backend.nlp.NlpEngine;
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 import nl.cwi.swat.typhonql.backend.rascal.TyphonSessionState;
 
 public class MongoDBEngine extends Engine {
 
+	private static final Logger logger = LoggerFactory.getLogger(MongoDBEngine.class);
 	private final MongoDatabase db;
 	private GridFSBucket gridBucket = null;
 	private final Map<String, DelayedWrites> delayedWrites;
 	private final Map<String, BsonDocumentTemplate> parsedDocuments;
+	private final List<CompletableFuture<Void>> blobsUploaded;
+
+	private static ExecutorService backgroundTask = NlpEngine.createFixedTimeoutExecutorService(10, 1, TimeUnit.MINUTES);
 	
 	private GridFSBucket getGridFS() {
 		if (gridBucket == null) {
@@ -110,6 +114,17 @@ public class MongoDBEngine extends Engine {
             return result;
 		});
 		parsedDocuments = state.getFromCache(MongoDBEngine.class.getName() + "$docs", s -> new HashMap<String, BsonDocumentTemplate>());
+		blobsUploaded = state.getFromCache(MongoDBEngine.class.getName() + "$blobs", s -> {
+			List<CompletableFuture<Void>> result = new ArrayList<>();
+			state.addDelayedTask(() -> {
+				try {
+					CompletableFuture.allOf(result.toArray(new CompletableFuture[0])).get();
+				} catch (InterruptedException | ExecutionException e) {
+					logger.error("Failed to handle blob uploads", e);
+				}
+			});
+			return result;
+		});
 	}
 
 	public void executeFind(String resultId, String collectionName, String query, Map<String, Binding> bindings, List<Path> signature) {
@@ -173,22 +188,28 @@ public class MongoDBEngine extends Engine {
 		else if (obj instanceof UUID) {
 			return new BsonBinary((UUID)obj);
 		}
+		else if (obj instanceof AnnotatedInputStream) {
+			blobUpload(((AnnotatedInputStream) obj).blobUUID, ((AnnotatedInputStream) obj).actualStream, store.hasExternalArguments());
+			return new BsonString(((AnnotatedInputStream) obj).blobUUID);
+		}
 		else
 			throw new RuntimeException("Query executor does not know how to serialize object of type " +obj.getClass());
 	}
-
-	private static String encodeJsonString(String obj) {
-		try {
-			StringWriter result = new StringWriter();
-			try (JsonGenerator gen = JsonFactory.builder().build().createGenerator(result)) {
-				gen.writeString(obj);
+	
+	private void blobUpload(String name, InputStream source, boolean background) {
+		Runnable task = () -> {
+			try (InputStream wrapped = source) {
+				getGridFS().uploadFromStream(name, wrapped);
+			} catch (IOException e) {
 			}
-			return result.toString();
-		} catch (IOException e) {
-			throw new RuntimeException("Not supposed to fail with writing to a string writer", e);
+		};
+		if (background) {
+			blobsUploaded.add(CompletableFuture.runAsync(task, backgroundTask));
+		}
+		else {
+			task.run();
 		}
 	}
-	
 	
 
 	protected BsonDocument resolveQuery(ResultStore store, Supplier<GridFSBucket> gridFs, String query, Map<String, Object> values) {
@@ -197,7 +218,7 @@ public class MongoDBEngine extends Engine {
 			InputStream blob = store.getBlob(blobName);
 			if (blob != null) {
 				// a new blob so we have to create it as well
-				gridFs.get().uploadFromStream(blobName, blob);
+				blobUpload(blobName, blob, store.hasExternalArguments());
 			}
 			else {
 				try (GridFSDownloadStream existingBlob = gridFs.get().openDownloadStream(blobName)) {

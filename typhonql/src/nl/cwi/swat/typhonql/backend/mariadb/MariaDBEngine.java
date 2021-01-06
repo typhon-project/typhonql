@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -38,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import lang.typhonql.util.MakeUUID;
+import nl.cwi.swat.typhonql.backend.AnnotatedInputStream;
 import nl.cwi.swat.typhonql.backend.Binding;
 import nl.cwi.swat.typhonql.backend.Engine;
 import nl.cwi.swat.typhonql.backend.QueryExecutor;
@@ -110,6 +113,9 @@ public class MariaDBEngine extends Engine {
             }
             else if (value instanceof Instant) {
             	preparedQuery.statement.setObject(i, ((Instant) value).atOffset(ZoneOffset.UTC).toLocalDateTime());
+            }
+            else if (value instanceof AnnotatedInputStream) {
+            	preparedQuery.statement.setObject(i, ((AnnotatedInputStream) value).actualStream);
             }
             else {
                 // TODO: what to do with NULL?
