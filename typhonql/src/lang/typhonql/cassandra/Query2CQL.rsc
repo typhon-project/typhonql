@@ -283,4 +283,4 @@ CQLExpr expr2cql((Expr)`<Expr lhs> in <Expr rhs>`)
   = cIn(expr2cql(lhs), expr2cql(rhs));
 
 
-default CQLExpr expr2cql(Expr e) { throw "Unsupported expression: <e>"; }
+default CQLExpr expr2cql(Expr e) { throw "Unsupported expression in Cassandra: <e>"; }
