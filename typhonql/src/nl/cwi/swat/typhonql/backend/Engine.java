@@ -30,7 +30,8 @@ public abstract class Engine {
 	protected final List<Consumer<List<Record>>> script;
 	protected final TyphonSessionState state;
 	protected static final Pattern QL_PARAMS = Pattern.compile("\\$\\{([\\w\\-]*?)\\}");
-	public static final Pattern BLOB_UUID = Pattern.compile("\"#blob:([a-zA-Z_\\-0-9]*?)\"");
+	public static final String BLOB_PREFIX = "#blob:";
+	public static final Pattern BLOB_UUID = Pattern.compile("\"" + BLOB_PREFIX + "([a-zA-Z_\\-0-9]*?)\"");
 
 	public Engine(ResultStore store, TyphonSessionState state, List<Consumer<List<Record>>> script, Map<String, UUID> uuids) {
 		this.store = store;

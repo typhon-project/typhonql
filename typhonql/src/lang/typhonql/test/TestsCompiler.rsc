@@ -605,11 +605,21 @@ void testBlobs(PolystoreInstance p) {
   p.runUpdateWithBlobs((Request) `insert Item { @id: #tv5, shelf: 1, product: #tv, picture: #blob:tb1 }`, (U("tb1") : "aa"));	
   rs = p.runQuery((Request)`from Item i select i.picture where i.@id == #tv5`);
   p.assertResultEquals("Blob in SQL", rs, <["i.picture"], [["YWE="]]>);
+
+  p.runPreparedUpdateWithBlobs((Request) `insert Item { @id: #tv7, shelf: 1, product: #tv, picture: ??b }`,
+    ["b"], ["blob"], [["#blob:<U("tb1")>"]], (U("tb1") : "aa"));	
+  rs = p.runQuery((Request)`from Item i select i.picture where i.@id == #tv7`);
+  p.assertResultEquals("Prepared Blob in SQL", rs, <["i.picture"], [["YWE="]]>);
   
   p.runUpdateWithBlobs((Request)`insert Review { @id: #newReview, content: "expensive", user: #davy, posted: $2020-02-02T11:11:00$, location: #point(1.0 1.0), screenshot: #blob:s4 }`, (U("s4") : "uu"));
   
   rs = p.runQuery((Request)`from Review r select r.screenshot where r.@id == #newReview`);
   p.assertResultEquals("Blob in Mongo", rs, <["r.screenshot"], [["dXU="]]>);
+
+  p.runPreparedUpdateWithBlobs((Request) `insert Review { @id: #newReview2, content: "expensive", user: #davy, posted: $2020-02-02T11:11:00$, location: #point(1.0 1.0), screenshot: ??b }`,
+    ["b"], ["blob"], [["#blob:<U("s4")>"]], (U("s4") : "uu"));	
+  rs = p.runQuery((Request)`from Review r select r.screenshot where r.@id == #newReview2`);
+  p.assertResultEquals("Prepared Blob in Mongo", rs, <["r.screenshot"], [["dXU="]]>);
 }
 
 
