@@ -97,20 +97,21 @@ public class TyphonSession implements Operations {
 	}
 
 	public ITuple newSession(IMap connections, IMap fileMap, IEvaluatorContext ctx) {
-		return newSessionWrapper(connections, fileMap, Optional.empty(), ctx).getTuple();
+		return newSessionWrapper(connections, translateBlobMap(fileMap), Optional.empty(), ctx).getTuple();
 	}
 	
 	public ITuple newSessionWithArguments(IMap connections, IList columnNames, IList columnTypes,
 			IList values, IMap fileMap, IEvaluatorContext ctx) {
+		Map<String, InputStream> blobMap = translateBlobMap(fileMap);
 		ExternalArguments externalArguments =
 				XMIPolystoreConnection.buildExternalArguments(
 						toStringArray(columnNames),
 						toStringArray(columnTypes),
-						toStringMatrix(values), Collections.emptyMap(), true);
-		return newSessionWrapper(connections, fileMap, Optional.of(externalArguments), ctx).getTuple();
+						toStringMatrix(values), blobMap, true);
+		return newSessionWrapper(connections, blobMap, Optional.of(externalArguments), ctx).getTuple();
 	}
 	
-	public SessionWrapper newSessionWrapper(IMap connections, IMap blobMap, Optional<ExternalArguments> externalArguments,
+	public SessionWrapper newSessionWrapper(IMap connections, Map<String, InputStream> blobMap, Optional<ExternalArguments> externalArguments,
 			IEvaluatorContext ctx) {
 		Map<String, ConnectionData> mariaDbConnections = new HashMap<>();
 		Map<String, ConnectionData> mongoConnections = new HashMap<>();
@@ -147,6 +148,10 @@ public class TyphonSession implements Operations {
                     break; 
 			}
 		}
+		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, nlpConnections, blobMap, externalArguments, ctx);
+	}
+
+	private Map<String, InputStream> translateBlobMap(IMap blobMap) {
 		Map<String, InputStream> actualBlobMap = new HashMap<>();
 		Iterator<Entry<IValue, IValue>> it = blobMap.entryIterator();
 		while (it.hasNext()) {
@@ -155,7 +160,7 @@ public class TyphonSession implements Operations {
 			String value = ((IString)cur.getValue()).getValue();
 			actualBlobMap.put(key, new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8)));
 		}
-		return newSessionWrapper(mariaDbConnections, mongoConnections, cassandraConnections, neoConnections, nlpConnections, actualBlobMap, externalArguments, ctx);
+		return actualBlobMap;
 	}
 
 	public SessionWrapper newSessionWrapper(List<DatabaseInfo> connections, Map<String, InputStream> blobMap, Optional<ExternalArguments> externalArguments, IEvaluatorContext ctx) {
