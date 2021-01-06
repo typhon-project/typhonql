@@ -10,15 +10,24 @@ platform platformName : localhost {
 		application Polystore {
 			container ecommerce : Docker {
 				deploys ECommerce
-				ports {
-					target = 3306 ;
+				uri = ecommerce:3306 ;
+				volumes {
+					volumeName = ecommercevolume ;
+					mountPath = /var/lib/mysql ;
+					volumeType = volume ;
 				}
 			}
 			container social : Docker {
 				deploys Social
-				ports {
-					target = 27017 ;
+				uri = social:27017 ;
+				volumes {
+					volumeName = socialvolume ;
+					mountPath = /data/db ;
+					volumeType = volume ;
 				}
+			}
+			volumes {
+				ecommercevolume socialvolume
 			}
 		}
 	}

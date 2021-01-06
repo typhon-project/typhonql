@@ -1,109 +1,63 @@
 
 ////// NB: execute "Reset Database" 
-////// from the right-click context
-////// before you start.
  
 
 // Basic insertion
 
 insert Customer {
-  @id: #scp,
-  streetName: "Science Park",
-  streetNumber: 123,
-  zipcode: "1000 AB",
-  city: "Amsterdam",
-  country: "NL"
+  // special @id field for identities (normally auto-generated)
+  @id: #john,
+
+  name: "John Doe",
+  age: 30,
+  payment: "123456789",
+
+  // custom data type literals 
+  address: address (
+    street: "Science Park",
+  	number: "123",
+    zipcode: "1000 AB",
+    city: "Amsterdam"
+  )
 }
 
 
 // A simple query
+from Customer c select c.name, c.age, c.address
 
-from Address a select a.streetName, a.city
-
-// Insertion with link to other entity
-
-insert User {
-  @id: #joe,
-  id: "joe",
-  name: "Joey",
-  paymentsDetails: "",
-  comments: "I'm a sample user",
-  address: #scp  // <--- use id of Address
-}
-
-
-// Query with a join
-
-from User u, Address a 
-select u.name, a.city
-where u.address == a
-
-
-
-// Cross DB ops
 
 insert Product {
   @id: #tv,
-  id: "tv",
   name: "TV",
-  description: "Very flat"
+  description: "Television"
 }
 
 
-// Inserting into Mongo with link to SQL entity
-
-insert Review {
- @id: #badtv,
- id: "badtv",
- content: "This is a very bad TV",
- product: #tv // link to Product 
+insert Order {
+  @id: #order1,
+  created: $2020-12-25T15:40:48.663+00:00$,
+  products: [#tv],
+  customer: #john
 }
 
-// Cross DB join
-
-from Product p, Review r 
-select p.name, r.content
-where p.review == r
 
 
-// Stand-alone insert, update reference later
+// Insertion with link to other entity
 
-insert Review {
- @id: #goodtv,
- id: "goodtv",
- content: "Good image quality"
+insert Customer {
+  @id: #jane,
+  name: "Jane Doe",
+  payment: "987654321",
+  age: 25,
+  address: address (
+    street: "Herengracht",
+  	number: "321",
+    zipcode: "1000 YZ",
+    city: "Amsterdam"
+  )
 }
 
-// Linking reviews and products with update
-
-update Product p 
-where p.@id == #tv 
-set { review +: [#goodtv] }
 
 
-// Retrieve all reviews per tv
-
-from Product p, Review r
-select p.name, r.content
-where p.review == r
-
-
-// Deleting users does not delete their addresses
-
-delete User u where u.name == "Joey"
-
-// no cascade delete 
-from Address a 
-select a.city
-
-// but products own reviews
-delete Product p 
-where p.name == "TV"
-
-
-// no more reviews for #tv
-from Review r 
-select r.content
-where r.product == #tv
 
 

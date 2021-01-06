@@ -1,0 +1,73 @@
+// Query with a join
+
+from User u, Address a 
+select u.name, a.city
+where u.address == a
+
+
+
+// Cross DB ops
+
+insert Product {
+  @id: #tv,
+  id: "tv",
+  name: "TV",
+  description: "Very flat"
+}
+
+
+// Inserting into Mongo with link to SQL entity
+
+insert Review {
+ @id: #badtv,
+ id: "badtv",
+ content: "This is a very bad TV",
+ product: #tv // link to Product 
+}
+
+// Cross DB join
+
+from Product p, Review r 
+select p.name, r.content
+where p.review == r
+
+
+// Stand-alone insert, update reference later
+
+insert Review {
+ @id: #goodtv,
+ id: "goodtv",
+ content: "Good image quality"
+}
+
+// Linking reviews and products with update
+
+update Product p 
+where p.@id == #tv 
+set { review +: [#goodtv] }
+
+
+// Retrieve all reviews per tv
+
+from Product p, Review r
+select p.name, r.content
+where p.review == r
+
+
+// Deleting users does not delete their addresses
+
+delete User u where u.name == "Joey"
+
+// no cascade delete 
+from Address a 
+select a.city
+
+// but products own reviews
+delete Product p 
+where p.name == "TV"
+
+
+// no more reviews for #tv
+from Review r 
+select r.content
+where r.product == #tv
