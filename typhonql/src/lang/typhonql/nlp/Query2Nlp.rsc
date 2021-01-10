@@ -68,7 +68,7 @@ tuple[NStat, Bindings] select2nlp((Query)`from <{Binding ","}+ bs> select <{Resu
 	
 	NExpr expr2nlp((Expr)`<Int i>`) = nLiteral("<i>", "int");
 	
-	NExpr expr2nlp((Expr)`<Real r>`) = nLiteral("<i>", "float");
+	NExpr expr2nlp((Expr)`<Real r>`) = nLiteral("<r>", "float");
 	
 	NExpr expr2nlp((Expr)`<Str s>`) = nLiteral(unescapeQLString(s), "string");
 	
