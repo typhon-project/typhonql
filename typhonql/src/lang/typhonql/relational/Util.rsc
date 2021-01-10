@@ -136,12 +136,12 @@ Value evalExpr((Expr)`<VId v>`) { throw "Variable still in expression"; }
 Value evalExpr((Expr)`<Str s>`) = Value::text(unescapeQLString(s));
 
 Value evalExpr((Expr)`<Int n>`) = Value::integer(toInt("<n>"));
-Value evalExpr((Expr)`-<Int n>`) = Value::integer(toInt("-<n>"));
+//Value evalExpr((Expr)`-<Int n>`) = Value::integer(toInt("-<n>"));
 
 Value evalExpr((Expr)`<Bool b>`) = Value::boolean("<b>" == "true");
 
 Value evalExpr((Expr)`<Real r>`) = Value::decimal(toReal("<r>"));
-Value evalExpr((Expr)`-<Real r>`) = Value::decimal(toReal("-<r>"));
+//Value evalExpr((Expr)`-<Real r>`) = Value::decimal(toReal("-<r>"));
 
 Value evalExpr((Expr)`#point(<Real x> <Real y>)`) = Value::point(toReal("<x>"), toReal("<y>"));
 
