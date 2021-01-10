@@ -40,7 +40,7 @@ syntax Expr
   | refLst: "[" {PlaceHolderOrUUID ","}* refs "]" // plus to not make amb with empy lst 
   | null: "null"
   | pos: "+" Expr arg
-  | neg: "-" Expr arg
+  | neg: "-" !>> [0-9] Expr arg
   | call: VId name "(" {Expr ","}* args ")"
   | not: "!" Expr arg
   > left (
@@ -142,12 +142,13 @@ lexical StrChar
 
 lexical Int
   = [1-9][0-9]* !>> [0-9]
+  | [\-] [1-9][0-9]* !>> [0-9]
   | [0]
   ;
   
 lexical Real
-  = Int "." [0]* !>> "0" Int?
-  | Int "." [0]* !>> "0" Int? [eE] [\-]? Int;
+  = Int "." [0-9]* !>> [0-9] 
+  | Int "." [0-9]* [eE] Int;
   
 syntax DateTime
 	= date: JustDate date
