@@ -46,17 +46,21 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.rascalmpl.ast.QualifiedName;
-import org.rascalmpl.eclipse.nature.RascalMonitor;
 import org.rascalmpl.interpreter.ConsoleRascalMonitor;
 import org.rascalmpl.interpreter.Evaluator;
+import org.rascalmpl.interpreter.control_exceptions.MatchFailed;
 import org.rascalmpl.interpreter.control_exceptions.Throw;
 import org.rascalmpl.interpreter.env.Environment;
 import org.rascalmpl.interpreter.env.GlobalEnvironment;
 import org.rascalmpl.interpreter.env.ModuleEnvironment;
 import org.rascalmpl.interpreter.load.StandardLibraryContributor;
+import org.rascalmpl.interpreter.result.AbstractFunction;
 import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.Result;
+import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.staticErrors.StaticError;
+import org.rascalmpl.interpreter.types.FunctionType;
+import org.rascalmpl.interpreter.types.RascalTypeFactory;
 import org.rascalmpl.interpreter.utils.Names;
 import org.rascalmpl.interpreter.utils.RascalManifest;
 import org.rascalmpl.library.util.PathConfig;
@@ -66,6 +70,7 @@ import org.rascalmpl.uri.classloaders.SourceLocationClassLoader;
 import org.rascalmpl.util.ConcurrentSoftReferenceObjectPool;
 import org.rascalmpl.values.ValueFactoryFactory;
 
+
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.ISourceLocation;
@@ -74,6 +79,7 @@ import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.io.StandardTextWriter;
 import io.usethesource.vallang.type.Type;
+import io.usethesource.vallang.type.TypeFactory;
 import nl.cwi.swat.typhonql.backend.AnnotatedInputStream;
 import nl.cwi.swat.typhonql.backend.Engine;
 import nl.cwi.swat.typhonql.backend.ExternalArguments;
@@ -188,13 +194,51 @@ public class XMIPolystoreConnection {
 		return sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> {
             return (JsonSerializableResult) call(evaluator, "runQueryAndGetJava", 
                 "lang::typhonql::RunUsingCompiler",
-                Collections.emptyMap(),
+                Collections.singletonMap("log", getPrintln(evaluator)),
+                //Collections.emptyMap(),
                 VF.string(query), 
                 VF.string(xmiModel),
                 session.getTuple());
 		});
 	}
 	
+	private static final TypeFactory TF = TypeFactory.getInstance();
+	private static final RascalTypeFactory RTF = RascalTypeFactory.getInstance();
+	
+	private IValue getPrintln(Evaluator ctx) {
+		FunctionType printType = (FunctionType) RTF.functionType(TF.voidType(), TF.tupleType(TF.valueType()), TF.voidType());
+		return new AbstractFunction(ctx.getCurrentAST(), ctx.getEvaluator(), printType, Collections.emptyList(), false, ctx.getCurrentEnvt()) {
+			
+			@Override
+			public boolean isStatic() {
+				return false;
+			}
+			
+			@Override
+			public ICallableValue cloneInto(Environment env) {
+				// should not happen, we are not part of an environment
+				return null;
+			}
+			
+			@Override
+			public boolean isDefault() {
+				return false;
+			}
+			
+			@Override
+			public Result<IValue> call(Type[] argTypes, IValue[] argValues, Map<String, IValue> keyArgValues) throws MatchFailed {
+				IValue arg = (argValues[0]);
+				if (arg instanceof IString ) {
+					System.err.println(((IString) arg).getValue());
+				}
+				else {
+					System.err.println(arg.toString());
+				}
+				return ResultFactory.nothing();
+			}
+		};
+	}
+
 	private static void throwRascalMessage(PrintWriter errorPrinter, Throw e, StandardTextWriter valuePrinter) {
 		IValue actual = e.getException();
 		if (actual instanceof IString) {
