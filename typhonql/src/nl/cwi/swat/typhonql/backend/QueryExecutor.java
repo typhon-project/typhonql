@@ -26,9 +26,14 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import nl.cwi.swat.typhonql.backend.rascal.Path;
 
 public abstract class QueryExecutor {
+
+	private static final Logger logger = LoggerFactory.getLogger(QueryExecutor.class);
 	
 	private ResultStore store;
 	private List<Consumer<List<Record>>> script;
@@ -59,6 +64,10 @@ public abstract class QueryExecutor {
 	public void scheduleSelect(String resultId) {
 		int nxt = script.size() + 1;
 	    script.add((List<Record> rows) -> {
+	    	if (logger.isDebugEnabled()) {
+	    		logger.debug("Running query step: " + toString.get());
+	    	}
+	    	logger.debug("Input rows: {}", rows.size());
 	    	Consumer<List<Record>> nextStep = script.size() > nxt ? script.get(nxt) : null;
 	    	if (rows.size() <= 1) {
                ResultIterator iter = executeSelect( rows.size() == 0 ? new HashMap<>(): bind(rows.get(0)));

@@ -164,6 +164,7 @@ public class NlpEngine extends Engine {
             @Override
             protected void performUpdate(Map<String, Object> values) {
                 String json = replaceInUpdateJson(query, values);
+                logger.debug("Scheduling update job on the background: {}", json);
                 
                 // TODO this is a workaround to overcome the fact that
                 // the NLP engine is blocking
@@ -173,13 +174,16 @@ public class NlpEngine extends Engine {
 	}
 	
 	public void query(String query, Map<String, Binding> bindings, List<Path> signature) {
+		logger.debug("Adding {} to the script", query);
 		new QueryExecutor(store, script, uuids, bindings, signature, () -> "NLP query: " + query) {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				String json = replaceInQueryJson(query, values);
+				logger.debug("Running query against NLP backend: {}", json);
 				String r = doPost("queryTextAnalytics", json);
 				try {
 					JsonNode resultsNode = MAPPER.readTree(r);
+					logger.debug("Got NLP result as json: {}", resultsNode);
 					return new NlpIterator(resultsNode);
 				} catch (JsonProcessingException e) {
 					throw new RuntimeException("Wrong response from NLAE engine");
