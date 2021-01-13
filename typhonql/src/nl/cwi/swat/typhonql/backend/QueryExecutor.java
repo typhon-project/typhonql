@@ -137,12 +137,14 @@ public abstract class QueryExecutor {
 				List<ResultIterator> lst = new ArrayList<>();
 				Field field = (Field) binding;
 				ResultIterator results =  store.getResults(field.getReference());
-				results.beforeFirst();
-				while (results.hasNextResult()) {
-					results.nextResult();
-					Object value = (field.getAttribute().equals("@id"))? results.getCurrentId(field.getLabel(), field.getType()) : results.getCurrentField(field.getLabel(), field.getType(), field.getAttribute());
-					values.put(var, value);
-					lst.add(executeSelect(values));
+				if (results != null) {
+                    results.beforeFirst();
+                    while (results.hasNextResult()) {
+                        results.nextResult();
+                        Object value = (field.getAttribute().equals("@id"))? results.getCurrentId(field.getLabel(), field.getType()) : results.getCurrentField(field.getLabel(), field.getType(), field.getAttribute());
+                        values.put(var, value);
+                        lst.add(executeSelect(values));
+                    }
 				}
 				return new AggregatedResultIterator(lst);
 			}
