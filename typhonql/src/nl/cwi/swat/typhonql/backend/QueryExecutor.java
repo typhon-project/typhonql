@@ -69,6 +69,7 @@ public abstract class QueryExecutor {
 	    	}
 	    	logger.debug("Input rows: {}", rows.size());
 	    	Consumer<List<Record>> nextStep = script.size() > nxt ? script.get(nxt) : null;
+	    	logger.debug("Next step: {}", nextStep);
 	    	if (rows.size() <= 1) {
                ResultIterator iter = executeSelect( rows.size() == 0 ? new HashMap<>(): bind(rows.get(0)));
                storeResults(resultId, iter);
