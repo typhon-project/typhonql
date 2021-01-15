@@ -470,15 +470,16 @@ Request expandLoneCustoms(req:(Request)`<Query q>`, Schema s) {
     list[Result] rs = [ r | Result r <- srcRs ];
     
     newRs = outer: for (Result r <- rs) {
-      //println("Processing <r>");
       if ((Result)`<VId x>.<Id f>` := r
          , str ent := env["<x>"] //, bprintln("ent = <ent>")
          , str attr := "<f>" //, bprintln("attr = <attr>")
          // only one-level expansion... for now (that's why the ^ is there)
          // btw: this side-condition is needed to trigger the else.
-         , <ent, /^<prefix:[a-zA-Z0-9_]*>\$<sub:[a-zA-Z0-9_]*>$/, str t> <- s.attrs) {
-        for (<ent, /^<prefix:[a-zA-Z0-9_]*>\$<sub:[a-zA-Z0-9_]*>$/, str t> <- s.attrs) {
+         , <ent, /^<attr>\$<sub:[a-zA-Z0-9_]*>$/, str t> <- s.attrs) {
+        for (<ent, /^<attr>\$<sub:[a-zA-Z0-9_]*>$/, str t> <- s.attrs) {
 	      Id nestedId = [Id]sub;
+	      //println("PREFIX: <prefix>");
+	      //println("APPENDING: <(Result)`<VId x>.<Id f>.<Id nestedId>`>");
 	      append outer: (Result)`<VId x>.<Id f>.<Id nestedId>`;
 	    }
       }
