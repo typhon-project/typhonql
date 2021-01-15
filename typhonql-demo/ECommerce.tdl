@@ -1,0 +1,6 @@
+database ECommerce : MariaDB {
+	credentials {
+		username = root ;
+		password = admin ;
+	}
+}

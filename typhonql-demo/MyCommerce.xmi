@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="ASCII"?>
+<typhonml:Model xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:typhonml="http://org.typhon.dsls.typhonml.sirius">
+  <entities name="Customer">
+    <attributes xsi:type="typhonml:Attribute" name="name">
+      <type xsi:type="typhonml:StringType" maxSize="32"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="age">
+      <type xsi:type="typhonml:IntType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="payment">
+      <type xsi:type="typhonml:StringType" maxSize="32"/>
+    </attributes>
+    <attributes xsi:type="typhonml:CustomAttribute" name="address" type="//@customDataTypes.0"/>
+    <relations name="orders" type="//@entities.2" cardinality="zero_many" opposite="//@entities.2/@relations.1"/>
+  </entities>
+  <entities name="Product">
+    <attributes xsi:type="typhonml:Attribute" name="name">
+      <type xsi:type="typhonml:StringType" maxSize="32"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="description">
+      <type xsi:type="typhonml:StringType" maxSize="256"/>
+    </attributes>
+    <relations name="orders" type="//@entities.2" cardinality="zero_many" opposite="//@entities.2/@relations.0"/>
+    <relations name="reviews" type="//@entities.3" cardinality="zero_many" opposite="//@entities.3/@relations.0" isContainment="true"/>
+  </entities>
+  <entities name="Order">
+    <attributes xsi:type="typhonml:Attribute" name="created">
+      <type xsi:type="typhonml:DatetimeType"/>
+    </attributes>
+    <relations name="products" type="//@entities.1" cardinality="zero_many" opposite="//@entities.1/@relations.0"/>
+    <relations name="customer" type="//@entities.0" cardinality="one" opposite="//@entities.0/@relations.0"/>
+  </entities>
+  <entities name="Review">
+    <attributes xsi:type="typhonml:Attribute" name="content">
+      <type xsi:type="typhonml:TextType"/>
+    </attributes>
+    <relations name="product" type="//@entities.1" cardinality="one" opposite="//@entities.1/@relations.1"/>
+  </entities>
+  <databases xsi:type="typhonml:RelationalDB" name="ECommerce">
+    <tables name="OrderTbl" entity="//@entities.2"/>
+    <tables name="CustomerTbl" entity="//@entities.0">
+      <indexSpec name="nameIdx" attributes="//@entities.0/@attributes.0"/>
+    </tables>
+    <tables name="ProductTbl" entity="//@entities.1"/>
+  </databases>
+  <databases xsi:type="typhonml:DocumentDB" name="Social">
+    <collections name="Reviews" entity="//@entities.3"/>
+  </databases>
+  <customDataTypes name="address">
+    <elements xsi:type="typhonml:SimpleDataType" name="street">
+      <type xsi:type="typhonml:StringType" maxSize="32"/>
+    </elements>
+    <elements xsi:type="typhonml:SimpleDataType" name="number">
+      <type xsi:type="typhonml:StringType" maxSize="8"/>
+    </elements>
+    <elements xsi:type="typhonml:SimpleDataType" name="zipcode">
+      <type xsi:type="typhonml:StringType" maxSize="32"/>
+    </elements>
+    <elements xsi:type="typhonml:SimpleDataType" name="city">
+      <type xsi:type="typhonml:StringType" maxSize="32"/>
+    </elements>
+  </customDataTypes>
+</typhonml:Model>

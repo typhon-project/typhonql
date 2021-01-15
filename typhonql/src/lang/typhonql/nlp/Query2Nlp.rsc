@@ -118,7 +118,7 @@ tuple[NStat, Bindings] select2nlp((Query)`from <{Binding ","}+ bs> select <{Resu
 	NExpr expr2nlp((Expr)`<Expr lhs> == <Expr rhs>`) 
 	  = nBinaryOp("==", expr2nlp(lhs), expr2nlp(rhs));
 	  
-	NExpr expr2nlp(e:(Expr)`<Expr lhs> #join <Expr rhs>`) { throw "Unsupported expression: <e>"; }
+	NExpr expr2nlp(e:(Expr)`<Expr lhs> #join <Expr rhs>`) { throw "Unsupported expression in NLP: <e>"; }
 	
 	NExpr expr2nlp((Expr)`<Expr lhs> != <Expr rhs>`) 
 	  = nBinaryOp("!=", expr2nlp(lhs), expr2nlp(rhs));
@@ -139,7 +139,7 @@ tuple[NStat, Bindings] select2nlp((Query)`from <{Binding ","}+ bs> select <{Resu
 	  = nBinaryOp("in", expr2nlp(lhs), expr2nlp(rhs));
 
 
-	default NExpr expr2nlp(Expr e) { throw "Unsupported expression: <e>"; }
+	default NExpr expr2nlp(Expr e) { throw "Unsupported expression in NLP: <e>"; }
   
   
 

@@ -109,6 +109,7 @@ Request unjoinWheres(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}
   if ((Request)`from <{Binding ","}+ bs2> select <{Result ","}+ rs2> where <{Expr ","}+ ws2>` := req) {
     q = buildQuery([ b | Binding b <- bs2 ], [ r | Result r <- rs2 ], 
        [ w | Expr w <- ws2, !isLocalHashJoin(w) ]);
+       
     return (Request)`<Query q>`;
   }
   throw "Bad pattern match on request: <req>";
@@ -378,7 +379,7 @@ tuple[str, DBObject] expr2pattern((Expr)`<Expr lhs> & <Expr rhs>`, Ctx ctx) {
 // TODO: &&, ||, in, like
 
 default tuple[str, DBObject] expr2pattern(Expr e, Ctx ctx) { 
-  throw "Unsupported expression: <e>"; 
+  throw "Unsupported expression in MongoDB: <e>"; 
 }
 
 

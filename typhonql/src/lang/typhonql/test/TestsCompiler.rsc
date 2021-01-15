@@ -251,6 +251,16 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
   setup(p, true);
 }
 
+// pro memorie, these tests will fail.
+void testNullReferences(PolystoreInstance p) {
+   rs = p.runQuery((Request)`from User u select u.name where u.biography == null`);
+   p.assertResultEquals("users without bios", rs, <["u.name"], [["Davy"]]>);
+
+   rs = p.runQuery((Request)`from Product p select p.name where p.reviews == null`);
+   p.assertResultEquals("products without reviews", rs, <["p.name"], []>);
+
+}
+
 void testBasicMongoDBWhereClauses(PolystoreInstance p) {
   
 	rs = p.runQuery((Request)`from Review r select r.content where r.product == #tv, r.user == #davy`);

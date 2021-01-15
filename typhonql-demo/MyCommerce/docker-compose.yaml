@@ -1,0 +1,69 @@
+version: '3.7'
+
+services:
+  ecommerce:
+    image: mariadb:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+    volumes:
+      - type: volume
+        source: ecommercevolume
+        target: /var/lib/mysql
+  social:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    volumes:
+      - type: volume
+        source: socialvolume
+        target: /data/db
+  polystore-mongo:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_INITDB_DATABASE: admin
+    volumes:
+      - ./models/:/docker-entrypoint-initdb.d
+  typhon-polystore-service:
+    image: clms/typhon-polystore-api:latest
+    ports:
+      - target: 8080
+        published: 8080
+    entrypoint:
+      - wait-for-it
+      - polystore-mongo:27017
+      - -t
+      - '60'
+      - --
+      - java
+      - -cp
+      - /app/resources:/app/classes:/app/libs/*
+      - com.clms.typhonapi.Application
+    restart: always
+  polystore-ui:
+    image: clms/typhon-polystore-ui:latest
+    depends_on:
+      - typhon-polystore-service
+    ports:
+      - target: 4200
+        published: 4200
+  typhonql-server:
+    image: swatengineering/typhonql-server
+    environment:
+      TZ: Europe/Amsterdam
+    deploy:
+      resources:
+        limits:
+          
+          memory: 2048M
+        reservations:
+          cpus: '0.5'
+          memory: 2048M
+    restart: always
+
+volumes:
+  ecommercevolume:
+  socialvolume:
+

@@ -464,7 +464,7 @@ SQLExpr expr2sql(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
     return normalAccess;
   }
   else {
-    throw "Unsupported navigation <entity> <x>.<role>";
+    throw "Unsupported navigation in SQL <entity> <x>.<role>";
   }
 }  
   
@@ -562,7 +562,7 @@ SQLExpr expr2sql((Expr)`<Expr lhs> in <Expr rhs>`, Ctx ctx, Log log = noLog)
 SQLExpr expr2sql((Expr)`distance(<Expr from>, <Expr to>)`, Ctx ctx, Log log = noLog)
   = fun("ST_Distance", [removeWKB(expr2sql(from, ctx)), removeWKB(expr2sql(from, ctx))]);
 
-default SQLExpr expr2sql(Expr e, Ctx _) { throw "Unsupported expression: <e>"; }
+default SQLExpr expr2sql(Expr e, Ctx _) { throw "Unsupported expression in SQL: <e>"; }
 
 
 

@@ -163,7 +163,7 @@ documentdb Reviews {
 		Biography : Biography
 		Category: Category
 		Evaluation: Evaluation
-		DataTypeTest2: EntitySmokeTest2
+		EntitySmokeTest2: EntitySmokeTest2
 	}
 }
 
@@ -172,7 +172,7 @@ relationaldb Inventory {
 		table {
 			UserDB : User
 			index UserNameIndex {
-				attributes ('User.name', 'User.location')
+				attributes (name, location)
 			}
 		}
 		table {
@@ -186,16 +186,16 @@ relationaldb Inventory {
 		table{
  			DatatypesTable : EntitySmokeTest
  			index dtIndex{
-				attributes ("EntitySmokeTest.s")
+				attributes (s)
 			}
-			idSpec ("EntitySmokeTest.s")
+			idSpec (s)
 		}
   		table{
  			ReferTable : ReferenceTest
  			 index refIndex{
-				attributes ("ReferenceTest.r")
+				attributes (r)
 			}
-			idSpec ("ReferenceTest.r")
+			idSpec (r)
 		}
 	}
 }
@@ -203,20 +203,20 @@ relationaldb Inventory {
 graphdb MoreStuff {
 	edges {
 		edge Wish {
-			from "Wish.user"
-			to "Wish.product"
+			from user
+			to product
 		},
 		edge Concordance {
-			from "Concordance.source"
-			to "Concordance.target"
+			from source
+			to target
 		},
 		edge Synonym {
-			from "Synonym.source"
-			to "Synonym.target"
+			from source
+			to target
 		},
 		edge Occurrence {
-			from "Occurrence.word"
-			to "Occurrence.evaluation"
+			from word
+			to evaluation
 		}	
 	}
 }

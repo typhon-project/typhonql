@@ -1,0 +1,61 @@
+
+////// NB: execute "Reset Database" 
+ 
+
+// Basic insertion
+
+insert Customer {
+  // special @id field for identities (normally auto-generated)
+  @id: #john,
+
+  name: "John Doe",
+  age: 30,
+  payment: "123456789",
+
+  // custom data type literals 
+  address: address (
+    street: "Science Park",
+  	number: "123",
+    zipcode: "1000 AB",
+    city: "Amsterdam"
+  )
+}
+
+
+// A simple query (NB. c.address is not allowed!?!?!)
+from Customer c select c.name, c.age, c.address.street
+
+
+insert Product {
+  @id: #tv,
+  name: "TV",
+  description: "Television"
+}
+
+
+insert Order {
+  @id: #order1,
+  created: $2020-12-25T15:40:48.663+00:00$,
+  products: [#tv],
+  customer: #john
+}
+
+
+
+insert Customer {
+  @id: #jane,
+  name: "Jane Doe",
+  payment: "987654321",
+  age: 25,
+  address: address (
+    street: "Herengracht",
+  	number: "321",
+    zipcode: "1000 YZ",
+    city: "Amsterdam"
+  )
+}
+
+
+
+
+

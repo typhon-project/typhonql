@@ -421,6 +421,11 @@ void smokeCustoms() {
   str xmi = readFile(|project://typhonql/src/lang/typhonql/test/resources/user-review-product.xmi|);
   Model m = xmiString2Model(xmi);
   Schema s = model2schema(m);
+
+  req = (Request)`from User u select u.billing`;
+  println("original: <req>");
+  println("expand: <expandLoneCustoms(req, s)>");
+  println("eliminate: <eliminateCustomDataTypes(expandLoneCustoms(req, s), s)>");
   
   req = (Request)`from User u select u.billing.street`;
   println(eliminateCustomDataTypes(req, s));
@@ -453,6 +458,51 @@ void smokeCustoms() {
 
 
 
+// only in results, only in queries, *before* eliminate custom data types.
+// TODO: currently doesn't support expansion of nested custom data types...
+Request expandLoneCustoms(req:(Request)`<Query q>`, Schema s) {
+  //println("Lone custom expansion");
+  req = addWhereIfAbsent(req);
+  
+  if ((Request)`from <{Binding ","}+ bs> select <{Result ","}+ srcRs> where <{Expr ","}+ ws>` := req) {
+    env = queryEnv(bs);
+    
+    list[Result] rs = [ r | Result r <- srcRs ];
+    
+    newRs = outer: for (Result r <- rs) {
+      if ((Result)`<VId x>.<Id f>` := r
+         , str ent := env["<x>"] //, bprintln("ent = <ent>")
+         , str attr := "<f>" //, bprintln("attr = <attr>")
+         // only one-level expansion... for now (that's why the ^ is there)
+         // btw: this side-condition is needed to trigger the else.
+         , <ent, /^<attr>\$<sub:[a-zA-Z0-9_]*>$/, str t> <- s.attrs) {
+        for (<ent, /^<attr>\$<sub:[a-zA-Z0-9_]*>$/, str t> <- s.attrs) {
+	      Id nestedId = [Id]sub;
+	      //println("PREFIX: <prefix>");
+	      //println("APPENDING: <(Result)`<VId x>.<Id f>.<Id nestedId>`>");
+	      append outer: (Result)`<VId x>.<Id f>.<Id nestedId>`;
+	    }
+      }
+      else {
+        append r;
+      }
+    }
+  
+    // ugh, this is too hard ....
+    Result head = newRs[0]; 
+    req = (Request)`from <{Binding ","}+ bs> select <Result head> where <{Expr ","}+ ws>`;
+    newRs = newRs[1..];
+    while (newRs != [], (Request)`from <{Binding ","}+ bs> select <{Result ","}+ cur> where <{Expr ","}+ ws>` := req) {
+      head = newRs[0];
+      req = (Request)`from <{Binding ","}+ bs> select <{Result ","}+ cur>, <Result head> where <{Expr ","}+ ws>`;
+      newRs = newRs[1..];
+    }
+    
+  }
+  
+  return req;
+  
+}
 
 
 Request eliminateCustomDataTypes(Request req, Schema s) {
@@ -532,7 +582,7 @@ Request eliminateCustomDataTypes(Request req, Schema s) {
     
       list[str] trail = [ "<i>" | Id i <- ids ] + ["<f>"];
       
-      // we're looking for a suffxi of ids + f
+      // we're looking for a suffix of ids + f
       // that has a dollared attribute in an entity
       // that is reachable from x with the prefix.
       
