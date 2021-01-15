@@ -251,7 +251,7 @@
     <collections name="Biography" entity="//@entities.11"/>
     <collections name="Category" entity="//@entities.3"/>
     <collections name="Evaluation" entity="//@entities.7"/>
-    <collections name="DataTypeTest2" entity="//@entities.18"/>
+    <collections name="EntitySmokeTest2" entity="//@entities.18"/>
   </databases>
   <databases xsi:type="typhonml:RelationalDB" name="Inventory">
     <tables name="UserDB" entity="//@entities.10">
