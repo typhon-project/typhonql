@@ -251,7 +251,8 @@ list[Place] orderPlaces(Request req, Schema s) {
     return w1.weight > w2.weight; 
   });
   
-  return [ p | <Place p, int w> <- sortedWeights, w > 0 ]; 
+  // w > 0
+  return [ p | <Place p, int w> <- sortedWeights ]; 
 }
 
 @doc{Filterweight assigns a number to a query indicating how often an entity
