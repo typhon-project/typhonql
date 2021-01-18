@@ -174,6 +174,21 @@ void addJunctionTableOutside(str from, str fromRole, str to, str toRole, Stats s
     stats.add(stat);
 }
 
+void addJunctionTableFromOutside(str from, str fromRole, str to, str toRole, Stats stats, bool doForeignKeys) {
+    str left = junctionFkName(from, fromRole);
+    str right = junctionFkName(to, toRole);
+    str tbl = junctionTableName(from, fromRole, to, toRole);
+    SQLStat stat = create(tbl, [
+      column(left, typhonIdType(), [notNull()]),
+      column(right, typhonIdType(), [notNull()])      
+    ], [ foreignKey(right, tableName(to), typhonId(to), cascade()) | doForeignKeys ]
+     + [ index("<to>_<left>", regular(), [left]) ]
+    );
+    stats.add(dropTable([tbl], true, []));
+    stats.add(stat);
+}
+
+
 list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bool doForeignKeys = true, Stats stats = initializeStats()) {
   //schema.rels = symmetricReduction(schema.rels);
   
@@ -203,7 +218,7 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
   for (r:<str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain> <- schema.rels
         // then relations from outside
          , to in placedEntities, from notin placedEntities) {
-     addJunctionTableOutside(from, fromRole, to, toRole, stats, doForeignKeys); 
+     addJunctionTableFromOutside(from, fromRole, to, toRole, stats, doForeignKeys); 
   } 
   
   return  stats.get();
