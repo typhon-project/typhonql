@@ -70,6 +70,7 @@ SQLStat attrs2create(str e, rel[str, str] attrs, Schema schema) {
       , [primaryKey(typhonId(e))] + indexes(e, attrs, schema));
 }
 
+
 list[TableConstraint] indexes(str e, rel[str, str] attrs, Schema schema) 
     = [
         index("<e>_<attr>_spatial", spatial(), [columnName(attr, e)])
@@ -195,6 +196,13 @@ list[SQLStat] schema2sql(Schema schema, Place place, set[str] placedEntities, bo
   for (r:<str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain> <- schema.rels
         // then relations to outside
          , from in placedEntities, to notin placedEntities) {
+     addJunctionTableOutside(from, fromRole, to, toRole, stats, doForeignKeys); 
+  } 
+
+
+  for (r:<str from, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain> <- schema.rels
+        // then relations from outside
+         , to in placedEntities, from notin placedEntities) {
      addJunctionTableOutside(from, fromRole, to, toRole, stats, doForeignKeys); 
   } 
   
