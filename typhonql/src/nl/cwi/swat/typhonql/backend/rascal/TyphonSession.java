@@ -41,11 +41,12 @@ import org.rascalmpl.interpreter.result.ICallableValue;
 import org.rascalmpl.interpreter.result.ResultFactory;
 import org.rascalmpl.interpreter.types.FunctionType;
 import org.rascalmpl.interpreter.utils.RuntimeExceptionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import groovy.lang.ListWithDefault;
 import io.usethesource.vallang.IConstructor;
 import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
@@ -71,6 +72,8 @@ import nl.cwi.swat.typhonql.client.XMIPolystoreConnection;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class TyphonSession implements Operations {
+
+	private static final Logger logger = LoggerFactory.getLogger(TyphonSession.class);
 	private static final TypeFactory TF = TypeFactory.getInstance();
 	private final IValueFactory vf;
 
@@ -404,6 +407,7 @@ public class TyphonSession implements Operations {
 	private ICallableValue makeReadAndStore(ResultStore store, List<Consumer<List<Record>>> script,
 			TyphonSessionState state, FunctionType readAndStoreType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, readAndStoreType, args -> {
+			logger.debug("Running {} prepared steps", script.size());
 			ResultTable rt = computeResultTable(store, script, args);
 			state.setResult(rt);
 			script.clear();
@@ -414,6 +418,7 @@ public class TyphonSession implements Operations {
 	private ICallableValue makeFinish(List<Consumer<List<Record>>> script, TyphonSessionState state,
 			FunctionType readAndStoreType, IEvaluatorContext ctx) {
 		return makeFunction(ctx, state, readAndStoreType, args -> {
+			logger.debug("Running {} prepared steps", script.size());
 			Runner.executeUpdates(script);
 			script.clear();
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
@@ -423,6 +428,7 @@ public class TyphonSession implements Operations {
 	private IValue makeJavaReadAndStore(ResultStore store, List<Consumer<List<Record>>> script, 
 			TyphonSessionState state, Map<String, UUID> uuids, IEvaluatorContext ctx, FunctionType javaCall) {
 		return makeFunction(ctx, state, javaCall, args -> {
+			logger.debug("Running {} prepared steps", script.size());
 			List<Path> paths = compilePaths((IList)args[2]);
 			List<String> columnNames = ((IList)args[3]).stream().map(v -> ((IString)v).getValue()).collect(Collectors.toList());
 			JavaOperation.compileAndAggregate(store, state, script, uuids, ((IString)args[0]).getValue(), ((IString)args[1]).getValue(), paths, columnNames);

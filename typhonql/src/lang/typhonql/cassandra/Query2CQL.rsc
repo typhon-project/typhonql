@@ -213,10 +213,10 @@ CQLExpr expr2cql((Expr)`?`) = cBindMarker();
 CQLExpr expr2cql((Expr)`??<Id x>`) = cBindMarker(name="<x>");
 
 CQLExpr expr2cql((Expr)`<Int i>`) = cTerm(cInteger(toInt("<i>")));
-CQLExpr expr2cql((Expr)`-<Int i>`) = cTerm(cInteger(toInt("-<i>")));
+//CQLExpr expr2cql((Expr)`-<Int i>`) = cTerm(cInteger(toInt("-<i>")));
 
 CQLExpr expr2cql((Expr)`<Real r>`) = cTerm(cFloat(toReal("<r>")));
-CQLExpr expr2cql((Expr)`-<Real r>`) = cTerm(cFloat(toReal("-<r>")));
+//CQLExpr expr2cql((Expr)`-<Real r>`) = cTerm(cFloat(toReal("-<r>")));
 
 CQLExpr expr2cql((Expr)`<Str s>`) = cTerm(cString(unescapeQLString(s)));
 

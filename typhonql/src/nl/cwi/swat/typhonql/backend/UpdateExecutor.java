@@ -23,7 +23,12 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class UpdateExecutor {
+
+	private static final Logger logger = LoggerFactory.getLogger(UpdateExecutor.class);
 	private final ResultStore store;
 	private final Map<String, Binding> bindings;
 	private final Map<String, UUID> uuids;
@@ -60,6 +65,11 @@ public abstract class UpdateExecutor {
 	protected abstract void performUpdate(Map<String, Object> values);
 	
 	private void executeUpdateOperation(Map<String, Object> values) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("Running update step: " + toString.get());
+		}
+		logger.trace("Input arguments: {}", values);
+
 		if (values.size() == bindings.size()) {
 			if (store.hasExternalArguments()) {
 				values.putAll(store.getCurrentExternalArgumentsRow());

@@ -385,10 +385,10 @@ bool isTo(str entity, str relName, Place p:<neo4j(), dbName>, Schema s) {
 NeoExpr expr2neo((Expr)`<PlaceHolder ph>`, Ctx ctx, Log log = noLog) = NeoExpr::nPlaceholder(name = "<ph.name>");
 
 NeoExpr expr2neo((Expr)`<Int i>`, Ctx ctx, Log log = noLog) = nLit(nInteger(toInt("<i>")));
-NeoExpr expr2neo((Expr)`-<Int i>`, Ctx ctx, Log log = noLog) = nLit(nInteger(toInt("-<i>")));
+//NeoExpr expr2neo((Expr)`-<Int i>`, Ctx ctx, Log log = noLog) = nLit(nInteger(toInt("-<i>")));
 
 NeoExpr expr2neo((Expr)`<Real r>`, Ctx ctx, Log log = noLog) = nLit(nDecimal(toReal("<r>")));
-NeoExpr expr2neo((Expr)`-<Real r>`, Ctx ctx, Log log = noLog) = nLit(nDecimal(toReal("-<r>")));
+//NeoExpr expr2neo((Expr)`-<Real r>`, Ctx ctx, Log log = noLog) = nLit(nDecimal(toReal("-<r>")));
 
 NeoExpr expr2neo((Expr)`<Str s>`, Ctx ctx, Log log = noLog) = nLit(nText(unescapeQLString(s)));
 

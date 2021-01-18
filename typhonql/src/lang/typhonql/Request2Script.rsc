@@ -90,6 +90,8 @@ Script request2script(Request r, Schema s, Log log = noLog) {
       r = explicitJoinsInReachability(r, s);
       r = eliminateCustomDataTypes(expandLoneCustoms(injectProperUUIDs(r), s), s);
       log("NORMALIZED: <r>");
+      log("ORDER: <order>");
+      log("PLACEMENTS: <s.placement>");
       
 
 	  Script scr = script([]);

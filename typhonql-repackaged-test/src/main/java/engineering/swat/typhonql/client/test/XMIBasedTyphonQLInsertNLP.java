@@ -38,6 +38,7 @@ public class XMIBasedTyphonQLInsertNLP {
 		
 		List<DatabaseInfo> infos = PolystoreAPIHelper.readConnectionsInfo(HOST, PORT,
 				USER, PASSWORD);
+		System.out.println(infos);
 		
 		String xmiString = PolystoreAPIHelper.readHttpModel(HOST, PORT, USER, PASSWORD);
 
@@ -46,12 +47,14 @@ public class XMIBasedTyphonQLInsertNLP {
 		conn.resetDatabases(xmiString, infos);
 		
 		String query =
-				"insert Company { @id: #ibm, name: \"IBM\", mission: \"Be better\", vision: \"More machines\" }";
-		String[] rs = conn.executeUpdate(xmiString, infos, Collections.emptyMap(),query, false);
+				"from RawTextWarnings u\n" + 
+				"select u.ew.NamedEntityRecognition.WordToken\n" + 
+				"where u.ew.NamedEntityRecognition.NamedEntity == \"LOCATION\"";
+		 JsonSerializableResult rs = conn.executeQuery(xmiString, infos, query, true);
 		
 			
 		
-		System.out.println(Arrays.toString(rs));
+		System.out.println(rs);
 
 	}
 }
