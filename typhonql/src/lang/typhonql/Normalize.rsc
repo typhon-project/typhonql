@@ -270,7 +270,6 @@ Request inferKeyValLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result 
 }
 
 Request inferNlpLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`, Schema s) {
-  // rewrite x.f -> x.A__B.f if f is an attribute that is mapped from keyVal
   Env env = queryEnv(bs);
  
   int varId = 0;
@@ -296,34 +295,50 @@ Request inferNlpLinks(req:(Request)`from <{Binding ","}+ bs> select <{Result ","
   list[Result] newResults = [];
   list[Expr] newWheres = [];
   
-  req = visit (req) {
-    case (Expr)`<VId x>.@id`: {
-      str src = env["<x>"];
-      if (hasFreeTextAttr(src, s)) {
-        str tgt = nlpEntity(src);
-     	Id nlpRel = [Id] nlpRelation();
-        VId nlpX = newBinding(tgt, "<x>", (Expr)`<VId x>.<Id nlpRel>`);
-        insert (Expr)`<VId nlpX>.@id`;
-      }
-    }
+  for ((Binding)`<EId ent> <VId x>` <- bs, hasFreeTextAttr("<ent>", s)) {
+    str tgt = nlpEntity("<ent>");
+    Id nlpRel = [Id] nlpRelation();
+    VId nlpX = newBinding(tgt, "<x>", (Expr)`<VId x>.<Id nlpRel>`);
+    //newWheres += [ (Expr)`<VId nlpX>.@id == <VId x>.@id` ];
+  } 
   
+  req = visit (req) {
     case (Expr)`<VId x>.<Id f>.<{Id "."}+ fs>`: {
       str src = env["<x>"];
       if (isFreeTextAttr(src, "<f>", s)) {
-        
-     	analyses = getFreeTypeAnalyses(src, "<f>", s);
+     	//analyses = getFreeTypeAnalyses(src, "<f>", s);
      	str tgt = nlpEntity(src);
      	Id nlpRel = [Id] nlpRelation();
         VId nlpX = newBinding(tgt, "<x>", (Expr)`<VId x>.<Id nlpRel>`);
         insert (Expr)`<VId nlpX>.<Id f>.<Id fs>`;
-        /*
-          add binding: kvEntity kvVar
-          add where:  kvVar.@id == x.<fs>.@id
-          replace with: kvVar.f
-        */
       }
     }
   }
+  
+  
+  //req.qry.where = visit (req.qry.where) {
+  //  case (Expr)`<VId x>.@id`: {
+  //    str src = env["<x>"];
+  //    if (hasFreeTextAttr(src, s)) {
+  //      str tgt = nlpEntity(src);
+  //   	Id nlpRel = [Id] nlpRelation();
+  //      VId nlpX = newBinding(tgt, "<x>", (Expr)`<VId x>.<Id nlpRel>`);
+  //      insert (Expr)`<VId nlpX>.@id`;
+  //    }
+  //  }
+  //
+  //  case (Expr)`<VId x>.<Id f>.<{Id "."}+ fs>`: {
+  //    str src = env["<x>"];
+  //    if (isFreeTextAttr(src, "<f>", s)) {
+  //      
+  //   	analyses = getFreeTypeAnalyses(src, "<f>", s);
+  //   	str tgt = nlpEntity(src);
+  //   	Id nlpRel = [Id] nlpRelation();
+  //      VId nlpX = newBinding(tgt, "<x>", (Expr)`<VId x>.<Id nlpRel>`);
+  //      insert (Expr)`<VId nlpX>.<Id f>.<Id fs>`;
+  //    }
+  //  }
+  //}
   
   if ((Request)`from <{Binding ","}+ _> select <{Result ","}+ rs> where <{Expr ","}+ ws>` := req) {
     newResults = [ r | Result r <- rs ] + newResults;
