@@ -504,9 +504,7 @@ Model xmiNode2Model(node n) {
       	}
 
       	case "typhonml:AddAttribute":{
-      		t = get(xcho, "type");
-      		
-      		// TODO replace by actual type
+      	
       		DataType dt = DataType(realm.new(#IntType, IntType())); 
       		ty = referTo(#DataType, dt);
 
