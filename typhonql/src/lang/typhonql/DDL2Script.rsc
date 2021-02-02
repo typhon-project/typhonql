@@ -352,9 +352,30 @@ Script ddl2scriptAux((Request) `rename <EId eId> to <EId newName>`, Schema s, Lo
 }
 
 Script renameEntity(p:<sql(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
+	// why is this if-statement needed?
 	if (<p:<db, dbName>, eId> <- s.placement, entity == eId) {
-	  SQLStat stat = alterTable(tableName(entity), [renameTable(tableName(newName))]); 
-	  return script([step(dbName, sql(executeStatement(dbName, pp(stat))), ())]);
+	  list[SQLStat] stats = [alterTable(tableName(entity), [renameTable(tableName(newName))])];
+	  for (<entity, str name, _> <- s.attrs) {
+	    stats += [alterTable(tableName(newName), 
+	      [renameColumn(columnName(name, entity), columnName(name, newName))])]; 
+	  }
+	  for (<entity, Cardinality fromCard, str fromRole, str toRole, Cardinality toCard, str to, bool contain> <- s.rels) {
+	    if (contain, <<sql(), dbName>, to> <- s.placement) {
+	      // rename parent key column in to
+	      stats += [alterTable(tableName(to), 
+	         [renameColumn(fkName(entity, to, toRole), fkName(newName, to, toRole))])];
+	    }
+	    else {
+	      stats += [alterTable(junctionTableName(entity, fromRole, to, toRole),
+	        [renameTable(junctionTableName(newName, fromRole, to, toRole))])];
+	       
+	      // note: newName
+	      stats += [alterTable(junctionTableName(newName, fromRole, to, toRole),
+	        [renameColumn(junctionFkName(entity, fromRole), junctionFkName(newName, fromRole))])];
+	    }
+	  }
+	   
+	  return script([step(dbName, sql(executeStatement(dbName, pp(stat))), ()) | SQLStat stat <- stats ]);
   	}
   	throw "Not found entity <eId>";
 }

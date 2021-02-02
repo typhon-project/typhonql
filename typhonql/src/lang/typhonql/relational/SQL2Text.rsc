@@ -102,8 +102,8 @@ str pp(dropColumn(str name))
   = "drop column <q(name)>";
   
 
-str pp(renameColumn(column(str name, ColumnType \type, list[ColumnConstraint] _), str newName))
-  = "change column <q(name)> <q(newName)> <pp(\type)>";  
+str pp(renameColumn(str name, str newName))
+  = "rename column <q(name)> to <q(newName)>";  
 
 str pp(renameTable(str name))
   = "rename to <q(name)>";

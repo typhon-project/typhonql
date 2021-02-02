@@ -44,7 +44,7 @@ data Alter
   | dropIndex(str indexName)
   | addColumn(Column column)
   | dropColumn(str columnName)
-  | renameColumn(Column column, str newName)
+  | renameColumn(str columnName, str newName)
   | renameTable(str newName)
   ;
 
