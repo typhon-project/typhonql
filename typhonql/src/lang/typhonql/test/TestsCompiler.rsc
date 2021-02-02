@@ -297,6 +297,11 @@ void testBasicAggregationNonNative(PolystoreInstance p) {
 	p.assertResultEquals("reviews counted grouped by user", rs, <["r.user", "r.reviewCount"],
 	  [[U("davy"), "2"], 
 	   [U("pablo"), "1"]]>);
+	   
+	p.runUpdate((Request)`delete Review r`);
+	rs = p.runQuery((Request)`from Review r select count(r.@id) as reviewCount`);
+	p.assertResultEquals("reviews counted correctly on empty collection", rs, <["r.reviewCount"],
+	  [["0"]]>);
 }
 
 void testBasicAggregationNativeSQL(PolystoreInstance p) {
@@ -339,6 +344,13 @@ void testBasicAggregationNativeSQL(PolystoreInstance p) {
                            'where i.product == p group i.product having total \> 60`);
   p.assertResultEquals("item prices summed and larger than 60", rs, <["i.product", "p.total"], 
     [[U("tv"), "<4 * 20>"]]>);
+    
+    
+  p.runUpdate((Request)`delete Item i`);
+  rs = p.runQuery((Request)`from Item i select count(i.@id) as cnt`);
+  p.assertResultEquals("items counted w/o group-clause on empty table", rs, <["i.cnt"], 
+    [["0"]]>);
+  
     
 }
 
