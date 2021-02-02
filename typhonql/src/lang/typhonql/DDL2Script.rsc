@@ -337,7 +337,7 @@ Script dropRelation(p:<mongodb(), str dbName>, str entity, str relation, str to,
 }
 
 Script dropRelation(p:<neo4j(), str dbName>, str entity, str relation, str to, str toRole, bool containment, Schema s, Log log = noLog) {
-
+  throw "Drop relation not supported on neo4j.";
 }
 
 default Script dropRelation(p:<db, str dbName>,  str entity, str relation, str to, str toRole, bool containment, Schema s, Log log = noLog) {
@@ -402,7 +402,7 @@ Script renameAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str
 }
 
 Script renameAttribute(p:<neo4j(), str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
-
+  throw "Rename attribute not supported on neo4j.";
 }
 
 default Script renameAttribute(p:<db, str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
@@ -433,7 +433,7 @@ Script renameRelation(p:<mongodb(), str dbName>, str entity, str relation, str n
 }
 
 Script renameRelation(p:<neo4j(), str dbName>, str entity, str relation, str newName, Schema s, Log log = noLog) {
-	
+  throw "Rename relation not supported on neo4j.";
 }
 
 default Script renameRelation(p:<db, str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
