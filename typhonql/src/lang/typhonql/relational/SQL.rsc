@@ -25,7 +25,7 @@ data SQLStat
   | deleteJoining(list[str] joinTables, list[Clause] clauses)
   | select(list[SQLExpr] exprs, list[As] tables, list[Clause] clauses)
   | alterTable(str table, list[Alter] alters)
-  | renameTable(str table, str newName)
+//  | renameTable(str table, str newName)
   | dropTable(list[str] tableNames, bool ifExists, list[DropOption] options)
   ;
 
@@ -45,6 +45,7 @@ data Alter
   | addColumn(Column column)
   | dropColumn(str columnName)
   | renameColumn(Column column, str newName)
+  | renameTable(str newName)
   ;
 
   

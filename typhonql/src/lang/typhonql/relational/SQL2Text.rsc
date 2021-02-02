@@ -41,8 +41,8 @@ str pp(create(str t, list[Column] cs, list[TableConstraint] cos))
     '  <intercalate(",\n", [ pp(c) | Column c <- cs ] + [ pp(c) | TableConstraint c <- cos ])>
     ');";
 
-str pp(renameTable(str t, str newName))
-  = "rename table <q(t)> to <q(newName)>;";
+//str pp(renameTable(str t, str newName))
+//  = "rename table <q(t)> to <q(newName)>;";
 
 str pp(\insert(str t, list[str] cs, list[SQLExpr] vs))
   = "insert into <q(t)> (<intercalate(", ", [ q(c) | str c <- cs ])>) 
@@ -104,6 +104,9 @@ str pp(dropColumn(str name))
 
 str pp(renameColumn(column(str name, ColumnType \type, list[ColumnConstraint] _), str newName))
   = "change column <q(name)> <q(newName)> <pp(\type)>";  
+
+str pp(renameTable(str name))
+  = "rename to <q(name)>";
 
 // As
 
