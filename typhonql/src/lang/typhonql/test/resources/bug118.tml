@@ -1,0 +1,29 @@
+entity "User" {
+	"id" : string[32]
+	"name" : string[32]
+	"paymentsDetails" : string
+	"address" -> "UserAddress"[0..1]
+}
+
+entity UserAddress {
+	streetName: string[32]
+	streetNumber: bigint
+	zipcode: string[32]
+	city: string[32]
+	country: string[32]
+	user -> "User"."User.address"[0..1]
+}
+
+relationaldb RelationalDatabase {
+   tables {
+      table {
+      	"User" : "User"
+      }
+   }
+}
+
+documentdb DocumentDatabase{
+	collections{
+			UserAddress : UserAddress
+	}
+}

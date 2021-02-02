@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="ASCII"?>
+<typhonml:Model xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:typhonml="http://org.typhon.dsls.typhonml.sirius">
+  <entities name="User">
+    <attributes xsi:type="typhonml:Attribute" name="id">
+      <type xsi:type="typhonml:StringType" maxSize="32"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="name">
+      <type xsi:type="typhonml:StringType" maxSize="32"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="paymentsDetails">
+      <type xsi:type="typhonml:StringType"/>
+    </attributes>
+    <relations name="address" type="//@entities.1"/>
+  </entities>
+  <entities name="UserAddress">
+    <attributes xsi:type="typhonml:Attribute" name="streetName">
+      <type xsi:type="typhonml:StringType" maxSize="32"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="streetNumber">
+      <type xsi:type="typhonml:BigintType"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="zipcode">
+      <type xsi:type="typhonml:StringType" maxSize="32"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="city">
+      <type xsi:type="typhonml:StringType" maxSize="32"/>
+    </attributes>
+    <attributes xsi:type="typhonml:Attribute" name="country">
+      <type xsi:type="typhonml:StringType" maxSize="32"/>
+    </attributes>
+    <relations name="user" type="//@entities.0" opposite="//@entities.0/@relations.0"/>
+  </entities>
+  <databases xsi:type="typhonml:RelationalDB" name="RelationalDatabase">
+    <tables name="User" entity="//@entities.0"/>
+  </databases>
+  <databases xsi:type="typhonml:DocumentDB" name="DocumentDatabase">
+    <collections name="UserAddress" entity="//@entities.1"/>
+  </databases>
+</typhonml:Model>
