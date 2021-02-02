@@ -96,7 +96,11 @@ Script request2script(Request r, Schema s, Log log = noLog) {
 
 	  Script scr = script([]);
 	  
-	  if ([p:<DB::sql(), _>] := order, just(Request aggReq) := maybeAgg) {
+	  set[Place] backendsHit(list[Place] order, Request r, Schema s) {
+	     return { p | Place p <- order, hitsBackend(r, p, s) };
+	  }
+	  
+	  if ({p:<DB::sql(), _>} := backendsHit(order, r, s), just(Request aggReq) := maybeAgg) {
 	    // strictly SQL 
 	    scr = script(compileQuery(r, p, s, log = log, agg = maybeAgg));
 	    list[Path] paths = results2pathsWithAggregation(aggReq.qry.selected, queryEnv(aggReq.qry), s);
