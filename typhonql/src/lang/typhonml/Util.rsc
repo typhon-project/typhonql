@@ -20,8 +20,9 @@ of TyphonML.
 }
 module lang::typhonml::Util
 
-import lang::typhonml::TyphonML;
+// WEIRD BUG: importing XMIReader after TyphonML hides functions!!!
 import lang::typhonml::XMIReader;
+import lang::typhonml::TyphonML;
 import lang::ecore::Refs;
 
 import ParseTree;
