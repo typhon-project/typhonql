@@ -353,7 +353,8 @@ Script ddl2scriptAux((Request) `rename <EId eId> to <EId newName>`, Schema s, Lo
 
 Script renameEntity(p:<sql(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
 	if (<p:<db, dbName>, eId> <- s.placement, entity == eId) {
-		return rename(tableName(entity), tableName(newName));
+	  SQLStat stat = alterTable(tableName(entity), [renameTable(tableName(newName))]); 
+	  return script([step(dbName, sql(executeGlobalStatement(dbName, pp(stat))), ())]);
   	}
   	throw "Not found entity <eId>";
 }
