@@ -69,7 +69,8 @@ import org.rascalmpl.uri.URIUtil;
 import org.rascalmpl.uri.classloaders.SourceLocationClassLoader;
 import org.rascalmpl.util.ConcurrentSoftReferenceObjectPool;
 import org.rascalmpl.values.ValueFactoryFactory;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IListWriter;
@@ -88,6 +89,7 @@ import nl.cwi.swat.typhonql.backend.rascal.TyphonSession;
 import nl.cwi.swat.typhonql.client.resulttable.ResultTable;
 
 public class XMIPolystoreConnection {
+	private static final Logger logger = LoggerFactory.getLogger(XMIPolystoreConnection.class);
 	private static final StandardTextWriter VALUE_PRINTER = new StandardTextWriter(true, 2);
 	private static final IValueFactory VF = ValueFactoryFactory.getValueFactory();
 
@@ -194,14 +196,22 @@ public class XMIPolystoreConnection {
 		return sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> {
             return (JsonSerializableResult) call(evaluator, "runQueryAndGetJava", 
                 "lang::typhonql::RunUsingCompiler",
-                Collections.singletonMap("log", getPrintln(evaluator)),
-                //Collections.emptyMap(),
+                getLog(evaluator, runChecker),
                 VF.string(query), 
                 VF.string(xmiModel),
                 session.getTuple());
 		});
 	}
 	
+	private Map<String, IValue> getLog(Evaluator evaluator, boolean runChecker) {
+		Map<String, IValue> result = new HashMap<>(4);
+		result.put("runChecker", VF.bool(runChecker));
+		if (logger.isDebugEnabled()) {
+			result.put("log", getPrintln(evaluator));
+		}
+		return result;
+	}
+
 	private static final TypeFactory TF = TypeFactory.getInstance();
 	private static final RascalTypeFactory RTF = RascalTypeFactory.getInstance();
 	
@@ -280,7 +290,7 @@ public class XMIPolystoreConnection {
 		sessionCall(connections, Collections.emptyMap(), (session, evaluator) -> 
             evaluator.call("runDDL", 
                 "lang::typhonql::RunUsingCompiler",
-                Collections.emptyMap(),
+                getLog(evaluator, false),
                 VF.string(update), 
                 VF.string(xmiModel),
                 session.getTuple())
@@ -298,7 +308,7 @@ public class XMIPolystoreConnection {
 		return sessionCall(connections, blobMap, (session, evaluator) -> 
 			 call(evaluator,"runUpdate", 
 				"lang::typhonql::RunUsingCompiler",
-                Collections.singletonMap("runChecker", VF.bool(runChecker)),
+                getLog(evaluator, runChecker),
 				VF.string(update), 
 				VF.string(xmiModel),
 				session.getTuple())
@@ -316,7 +326,7 @@ public class XMIPolystoreConnection {
         return sessionCall(connections, blobMap, Optional.of(externalArguments), (session, evaluator) -> 
         	call(evaluator, "runUpdate", 
                     "lang::typhonql::RunUsingCompiler",
-                    Collections.singletonMap("runChecker", VF.bool(runChecker)),
+                    getLog(evaluator, runChecker),
                     VF.string(preparedStatement),
                     VF.string(xmiModel),
                     session.getTuple())
