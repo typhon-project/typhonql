@@ -43,6 +43,7 @@ public class XMIBasedTyphonQLAggregationQuery {
 		//System.err.println(infos);
 
 		XMIPolystoreConnection conn = new XMIPolystoreConnection();
+		conn.resetDatabases(xmiString, infos);
 		
 		//ResultTable rt = conn.executeQuery(xmiString, infos, "from Product p select p.name");
 		//ResultTable rt = conn.executeQuery(xmiString, infos, "from Product p, Review r select r.content where p.reviews == r, p.@id == #tv");
@@ -67,10 +68,10 @@ public class XMIBasedTyphonQLAggregationQuery {
 
 		//rt = conn.executeQuery(xmiString, infos, "from Item i select i.shelf, count(i.@id) as numOfItems group i.shelf having numOfItems > 1", false);
 
-		JsonSerializableResult rt = conn.executeQuery(xmiString, infos, 
-				"from Item i, Product p select i.product, sum(p.price) as total where i.product == p group i.product limit 1", false);
+//		JsonSerializableResult rt = conn.executeQuery(xmiString, infos, 
+//				"from Item i, Product p select i.product, sum(p.price) as total where i.product == p group i.product limit 1", false);
 
-		
+		JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from Product p select count(p.@id) as pc", false);
 		
 		System.out.println(rt);
 

@@ -11,6 +11,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import javax.tools.Diagnostic;
+import javax.tools.JavaFileObject;
+
 import org.rascalmpl.interpreter.utils.JavaCompiler;
 import org.rascalmpl.interpreter.utils.JavaCompilerException;
 
@@ -45,7 +48,13 @@ public class JavaOperation  {
 			Constructor<JavaOperationImplementation> ctr = result.getConstructor(ResultStore.class, TyphonSessionState.class, Map.class);
 			JavaOperationImplementation op = ctr.newInstance(store, state, uuids);
 			state.setResult(Runner.computeResultStream(script, paths, columnNames, op::processStream));
-		} catch (ClassCastException | JavaCompilerException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+		} catch (ClassCastException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+			throw new RuntimeException(e);
+		} catch (JavaCompilerException e) {
+		    if (!e.getDiagnostics().getDiagnostics().isEmpty()) {
+		        Diagnostic<? extends JavaFileObject> msg = e.getDiagnostics().getDiagnostics().iterator().next();
+		        throw new RuntimeException(msg.getMessage(null) + " at " + msg.getLineNumber() + ", " + msg.getColumnNumber(), e);
+		    }
 			throw new RuntimeException(e);
 		}
 	}

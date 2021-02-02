@@ -275,13 +275,9 @@ str aggregation2java(r:(Request)`<Query q>`, bool save = false) {
     '      
     '     for (java.util.List\<java.lang.Object\> $k: $grouped.keySet()) {
     '        java.util.List\<nl.cwi.swat.typhonql.backend.Record\> $records = $grouped.get($k);
-    '        if ($records.isEmpty()) {
-    '           continue;
-    '        }
-    '        nl.cwi.swat.typhonql.backend.Record $key = $records.get(0);
     '        <aggs2vars(rs)>
     '        if (<havings2conds([ e | (Agg)`having <{Expr ","}+ es>` <- q.aggClauses, Expr e <- es ])>) {
-    '          $result.add(<results2array("$key", rs)>);
+    '          $result.add(<results2array("$records.get(0)", rs)>);
     '        }
     '     }
     '     return $result
