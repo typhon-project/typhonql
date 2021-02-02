@@ -788,6 +788,12 @@ void testInsertSQLNeo(PolystoreInstance p) {
   
 }
 
+void testDeleteNeoAll(PolystoreInstance p) {
+ p.runUpdate((Request)`delete Wish w`);
+ rs = p.runQuery((Request)`from Wish w select w.@id`);
+ p.assertResultEquals("all edges deleted", rs, <["w.@id"], []>);
+}
+
 void testDeleteSQLNeoSimple(PolystoreInstance p) {
   p.runUpdate((Request)`delete Wish w where w.@id == #wish1`);
   rs = p.runQuery((Request)`from Wish w select w.@id where w.@id == #wish1`);
@@ -1382,6 +1388,7 @@ void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	  , testBlobs
 	  , testEscapedStrings
 	  , testInsertSQLNeo
+	  , testDeleteNeoAll
 	  , testDeleteSQLNeoSimple
 	  , testDeleteSQLNeoCascade
 	  , testUpdateSingleRefSQLNeo

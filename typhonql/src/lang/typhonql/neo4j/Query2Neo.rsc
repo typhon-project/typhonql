@@ -23,38 +23,6 @@ import String;
 import List;
 import util::Maybe;
 
-/*
-
-to get null, instead of empty result sets, do the following for refs/containments
-
-match `User.name`, `Review.user-User.reviews`.`Review.user`  
-from User left outer join `Review.user-User.reviews` on `User.@id` = `Review.user-User.reviews`.`User.reviews`;
-
-for multiples
-
-match 
-  `User.name`, 
-  `Review.user-User.reviews`.`Review.user`, 
-  `Biography.user-User.biography`.`Biography.user`
-from 
-  User left outer join 
-   `Review.user-User.reviews` on `User.@id` = `Review.user-User.reviews`.`User.reviews`  left outer join
-      `Biography.user-User.biography` on `User.@id` = `Biography.user-User.biography`.`User.biography`;
-
-
-With names:
-
-match 
-  u.`User.name`, 
-  r.`Review.user`, 
-  b.`Biography.user`  
-from 
-  User as u left outer join `Review.user-User.reviews` as r 
-     on u.`User.@id` = r.`User.reviews` 
-       left outer join `Biography.user-User.biography` as b 
-         on u.`User.@id` = b.`User.biography`;
-
-*/
 
 alias Ctx
   = tuple[
@@ -72,6 +40,8 @@ alias Ctx
       Place place
    ];
 
+str varConnect() = "__";
+
 
 tuple[NeoStat, Bindings] compile2neo((Request)`<Query q>`, Schema s, Place p, Log log = noLog)
   = select2neo(q, s, p, log = log);
@@ -79,19 +49,6 @@ tuple[NeoStat, Bindings] compile2neo((Request)`<Query q>`, Schema s, Place p, Lo
 tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs>`, Schema s, Place p, Log log = noLog) 
   = select2neo((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where true`, s, p, log = log);
 
-/*
-
-Steps to compile to SQL
-
-- add the results to the SQL results after match except if #delayed or #done
-- add the bindings to the SQL from clause with "as" except if #dynamic or #ignored
-- add the required (junction) tables from relation navigation to the match clause
-- add to the result the expressions used in #needed expressions
-- translate refs to #dynamic entities to named placeholders, put the expression itself into params
-- translate where clauses to sql where clause, possibly using junction tables, skip #done/#needed/#delayed
-
-
-*/ 
 tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Result ","}+ rs> where <{Expr ","}+ ws>`
   , Schema s, Place p, Log log = noLog) {
 
@@ -115,16 +72,16 @@ tuple[NeoStat, Bindings] select2neo((Query)`from <{Binding ","}+ bs> select <{Re
     // println("ADDING table: <pp(as)>");
     q.matches[0].patterns += 
     	[nPattern(
-    		nNodePattern("<varName>$from", [label], []),
-	     	[nRelationshipPattern(nDoubleArrow(), varName,  label, [], nNodePattern("<varName>$to", [], []))]
+    		nNodePattern("<varName><varConnect()>from", [label], []),
+	     	[nRelationshipPattern(nDoubleArrow(), varName,  label, [], nNodePattern("<varName><varConnect()>to", [], []))]
 	     	)];
   }
   
   void addEdge(str varName, str label) {
   	q.matches[0].patterns += 
     	[nPattern(
-    		nNodePattern("<varName>$from", [], []),
-	     	[nRelationshipPattern(nDoubleArrow(), varName,  label, [], nNodePattern("<varName>$to", [], []))]
+    		nNodePattern("<varName><varConnect()>from", [], []),
+	     	[nRelationshipPattern(nDoubleArrow(), varName,  label, [], nNodePattern("<varName><varConnect()>to", [], []))]
 	     	)];
   }
   
@@ -353,9 +310,9 @@ NeoExpr expr2neo(e:(Expr)`<VId x>.<Id f>`, Ctx ctx, Log log = noLog) {
   	
   	// return the column of the target
   	if (isFrom(entity, role, ctx.place, ctx.schema)) {
-		return nProperty("<x>$from", nodeName("<to>", "@id"));
+		return nProperty("<x><varConnect()>from", nodeName("<to>", "@id"));
 	} else if (isTo(entity, role, ctx.place, ctx.schema)) {
-		return nProperty("<x>$to", nodeName("<to>", "@id"));
+		return nProperty("<x><varConnect()>to", nodeName("<to>", "@id"));
 	}
   	//
   }
@@ -456,8 +413,8 @@ NeoExpr expr2neo((Expr)`<Expr lhs> like <Expr rhs>`, Ctx ctx, Log log = noLog)
 NeoExpr expr2neo((Expr)`<VId lhs> <Reaching r> <VId rhs>`, Ctx ctx, Log log = noLog) {
   ctx.addFrom("<lhs>", ctx.env["<lhs>"]);
   ctx.addFrom("<rhs>", ctx.env["<rhs>"]);
-  ctx.addWhere(nEqu(nVariable("<r.edge>$from"),nVariable("<lhs>")));
-  ctx.addWhere(nEqu(nVariable("<r.edge>$to"),nVariable("<rhs>")));
+  ctx.addWhere(nEqu(nVariable("<r.edge><varConnect()>from"),nVariable("<lhs>")));
+  ctx.addWhere(nEqu(nVariable("<r.edge><varConnect()>to"),nVariable("<rhs>")));
   
   return reachingExpr2neo(r, lhs, rhs, ctx, log = log);
 }
