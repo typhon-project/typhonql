@@ -371,7 +371,7 @@ Script renameEntity(p:<sql(), str dbName>, str entity, str newName, Schema s, Lo
 	       
 	      // note: newName
 	      stats += [alterTable(junctionTableName(newName, fromRole, to, toRole),
-	        [renameColumn(junctionFkName(entity, fromRole), junctionFkName(newName, fromRole))])];
+	        [renameColumn(junctionFkName(entity, toRole), junctionFkName(newName, toRole))])];
 	    }
 	  }
 	   
