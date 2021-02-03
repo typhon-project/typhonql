@@ -990,6 +990,10 @@ void testGISonSQL(PolystoreInstance p) {
   p.assertResultEquals("testGISonSQLJoin", rs, <["u.name", "p.name"], [["Pablo", "TV"], ["Davy", "Radio"]]>);
 
 
+  rs = p.runQuery((Request)`from User u select u.name where distance(#point(20.01 30.01), u.location) \< 1000 `);
+  p.assertResultEquals("testGISonSQLDistance", rs, <["u.name"], [["Davy"]]>);
+
+
   rs = p.runQuery((Request)`from Product p select p.name where #point(2.0 3.0) & p.availabilityRegion`);
   p.assertResultEquals("testGISonSQLIntersectLiteral", rs, <["p.name"], [["TV"]]>);
   
