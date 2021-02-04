@@ -999,6 +999,8 @@ void testGISonSQL(PolystoreInstance p) {
   rs = p.runQuery((Request)`from Product p select p.name where #point(2.0 3.0) & p.availabilityRegion`);
   p.assertResultEquals("testGISonSQLIntersectLiteral", rs, <["p.name"], [["TV"]]>);
   
+  rs = p.runQuery((Request)`from User u select u.name where u.location & #polygon((2.0 2.0, 3.0 2.0, 3.0 3.0, 2.0 3.0, 2.0 2.0))`);
+  p.assertResultEquals("testGISonSQLIntersectLiteral2", rs, <["u.name"], [["Pablo"]]>);
 
 }
 
@@ -1053,6 +1055,17 @@ void testGISonCrossMongoSQL(PolystoreInstance p) {
   p.assertResultEquals("testGISonCrossMongoSQL - distance", rs, <["r.@id", "u.name"], [[U("rev1"), "Pablo"], [U("rev2"), "Davy"]]>);
 }
 
+void testGISProblemsOnEdges(PolystoreInstance p) {
+    //p.runUpdate((Request)`insert Product { @id: #p1, name: "Testing", availabilityRegion: #polygon(( 47.695061728395 4.61025, 47.82962962963 4.61025,  47.82962962963 4.79525,  47.695061728395 4.79525,  47.695061728395 4.61025 )) }`);
+    //p.runUpdate((Request)`insert Review { @id: #r1, location: #point(47.82962962963 4.79525) }`); //edge
+    //p.runUpdate((Request)`insert Review { @id: #r2, location: #point(47.76 4.72) }`); // middle
+    
+    rs = p.runQuery((Request)`from Product p, Review r select r.@id, p.@id where r.location in p.availabilityRegion && p.productionDate \> $2020-01-01$`);
+    p.assertResultEquals("testGISEdges - SQL First - GIS on mongo", rs, <["r.@id", "p.@id"], [[U("rev1"), U("tv")], [U("rev2"), U("radio")], [U("rev3"), U("tv")]]>);
+    rs = p.runQuery((Request)`from Product p, Review r select r.@id, p.@id where r.location in p.availabilityRegion && r.posted \> $2020-01-01T00:00:00Z$`);
+    p.assertResultEquals("testGISEdges - Mongo First - GIS on SQL", rs, <["r.@id", "p.@id"], [[U("rev1"), U("tv")], [U("rev2"), U("radio")], [U("rev3"), U("tv")]]>);
+}
+
 void testGISPrint(PolystoreInstance p) {
     rs = p.runQuery((Request)`from Product p select p.availabilityRegion`);
     p.assertResultEquals("GIS Print - SQL", rs, <["p.availabilityRegion"], [["POLYGON ((10 10, 40 10, 40 40, 10 40, 10 10))"],["POLYGON ((1 1, 4 1, 4 4, 1 4, 1 1))"]]>);
@@ -1065,7 +1078,7 @@ void testGISPrint(PolystoreInstance p) {
 void testDateTimePrint(PolystoreInstance p) {
     rs = p.runQuery((Request)`from User u select u.created where u.@id == #davy`);
     p.assertResultEquals("Print datetime - SQL", rs, <["u.created"],[["2020-01-02T15:24:00Z"]]>);
-    
+
     rs = p.runQuery((Request)`from Review r select r.posted where r.@id == #rev1`);
     p.assertResultEquals("Print datetime - Mongo", rs, <["r.posted"],[["2020-02-03T01:11:00Z"]]>);
     

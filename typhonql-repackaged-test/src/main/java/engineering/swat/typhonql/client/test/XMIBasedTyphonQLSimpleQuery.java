@@ -56,16 +56,19 @@ public class XMIBasedTyphonQLSimpleQuery {
 		//ResultTable rt = conn.executeQuery(xmiString, infos, "from Product p, Review r select r.content where p.reviews == r, p.@id == #tv");
 		//CommandResult rt = conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "update User u where u.@id == #davy set {photoURL: \"other\", name: \"Landman\"}");
 
-		conn.resetDatabases(xmiString, infos);
+
+		//conn.resetDatabases(xmiString, infos);
 
 		//conn.executeUpdate(xmiString, infos, Collections.emptyMap(), "insert EntitySmokeTest2 { @id: #e1, s: \"Hoi\", t: \"Long\", i: 3, r: 12312312321, f: 20.001, b: true, d: $2020-01-02$, dt: $2020-03-04T12:04:44Z$, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }", true);
+		/*
 		conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert EntitySmokeTest2 { s: \"Hoi\", t: \"Long\", i: 3, r: 12312312321, f: 20.001, b: true, d: ??d, dt: ??dt, pt: #point(0.2 0.4), pg: #polygon((1.0 1.0, 4.0 1.0, 4.0 4.0, 1.0 4.0, 1.0 1.0)) }", 
 				new String[] { "d", "dt" },
 				new String[] { "date", "datetime" },
 				new String[][] {
 					new String[] { "2021-01-03", "2021-11-10T22:33:11Z"}
 		}, true);
-		JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from EntitySmokeTest2 e select e.s, e.t, e.i, e.r, e.f, e.b, e.d, e.dt, e.pt, e.pg", true);
+		*/
+		JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from Product p, Review r select r.@id, p.@id where r.location in p.availabilityRegion && r.posted > $2020-01-01T00:00:00Z$ && r.posted > $2020-01-01T00:00:00Z$", true);
 		System.out.println(rt);
 		rt.serializeJSON(System.out);
 		System.exit(0);
@@ -92,6 +95,7 @@ public class XMIBasedTyphonQLSimpleQuery {
     rs_code_space: string[100]
     spatial_resolution: int
 		 */
+		/*
 		long start = System.currentTimeMillis();
 		String[] res = conn.executePreparedUpdate(xmiString, infos, Collections.emptyMap(), "insert INSPIRE {"
 				+ "file_id: ??f, language: ??l, character_set: ??c, hierarchy_level: ??h,"
@@ -126,6 +130,7 @@ public class XMIBasedTyphonQLSimpleQuery {
             long time = (stop - start);
             System.out.println(String.format("- Rows %-5d took: %-6dms speed: %-4.1f ms per record = %-4.1f records per second", i, time, time / (double)i, 1000 * (i / (double) time)));
 		}
+		*/
 
 		/*
 		entity GIPP_F {

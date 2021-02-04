@@ -194,7 +194,9 @@ tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding
            fs = fs[1..];
          }
          else {
-           throw "No such role <role> for <ent> in schema";
+           println("No such role <role> for <ent> in schema");
+         return;
+
          }
       }
       fields = intercalate(".", fs);
@@ -217,7 +219,9 @@ tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding
   } 
   
   void recordProjections(Expr e) {
-     switch (e) {
+     top-down-break visit (e) {
+      case (Expr)`#done(<Expr _>)`: ;
+      case (Expr)`#delayed(<Expr _>)`: ;
       case x:(Expr)`<VId y>`: {
          // TODO: there is a difference between y in result and y in where clauses
          // --> fix normalization to desguar y in where clauses to y.@id, 
@@ -228,6 +232,7 @@ tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding
          addProjection(y, "_id");
       case x:(Expr)`<VId y>.<{Id "."}+ fs>`:
          addProjection(y, "<fs>");
+
     }
   }
 

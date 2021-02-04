@@ -102,6 +102,7 @@ public class MariaDBEngine extends Engine {
         int i = 1;
         for (String varName : preparedQuery.variables) {
             Object value = values.get(varName);
+            logger.trace("Binding {}  to {}", varName, value);
             if (value == null && preparedQuery.blobs.contains(varName)) {
                 preparedQuery.statement.setBlob(i, store.getBlob(varName));
             }
@@ -154,7 +155,9 @@ public class MariaDBEngine extends Engine {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
 				try {
-					return new MariaDBIterator(prepareAndBind(query, values, false).executeQuery());
+					PreparedStatement actualQuery = prepareAndBind(query, values, false);
+					logger.debug("Running: {}", actualQuery);
+					return new MariaDBIterator(actualQuery.executeQuery());
 				} catch (SQLException e1) {
 					throw new RuntimeException(e1);
 				}

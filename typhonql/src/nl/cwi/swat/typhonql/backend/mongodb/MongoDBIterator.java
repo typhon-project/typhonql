@@ -28,6 +28,8 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LinearRing;
 import org.locationtech.jts.geom.PrecisionModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.mongodb.MongoGridFSException;
 import com.mongodb.client.MongoCursor;
@@ -39,6 +41,7 @@ import com.mongodb.client.gridfs.GridFSBuckets;
 import nl.cwi.swat.typhonql.backend.ResultIterator;
 
 public class MongoDBIterator implements ResultIterator {
+	private static final Logger logger = LoggerFactory.getLogger(MongoDBIterator.class);
 	private final MongoIterable<Document> results;
 	private final MongoDatabase source;
 	private GridFSBucket gridBucket = null;
@@ -61,6 +64,9 @@ public class MongoDBIterator implements ResultIterator {
 	@Override
 	public void nextResult() {
 		this.current = cursor.next();
+		if (logger.isTraceEnabled()) {
+			logger.trace("Current document: {} with {} keys", this.current, this.current.keySet());
+		}
 	}
 
 	@Override

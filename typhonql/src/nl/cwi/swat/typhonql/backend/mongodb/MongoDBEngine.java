@@ -132,7 +132,8 @@ public class MongoDBEngine extends Engine {
 		new QueryExecutor(store, script, uuids, bindings, signature, () -> "Mongo find: " + query) {
 			@Override
 			protected ResultIterator performSelect(Map<String, Object> values) {
-				return new MongoDBIterator(buildFind(collectionName, query, values), db);
+				FindIterable<Document> result = buildFind(collectionName, query, values);
+				return new MongoDBIterator(result, db);
 			}
 		}.scheduleSelect(resultId);
 	}
@@ -160,6 +161,7 @@ public class MongoDBEngine extends Engine {
 		BsonDocumentTemplate result = parsedDocuments.computeIfAbsent(query, this::createBsonTemplate);
 		Document pattern = Document.parse(result.apply(s -> serializeBSON(values.get(s)), blobName -> { }).toJson());
 		MongoCollection<Document> coll = db.getCollection(collectionName);
+		logger.debug("Sending find pattern: {} on {}", pattern, coll);
 		return coll.find(pattern);
 	}
 
