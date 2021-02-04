@@ -359,7 +359,8 @@ public class MongoDBEngine extends Engine {
 	}
 
 	public void executeRenameCollection(String dbName, String collection, String newName) {
-		scheduleGlobalUpdate(d -> d.getCollection(collection).renameCollection(new MongoNamespace(newName)));
+		scheduleGlobalUpdate(d -> d.getCollection(collection)
+				.renameCollection(new MongoNamespace(dbName + "." + newName)));
 	}
 
 	public void executeCreateIndex(String collectionName, String indexName, String keys) {
