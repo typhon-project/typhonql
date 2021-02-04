@@ -725,8 +725,14 @@ void compileRefAddTo(
   if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
     throw "Bad update, cannot have multiple owners.";
   }
-  ctx.addSteps(insertObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
-             [ pointer2mongo(ref) | Pointer ref <- refs ], ctx.myParams));
+  ctx.updateMongoUpdate(DBObject(DBObject upd) {
+    //upd.props += [ <"$set", object([<fromRole, array([ pointer2mongo(ref) | Pointer ref <- refs ])>])> ];
+    upd.props +=  [<"$addToSet", object([<fromRole, object([<"$each", array([ pointer2mongo(ref) | Pointer ref <- refs ])>])>])>];
+    return upd;
+  });
+  
+  //ctx.addSteps(insertObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
+  //           [ pointer2mongo(ref) | Pointer ref <- refs ], ctx.myParams));
   ctx.addSteps([ *insertObjectPointer(dbName, to, toRole, toCard, pointer2mongo(ref) , ctx.mongoMe, ctx.myParams)
                 | Pointer ref <- refs ]);
 }
@@ -740,8 +746,14 @@ void compileRefAddTo(
   if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
     throw "Bad update, cannot have multiple owners.";
   }
-  ctx.addSteps(insertObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
-             [ pointer2mongo(ref) | Pointer ref <- refs ], ctx.myParams));
+  ctx.updateMongoUpdate(DBObject(DBObject upd) {
+    //upd.props += [ <"$set", object([<fromRole, array([ pointer2mongo(ref) | Pointer ref <- refs ])>])> ];
+    upd.props +=  [<"$addToSet", object([<fromRole, object([<"$each", array([ pointer2mongo(ref) | Pointer ref <- refs ])>])>])>];
+    return upd;
+  });
+  
+  //ctx.addSteps(insertObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
+  //           [ pointer2mongo(ref) | Pointer ref <- refs ], ctx.myParams));
   ctx.addSteps([ *insertObjectPointer(dbName, to, toRole, toCard, pointer2mongo(ref) , ctx.mongoMe, ctx.myParams)
                 | Pointer ref <- refs ]);
 }
@@ -755,8 +767,13 @@ void compileRefAddTo(
   if (<to, toCard, toRole, fromRole, fromCard, from, true> <- ctx.schema.rels) {
     throw "Bad update, cannot have multiple owners.";
   }
-  ctx.addSteps(insertObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
-             [ pointer2mongo(ref) | Pointer ref <- refs ], ctx.myParams));
+  ctx.updateMongoUpdate(DBObject(DBObject upd) {
+    //upd.props += [ <"$set", object([<fromRole, array([ pointer2mongo(ref) | Pointer ref <- refs ])>])> ];
+    upd.props +=  [<"$addToSet", object([<fromRole, object([<"$each", array([ pointer2mongo(ref) | Pointer ref <- refs ])>])>])>];
+    return upd;
+  });
+  //ctx.addSteps(insertObjectPointers(dbName, from, fromRole, fromCard, ctx.mongoMe, 
+  //           [ pointer2mongo(ref) | Pointer ref <- refs ], ctx.myParams));
   ctx.addSteps([ *updateIntoJunctionSingle(other, to, toRole, from, fromRole, pointer2sql(ref), ctx.sqlMe, ctx.myParams)
                 | Pointer ref <- refs ]);
 }

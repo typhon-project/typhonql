@@ -1,0 +1,205 @@
+entity "CustomerDemographics" {
+   "CustomerTypeID" : string[10]
+   "CustomerDesc" : text
+   "Customers" -> "Customers_migrated"[0..*]
+}
+
+entity "Orders" {
+   "OrderDate" : datetime
+   "RequiredDate" : datetime
+   "ShippedDate" : datetime
+   "Freight" : float
+   "ShipName" : string[40]
+   "ShipAddress" : string[60]
+   "ShipCity" : string[15]
+   "ShipRegion" : string[15]
+   "ShipPostalCode" : string[10]
+   "ShipCountry" : string[15]
+   "Customers" -> "Customers_migrated"[0..1]
+   "Employees" -> "Employees"[0..1]
+   "Shippers" -> "Shippers"[0..1]
+   "Order_Details" -> "Order_Details"."Order_Details.Orders"[0..*]
+}
+
+entity "Products" {
+   "ProductName" : string[40]
+   "QuantityPerUnit" : string[20]
+   "UnitPrice" : float
+   "UnitsInStock" : int
+   "UnitsOnOrder" : int
+   "ReorderLevel" : int
+   "Discontinued" : string[5]
+   "Categories" -> "Categories"[0..1]
+   "Suppliers" -> "Suppliers"[0..1]
+   "Order_Details" -> "Order_Details"."Order_Details.Products"[0..*]
+}
+
+entity "Suppliers" {
+   "CompanyName" : string[40]
+   "ContactName" : string[30]
+   "ContactTitle" : string[30]
+   "Address" : string[60]
+   "City" : string[15]
+   "Region" : string[15]
+   "PostalCode" : string[10]
+   "Country" : string[15]
+   "Phone" : string[24]
+   "Fax" : string[24]
+   "HomePage" : text
+   "Products" -> "Products"."Products.Suppliers"[0..*]
+}
+
+entity "Customers_migrated" {
+   "CustomerID" : string[5]
+   "CompanyName" : string[40]
+   "ContactName" : string[30]
+   "ContactTitle" : string[30]
+   "Address" : string[60]
+   "City" : string[15]
+   "Region" : string[15]
+   "PostalCode" : string[10]
+   "Country" : string[15]
+   "Phone" : string[24]
+   "Fax" : string[24]
+   "Orders" -> "Orders"."Orders.Customers"[0..*]
+   "CustomerDemographics" -> "CustomerDemographics"."CustomerDemographics.Customers"[0..*]
+}
+
+entity "Categories" {
+   "CategoryName" : string[15]
+   "Description" : text
+   "Picture" : text
+   "Products" -> "Products"."Products.Categories"[0..*]
+}
+
+entity "Shippers" {
+   "CompanyName" : string[40]
+   "Phone" : string[24]
+   "Orders" -> "Orders"."Orders.Shippers"[0..*]
+}
+
+entity "Employees" {
+   "LastName" : string[20]
+   "FirstName" : string[10]
+   "Title" : string[30]
+   "TitleOfCourtesy" : string[25]
+   "BirthDate" : datetime
+   "HireDate" : datetime
+   "Address" : string[60]
+   "City" : string[15]
+   "Region" : string[15]
+   "PostalCode" : string[10]
+   "Country" : string[15]
+   "HomePhone" : string[24]
+   "Extension" : string[4]
+   "Photo" : text
+   "Notes" : text
+   "PhotoPath" : string[255]
+   "Salary" : float
+   "Employees" -> "Employees"[0..1]
+   "Orders" -> "Orders"."Orders.Employees"[0..*]
+   "Employees_1" -> "Employees"."Employees.Employees"[0..*]
+   "Territories" -> "Territories"[0..*]
+}
+
+entity "Region" {
+   "RegionID" : int
+   "RegionDescription" : string[50]
+   "Territories" -> "Territories"."Territories.Region"[0..*]
+}
+
+entity "Order_Details" {
+   "UnitPrice" : float
+   "Quantity" : int
+   "Discount" : float
+   "Products" -> "Products"[1]
+   "Orders" -> "Orders"[1]
+}
+
+entity "Territories" {
+   "TerritoryID" : string[20]
+   "TerritoryDescription" : string[50]
+   "Region" -> "Region"[1]
+   "Employees" -> "Employees"."Employees.Territories"[0..*]
+}
+
+entity "User" {
+	"id" : string[32]
+	"name" : string[32]
+	"paymentsDetails" : string
+	"address" -> "UserAddress"[0..*]
+}
+
+entity UserAddress {
+	streetName: string[32]
+	streetNumber: bigint
+	zipcode: string[32]
+	city: string[32]
+	country: string[32]
+	user -> "User"."User.address"[1]
+}
+
+relationaldb RelationalDatabase {
+   tables {
+      table {
+         "CustomerDemographics" : "CustomerDemographics"
+         idSpec ("CustomerTypeID")
+      }
+      table {
+         "Orders" : "Orders"
+         index "index_0" {
+            attributes ("OrderDate")
+         }
+      }
+      table {
+         "Products" : "Products"
+         index "index_1" {
+            attributes ("ProductName")
+         }
+      }
+      table {
+         "Suppliers" : "Suppliers"
+         index "index_2" {
+            attributes ("CompanyName")
+         }
+      }
+      table {
+         "Categories" : "Categories"
+         index "index_4" {
+            attributes ("CategoryName")
+         }
+      }
+      table {
+         "Shippers" : "Shippers"
+      }
+      table {
+         "Employees" : "Employees"
+         index "index_5" {
+            attributes ("LastName")
+         }
+      }
+      table {
+         "Region" : "Region"
+         idSpec ("RegionID")
+      }
+      table {
+         "Order_Details" : "Order_Details"
+      }
+      table {
+         "Territories" : "Territories"
+         idSpec ("TerritoryID")
+      }
+	  table {
+			"User" : "User"
+	  }
+	  table {
+			"UserAddress" : "UserAddress"
+	  }
+   }
+}
+
+documentdb DocumentDatabase{
+      collections {
+         "Customers_migrated" : "Customers_migrated"
+      }
+}
