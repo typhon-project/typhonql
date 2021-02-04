@@ -170,16 +170,56 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<sql(), str dbName>, Schema s,
   
 }
 
+str agg2mongo((VId)`sum`) = "$sum";
+str agg2mongo((VId)`avg`) = "$avg";
+str agg2mongo((VId)`min`) = "$min";
+str agg2mongo((VId)`max`) = "$max";
+ 
+
 list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schema s, Log log = noLog, map[str, Param] initialParams = (), Maybe[Request] agg = Maybe::nothing()) {
   log("COMPILING2Mongo: <r>");
   <methods, params> = compile2mongo(r, s, p);
-  params += initialParams;
-  for (str coll <- methods) {
-    // TODO: signal if multiple!
-    return [step(dbName, mongo(find(dbName, coll, pp(methods[coll].query), pp(methods[coll].projection)))
-      , params, signature=
-         filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s) + where2paths(getWhere(q), queryEnvAndDyn(q), s), p)
-         )];
+  
+  if (just(Request aggReq) := agg, str coll <- methods) {
+    list[DBObject] stages = [];
+    
+    if (methods[coll].query != object([])) {
+      stages += [object([<"$match", methods[coll].query>])];
+    }
+    
+    DBObject gby = object([<"$group", object([<"_id", null()>])>]);
+    
+    if ((Agg)`group <VId _>.<Id fld>` <- aggReq.qry.aggClauses) {
+      gby = object([<"$group", object([<"_id", \value("$<fld>")>])>]);
+    }
+    
+    for ((Result)`count(<Expr _>) as <VId result>` <- aggReq.qry.selected) {
+      gby.props[0].val.props += [<"<result>", object([<"$sum", \value(1)>])>];
+    }
+    
+    for ((Result)`<VId f>(<VId _>.<Id fld>) as <VId result>` <- aggReq.qry.selected, (VId)`count` !:= f) {
+      gby.props[0].val.props += [<"<result>", object([<agg2mongo(f), \value("$<fld>")>])>];
+    }
+    
+    stages += [gby];
+    
+    // TODO: having -> $match, order -> $sort
+    
+    return [step(dbName, mongo(aggregate(dbName, coll, [ pp(s) | DBObject s <- stages ])), params
+     signature=
+          filterForBackend(results2pathsWithAggregation(aggReq.qry.selected, queryEnvAndDyn(aggReq.qry), s)
+            +  where2paths(getWhere(aggReq.qry), queryEnvAndDyn(aggReq.qry), s), p))];
+  }
+  
+  else {
+    params += initialParams;
+    for (str coll <- methods) {
+      // TODO: signal if multiple!
+      return [step(dbName, mongo(find(dbName, coll, pp(methods[coll].query), pp(methods[coll].projection)))
+        , params, signature=
+           filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s) + where2paths(getWhere(q), queryEnvAndDyn(q), s), p)
+           )];
+    }
   }
   return [];
 }

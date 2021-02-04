@@ -59,6 +59,7 @@ import org.wololo.jts2geojson.GeoJSONWriter;
 
 import com.mongodb.MongoGridFSException;
 import com.mongodb.MongoNamespace;
+import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -135,6 +136,15 @@ public class MongoDBEngine extends Engine {
 			}
 		}.scheduleSelect(resultId);
 	}
+	
+	public void executeAggregate(String resultId, String collectionName, List<String> stages, Map<String, Binding> bindings, List<Path> signature) {
+		new QueryExecutor(store, script, uuids, bindings, signature, () -> "Mongo aggregate: " + stages) {
+			@Override
+			protected ResultIterator performSelect(Map<String, Object> values) {
+				return new MongoDBIterator(buildAggregate(collectionName, stages, values), db);
+			}
+		}.scheduleSelect(resultId);
+	}
 
 	public void executeFindWithProjection(String resultId, String collectionName, String query, String projection,
 			Map<String, Binding> bindings, List<Path> signature) {
@@ -153,6 +163,18 @@ public class MongoDBEngine extends Engine {
 		return coll.find(pattern);
 	}
 
+	private AggregateIterable<Document> buildAggregate(String collectionName, List<String> stages, Map<String, Object> values) {
+		List<Document> pipeline = new ArrayList<Document>();
+		for (String stage: stages) {
+			BsonDocumentTemplate result = parsedDocuments.computeIfAbsent(stage, this::createBsonTemplate);
+			Document pattern = Document.parse(result.apply(s -> serializeBSON(values.get(s)), blobName -> { }).toJson());
+			pipeline.add(pattern);
+		}
+		MongoCollection<Document> coll = db.getCollection(collectionName);
+		return coll.aggregate(pipeline);
+	}
+	
+	
 
 	private BsonValue serializeBSON(Object obj) {
 		if (obj == null) {

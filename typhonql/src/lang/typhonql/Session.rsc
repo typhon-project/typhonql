@@ -85,7 +85,8 @@ alias MongoOperations = tuple[
 	void (str dbName, str coll, str newName) renameCollection,
 	void (str dbName, str coll, str indexName) dropCollection,
 	void (str dbName, str indexName) dropIndex,
-	void (str dbName) dropDatabase
+	void (str dbName) dropDatabase,
+	void (str resultId, str dbName, str collection, list[str] stages, Bindings bindings, list[Path] paths) aggregate
 ];
 
 alias NlpOperations = tuple[

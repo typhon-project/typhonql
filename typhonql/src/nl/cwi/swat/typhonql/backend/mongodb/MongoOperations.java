@@ -16,6 +16,7 @@
 
 package nl.cwi.swat.typhonql.backend.mongodb;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,6 +104,29 @@ public class MongoOperations implements Operations, AutoCloseable {
 			return ResultFactory.makeResult(TF.voidType(), null, ctx);
 		});
 	}
+	
+	private ICallableValue makeAggregate(Function<String, MongoDBEngine> engine, TyphonSessionState state, 
+			FunctionType executeType, IEvaluatorContext ctx, IValueFactory vf) {
+		return makeFunction(ctx, state, executeType, args ->  {
+			String resultId = ((IString) args[0]).getValue();
+			String dbName = ((IString) args[1]).getValue();
+			String collection = ((IString) args[2]).getValue();
+			List<String> stages = new ArrayList<>();
+			((IList) args[3]).forEach(v -> {
+				stages.add(((IString)v).getValue());
+			});
+			IMap bindings = (IMap) args[4];
+			IList signatureList = (IList) args[5];
+			
+			Map<String, Binding> bindingsMap = rascalToJavaBindings(bindings);
+			List<Path> signature = rascalToJavaSignature(signatureList);
+
+			engine.apply(dbName).executeAggregate(resultId, collection, stages, bindingsMap, signature);
+
+			return ResultFactory.makeResult(TF.voidType(), null, ctx);
+		});
+	}
+	
 
 	private ICallableValue makeFindWithProjection(Function<String, MongoDBEngine> engine, TyphonSessionState state, FunctionType executeType,
 			IEvaluatorContext ctx, IValueFactory vf) {
@@ -289,6 +313,7 @@ public class MongoOperations implements Operations, AutoCloseable {
 	}
 
 	
+	
 	private static FunctionType func(Type source, String name) {
 		return (FunctionType) source.getFieldType(name);
 	}
@@ -315,7 +340,8 @@ public class MongoOperations implements Operations, AutoCloseable {
 				makeRenameCollection(getEngine, state, func(aliasedTuple, "renameCollection"), ctx, vf),
 				makeDropCollection(getEngine, state, func(aliasedTuple, "dropCollection"), ctx, vf),
 				makeDropIndex(getEngine, state, func(aliasedTuple, "dropIndex"), ctx, vf),
-				makeDropDatabase(getEngine, state, func(aliasedTuple, "dropDatabase"), ctx, vf));
+				makeDropDatabase(getEngine, state, func(aliasedTuple, "dropDatabase"), ctx, vf),
+				makeAggregate(getEngine, state, func(aliasedTuple, "aggregate"), ctx, vf));
 	}
 
 

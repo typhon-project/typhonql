@@ -70,6 +70,7 @@ data NlpCall
   
 data MongoCall
   = find(str dbName, str coll, str query)
+  | aggregate(str dbName, str coll, list[str] stages)
   | find(str dbName, str coll, str query, str proj)
   | insertOne(str dbName, str coll, str doc)
   | findAndUpdateOne(str dbName, str coll, str query, str update)
@@ -129,6 +130,10 @@ str runScriptAux(Script scr, Session session, Schema schema) {
 
       case step(str r, mongo(find(str db, str coll, str json)), Bindings ps):
         session.mongo.find(r, db, coll, json, ps, s.signature);
+      
+      case step(str r, mongo(aggregate(str db, str coll, list[str] stages)), Bindings ps):
+        session.mongo.aggregate(r, db, coll, stages, ps, s.signature);
+      
         
       case step(str r, mongo(find(str db, str coll, str json, str proj)), Bindings ps):
         session.mongo.findWithProjection(r, db, coll, json, proj, ps, s.signature);  
@@ -168,6 +173,7 @@ str runScriptAux(Script scr, Session session, Schema schema) {
         
       case step(str r, mongo(renameCollection(str db, str coll, str newName)), Bindings ps):
         session.mongo.renameCollection(db, coll, newName);
+
       
         
       case step(str r, neo(executeNeoQuery(str db, str q)), Bindings ps):
