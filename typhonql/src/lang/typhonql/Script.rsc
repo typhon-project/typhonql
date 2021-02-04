@@ -166,6 +166,10 @@ str runScriptAux(Script scr, Session session, Schema schema) {
       case step(str r, mongo(findAndUpdateMany(str db, str coll, str query, str update)), Bindings ps):
         session.mongo.findAndUpdateMany(db, coll, query, update, ps);
         
+      case step(str r, mongo(renameCollection(str db, str coll, str newName)), Bindings ps):
+        session.mongo.renameCollection(db, coll, newName);
+      
+        
       case step(str r, neo(executeNeoQuery(str db, str q)), Bindings ps):
         session.neo.executeMatch(r, db, q, ps, s.signature);
         
