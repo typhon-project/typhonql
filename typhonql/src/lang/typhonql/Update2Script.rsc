@@ -139,7 +139,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
 
   void updateMongoUpdate(DBObject(DBObject) block) {
     theObject = block(theObject);
-    Step st = step(p.name, mongo(findAndUpdateOne(p.name, ent, pp(theFilter), pp(theObject))), myParams);
+    Step st = step(p.name, mongo(findAndUpdateOne(mongoDBName(p.name), ent, pp(theFilter), pp(theObject))), myParams);
     updateStep(statIndex, st);
   }
   
@@ -517,7 +517,7 @@ void compileRefSetMany(
  // whose _id is not in refs.
   DBObject q = object([<"_id", object([<"$nin", array([ pointer2mongo(ref) | Pointer ref <- refs ])>])>
      , <toRole, ctx.mongoMe>]);
-  ctx.addSteps([ step(other, mongo(deleteMany(other, to, pp(q))), ctx.myParams)]);
+  ctx.addSteps([ step(other, mongo(deleteMany(mongoDBName(other), to, pp(q))), ctx.myParams)]);
 }
 
 // sql/same sql xref
@@ -585,7 +585,7 @@ void compileRefSetMany(
                object([<toRole, 
                  object([<"$in", array([ ctx.mongoMe ])>])>])>]);
   }              
-  ctx.addSteps([ step(dbName, mongo(findAndUpdateMany(dbName, to, pp(q), pp(u))), ctx.myParams)]); 
+  ctx.addSteps([ step(dbName, mongo(findAndUpdateMany(mongoDBName(dbName), to, pp(q), pp(u))), ctx.myParams)]); 
 }
 
 // mongo/other mongo containment or xref
@@ -611,7 +611,7 @@ void compileRefSetMany(
                object([<toRole, 
                  object([<"$in", array([ ctx.mongoMe ])>])>])>]);
   }              
-  ctx.addSteps([ step(other, mongo(findAndUpdateMany(dbName, to, pp(q), pp(u))), ctx.myParams)]);              
+  ctx.addSteps([ step(other, mongo(findAndUpdateMany(mongoDBName(dbName), to, pp(q), pp(u))), ctx.myParams)]);              
 }
 
 // mongo/sql containment or xref

@@ -251,6 +251,18 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
   setup(p, true);
 }
 
+void testJoinsInsideMongo(PolystoreInstance p) {
+  rs = p.runQuery((Request)`from Comment c, Review r select c.comment, r.content where c.review == r.@id`);
+  p.assertResultEquals("joining across collections works", rs, 
+     <["c.comment","r.content"], [
+       ["I agree", "Good TV"],
+       ["please write something", ""],
+       ["dude, this is lazy", ""]
+     ]>);
+     
+}
+
+
 // pro memorie, these tests will fail.
 void testNullReferences(PolystoreInstance p) {
    rs = p.runQuery((Request)`from User u select u.name where u.biography == null`);
@@ -1363,6 +1375,7 @@ void runTests(Log log = NO_LOG(), bool runTestsInSetup = false) {
 	  [ testBasicAggregationNativeSQL
 	  , testBasicAggregationNativeMongo
 	  , testBasicMongoDBWhereClauses
+	  , testJoinsInsideMongo
 	  , testLimit
 	  , testLimitAndOrder
 	  , testOrdering

@@ -67,8 +67,12 @@ public class MongoOperations implements Operations, AutoCloseable {
 		this.connectionSettings = connections;
 	}
 
+	private static String mongoDBName(String dbName) {
+		return dbName.split("/")[0];
+	}
+	
 	private MongoDatabase getDatabase(String dbName) {
-		return connections.computeIfAbsent(dbName, nm -> {
+		return connections.computeIfAbsent(mongoDBName(dbName), nm -> {
 			ConnectionData cd = connectionSettings.get(nm);
 			if (cd == null) {
 				throw new RuntimeException("Missing database config for " + nm);

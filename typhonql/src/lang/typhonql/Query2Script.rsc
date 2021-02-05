@@ -205,7 +205,7 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schem
     
     // TODO: having -> $match, order -> $sort
     
-    return [step(dbName, mongo(aggregate(dbName, coll, [ pp(s) | DBObject s <- stages ])), params
+    return [step(dbName, mongo(aggregate(mongoDBName(dbName), coll, [ pp(s) | DBObject s <- stages ])), params
      signature=
           filterForBackend(results2pathsWithAggregation(aggReq.qry.selected, queryEnvAndDyn(aggReq.qry), s)
             +  where2paths(getWhere(aggReq.qry), queryEnvAndDyn(aggReq.qry), s), p))];
@@ -215,7 +215,7 @@ list[Step] compileQuery(r:(Request)`<Query q>`, p:<mongodb(), str dbName>, Schem
     params += initialParams;
     for (str coll <- methods) {
       // TODO: signal if multiple!
-      return [step(dbName, mongo(find(dbName, coll, pp(methods[coll].query), pp(methods[coll].projection)))
+      return [step(dbName, mongo(find(mongoDBName(dbName), coll, pp(methods[coll].query), pp(methods[coll].projection)))
         , params, signature=
            filterForBackend(results2paths(q.selected, queryEnvAndDyn(q), s) + where2paths(getWhere(q), queryEnvAndDyn(q), s), p)
            )];

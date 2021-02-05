@@ -139,7 +139,7 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   void updateMongoInsert(DBObject(DBObject) block) {
     int idx = hasId(kvs) ? 0 : 1;
     theObject = block(theObject);
-    updateStep(idx, step(p.name, mongo(insertOne(p.name, "<e>", pp(theObject))), myParams));
+    updateStep(idx, step(p.name, mongo(insertOne(mongoDBName(p.name), "<e>", pp(theObject))), myParams));
   }
  
   void updateNeoInsert(NeoStat(NeoStat) block) {

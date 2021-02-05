@@ -170,7 +170,7 @@ void deleteObject(<sql(), str dbName>, DeleteContext ctx) {
 }
 
 void deleteObject(<mongodb(), str dbName>, DeleteContext ctx) {
-  ctx.addSteps([ step(dbName, mongo(deleteOne(dbName, ctx.entity, pp(object([<"_id", ctx.mongoMe>])))), ctx.myParams) ]);
+  ctx.addSteps([ step(dbName, mongo(deleteOne(mongoDBName(dbName), ctx.entity, pp(object([<"_id", ctx.mongoMe>])))), ctx.myParams) ]);
 }
 
 void deleteObject(<neo4j(), str dbName>, DeleteContext ctx) {
@@ -254,6 +254,20 @@ void deleteKids(
   // immediate because of nesting
 }
 
+void deleteKids(
+  <mongodb(), str dbName>, <mongodb(), str other:!dbName>,
+  <str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, 
+  DeleteContext ctx
+) {
+  // containment kids always have a single parent pointer.
+  DBObject query = object([<toRole, object([<"$eq", ctx.mongoMe>])>]);
+  ctx.addSteps([step(other, mongo(deleteMany(mongoDBName(other), to, pp(query))), ctx.myParams)]);
+}
+
+ //one_many()
+ // | zero_many()
+ // | zero_one()
+ // | \one()
 
 void deleteKids(
   <mongodb(), str dbName>, <sql(), str other>,

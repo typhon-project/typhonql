@@ -192,7 +192,7 @@ Schema model2schema(Model m, bool normalize=true)
        placement= model2placement(m),
        pragmas = model2pragmas(m),
        changeOperators = model2changeOperators(m))  
-       | inlineCustomDataTypes(inferAuxEntities(it)) | normalize );
+       | makeMongoCollectionsBackends(inlineCustomDataTypes(inferAuxEntities(it))) | normalize );
 
 str keyValEntity(str db, str ent) = "<ent>__<db>";
 
@@ -214,6 +214,27 @@ Schema inlineCustomDataTypes(Schema s) {
   
   return s; 
 }
+
+
+//alias Place = tuple[DB db, str name];
+// alias Placement = rel[Place place, str entity];
+
+
+Schema makeMongoCollectionsBackends(Schema s) {
+  s.placement += { <<mongodb(), "<name>/<ent>">, ent> | <<mongodb(), str name>, str ent> <- s.placement };
+  s.placement -= { p | p:<<mongodb(), str name>, _> <- s.placement, /\// !:= name };
+  return s;
+}
+
+
+str mongoDBName(/^<dbName:[a-zA-Z0-9_]*>\//) = dbName;
+default str mongoDBName(str name) = name;
+
+str placeToMongoDB(<mongodb(), str name>) = mongoDBName(name);
+
+default str placeToMongoDB(Place p) {
+  throw "Bad mongodb place: <p>";
+} 
 
 Schema inferAuxEntities(Schema s) {
 	return inferKeyValueAuxEntities(inferNlpAuxEntities(s));

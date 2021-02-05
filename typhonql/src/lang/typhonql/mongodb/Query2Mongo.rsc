@@ -204,17 +204,13 @@ tuple[map[str, CollMethod], Bindings] select2mongo_(req:(Request)`from <{Binding
     
     prePath = paths[ent].path;
     
+    Prop prop = <fields, \value(1)>;
     if (prePath != []) {
-      Prop prop = <"<intercalate(".", paths[ent].path)>.<fields>", \value(1)>;
-      if (prop notin result[paths[ent].root].projection.props) {
-        result[paths[ent].root].projection.props += [prop];
-      }
+      prop = <"<intercalate(".", paths[ent].path)>.<fields>", \value(1)>;
     }
-    else {
-      Prop prop = <fields, \value(1)>;
-      if (prop notin result[paths[ent].root].projection.props) {
-        result[paths[ent].root].projection.props += [prop];
-      }
+    // not sure where the empty string comes from...
+    if (prop.name != "", prop notin result[paths[ent].root].projection.props) {
+      result[paths[ent].root].projection.props += [prop];
     }
   } 
   

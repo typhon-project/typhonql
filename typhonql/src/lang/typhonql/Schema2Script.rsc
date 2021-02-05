@@ -40,11 +40,16 @@ import lang::typhonql::relational::SQL2Text;
 
 Script schema2script(Schema s, Log log = noLog) {
 	list[Step] steps = [];
+	
+	// special case mongo databases
+	set[str] mongoDBs = { mongoDBName(name) | <mongodb(), str name> <- s.placement<0> };
+	steps += [step(db, mongo(dropDatabase(db)), ()) | str db <- mongoDBs ];
+	
 	for (Place p <- s.placement<0>) {
     	log("[schema2script] generating script for <p>");
     	steps += place2script(p, s, log = log);
   	}
-  	steps+= finish();
+  	steps += [finish()];
   	return script(steps);
 }
 
@@ -74,20 +79,22 @@ list[Step] place2script(p: <sql(), str db>, Schema s, Log log = noLog) {
 }
 
 list[Step] place2script(p:<mongodb(), str db>, Schema s, Log log = noLog) {
-  list[Step] steps = [step(db, mongo(dropDatabase(db)), ())];
+  list[Step] steps = []; 
+  //[step(db, mongo(dropDatabase(mongoDBName(db))), ())];
+  // cannot do it here, as collections "act" like back-ends now.
 
   for (str entity <- s.placement[p]) {
     log("[RUN-schema/mongodb/<db>] creating collection <entity>");
-    steps += [step(db, mongo(dropCollection(db, entity)), ())];
-    steps += [step(db, mongo(createCollection(db, entity)), ())];
+    steps += [step(db, mongo(dropCollection(mongoDBName(db), entity)), ())];
+    steps += [step(db, mongo(createCollection(mongoDBName(db), entity)), ())];
 
 
     // add geo indexes
-    steps += [step(db, mongo(createIndex(db, entity, "<entity>_<attr>_spatial", "{\"<attr>\": \"2dsphere\"}")), ()) 
+    steps += [step(db, mongo(createIndex(mongoDBName(db), entity, "<entity>_<attr>_spatial", "{\"<attr>\": \"2dsphere\"}")), ()) 
         | <str attr, str typ> <- s.attrs[entity], typ == "point" || typ == "polygon"];
         
     // add specified indexes    
-    steps += [step(db, mongo(createIndex(db, entity, "<entity>_<name>", "{ <intercalate(", ",["\"<attrOrRef>\": 1"| str attrOrRef <- ftrs])>}")), ())
+    steps += [step(db, mongo(createIndex(mongoDBName(db), entity, "<entity>_<name>", "{ <intercalate(", ",["\"<attrOrRef>\": 1"| str attrOrRef <- ftrs])>}")), ())
        | <db, indexSpec(str name, entity, list[str] ftrs)> <- s.pragmas];
           
   }

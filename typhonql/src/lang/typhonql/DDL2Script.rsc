@@ -69,7 +69,7 @@ Script createEntity(p:<sql(), str dbName>, str entity, Schema s, Log log = noLog
 }
 
 Script createEntity(p:<mongodb(), str dbName>, str entity, Schema s, Log log = noLog) {
-	return script([step(dbName, mongo(createCollection(dbName, entity)), ())]);
+	return script([step(dbName, mongo(createCollection(mongoDBName(dbName), entity)), ())]);
 }
 
 Script createEntity(p:<neo4j(), str dbName>, str entity, Schema s, Log log = noLog) {
@@ -203,7 +203,7 @@ Script dropEntity(p:<sql(), str dbName>, str entity, Schema s, Log log = noLog) 
 }
 
 Script dropEntity(p:<mongodb(), str dbName>, str entity, Schema s, Log log = noLog) {
-	return script([step(dbName, mongo(dropCollection(dbName, entity)), ())]);
+	return script([step(dbName, mongo(dropCollection(mongoDBName(dbName), entity)), ())]);
 }
 
 Script dropEntity(p:<neo4j(), str dbName>, str entity, Schema s, Log log = noLog) {
@@ -266,7 +266,7 @@ Script dropAttribute(p:<sql(), str dbName>, str entity, str attribute, Schema s,
 
 Script dropAttribute(p:<mongodb(), str dbName>, str entity, str attribute, Schema s, Log log = noLog) {
 	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "{}", "{$unset: { \"<attribute>\" : 1}}"));
+				findAndUpdateMany(mongoDBName(dbName), entity, "{}", "{$unset: { \"<attribute>\" : 1}}"));
 	return script([step(dbName, call, ())]);
 }
 
@@ -331,7 +331,7 @@ Script dropRelation(p:<mongodb(), str dbName>, str entity, str relation, str to,
 		return script([]);
 	} else {
 		Call call = mongo(
-				findAndUpdateMany(dbName, entity, "{}", "{$unset: { \"<relation>\" : 1}}"));
+				findAndUpdateMany(mongoDBName(dbName), entity, "{}", "{$unset: { \"<relation>\" : 1}}"));
 		return script([step(dbName, call, ())]);
 	}
 }
@@ -382,17 +382,17 @@ Script renameEntity(p:<sql(), str dbName>, str entity, str newName, Schema s, Lo
 
 Script renameEntity(p:<mongodb(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
 	if (<p:<db, dbName>, eId> <- s.placement, entity == eId) {
-		return script([step(dbName, mongo(renameCollection(dbName, entity, newName)), ())]);
+		return script([step(dbName, mongo(renameCollection(mongoDBName(dbName), entity, newName)), ())]);
   	}
   	throw "Not found entity <eId>";
 }
 
-Script renameEntity(p:<neo4j(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
-	if (<p:<db, dbName>, eId> <- s.placement, entity == eId) {
-		return script([step(dbName, mongo(renameCollection(dbName, entity, newName)), ())]);
-  	}
-  	throw "Not found entity <eId>";
-}
+//Script renameEntity(p:<neo4j(), str dbName>, str entity, str newName, Schema s, Log log = noLog) {
+//	if (<p:<db, dbName>, eId> <- s.placement, entity == eId) {
+//		return script([step(dbName, mongo(renameCollection(mongoDBName(dbName), entity, newName)), ())]);
+//  	}
+//  	throw "Not found entity <eId>";
+//}
 
 
 default Script renameEntity(p:<db, str dbName>, str entity, str newName, Schema s, Log log = noLog) {
@@ -418,7 +418,7 @@ Script renameAttribute(p:<sql(), str dbName>, str entity, str attribute, str new
 
 Script renameAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str newName, Schema s, Log log = noLog) {
 	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "{}", "{ $rename : { \"<attribute>\" : \"<newName>\" }}"));
+				findAndUpdateMany(mongoDBName(dbName), entity, "{}", "{ $rename : { \"<attribute>\" : \"<newName>\" }}"));
 	return script([step(dbName, call, ())]);
 }
 
@@ -449,7 +449,7 @@ Script renameRelation(p:<sql(), str dbName>, str entity, str relation, str newNa
 
 Script renameRelation(p:<mongodb(), str dbName>, str entity, str relation, str newName, Schema s, Log log = noLog) {
 	Call call = mongo(
-				findAndUpdateMany(dbName, entity, "", "{ $rename : { \"<relation>\" : \"<newName>\" }}"));
+				findAndUpdateMany(mongoDBName(dbName), entity, "", "{ $rename : { \"<relation>\" : \"<newName>\" }}"));
 	return script([step(dbName, call, ())]);
 }
 
@@ -475,7 +475,7 @@ Script createIndex(p:<sql(), str dbName>, str entity, str indexName, list[str] a
 }
 
 Script createIndex(p:<mongodb(), str dbName>, str entity, str indexName, list[str] attributes, Schema s, Log log = noLog) {
-	stp = step(dbName, mongo(createIndex(dbName, entity, indexName, "{ <intercalate(", ",["\"<attrOrRef>\": 1"| str attrOrRef <- attributes])>}")), ());
+	stp = step(dbName, mongo(createIndex(mongoDBName(dbName), entity, indexName, "{ <intercalate(", ",["\"<attrOrRef>\": 1"| str attrOrRef <- attributes])>}")), ());
 	return script([stp]);
 }
 
@@ -493,7 +493,7 @@ Script dropIndex(p:<sql(), str dbName>, str entity, str indexName, Schema s, Log
 
 Script dropIndex(p:<mongodb(), str dbName>, str entity, str indexName, Schema s, Log log = noLog) {
 	println(indexName);
-	stp = step(dbName, mongo(dropIndex(dbName, entity, indexName)), ());
+	stp = step(dbName, mongo(dropIndex(mongoDBName(dbName), entity, indexName)), ());
 	return script([stp]);
 
 }
