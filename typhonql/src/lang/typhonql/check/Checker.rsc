@@ -187,6 +187,13 @@ void collect(current:(Expr)`<Obj objValue>`, Collector c) {
     collect(objValue, c);
 }
 
+
+//void collect(current:(Expr)`[<{Obj ","}+ objs>]`, Collector c) {
+//    for (Obj obj <- objs) {
+//      collect(obj, c);
+//    }
+//}
+
 void collect(current:(Obj)`<Label? label> <EId entity> { <{KeyVal ","}* keyVals> }`, Collector c) {
     collectEntityType(entity, c);
     collectKeyVal(keyVals, entity, c);
@@ -270,18 +277,19 @@ void collect(current:(Expr)`<EId typ> ( <{KeyVal ","}* params>)`, Collector c) {
     }
 }
 
-//void collect(current:(Expr)`[<{Obj ","}*entries>]`, Collector c) {
-//    if (e <- entries) {
-//        collect(entries, c);
-//        c.calculate("list type", current, [et | et <- entries], AType (Solver s) {
-//            for (et <- entries) {
-//                s.requireEqual(e, et, error(et, "Expected same type in the list, found %t and %t", e, et));
-//            }
-//            return atypeList([s.getType(e)]);
-//        });
-//    }
-//    c.fact(current, atypeList([voidType()]));
-//}
+void collect(current:(Expr)`[<{Obj ","}+ entries>]`, Collector c) {
+    // TODO
+    if (e <- entries) {
+        collect(entries, c);
+        c.calculate("list type", current, [et | et <- entries], AType (Solver s) {
+            for (et <- entries) {
+                s.requireEqual(e, et, error(et, "Expected same type in the list, found %t and %t", e, et));
+            }
+            return atypeList([s.getType(e)]);
+        });
+    }
+    c.fact(current, atypeList([voidType()]));
+}
 
 // TODO how to type this?
 void collect(current:(Expr)`[<{PlaceHolderOrUUID ","}* refs>]`, Collector c) {
