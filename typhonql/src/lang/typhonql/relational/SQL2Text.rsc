@@ -155,6 +155,15 @@ str pp(notIn(SQLExpr arg, list[Value] vals))
 str pp(\in(SQLExpr arg, list[SQLExpr] vals)) 
   = "(<pp(arg)>) in (<intercalate(", ", [ pp(v) | SQLExpr v <- vals])>)";
 
+
+str pp(distance(SQLExpr lhs, SQLExpr rhs)) 
+    = "(
+     6371000 * 2 * ASIN(SQRT(
+       POWER(SIN((ST_Y(<pp(rhs)>) - ST_Y(<pp(lhs)>)) * pi()/180 / 2),
+       2) + COS(ST_Y(<pp(lhs)>) * pi()/180 ) * COS(ST_Y(<pp(rhs)>) *
+       pi()/180) * POWER(SIN((ST_X(<pp(rhs)>) - ST_X(<pp(lhs)>)) *
+       pi()/180 / 2), 2) ))
+    )";
 str pp(var(str name))
   = "`<name>`";
 

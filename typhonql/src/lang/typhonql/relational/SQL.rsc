@@ -75,6 +75,7 @@ data SQLExpr
   | notIn(SQLExpr arg, list[SQLExpr] vals)
   | \in(SQLExpr arg, list[SQLExpr] vals)
   | fun(str name, list[SQLExpr] args)
+  | distance(SQLExpr lhs, SQLExpr rhs)
   ;
 
 

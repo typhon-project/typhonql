@@ -559,8 +559,8 @@ SQLExpr expr2sql((Expr)`<Expr lhs> & <Expr rhs>`, Ctx ctx, Log log = noLog)
 SQLExpr expr2sql((Expr)`<Expr lhs> in <Expr rhs>`, Ctx ctx, Log log = noLog) 
   = equ(fun("ST_Within", [removeWKB(expr2sql(lhs, ctx)), removeWKB(expr2sql(rhs, ctx))]), lit(integer(1)));
 
-SQLExpr expr2sql((Expr)`distance(<Expr from>, <Expr to>)`, Ctx ctx, Log log = noLog)
-  = mul(fun("ST_Distance", [removeWKB(expr2sql(from, ctx)), removeWKB(expr2sql(to, ctx))]), lit(integer(1000)));
+SQLExpr expr2sql((Expr)`distance(<Expr from>, <Expr to>)`, Ctx ctx, Log log = noLog) 
+    = distance(removeWKB(expr2sql(from, ctx)), removeWKB(expr2sql(to, ctx)));
 
 default SQLExpr expr2sql(Expr e, Ctx _) { throw "Unsupported expression in SQL: <e>"; }
 

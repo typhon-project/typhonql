@@ -1073,9 +1073,14 @@ void testGISProblemsOnEdges(PolystoreInstance p) {
     //p.runUpdate((Request)`insert Review { @id: #r2, location: #point(47.76 4.72) }`); // middle
     
     rs = p.runQuery((Request)`from Product p, Review r select r.@id, p.@id where r.location in p.availabilityRegion && p.productionDate \> $2020-01-01$`);
-    p.assertResultEquals("testGISEdges - SQL First - GIS on mongo", rs, <["r.@id", "p.@id"], [[U("rev1"), U("tv")], [U("rev2"), U("radio")], [U("rev3"), U("tv")]]>);
+    p.assertResultEquals("GIS - in - SQL First - GIS on mongo", rs, <["r.@id", "p.@id"], [[U("rev1"), U("tv")], [U("rev2"), U("radio")], [U("rev3"), U("tv")]]>);
     rs = p.runQuery((Request)`from Product p, Review r select r.@id, p.@id where r.location in p.availabilityRegion && r.posted \> $2020-01-01T00:00:00Z$`);
-    p.assertResultEquals("testGISEdges - Mongo First - GIS on SQL", rs, <["r.@id", "p.@id"], [[U("rev1"), U("tv")], [U("rev2"), U("radio")], [U("rev3"), U("tv")]]>);
+    p.assertResultEquals("GIS - in - Mongo First - GIS on SQL", rs, <["r.@id", "p.@id"], [[U("rev1"), U("tv")], [U("rev2"), U("radio")], [U("rev3"), U("tv")]]>);
+
+    rs = p.runQuery((Request)`from User u, Review r select r.@id, u.@id where distance(r.location, u.location) \< 3000 && u.created \> $2020-01-01T00:00:00Z$`);
+    p.assertResultEquals("GIS - distance - SQL First - GIS on mongo", rs, <["r.@id", "u.@id"], [[U("rev1"), U("pablo")], [U("rev2"), U("davy")]]>);
+    rs = p.runQuery((Request)`from User u, Review r select r.@id, u.@id where distance(r.location, u.location) \< 3000 && r.posted \> $2020-01-01T00:00:00Z$`);
+    p.assertResultEquals("GIS - distance - Mongo First - GIS on SQL", rs, <["r.@id", "u.@id"], [[U("rev1"), U("pablo")], [U("rev2"), U("davy")]]>);
 }
 
 void testGISPrint(PolystoreInstance p) {
