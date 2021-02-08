@@ -16,6 +16,7 @@
 
 module lang::typhonql::Insert2Script
 
+import lang::typhonql::Update2Script;
 import lang::typhonml::Util;
 import lang::typhonml::TyphonML;
 import lang::typhonql::Script;
@@ -88,8 +89,45 @@ Then insert the rest.
 */
 
 Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s) {
+
   str entity = "<e>";
   Place p = placeOf(entity, s);
+
+  if (Rel r:<str from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, entity, true> <- s.rels
+     , <DB::mongodb(), str dbName> := p, <DB:mongodb(), str other> := placeOf(from, s)
+     , mongoDBName(dbName) == mongoDBName(other)) {
+     
+     EId parent = [EId]from;
+     Id toRoleId = [Id]toRole;
+     if ((KeyVal)`<Id toRole>: <PlaceHolder parentId>` <- kvs) {
+         Request req = (Request)`update <EId parent> x where x.@id == <PlaceHolder parentId> set {
+	                        '  <Id toRoleId> : <EId e> { <{KeyVal ","}* kvs> }
+	                        '}`;
+	     if (fromCard in {one_many(), zero_many()}) {
+	       req = (Request)`update <EId parent> x where x.@id == <PlaceHolder parentId> set {
+	                    '  <Id toRoleId> +: [<EId e> { <{KeyVal ","}* kvs> } ]
+	                    '}`;
+	     }
+	     return update2script(req, s);
+	 }
+	 
+	 if ((KeyVal)`<Id toRole>: <UUID parentId>` <- kvs) {
+         Request req = (Request)`update <EId parent> x where x.@id == <UUID parentId> set {
+	                        '  <Id toRoleId> : <EId e> { <{KeyVal ","}* kvs> }
+	                        '}`;
+	     if (fromCard in {one_many(), zero_many()}) {
+	       req = (Request)`update <EId parent> x where x.@id == <UUID parentId> set {
+	                    '  <Id toRoleId> +: [<EId e> { <{KeyVal ","}* kvs> } ]
+	                    '}`;
+	     }
+	     return update2script(req, s);
+	 }
+	 throw "Cannot insert MongoDB contained entity without parent pointer to: <parent> (<toRole>)";
+  }
+  
+
+
+
   str myId = newParam();
   Bindings myParams = ( myId: generatedId(myId) | !hasId(kvs) );
 
@@ -228,7 +266,20 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   } 
   
   
-  for ((KeyVal)`<Id x>: <Expr ref>` <- kvs) {
+  for ((KeyVal)`<Id x>: <Obj obj>` <- kvs) {
+    if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, true> <- s.rels) {
+      compileContainedObjects(p, placeOf(to, s), entity, fromRole, r, [obj], ctx);
+    }
+  }
+  
+  for ((KeyVal)`<Id x>: [<{Obj ","}+ objs>]` <- kvs) {
+    if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, true> <- s.rels) {
+      compileContainedObjects(p, placeOf(to, s), entity, fromRole, r, [ obj | Obj obj <- objs ], ctx);
+    }
+  }
+  
+  
+  for ((KeyVal)`<Id x>: <Expr ref>` <- kvs, (Expr)`<Obj _>` !:= ref) {
   	maybePointer = expr2pointer(ref);
   	if (just(pointer) := maybePointer) {
   		str fromRole = "<x>"; 
@@ -242,7 +293,6 @@ Script insert2script((Request)`insert <EId e> { <{KeyVal ","}* kvs> }`, Schema s
   // TODO : refs can be expressions
   for ((KeyVal)`<Id x>: [<{PlaceHolderOrUUID ","}* refs>]` <- kvs) {
     str fromRole = "<x>"; 
-    //list[Pointer] pointers = [expr2pointer(r) | Expr r <- refs, (Expr) `<UUID _>`:= r, (Expr) `<Placeholder _>` := r];
     list[Pointer] pointers = refs2pointers([r | r <- refs]);
     if (Rel r:<entity, Cardinality _, fromRole, str _, Cardinality _, str to, bool _> <- s.rels) {
       compileRefBindingMany(p, placeOf(to, s), entity, fromRole, r, pointers, ctx);
@@ -297,6 +347,32 @@ void compileAttrs(<neo4j(), str dbName>, list[KeyVal] kvs, InsertContext ctx) {
   });
 } 
       
+
+void compileContainedObjects(<DB::mongodb(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>, list[Obj] objs, InsertContext ctx) {
+  
+  if (mongoDBName(dbName) != mongoDBName(other)) {
+    fail;
+  }
+  
+  if (fromCard in {one_many(), zero_many()}) {
+    ctx.updateMongoInsert(DBObject(DBObject cur) {
+      cur.props += [<fromRole, array([ obj2dbObj((Expr)`<Obj obj>`) | Obj obj <- objs ])>];
+      return cur;
+    });
+  }
+  else {
+    ctx.updateMongoInsert(DBObject(DBObject cur) {
+      cur.props += [<fromRole, obj2dbObj((Expr)`<Obj obj>`)> | Obj obj := objs[0] ];
+      return cur;
+    });
+  }
+}
+
+default void compileContainedObjects(Place p1, Place p2, str from, str fromRole, 
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>, list[Obj] objs, InsertContext ctx) {
+  throw "No nested literals allowed between <p1> and <p2> for <from>-\><fromRole>-\><to>";
+}
 
 void compileRefBinding(
   <DB::sql(), str dbName>, <DB::sql(), dbName>, str from, str fromRole, 
@@ -614,6 +690,23 @@ void compileRefBindingMany(
   ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, pointer2mongo(ref) , ctx.mongoMe, ctx.myParams)
                 | Pointer ref <- refs ]);
 }
+
+void compileRefBindingMany(
+ <mongodb(), str dbName>, <mongodb(), str other:!dbName>, str from, str fromRole,
+ Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
+ list[Pointer] refs, InsertContext ctx
+) {
+
+  // this case is only called for the empty set of refs, non empty containments are handled
+  // by nested object literals.
+  ctx.updateMongoInsert(DBObject(DBObject obj) {
+    obj.props += [ <fromRole, array([ ]) > ];
+    return obj;
+  });
+  ctx.addSteps([ *insertObjectPointer(other, to, toRole, toCard, pointer2mongo(ref) , ctx.mongoMe, ctx.myParams)
+                | Pointer ref <- refs ]);
+}
+
 
 void compileRefBindingMany(
  <mongodb(), str dbName>, <DB::sql(), str other>, str from, str fromRole,

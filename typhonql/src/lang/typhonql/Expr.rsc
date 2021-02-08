@@ -36,7 +36,7 @@ syntax Expr
   | bracket "(" Expr arg ")"
   | obj: Obj objValue // for use in insert and allow nesting of objects
   | custom: Custom customValue // for use in insert and allow nesting of custom data types
-  //| lst: "[" {Obj ","}* entries "]" 
+  | lst: "[" {Obj ","}+ entries "]" 
   | refLst: "[" {PlaceHolderOrUUID ","}* refs "]" // plus to not make amb with empy lst 
   | null: "null"
   | pos: "+" Expr arg

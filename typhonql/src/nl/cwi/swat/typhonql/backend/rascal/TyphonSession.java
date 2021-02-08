@@ -52,6 +52,7 @@ import io.usethesource.vallang.IInteger;
 import io.usethesource.vallang.IList;
 import io.usethesource.vallang.IListWriter;
 import io.usethesource.vallang.IMap;
+import io.usethesource.vallang.IMapWriter;
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.ITuple;
 import io.usethesource.vallang.IValue;
@@ -391,6 +392,15 @@ public class TyphonSession implements Operations {
 			IListWriter lst = vf.listWriter();
 			c.elements().forEachRemaining(x -> lst.append(toIValue(x)));
 			return lst.done();
+		}
+		else if (c.isObject()) {
+			IMapWriter m = vf.mapWriter();
+			Iterator<Entry<String, JsonNode>> iter = c.fields();
+			while (iter.hasNext()) {
+				Entry<String, JsonNode> entry = iter.next();
+				m.appendTuple(vf.string(entry.getKey()), toIValue(entry.getValue()));
+			}
+			return m.done();
 		}
 		else {
 			throw new RuntimeException("Cannot convert " + c + " into an IValue");

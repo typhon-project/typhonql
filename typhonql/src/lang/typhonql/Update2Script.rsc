@@ -185,10 +185,28 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
       throw "Cannot find <keyValEntity> on cassandra; bug";
     }
   }
+  
+  for ((KeyVal)`<Id x>: <Obj obj>` <- kvs) {
+   if (Rel r:<ent, Cardinality _, fromRole, str _, Cardinality _, str to, true> <- s.rels) {
+      compileNestedSet(p, placeOf(to, s), ent, fromRole, r, [ obj ], ctx);
+    }
+  }
    
 
+  for ((KeyVal)`<Id x>: [<{Obj ","}+ objs>]` <- kvs) {
+   if (Rel r:<ent, Cardinality _, fromRole, str _, Cardinality _, str to, true> <- s.rels) {
+      compileNestedSet(p, placeOf(to, s), ent, fromRole, r, [ obj | Obj obj <- objs ], ctx);
+    }
+  }
+  
+  for ((KeyVal)`<Id x> +: [<{Obj ","}+ objs>]` <- kvs) {
+    if (Rel r:<ent, Cardinality _, fromRole, str _, Cardinality _, str to, true> <- s.rels) {
+      compileNestedAddTo(p, placeOf(to, s), ent, fromRole, r, [ obj | Obj obj <- objs ], ctx);
+    }
+  }
+
   // TODO: make less ugly how the rel is looked up here in if-statements (also with insert)
-  for ((KeyVal)`<Id x>: <Expr ref>` <- kvs) {
+  for ((KeyVal)`<Id x>: <Expr ref>` <- kvs, (Expr)`<Obj _>` !:= ref) {
   	maybePointer = expr2pointer(ref);
   	if (just(pointer) := maybePointer) {
     	str fromRole = "<x>"; 
@@ -238,7 +256,7 @@ Script update2script((Request)`update <EId e> <VId x> where <{Expr ","}+ ws> set
 }
  
  
-void compileAttrSets(<sql(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
+ void compileAttrSets(<sql(), str dbName>, list[KeyVal] kvs, UpdateContext ctx) {
   ctx.updateSQLUpdate(SQLStat(SQLStat upd) {
     upd.sets += [ Set::\set(columnName(kv has key ? "<kv.key>" : "@id", ctx.entity), SQLExpr::lit(evalExpr(kv.\value))) | KeyVal kv <- kvs ];
     return upd;
@@ -263,6 +281,62 @@ void compileAttrSets(<neo4j(), str dbName>, list[KeyVal] kvs, UpdateContext ctx)
 			[nLit(nBoolean(true))]);
     return upd;
   });
+}
+
+/*
+ * Nested objects in Mongo
+ */
+ 
+void compileNestedSet(<DB::mongodb(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
+  list[Obj] objs, UpdateContext ctx) {
+  
+  if (mongoDBName(dbName) != mongoDBName(other)) {
+    fail;
+  }
+  
+  if (fromCard in {one_many(), zero_many()}) {
+    ctx.updateMongoUpdate(DBObject(DBObject cur) {
+      cur.props += [<fromRole, array([ obj2dbObj((Expr)`<Obj obj>`) | Obj obj <- objs ])>];
+      return cur;
+    });
+  }
+  else {
+    ctx.updateMongoUpdate(DBObject(DBObject cur) {
+      cur.props += [<fromRole, obj2dbObj((Expr)`<Obj obj>`)> | Obj obj := objs[0] ];
+      return cur;
+    });
+  }
+}
+
+default void compileNestedSet(Place p1, Place p2, str from, str fromRole, 
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>, list[Obj] objs, InsertContext ctx) {
+  throw "No nested literals allowed between <p1> and <p2> for <from>-\><fromRole>-\><to>";
+}
+ 
+void compileNestedAddTo(<DB::mongodb(), str dbName>, <DB::mongodb(), str other>, str from, str fromRole, 
+  Rel r:<from, Cardinality fromCard, fromRole, str toRole, Cardinality toCard, str to, true>,
+  list[Obj] objs, UpdateContext ctx) {
+  
+  if (mongoDBName(dbName) != mongoDBName(other)) {
+    fail;
+  }
+  
+  if (fromCard in {one_many(), zero_many()}) {
+    ctx.updateMongoUpdate(DBObject(DBObject cur) {
+      cur.props += [<"$addToSet", object([<fromRole, 
+           object([<"$each", array([ obj2dbObj((Expr)`<Obj obj>`) | Obj obj <- objs ])>])>])>];
+      return cur;
+    });
+  }
+  else {
+    throw "Can only add to a array value field which <from>.<fromRole> isn\'t";
+  }
+ }
+
+default void compileNestedAddTo(Place p1, Place p2, str from, str fromRole, 
+  Rel r:<from, Cardinality _, fromRole, str toRole, Cardinality toCard, str to, true>, list[Obj] objs, InsertContext ctx) {
+  throw "No nested literals allowed between <p1> and <p2> for <from>-\><fromRole>-\><to>";
 }
 
 /*

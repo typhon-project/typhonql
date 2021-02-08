@@ -97,6 +97,9 @@ void setup(PolystoreInstance p, bool doTest) {
 	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev2, content: "", user: #davy, product: #tv, posted: $2020-02-03T02:11:00$, location: #point(20.0 30.0), screenshot: #blob:s2 }`, (U("s2") : "yy"));
 	p.runUpdateWithBlobs((Request) `insert Review { @id: #rev3, content: "***", user: #davy, product: #radio, posted: $2020-02-03T02:11:00$, location: #point(3.0 2.0), screenshot: #blob:s3 }`, (U("s3") : "zz"));
 	
+	
+	// this needs to change for nesting below reviews.
+	// it actually should turn into an update, of the id'd reviews, and add it.
 	p.runUpdate((Request)`insert Comment { @id: #c1, review: #rev1, comment: "I agree" }`);
 	p.runUpdate((Request)`insert Comment { @id: #c2, review: #rev2, comment: "please write something" }`);
 	p.runUpdate((Request)`insert Comment { @id: #c3, review: #rev2, comment: "dude, this is lazy" }`);
@@ -119,8 +122,10 @@ void setup(PolystoreInstance p, bool doTest) {
 	  rs = p.runQuery((Request)`from Review r select r.@id, r.comments`);
 	  p.assertResultEquals("comments obtained from review", rs, <["r.@id", "r.comments"], 
 	     [
-	       [U("rev1"), [U("c1")]],
-	       [U("rev2"), [U("c2"), U("c3")]],
+	       [U("rev1"), [("_id": U("c1"), "comment": "I agree", "review": U("rev1"))]],
+	       [U("rev2"), [
+	          ("_id": U("c2"), "comment": "please write something", "review": U("rev2")), 
+	          ("_id": U("c3"), "comment": "dude, this is lazy", "review": U("rev2"))]],
 	       [U("rev3"), {}]
 	     ]
 	     >);
@@ -235,9 +240,9 @@ void setup(PolystoreInstance p, bool doTest) {
 	    
 	    // Not done for now because NLAE gets stuck with NER
 	    rs = p.runQuery((Request)`from Foundation f select f.@id`);
-	    p.assertResultEquals("foundation was inserted", rs, <["f.@id", "f.mission"], [
-	    	[U("wwf"), "Better world"],
-	    	[U("greenpeace"), "Green peace"]]>); 
+	    p.assertResultEquals("foundation was inserted", rs, <["f.@id"], [
+	    	[U("wwf") /*, "Better world" */],
+	    	[U("greenpeace") /*, "Green peace"*/]]>); 
 	} 
 }
 
@@ -252,6 +257,9 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
 }
 
 void testJoinsInsideMongo(PolystoreInstance p) {
+  // TODO: Comments are now a contained object under Review
+  // so joining does not apply here; need an 
+  // actual cross ref.
   rs = p.runQuery((Request)`from Comment c, Review r select c.comment, r.content where c.review == r.@id`);
   p.assertResultEquals("joining across collections works", rs, 
      <["c.comment","r.content"], [
