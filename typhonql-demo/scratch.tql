@@ -5,7 +5,6 @@
 // Basic insertion
 
 insert Customer {
-  // special @id field for identities (normally auto-generated)
   @id: #john,
 
   name: "John Doe",
@@ -22,8 +21,9 @@ insert Customer {
 }
 
 
-// A simple query (NB. c.address is not allowed!?!?!)
-from Customer c select c.name, c.age, c.address.street
+// A simple query 
+from Customer c 
+select c.name, c.age, c.address
 
 
 insert Product {
@@ -40,6 +40,9 @@ insert Order {
   customer: #john
 }
 
+from Product p, Order o 
+select p.name, o.customer, o.created
+where o.products == p.@id
 
 
 insert Customer {
@@ -54,6 +57,54 @@ insert Customer {
     city: "Amsterdam"
   )
 }
+
+from Customer c 
+select count(c.@id) as cnt
+
+
+from Customer c 
+select sum(c.age) as total
+
+from Customer c 
+select c.age, count(c.@id) as cnt
+group c.age
+
+
+// crossing DB boundaries
+
+insert Review {
+  product: #tv,
+  content: "Good TV"
+}
+
+// opposite management
+from Product p
+select p.name, p.reviews
+
+
+// cross DB joining
+from Product p, Review r
+select p.name, r.content
+where p.reviews == r.@id
+
+// aggregation on Mongo
+from Review r
+select count(r.@id) as cnt
+
+
+// cross db aggregation
+
+//from Product p, Review r
+//select p.name, count(p.reviews) as revCount
+//where p.reviews == r.@id
+//group p.name
+
+
+// cross db cascade delete
+delete Product p
+
+from Review r
+select r
 
 
 
