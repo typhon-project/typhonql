@@ -63,6 +63,12 @@ services:
           memory: 2048M
     restart: always
 
+  hoppscotch:
+    image: hoppscotch/hoppscotch
+    ports:
+      - target: 3000
+        published: 3000
+
 volumes:
   ecommercevolume:
   socialvolume:

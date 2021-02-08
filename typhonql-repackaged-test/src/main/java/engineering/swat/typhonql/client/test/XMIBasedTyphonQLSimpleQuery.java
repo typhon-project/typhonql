@@ -68,7 +68,7 @@ public class XMIBasedTyphonQLSimpleQuery {
 					new String[] { "2021-01-03", "2021-11-10T22:33:11Z"}
 		}, true);
 		*/
-		JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from Product p, Review r select r.@id, p.@id where r.location in p.availabilityRegion && r.posted > $2020-01-01T00:00:00Z$ && r.posted > $2020-01-01T00:00:00Z$", true);
+		JsonSerializableResult rt = conn.executeQuery(xmiString, infos, "from User u, Review r select r.@id, u.@id where distance(r.location, u.location) < 3000 && r.posted > $2020-01-01T00:00:00Z$", true);
 		System.out.println(rt);
 		rt.serializeJSON(System.out);
 		System.exit(0);
