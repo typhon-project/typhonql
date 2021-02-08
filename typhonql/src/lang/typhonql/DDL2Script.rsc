@@ -71,14 +71,9 @@ Script createEntity(p:<sql(), str dbName>, str entity, Schema s, Log log = noLog
 Script createEntity(p:<mongodb(), str dbName>, str entity, Schema s, Log log = noLog) {
 	list[Step] steps = [step(dbName, mongo(createCollection(mongoDBName(dbName), entity)), ())];
 	
-	 // add geo indexes
-    steps += [step(dbName, mongo(createIndex(mongoDBName(dbName), entity, "<entity>_<attr>_spatial", "{\"<attr>\": \"2dsphere\"}")), ()) 
-        | <str attr, str typ> <- s.attrs[entity], typ == "point" || typ == "polygon"];
-        
-    // add specified indexes    
     steps += [step(dbName, mongo(createIndex(mongoDBName(dbName), entity, "<entity>_<name>", "{ <intercalate(", ",["\"<attrOrRef>\": 1"| str attrOrRef <- ftrs])>}")), ())
        | <dbName, indexSpec(str name, entity, list[str] ftrs)> <- s.pragmas];
-       
+    
     return script(steps);
 }
 
@@ -104,7 +99,12 @@ Script createAttribute(p:<sql(), str dbName>, str entity, str attribute, str ty,
 }
 
 Script createAttribute(p:<mongodb(), str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
-	return script([]);
+    	 // add geo indexes
+  if (ty == "point" || ty == "polygon") {
+    return script([step(dbName, mongo(createIndex(mongoDBName(dbName), entity, "<entity>_<attribute>_spatial", "{\"<attribute>\": \"2dsphere\"}")), ())]);
+  }
+  
+  return script([]);
 }
 
 Script createAttribute(p:<neo4j(), str dbName>, str entity, str attribute, str ty, Schema s, Log log = noLog) {
