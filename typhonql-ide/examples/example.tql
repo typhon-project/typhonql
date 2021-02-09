@@ -17,7 +17,7 @@ from Comment c select c
 
 from Product p select p
 
-from Product p select p.name
+from Product p select p.name, p.description, p.@id limit 10
 
 from Order o select o
 

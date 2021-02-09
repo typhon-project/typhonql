@@ -46,6 +46,8 @@ alias Session = tuple[
 alias ResultTable
   = tuple[list[str] columnNames, list[list[value]] values];
 
+
+
 //alias Field = tuple[str resultSet, str label, str \type, str fieldName];
 
 data Param

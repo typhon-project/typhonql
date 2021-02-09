@@ -156,6 +156,46 @@ default TreeSearchResult[Request] findRequest(_,_) = treeNotFound();
 
 data TableResultJSON = contents(list[str] columnNames, list[list[value]] values);
 
+int max(int a, int b) = a > b ? a : b;
+
+list[list[str]] printTable(list[str] columnNames, list[list[value]] values ) {
+    colWidth = [ ( size(columnNames[i]) | max(it, size("<v[i]>")) | v <- values) | i <- [0..size(columnNames)]];
+    result = [];
+    line = "";
+    for (i <- [0..size(columnNames)]) {
+        if (i > 0) {
+            line += " | ";
+        }
+        line += left(columnNames[i], colWidth[i]);
+    }
+    result += [[line]];
+
+    line = "";
+    bool first = true;
+    for (c <- colWidth) {
+        if (first) {
+            first = false;
+        }
+        else {
+            line += "-|-";
+        }
+        line += ("" | it + "-" | i <- [0..c]);
+    }
+    result += [[line]];
+
+    for (vs <- values) {
+        line = "";
+        for (i <- [0..size(vs)]) {
+            if (i > 0) {
+                line += " | ";
+            }
+            line += (int _ := vs[i]) ? right(vs[i], colWidth[i]) : left(vs[i], colWidth[i]);
+        }
+        result += [[line]];
+    }
+    return result;
+}
+
 void setupIDE(bool isDevMode = false) {
   Schema sch = schema({}, {}, {});
   CheckerMLSchema cSch = <(), {}>;
@@ -205,7 +245,7 @@ void setupIDE(bool isDevMode = false) {
 	          try {
 	          	if ((Request) `<Query q>` := req) {
 	          		ResultTable result = runQuery(req, currentSchema(tree), getSession(tree));
-	            	text(result);
+	            	text(printTable(result.columnNames, result.values));
 	          	}
 	          	else if ((Request) `<Statement s>` := req)  {
 	          		if (isDDL(s)) {
@@ -226,7 +266,9 @@ void setupIDE(bool isDevMode = false) {
           	  try {
           		if ((Request) `<Query q>` := req) {
                     <polystoreUri, user, password> = readTyphonConfig(tree@\loc);
-	          		text(parseJSON(#TableResultJSON, "{\"contents\": <executeQuery(polystoreUri, user, password, "<req>")> }"));
+
+	          		result = parseJSON(#TableResultJSON, "{\"contents\": <executeQuery(polystoreUri, user, password, "<req>")> }");
+	            	text(printTable(result.columnNames, result.values));
 	          	}
 	          	else if ((Request) `<Statement s>` := req)  {
                     <polystoreUri, user, password> = readTyphonConfig(tree@\loc);
