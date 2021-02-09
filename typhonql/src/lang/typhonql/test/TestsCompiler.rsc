@@ -259,8 +259,8 @@ void testSetup(PolystoreInstance p, Log log = NO_LOG()) {
 void testNestedEntities(PolystoreInstance p) {
   p.runUpdate((Request)`update Review r where r.@id == #rev3 set { comments +: [ Comment { @id: #c4, comment: "+1"} ] }`);
   rs = p.runQuery((Request)`from Review r select r.@id, r.comments where r.@id == #rev3`);
-  p.assertResultEquals("retrieved added review comment", r, <["r.@id", "r.comments"], [
-    [U("rev3"), [("_id": U("c4"), comment: "+1", "review": U("rev3"))]]
+  p.assertResultEquals("retrieved added review comment", rs, <["r.@id", "r.comments"], [
+    [U("rev3"), [("_id": U("c4"), "comment": "+1", "review": U("rev3"))]]
   ]>);
   
 }

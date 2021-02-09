@@ -188,11 +188,6 @@ void collect(current:(Expr)`<Obj objValue>`, Collector c) {
 }
 
 
-//void collect(current:(Expr)`[<{Obj ","}+ objs>]`, Collector c) {
-//    for (Obj obj <- objs) {
-//      collect(obj, c);
-//    }
-//}
 
 void collect(current:(Obj)`<Label? label> <EId entity> { <{KeyVal ","}* keyVals> }`, Collector c) {
     collectEntityType(entity, c);
@@ -200,6 +195,7 @@ void collect(current:(Obj)`<Label? label> <EId entity> { <{KeyVal ","}* keyVals>
     if (inInsert(c)) {
         requireAttributesSet(entity, entity, keyVals, c);
     }
+    c.fact(current, entity);
 }
 
 void collectKeyVal({KeyVal ","}* keyVals, EId entity, Collector c) {
@@ -244,7 +240,15 @@ void collectKeyVal(current:(KeyVal)`<Id key> -: <Expr val>`, EId entity, Collect
 void collectKVUpdate(KeyVal current, Id key, Expr val, EId entity, Collector c) {
     collect(val, c);
     c.useViaType(entity, key, {fieldRole()});
-    c.requireEqual(atypeList([uuidType()]), val, error(val, "Currently only lists of uuids are supported in the update syntax"));
+    c.require("Valid list type", val, [key, val], void (Solver s) {
+        switch (s.getType(val)) {
+            case atypeList([uuidType()]): ;
+            case atypeList([e:entityType(_)]): 
+                s.requireEqual(key, e, error(val, "Expected %t but got %t", key, e));
+            default:
+                s.report(error(val,  "Currently only lists of uuids and entities are supported in the update syntax"));
+        }
+    });
     c.require("valid update", current, [key, val], void (Solver s) {
         requireValidCardinality(current, key, entity, s);
     });
@@ -288,7 +292,9 @@ void collect(current:(Expr)`[<{Obj ","}+ entries>]`, Collector c) {
             return atypeList([s.getType(e)]);
         });
     }
-    c.fact(current, atypeList([voidType()]));
+    else {
+        c.fact(current, atypeList([voidType()]));
+    }
 }
 
 // TODO how to type this?
