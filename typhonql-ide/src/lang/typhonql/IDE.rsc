@@ -180,7 +180,7 @@ void setupIDE(bool isDevMode = false) {
   
   void resetSchema() {
     sch = schema({}, {}, {});
-    cSch = ();
+    cSch = <(), {}>;
   }
   
   

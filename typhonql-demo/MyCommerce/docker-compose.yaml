@@ -69,6 +69,12 @@ services:
       - target: 3000
         published: 3000
 
+  proxyscotch:
+    image: hoppscotch/proxyscotch
+    ports:
+      - target: 9159
+        published: 9159
+
 volumes:
   ecommercevolume:
   socialvolume:
