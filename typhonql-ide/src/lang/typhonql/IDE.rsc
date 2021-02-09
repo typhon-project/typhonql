@@ -156,6 +156,11 @@ default TreeSearchResult[Request] findRequest(_,_) = treeNotFound();
 
 data TableResultJSON = contents(list[str] columnNames, list[list[value]] values);
 
+bool isNumber(int _) = true;
+bool isNumber(real _) = true;
+bool isNumber(num _) = true;
+default bool isNumber(value _) = false;
+
 int max(int a, int b) = a > b ? a : b;
 
 list[list[str]] printTable(list[str] columnNames, list[list[value]] values ) {
@@ -189,7 +194,7 @@ list[list[str]] printTable(list[str] columnNames, list[list[value]] values ) {
             if (i > 0) {
                 line += " | ";
             }
-            line += (int _ := vs[i]) ? right(vs[i], colWidth[i]) : left(vs[i], colWidth[i]);
+            line += isNumber(vs[i]) ? right(vs[i], colWidth[i]) : left(vs[i], colWidth[i]);
         }
         result += [[line]];
     }
